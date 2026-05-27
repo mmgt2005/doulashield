@@ -1,0 +1,38 @@
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    env_file: .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - redis
+    environment:
+      - PYTHONPATH=/app
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    env_file: ./frontend/.env.local
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    # Used for: rate-limiter state (slowapi) + refresh token revocation cache
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+
+# No local postgres service — Supabase is the hosted database.
+# For production, replace Redis with a managed service (Upstash, ElastiCache).

@@ -1,0 +1,27 @@
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+pydantic-settings==2.6.1
+pydantic[email]==2.10.3
+
+# Supabase client
+supabase==2.10.0
+
+# Database (direct async access for SQLAlchemy + Alembic migrations)
+sqlalchemy[asyncio]==2.0.36
+asyncpg==0.30.0
+alembic==1.14.0
+
+# Auth / crypto
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+cryptography==43.0.3
+pyotp==2.9.0
+qrcode[pil]==8.0
+
+# Rate limiting
+slowapi==0.1.9
+redis==5.2.1
+
+# Utilities
+python-multipart==0.0.18
+httpx==0.28.1
