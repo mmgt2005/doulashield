@@ -59,9 +59,10 @@ export default function MFASetupPage() {
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 bg-white p-6 rounded-lg shadow">
           <div>
-            <label className="block text-sm font-medium text-gray-700">Verification code</label>
+            <label htmlFor="code" className="block text-sm font-medium text-gray-700">Verification code</label>
             <input
               {...register('code')}
+              id="code"
               type="text"
               inputMode="numeric"
               maxLength={6}

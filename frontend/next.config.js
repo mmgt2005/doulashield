@@ -15,8 +15,8 @@ const securityHeaders = [
     key: 'Content-Security-Policy',
     value: [
       "default-src 'self'",
-      "script-src 'self'",
-      // Tailwind inlines styles at build time; tighten to a nonce in v2
+      // Next.js requires 'unsafe-inline' for hydration scripts; tighten to a nonce in v2
+      "script-src 'self' 'unsafe-inline'",
       "style-src 'self' 'unsafe-inline'",
       `connect-src 'self' ${apiUrl}`,
       "img-src 'self' data:",

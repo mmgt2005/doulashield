@@ -60,22 +60,22 @@ export default function BirthLogPage() {
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 bg-white p-4 rounded-lg border border-gray-200">
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700">Birth date</label>
-            <input {...register('birth_date')} type="date" className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm" />
+            <label htmlFor="birth_date" className="block text-sm font-medium text-gray-700">Birth date</label>
+            <input {...register('birth_date')} id="birth_date" type="date" className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm" />
             {errors.birth_date && <p className="mt-1 text-xs text-red-600">{errors.birth_date.message}</p>}
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Birth time</label>
-            <input {...register('birth_time')} type="time" className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm" />
+            <label htmlFor="birth_time" className="block text-sm font-medium text-gray-700">Birth time</label>
+            <input {...register('birth_time')} id="birth_time" type="time" className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm" />
           </div>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700">Location</label>
-          <input {...register('birth_location')} type="text" className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm" />
+          <label htmlFor="birth_location" className="block text-sm font-medium text-gray-700">Location</label>
+          <input {...register('birth_location')} id="birth_location" type="text" className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm" />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700">Notes</label>
-          <textarea {...register('notes')} rows={4} className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm" />
+          <label htmlFor="notes" className="block text-sm font-medium text-gray-700">Notes</label>
+          <textarea {...register('notes')} id="notes" rows={4} className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm" />
         </div>
         {submitError && <p className="text-sm text-red-600">{submitError}</p>}
         <button type="submit" disabled={isSubmitting} className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">

@@ -44,9 +44,10 @@ export default function NewClientPage() {
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 bg-white p-6 rounded-lg border border-gray-200">
         <div>
-          <label className="block text-sm font-medium text-gray-700">Full name</label>
+          <label htmlFor="name" className="block text-sm font-medium text-gray-700">Full name</label>
           <input
             {...register('name')}
+            id="name"
             type="text"
             className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           />
@@ -54,9 +55,10 @@ export default function NewClientPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700">Medicaid ID</label>
+          <label htmlFor="medicaid_id" className="block text-sm font-medium text-gray-700">Medicaid ID</label>
           <input
             {...register('medicaid_id')}
+            id="medicaid_id"
             type="text"
             className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           />
@@ -64,9 +66,10 @@ export default function NewClientPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700">MCO <span className="text-gray-400">(optional)</span></label>
+          <label htmlFor="mco" className="block text-sm font-medium text-gray-700">MCO <span className="text-gray-400">(optional)</span></label>
           <input
             {...register('mco')}
+            id="mco"
             type="text"
             placeholder="e.g. Molina, Anthem, UnitedHealthcare"
             className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
