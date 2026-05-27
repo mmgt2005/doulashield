@@ -15,17 +15,18 @@ export function useAuth() {
 
   useEffect(() => {
     if (!isAuthenticated && isLoading) {
+      let accessToken = ''
       axios
         .post<{ access_token: string }>(`${API}/api/v1/auth/refresh`, {}, { withCredentials: true })
         .then((res) => {
-          const token = res.data.access_token
-          setAccessToken(token)
+          accessToken = res.data.access_token
+          setAccessToken(accessToken)
           return axios.get<User>(`${API}/api/v1/auth/me`, {
-            headers: { Authorization: `Bearer ${token}` },
+            headers: { Authorization: `Bearer ${accessToken}` },
           })
         })
         .then((res) => {
-          setUser(res.data, res.config.headers.Authorization!.replace('Bearer ', ''))
+          setUser(res.data, accessToken)
         })
         .catch(() => {
           logout()
