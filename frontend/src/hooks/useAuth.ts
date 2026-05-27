@@ -7,23 +7,25 @@ import { useAuthStore } from '@/store/auth-store'
 import { setAccessToken } from '@/lib/auth'
 import { User } from '@/types/domain'
 
+const API = process.env.NEXT_PUBLIC_API_URL
+
 export function useAuth() {
   const { user, isAuthenticated, isLoading, setUser, logout, setLoading } = useAuthStore()
   const router = useRouter()
 
   useEffect(() => {
     if (!isAuthenticated && isLoading) {
-      // Attempt silent refresh on mount — uses httpOnly cookie automatically
       axios
-        .post<{ access_token: string }>(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/refresh`,
-          {},
-          { withCredentials: true }
-        )
+        .post<{ access_token: string }>(`${API}/api/v1/auth/refresh`, {}, { withCredentials: true })
         .then((res) => {
-          setAccessToken(res.data.access_token)
-          // TODO: fetch /api/v1/auth/me to hydrate user profile
-          setLoading(false)
+          const token = res.data.access_token
+          setAccessToken(token)
+          return axios.get<User>(`${API}/api/v1/auth/me`, {
+            headers: { Authorization: `Bearer ${token}` },
+          })
+        })
+        .then((res) => {
+          setUser(res.data, res.config.headers.Authorization!.replace('Bearer ', ''))
         })
         .catch(() => {
           logout()
