@@ -14,6 +14,7 @@ alembic==1.14.0
 # Auth / crypto
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
+bcrypt==3.2.2
 cryptography==43.0.3
 pyotp==2.9.0
 qrcode[pil]==8.0
