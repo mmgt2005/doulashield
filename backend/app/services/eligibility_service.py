@@ -1,12 +1,9 @@
 from __future__ import annotations
 
 import logging
-import time
 import uuid
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING
 
-import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
@@ -15,51 +12,9 @@ from app.core.encryption import decrypt_field, encrypt_field
 from app.models.patient import Patient
 from app.models.user import User
 from app.schemas.admin import ProviderSettingsRead, ProviderSettingsUpdate
-
-if TYPE_CHECKING:
-    pass
+from app.services.availity_client import AvailityClient, MCO_PAYER_IDS
 
 logger = logging.getLogger(__name__)
-
-MCO_PAYER_IDS: dict[str, str] = {
-    "AmeriHealth Caritas": "AMCRN",
-    "UPMC For You": "UPMCF",
-    "Geisinger Health Plan": "GEISP",
-    "Health Partners Plans": "HLTHP",
-    "Aetna Better Health": "AETNB",
-    "UnitedHealthcare Community Plan": "87726",
-    "Highmark Wholecare": "HMKWC",
-    "FFS": "77799",
-}
-
-# In-memory token cache: { user_id_str: (token, expires_at_epoch) }
-_token_cache: dict[str, tuple[str, float]] = {}
-
-AVAILITY_TOKEN_URL = "https://api.availity.com/availity/v1/token"
-AVAILITY_COVERAGES_URL = "https://api.availity.com/availity/v1/coverages"
-
-
-async def _get_token(client_id: str, client_secret: str, user_id: str) -> str:
-    cached = _token_cache.get(user_id)
-    if cached and time.time() < cached[1]:
-        return cached[0]
-
-    async with httpx.AsyncClient(timeout=15) as client:
-        resp = await client.post(
-            AVAILITY_TOKEN_URL,
-            data={
-                "grant_type": "client_credentials",
-                "client_id": client_id,
-                "client_secret": client_secret,
-            },
-        )
-        resp.raise_for_status()
-        data = resp.json()
-
-    token = data["access_token"]
-    expires_in = int(data.get("expires_in", 3600))
-    _token_cache[user_id] = (token, time.time() + expires_in - 60)
-    return token
 
 
 class EligibilityService:
@@ -149,26 +104,22 @@ class EligibilityService:
 
         client_id = decrypt_field(user.availity_client_id_encrypted)
         client_secret = decrypt_field(user.availity_client_secret_encrypted)
-        token = await _get_token(client_id, client_secret, str(requesting_user_id))
+        availity = AvailityClient(client_id, client_secret, str(requesting_user_id))
 
-        async with httpx.AsyncClient(timeout=20) as http:
-            resp = await http.post(
-                AVAILITY_COVERAGES_URL,
-                json={
-                    "subscriber": {
-                        "memberId": medicaid_id,
-                        "firstName": first_name,
-                        "lastName": last_name,
-                        "birthDate": patient.date_of_birth.isoformat(),
-                    },
-                    "payer": {"id": payer_id},
-                    "providers": [{"npi": user.npi}],
-                    "serviceType": ["30"],
+        coverage = await availity.post(
+            "/coverages",
+            body={
+                "subscriber": {
+                    "memberId": medicaid_id,
+                    "firstName": first_name,
+                    "lastName": last_name,
+                    "birthDate": patient.date_of_birth.isoformat(),
                 },
-                headers={"Authorization": f"Bearer {token}"},
-            )
-            resp.raise_for_status()
-            coverage = resp.json()
+                "payer": {"id": payer_id},
+                "providers": [{"npi": user.npi}],
+                "serviceType": ["30"],
+            },
+        )
 
         active = coverage.get("subscriberStatus", "").lower() == "active"
         plan_name = coverage.get("planDescription") or mco
