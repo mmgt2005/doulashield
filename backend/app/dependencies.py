@@ -35,9 +35,9 @@ async def get_supabase() -> AsyncClient:  # type: ignore[return]
 # ── Audit logger ──────────────────────────────────────────────────────────────
 
 async def get_audit(
-    supabase: Annotated[AsyncClient, Depends(get_supabase)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> AuditLogger:
-    return AuditLogger(supabase)
+    return AuditLogger(db)
 
 
 # ── Auth ──────────────────────────────────────────────────────────────────────
