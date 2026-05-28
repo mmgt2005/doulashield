@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r 'if (.tool_input.command | test(\"git commit\")) then \"{\\\"hookSpecificOutput\\\":{\\\"hookEventName\\\":\\\"PostToolUse\\\",\\\"additionalContext\\\":\\\"CHANGELOG.md must be updated to reflect this commit. Add an entry under [Unreleased] or a new dated section before this session ends.\\\"}}\" else \"\" end'",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

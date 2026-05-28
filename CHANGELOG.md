@@ -1,39 +1,168 @@
 # DoulaShield Changelog
 
-All notable changes to this project are documented here.
+All notable changes to this project are documented here. This file is updated with every commit.
 
 ---
 
 ## [Unreleased]
 
+---
+
+## [2026-05-28] — AI-Powered SOAP Note Clinical Translation
+
 ### Added
-- **Image OCR scanning** — providers can photograph Medicaid cards and handwritten handbook pages; Claude Haiku 4.5 extracts structured data and pre-fills forms for review before saving
-- **Document storage** — scanned images are stored in Supabase Storage (`client-documents` bucket, private) and linked to each record for HIPAA audit documentation
-- **`GET /ocr/image`** — returns a 60-second signed URL for stored images; access is audited
-- **Mobile-first responsive layout** — hamburger drawer navigation on phones/tablets; side-by-side sidebar on desktop (≥1024px)
-- **Responsive form fixes** — birth log and prenatal log forms stack vertically on mobile
+- **"Draft SOAP Note" button** on visit form — sends plain-language SOAP fields to Claude Haiku 4.5, which translates them into professional clinical documentation meeting Pennsylvania Medicaid Type 13 audit standards (T1032/T1033)
+- **Guided placeholder text** on each SOAP textarea: specific questions prompt doulas on what to write (e.g., "How is the client feeling today? Did she report any specific concerns?")
+- **AI draft review panel** — translated text is shown inline for provider review; "Apply to Form" populates the textareas; "Dismiss" discards without applying. No AI output is saved without provider review.
+- `POST /ocr/soap-translate` endpoint — accepts the 4 SOAP fields, returns clinical translations, emits `TRANSLATE_SOAP_NOTE` audit log entry
+- `translate_soap()` / `_run_soap_translate()` in `ocr_service.py` — same `asyncio.to_thread` pattern as OCR; `max_tokens=2048`; prompt enforces no hallucination, Z-codes only, T1032/T1033 justification
+
+---
+
+## [2026-05-28] — Visit Location Type: In-Person vs Telehealth
+
+### Added
+- **Location type toggle** on visit form — "In Person" or "Telehealth" buttons at top of each visit
+- **Telehealth panel** — when Telehealth is selected, shows provider's configured meeting link; "Start Telehealth" opens link in new tab and records `visit_started_at`; prompts to configure link in Settings if not set
+- **Alternate location field** — when provider is >500 ft from client on an in-person visit, amber warning now includes a text field to describe the actual meeting location (e.g., clinic, hospital); saved as `alternate_location`
+- **Location icons on visit slot cards** — blue video icon for telehealth visits, grey pin icon for in-person; older records without `location_type` show no icon
+- **Telehealth meeting link in Settings** — new "Telehealth" section; platform-agnostic URL field (Doxy.me recommended: free, HIPAA-compliant, no patient download required)
+
+### Backend
+- Migration 0007: adds `location_type` (varchar 20) and `alternate_location` (text) to `visits`; `telehealth_link` (text) to `users`
+- `ProviderSettingsUpdate` / `ProviderSettingsRead` schemas include `telehealth_link`
+- `eligibility_service.py` `get_provider_settings` / `update_provider_settings` handle `telehealth_link`
+
+---
+
+## [2026-05-28] — Availity API Expansion
+
+### Added
+- **`AvailityClient`** (`services/availity_client.py`) — shared async HTTP client with per-provider OAuth token caching (55-min Redis TTL); centralises `MCO_PAYER_IDS` mapping; exposes `get()`, `post()`, `post_multipart()`. Replaces duplicated HTTP boilerplate in `eligibility_service.py`.
+- **Claims** (`POST /patients/{id}/claims`, `GET /patients/{id}/claims`, `POST /claims/{id}/status-check`) — submits 837P claims to Availity, tracks status; `claims` table with `availity_claim_id`, `status`, `billed_amount`, `paid_amount`, `raw_response`
+- **Prior Authorization** (`POST /patients/{id}/prior-authorizations`, `GET`, `POST /{id}/status-check`) — submits and tracks 278 prior auth requests; `prior_authorizations` table
+- **Remittance Advice** (`POST /remittances/fetch`, `GET /remittances`) — fetches 835 EOBs from Availity; upserts by `availity_remit_id`; `remittances` table
+- **Document Submission** (`POST /documents/submit`) — multipart upload to Availity; supports PDF, JPEG, PNG, XML up to 10 MB
+- **Provider Directory** (`GET /directory/search`) — searches Availity provider directory; no DB persistence; audits `DIRECTORY_SEARCH`
+- Migration 0006: creates `claims`, `prior_authorizations`, `remittances` tables with RLS
 
 ### Changed
-- `Patient`, `SOAPNote`, `PrenatalPostnatalLog`, `BirthLog` models and schemas updated to store `source_image_path` / `medicaid_card_image_path`
-- App layout `p-6` padding reduced to `p-4` on mobile
+- `eligibility_service.py` now instantiates `AvailityClient` instead of managing its own HTTP/token logic
+
+---
+
+## [2026-05-28] — Date of Birth, Provider Settings & Eligibility Verification
+
+### Added
+- **Date of birth** field on patient profile — displayed in header, editable via "Edit profile", auto-populated from Medicaid card and prenatal page OCR scans
+- **Eligibility check** on client profile — "Check eligibility" button calls Availity 270/271 API; shows green "Active" or red "Inactive" badge + last-checked date; "Re-check" refreshes
+- **Provider Settings page** (`/settings`) — NPI field, Availity Client ID / Client Secret (write-only; shows "Connected ✓" badge), saves to `PATCH /api/v1/auth/me/provider-settings`
+- `POST /patients/{id}/eligibility-check` endpoint — decrypts provider credentials, calls Availity, saves `eligibility_status` + `eligibility_checked_at` on patient, audits `CHECK_ELIGIBILITY`
+- Migration 0005: adds `date_of_birth`, `eligibility_status`, `eligibility_checked_at` to `patients`; adds `npi`, `availity_client_id_encrypted`, `availity_client_secret_encrypted` to `users`
+
+### Changed
+- Medicaid card OCR prompt now extracts `date_of_birth`
+- Prenatal page OCR prompt now extracts `date_of_birth` from page header
+
+---
+
+## [2026-05-28] — Medicaid Card Scanner in Edit Profile
+
+### Added
+- `ImageUploadScanner` added to the "Edit profile" inline form — scan a replacement Medicaid card to pre-fill name, MCO, address, and update `medicaid_card_image_path`
+
+---
+
+## [2026-05-28] — MCO Name Normalization
+
+### Changed
+- Medicaid card OCR prompt normalizes scanned MCO names to the 7 canonical Pennsylvania MCO names (AmeriHealth Caritas, UPMC For You, Geisinger Health Plan, Health Partners Plans, Aetna Better Health, UnitedHealthcare Community Plan, Highmark Wholecare) plus FFS. Maps known aliases: Keystone First → AmeriHealth Caritas, Gateway Health → Highmark Wholecare, HPP → Health Partners Plans.
+
+---
+
+## [2026-05-28] — Camera-Only Mobile Scan Button
+
+### Changed
+- `ImageUploadScanner` now uses `capture="environment"` on the file input — opens rear camera directly on mobile (iOS/Android) instead of showing the file picker. Desktop behavior unchanged. Button label updated to "Take photo".
+
+---
+
+## [2026-05-28] — Geocode Verified Indicator
+
+### Added
+- Green map-pin icon appears inside address input fields when the address has been geocoded (lat/lng confirmed)
+- Green map-pin icon shown inline before the client's address in the profile header when coordinates are on file
+- `geocoded` prop added to `AddressAutocomplete` component
+
+---
+
+## [2026-05-28] — Address Autocomplete
+
+### Added
+- `AddressAutocomplete` component — debounced Nominatim suggestions dropdown (≥3 chars, 400 ms delay, up to 5 results); `onMouseDown` selection fires before blur; click-outside closes dropdown
+- `suggestAddresses()` in `lib/geo.ts` — queries Nominatim, returns `{ label, lat, lng }[]`
+- Address fields on new-client form and edit-profile form now use autocomplete; selecting a suggestion sets `latitude`/`longitude` immediately; `geocodeAddress()` fallback still runs on submit if no suggestion was chosen
+
+### Fixed
+- CSP updated to allow `nominatim.openstreetmap.org`
+- Address field properly registered with React Hook Form in edit profile
+
+---
+
+## [2026-05-28] — Start Visit, Client Address & Provider Location
+
+### Added
+- **Address field** on patient profile — stored plaintext; geocoded to lat/lng via Nominatim on save
+- **"Edit profile" inline form** on client detail page — edit name, MCO, DOB, and address without leaving the page
+- **"Start Visit" panel** on visit form — records provider GPS coordinates and timestamp; immediately PUTs `visit_started_at`, `provider_latitude`, `provider_longitude` to the visit record
+- **Distance check** — Haversine distance between provider and client address shown on green banner; amber warning if >500 ft
+- `haversineFeet()` and `geocodeAddress()` in `lib/geo.ts`
+- Migration 0004: adds `address`, `latitude`, `longitude` to `patients`; adds `visit_started_at`, `provider_latitude`, `provider_longitude` to `visits`
+
+### Fixed
+- CORS allowlist updated to include `PUT` method for visits upsert
+
+---
+
+## [2026-05-28] — Structured 13-Visit Tracker
+
+### Added
+- **13-slot visit grid** replaces 3-card layout on client overview — 6 prenatal, 1 labor, 6 postnatal slots; completed slots show checkmark + visit date; pending slots are clearly actionable
+- **Unified visit form** (`/clients/[id]/visits/[type]`) — single page handles prenatal, postnatal (entry + SOAP), and labor (birth details + SOAP) based on `slot.isLabor`
+- `VISIT_SLOTS` / `VISIT_GROUPS` / `getSlotConfig()` in `lib/visit-config.ts` — single source of truth for visit metadata and OCR page type mapping
+- `visits` table — `UNIQUE(patient_id, visit_type)` enforces one record per slot; PostgreSQL upsert via `INSERT ... ON CONFLICT DO UPDATE`
+- `GET /patients/{id}/visits`, `GET /patients/{id}/visits/{type}`, `PUT /patients/{id}/visits/{type}` endpoints
+- Migration 0003: creates `public.visits` table with RLS
+
+---
+
+## [2026-05-28] — Image OCR Scanning & Mobile Layout
+
+### Added
+- **Image OCR scanning** — providers photograph Medicaid cards and handwritten handbook pages; Claude Haiku 4.5 extracts structured data and pre-fills forms for review before saving
+- **Document storage** — scanned images stored in Supabase Storage (`client-documents` bucket, private) and linked to each record for HIPAA audit documentation
+- **`GET /ocr/image`** — returns a 60-second signed URL for stored images; access audited
+- **Mobile-first responsive layout** — hamburger drawer navigation on phones/tablets; side-by-side sidebar on desktop (≥1024px)
+- **Responsive form fixes** — birth log and prenatal log forms stack vertically on mobile
+- `ImageUploadScanner` reusable component — multipart upload with inline spinner; no image preview (avoids rendering PHI in browser)
+- Migration 0002: adds `source_image_path` to `soap_notes`, `prenatal_postnatal_logs`, `birth_logs`; adds `medicaid_card_image_path` to `patients`
 
 ### Infrastructure
 - Add `ANTHROPIC_API_KEY` to Railway Variables
 - Create `client-documents` private bucket in Supabase Storage
-- Run migration 0002 to add image path columns
 
 ---
 
-## [2026-05-28] — Initial deployment
+## [2026-05-28] — Initial Deployment
 
 ### Added
 - HIPAA-compliant FastAPI backend deployed to Railway
 - Next.js 15 frontend deployed to Vercel
 - Supabase PostgreSQL database with Row Level Security
 - JWT authentication with bcrypt password hashing
-- TOTP-based MFA setup flow
+- TOTP-based MFA setup and enforcement
 - Role-based access control (provider / admin)
-- Fernet encryption for Medicaid ID field
+- Fernet symmetric encryption for Medicaid ID field
 - Immutable audit log (PostgreSQL rules block UPDATE/DELETE)
 - Rate limiting on login endpoint (10 req/min via slowapi + Redis)
 - Session timeout: 15-minute inactivity timer with 60-second warning modal
@@ -41,8 +170,8 @@ All notable changes to this project are documented here.
 - Security headers: HSTS, CSP, X-Frame-Options
 - Patient CRUD with soft-delete (admin only)
 - SOAP notes (create, list, update)
-- Prenatal / postnatal log entries (immutable after creation)
-- Birth log entries (immutable after creation)
+- Prenatal / postnatal log entries
+- Birth log entries
 - Admin: user management, audit log viewer
 - Medicaid ID available only via separate privileged endpoint with dedicated audit entry
-- Alembic migration 0001: initial schema with all PHI tables and RLS policies
+- Migration 0001: initial schema with all PHI tables and RLS policies
