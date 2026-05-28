@@ -15,6 +15,9 @@ export interface Patient {
   provider_id: string
   name: string
   mco: string | null
+  address: string | null
+  latitude: number | null
+  longitude: number | null
   is_active: boolean
   created_at: string
   updated_at: string
@@ -78,6 +81,9 @@ export interface Visit {
   birth_location: string | null
   birth_notes: string | null
   source_image_path: string | null
+  visit_started_at: string | null
+  provider_latitude: number | null
+  provider_longitude: number | null
   created_at: string
   updated_at: string
 }

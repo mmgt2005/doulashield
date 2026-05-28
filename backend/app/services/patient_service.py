@@ -17,6 +17,9 @@ def _to_read(patient: Patient) -> PatientRead:
         provider_id=patient.provider_id,
         name=decrypt_field(patient.name_encrypted),
         mco=patient.mco,
+        address=patient.address,
+        latitude=patient.latitude,
+        longitude=patient.longitude,
         medicaid_card_image_path=patient.medicaid_card_image_path,
         is_active=patient.is_active,
         created_at=patient.created_at,
@@ -37,6 +40,9 @@ class PatientService:
             name_encrypted=encrypt_field(data.name),
             medicaid_id_encrypted=encrypt_field(data.medicaid_id),
             mco=data.mco,
+            address=data.address,
+            latitude=data.latitude,
+            longitude=data.longitude,
             medicaid_card_image_path=data.medicaid_card_image_path,
         )
         self._db.add(patient)
@@ -119,6 +125,12 @@ class PatientService:
             patient.name_encrypted = encrypt_field(data.name)
         if data.mco is not None:
             patient.mco = data.mco
+        if data.address is not None:
+            patient.address = data.address
+        if data.latitude is not None:
+            patient.latitude = data.latitude
+        if data.longitude is not None:
+            patient.longitude = data.longitude
 
         await self._db.commit()
         await self._db.refresh(patient)

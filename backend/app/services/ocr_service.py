@@ -17,7 +17,8 @@ logger = logging.getLogger(__name__)
 _PROMPTS: dict[str, str] = {
     "medicaid_card": (
         "Extract information from this Medicaid card image and return ONLY valid JSON with no commentary:\n"
-        '{"name": "full patient name as printed", "medicaid_id": "member or beneficiary ID", "mco": "plan or MCO name"}\n'
+        '{"name": "full patient name as printed", "medicaid_id": "member or beneficiary ID", '
+        '"mco": "plan or MCO name", "address": "beneficiary street address if printed or null"}\n'
         "Use null for any field you cannot read clearly."
     ),
     "soap_note": (
@@ -27,10 +28,12 @@ _PROMPTS: dict[str, str] = {
         '"objective": "text or null", "assessment": "text or null", "plan": "text or null"}'
     ),
     "prenatal": (
-        "This is a handwritten prenatal or postnatal visit log page.\n"
+        "This is a handwritten prenatal or postnatal visit log page from a doula's client care handbook.\n"
+        "The page header may include the client's name and address — extract those too if present.\n"
         "Return ONLY valid JSON with no commentary:\n"
         '{"log_type": "prenatal or postnatal", "entry_date": "YYYY-MM-DD or null", '
-        '"entry": "all visit notes combined into a single text block"}'
+        '"entry": "all visit notes combined into a single text block", '
+        '"address": "client street address from header or null"}'
     ),
     "birth": (
         "This is a handwritten birth log page from a doula's client care handbook.\n"

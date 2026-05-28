@@ -3,10 +3,18 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
+import { useForm } from 'react-hook-form'
 import axios from 'axios'
 import { getAccessToken } from '@/lib/auth'
+import { geocodeAddress } from '@/lib/geo'
 import { Patient, Visit, VisitType } from '@/types/domain'
 import { VISIT_SLOTS, VISIT_GROUPS } from '@/lib/visit-config'
+
+interface EditFormData {
+  name: string
+  mco: string
+  address: string
+}
 
 export default function ClientDetailPage() {
   const { clientId } = useParams<{ clientId: string }>()
@@ -14,6 +22,10 @@ export default function ClientDetailPage() {
   const [visitMap, setVisitMap] = useState<Map<VisitType, Visit>>(new Map())
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [editing, setEditing] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
+
+  const { register, handleSubmit, reset, formState: { isSubmitting } } = useForm<EditFormData>()
 
   useEffect(() => {
     const headers = { Authorization: `Bearer ${getAccessToken()}` }
@@ -33,14 +45,77 @@ export default function ClientDetailPage() {
       .finally(() => setLoading(false))
   }, [clientId])
 
+  const startEdit = () => {
+    if (!patient) return
+    reset({ name: patient.name, mco: patient.mco ?? '', address: patient.address ?? '' })
+    setSaveError(null)
+    setEditing(true)
+  }
+
+  const onSaveProfile = async (data: EditFormData) => {
+    setSaveError(null)
+    try {
+      let lat: number | undefined
+      let lng: number | undefined
+      if (data.address) {
+        const coords = await geocodeAddress(data.address)
+        if (coords) { lat = coords.lat; lng = coords.lng }
+      }
+      const res = await axios.patch<Patient>(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/patients/${clientId}`,
+        { name: data.name, mco: data.mco || null, address: data.address || null, latitude: lat ?? null, longitude: lng ?? null },
+        { headers: { Authorization: `Bearer ${getAccessToken()}` } }
+      )
+      setPatient(res.data)
+      setEditing(false)
+    } catch {
+      setSaveError('Failed to save. Please try again.')
+    }
+  }
+
   if (loading) return <p className="text-sm text-gray-500">Loading…</p>
   if (error || !patient) return <p className="text-sm text-red-600">{error ?? 'Not found.'}</p>
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">{patient.name}</h1>
-        {patient.mco && <p className="mt-1 text-sm text-gray-500">MCO: {patient.mco}</p>}
+        {editing ? (
+          <form onSubmit={handleSubmit(onSaveProfile)} className="space-y-3 bg-white p-4 rounded-lg border border-gray-200 max-w-md">
+            <h2 className="text-sm font-semibold text-gray-700">Edit profile</h2>
+            <div>
+              <label className="block text-xs font-medium text-gray-600">Full name</label>
+              <input {...register('name')} className="mt-1 block w-full rounded border border-gray-300 px-3 py-1.5 text-sm" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600">MCO</label>
+              <input {...register('mco')} className="mt-1 block w-full rounded border border-gray-300 px-3 py-1.5 text-sm" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600">Home address</label>
+              <input {...register('address')} className="mt-1 block w-full rounded border border-gray-300 px-3 py-1.5 text-sm" />
+            </div>
+            {saveError && <p className="text-xs text-red-600">{saveError}</p>}
+            <div className="flex gap-2">
+              <button type="submit" disabled={isSubmitting} className="rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50">
+                {isSubmitting ? 'Saving…' : 'Save'}
+              </button>
+              <button type="button" onClick={() => setEditing(false)} className="rounded border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50">
+                Cancel
+              </button>
+            </div>
+          </form>
+        ) : (
+          <>
+            <div className="flex items-start justify-between">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">{patient.name}</h1>
+                {patient.mco && <p className="mt-1 text-sm text-gray-500">MCO: {patient.mco}</p>}
+                {patient.address && <p className="mt-0.5 text-sm text-gray-500">{patient.address}</p>}
+              </div>
+              <button onClick={startEdit} className="text-xs text-blue-600 hover:text-blue-800 mt-1">Edit profile</button>
+            </div>
+          </>
+        )}
       </div>
 
       {VISIT_GROUPS.map(({ key, label }) => {

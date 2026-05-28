@@ -7,12 +7,16 @@ import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import axios from 'axios'
 import { getAccessToken } from '@/lib/auth'
+import { geocodeAddress } from '@/lib/geo'
 import ImageUploadScanner from '@/components/ui/ImageUploadScanner'
 
 const schema = z.object({
   name: z.string().min(1, 'Name is required'),
   medicaid_id: z.string().min(1, 'Medicaid ID is required'),
   mco: z.string().optional(),
+  address: z.string().optional(),
+  latitude: z.number().optional(),
+  longitude: z.number().optional(),
   medicaid_card_image_path: z.string().optional(),
 })
 
@@ -30,12 +34,20 @@ export default function NewClientPage() {
     if (data.name) setValue('name', String(data.name))
     if (data.medicaid_id) setValue('medicaid_id', String(data.medicaid_id))
     if (data.mco) setValue('mco', String(data.mco))
+    if (data.address) setValue('address', String(data.address))
     if (data.image_path) setValue('medicaid_card_image_path', String(data.image_path))
   }
 
   const onSubmit = async (data: FormData) => {
     setError(null)
     try {
+      if (data.address) {
+        const coords = await geocodeAddress(data.address)
+        if (coords) {
+          data.latitude = coords.lat
+          data.longitude = coords.lng
+        }
+      }
       const res = await axios.post(
         `${process.env.NEXT_PUBLIC_API_URL}/api/v1/patients`,
         data,
@@ -87,6 +99,17 @@ export default function NewClientPage() {
             id="mco"
             type="text"
             placeholder="e.g. Molina, Anthem, UnitedHealthcare"
+            className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          />
+        </div>
+
+        <div>
+          <label htmlFor="address" className="block text-sm font-medium text-gray-700">Home address <span className="text-gray-400">(optional)</span></label>
+          <input
+            {...register('address')}
+            id="address"
+            type="text"
+            placeholder="123 Main St, City, State"
             className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           />
         </div>
