@@ -8,6 +8,7 @@ import axios from 'axios'
 import { getAccessToken } from '@/lib/auth'
 import { geocodeAddress } from '@/lib/geo'
 import AddressAutocomplete from '@/components/ui/AddressAutocomplete'
+import ImageUploadScanner from '@/components/ui/ImageUploadScanner'
 import { Patient, Visit, VisitType } from '@/types/domain'
 import { VISIT_SLOTS, VISIT_GROUPS } from '@/lib/visit-config'
 
@@ -17,6 +18,7 @@ interface EditFormData {
   address: string
   latitude?: number
   longitude?: number
+  medicaid_card_image_path?: string
 }
 
 export default function ClientDetailPage() {
@@ -48,6 +50,17 @@ export default function ClientDetailPage() {
       .finally(() => setLoading(false))
   }, [clientId])
 
+  const handleEditScanned = (data: Record<string, unknown>) => {
+    if (data.name) setValue('name', String(data.name))
+    if (data.mco) setValue('mco', String(data.mco))
+    if (data.address) {
+      setValue('address', String(data.address))
+      setValue('latitude', undefined)
+      setValue('longitude', undefined)
+    }
+    if (data.image_path) setValue('medicaid_card_image_path', String(data.image_path))
+  }
+
   const startEdit = () => {
     if (!patient) return
     reset({ name: patient.name, mco: patient.mco ?? '', address: patient.address ?? '', latitude: patient.latitude ?? undefined, longitude: patient.longitude ?? undefined })
@@ -67,7 +80,7 @@ export default function ClientDetailPage() {
       }
       const res = await axios.patch<Patient>(
         `${process.env.NEXT_PUBLIC_API_URL}/api/v1/patients/${clientId}`,
-        { name: data.name, mco: data.mco || null, address: data.address || null, latitude: lat ?? null, longitude: lng ?? null },
+        { name: data.name, mco: data.mco || null, address: data.address || null, latitude: lat ?? null, longitude: lng ?? null, ...(data.medicaid_card_image_path ? { medicaid_card_image_path: data.medicaid_card_image_path } : {}) },
         { headers: { Authorization: `Bearer ${getAccessToken()}` } }
       )
       setPatient(res.data)
@@ -86,6 +99,11 @@ export default function ClientDetailPage() {
         {editing ? (
           <form onSubmit={handleSubmit(onSaveProfile)} className="space-y-3 bg-white p-4 rounded-lg border border-gray-200 max-w-md">
             <h2 className="text-sm font-semibold text-gray-700">Edit profile</h2>
+            <ImageUploadScanner
+              endpoint="/api/v1/ocr/medicaid-card"
+              onExtracted={handleEditScanned}
+              label="Scan updated Medicaid card"
+            />
             <div>
               <label className="block text-xs font-medium text-gray-600">Full name</label>
               <input {...register('name')} className="mt-1 block w-full rounded border border-gray-300 px-3 py-1.5 text-sm" />
@@ -110,6 +128,7 @@ export default function ClientDetailPage() {
               <input type="hidden" {...register('address')} />
               <input type="hidden" {...register('latitude', { valueAsNumber: true })} />
               <input type="hidden" {...register('longitude', { valueAsNumber: true })} />
+              <input type="hidden" {...register('medicaid_card_image_path')} />
             </div>
             {saveError && <p className="text-xs text-red-600">{saveError}</p>}
             <div className="flex gap-2">
