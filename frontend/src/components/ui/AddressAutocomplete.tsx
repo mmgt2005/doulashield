@@ -11,6 +11,7 @@ interface Props {
   placeholder?: string
   inputClassName?: string
   disabled?: boolean
+  geocoded?: boolean
 }
 
 export default function AddressAutocomplete({
@@ -21,6 +22,7 @@ export default function AddressAutocomplete({
   placeholder,
   inputClassName,
   disabled,
+  geocoded,
 }: Props) {
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([])
   const [open, setOpen] = useState(false)
@@ -84,13 +86,20 @@ export default function AddressAutocomplete({
           onKeyDown={(e) => { if (e.key === 'Escape') setOpen(false) }}
           disabled={disabled}
           placeholder={placeholder}
-          className={inputClassName}
+          className={`${inputClassName ?? ''} ${(loading || geocoded) ? 'pr-8' : ''}`}
         />
         {loading && (
           <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2">
             <svg className="h-4 w-4 animate-spin text-gray-400" viewBox="0 0 24 24" fill="none">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+            </svg>
+          </span>
+        )}
+        {!loading && geocoded && (
+          <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2">
+            <svg className="h-4 w-4 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
             </svg>
           </span>
         )}

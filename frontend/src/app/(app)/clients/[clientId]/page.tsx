@@ -50,7 +50,7 @@ export default function ClientDetailPage() {
 
   const startEdit = () => {
     if (!patient) return
-    reset({ name: patient.name, mco: patient.mco ?? '', address: patient.address ?? '' })
+    reset({ name: patient.name, mco: patient.mco ?? '', address: patient.address ?? '', latitude: patient.latitude ?? undefined, longitude: patient.longitude ?? undefined })
     setSaveError(null)
     setEditing(true)
   }
@@ -104,6 +104,7 @@ export default function ClientDetailPage() {
                   setValue('latitude', lat)
                   setValue('longitude', lng)
                 }}
+                geocoded={watch('latitude') != null && !isNaN(Number(watch('latitude')))}
                 inputClassName="mt-1 block w-full rounded border border-gray-300 px-3 py-1.5 text-sm"
               />
               <input type="hidden" {...register('latitude', { valueAsNumber: true })} />
@@ -125,7 +126,16 @@ export default function ClientDetailPage() {
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">{patient.name}</h1>
                 {patient.mco && <p className="mt-1 text-sm text-gray-500">MCO: {patient.mco}</p>}
-                {patient.address && <p className="mt-0.5 text-sm text-gray-500">{patient.address}</p>}
+                {patient.address && (
+                  <p className="mt-0.5 flex items-center gap-1 text-sm text-gray-500">
+                    {patient.latitude !== null && (
+                      <svg className="h-3.5 w-3.5 shrink-0 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                    {patient.address}
+                  </p>
+                )}
               </div>
               <button onClick={startEdit} className="text-xs text-blue-600 hover:text-blue-800 mt-1">Edit profile</button>
             </div>
