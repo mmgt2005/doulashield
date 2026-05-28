@@ -15,6 +15,7 @@ const schema = z.object({
   name: z.string().min(1, 'Name is required'),
   medicaid_id: z.string().min(1, 'Medicaid ID is required'),
   mco: z.string().optional(),
+  date_of_birth: z.string().optional(),
   address: z.string().optional(),
   latitude: z.number().optional(),
   longitude: z.number().optional(),
@@ -35,6 +36,7 @@ export default function NewClientPage() {
     if (data.name) setValue('name', String(data.name))
     if (data.medicaid_id) setValue('medicaid_id', String(data.medicaid_id))
     if (data.mco) setValue('mco', String(data.mco))
+    if (data.date_of_birth) setValue('date_of_birth', String(data.date_of_birth))
     if (data.address) setValue('address', String(data.address))
     if (data.image_path) setValue('medicaid_card_image_path', String(data.image_path))
   }
@@ -101,6 +103,16 @@ export default function NewClientPage() {
             type="text"
             placeholder="e.g. Molina, Anthem, UnitedHealthcare"
             className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          />
+        </div>
+
+        <div>
+          <label htmlFor="date_of_birth" className="block text-sm font-medium text-gray-700">Date of birth <span className="text-gray-400">(optional)</span></label>
+          <input
+            {...register('date_of_birth')}
+            id="date_of_birth"
+            type="date"
+            className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:w-48"
           />
         </div>
 

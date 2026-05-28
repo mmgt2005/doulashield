@@ -15,9 +15,13 @@ export interface Patient {
   provider_id: string
   name: string
   mco: string | null
+  date_of_birth: string | null
   address: string | null
   latitude: number | null
   longitude: number | null
+  medicaid_card_image_path: string | null
+  eligibility_status: string | null
+  eligibility_checked_at: string | null
   is_active: boolean
   created_at: string
   updated_at: string

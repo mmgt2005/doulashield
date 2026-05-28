@@ -135,16 +135,31 @@ export default function VisitFormPage() {
     if (data.plan) setValue('plan', String(data.plan))
     if (data.image_path) setValue('source_image_path', String(data.image_path))
 
+    const base = process.env.NEXT_PUBLIC_API_URL
+    const headers = { Authorization: `Bearer ${getAccessToken()}` }
+
     // Auto-save extracted address to patient profile
     if (data.address && patient) {
       try {
         const coords = await geocodeAddress(String(data.address))
         await axios.patch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/patients/${clientId}`,
+          `${base}/api/v1/patients/${clientId}`,
           { address: String(data.address), latitude: coords?.lat ?? null, longitude: coords?.lng ?? null },
-          { headers: { Authorization: `Bearer ${getAccessToken()}` } }
+          { headers }
         )
         setPatient((p) => p ? { ...p, address: String(data.address), latitude: coords?.lat ?? null, longitude: coords?.lng ?? null } : p)
+      } catch { /* non-blocking */ }
+    }
+
+    // Auto-save extracted DOB to patient profile (only if not already set)
+    if (data.date_of_birth && patient && !patient.date_of_birth) {
+      try {
+        await axios.patch(
+          `${base}/api/v1/patients/${clientId}`,
+          { date_of_birth: String(data.date_of_birth) },
+          { headers }
+        )
+        setPatient((p) => p ? { ...p, date_of_birth: String(data.date_of_birth) } : p)
       } catch { /* non-blocking */ }
     }
   }

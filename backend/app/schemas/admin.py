@@ -30,6 +30,17 @@ class UserRead(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class ProviderSettingsUpdate(BaseModel):
+    npi: str | None = None
+    availity_client_id: str | None = None
+    availity_client_secret: str | None = None
+
+
+class ProviderSettingsRead(BaseModel):
+    npi: str | None
+    availity_connected: bool
+
+
 class AuditLogRead(BaseModel):
     id: uuid.UUID
     user_id: uuid.UUID | None

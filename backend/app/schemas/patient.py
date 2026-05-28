@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 
 from pydantic import BaseModel
 
@@ -8,6 +8,7 @@ class PatientCreate(BaseModel):
     name: str
     medicaid_id: str
     mco: str | None = None
+    date_of_birth: date | None = None
     address: str | None = None
     latitude: float | None = None
     longitude: float | None = None
@@ -17,9 +18,11 @@ class PatientCreate(BaseModel):
 class PatientUpdate(BaseModel):
     name: str | None = None
     mco: str | None = None
+    date_of_birth: date | None = None
     address: str | None = None
     latitude: float | None = None
     longitude: float | None = None
+    medicaid_card_image_path: str | None = None
     # medicaid_id updates go through a separate admin-only flow
 
 
@@ -28,10 +31,13 @@ class PatientRead(BaseModel):
     provider_id: uuid.UUID
     name: str           # Decrypted by service before returning
     mco: str | None
+    date_of_birth: date | None
     address: str | None
     latitude: float | None
     longitude: float | None
     medicaid_card_image_path: str | None
+    eligibility_status: str | None
+    eligibility_checked_at: datetime | None
     is_active: bool
     created_at: datetime
     updated_at: datetime

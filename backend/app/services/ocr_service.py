@@ -18,6 +18,7 @@ _PROMPTS: dict[str, str] = {
     "medicaid_card": (
         "Extract information from this Medicaid card image and return ONLY valid JSON with no commentary:\n"
         '{"name": "full patient name as printed", "medicaid_id": "member or beneficiary ID", '
+        '"date_of_birth": "member date of birth in YYYY-MM-DD format or null", '
         '"mco": "normalize to exactly one of these Pennsylvania MCO names: '
         "AmeriHealth Caritas, UPMC For You, Geisinger Health Plan, Health Partners Plans, "
         "Aetna Better Health, UnitedHealthcare Community Plan, Highmark Wholecare, FFS. "
@@ -35,11 +36,12 @@ _PROMPTS: dict[str, str] = {
     ),
     "prenatal": (
         "This is a handwritten prenatal or postnatal visit log page from a doula's client care handbook.\n"
-        "The page header may include the client's name and address — extract those too if present.\n"
+        "The page header may include the client's name, address, and date of birth — extract those too if present.\n"
         "Return ONLY valid JSON with no commentary:\n"
         '{"log_type": "prenatal or postnatal", "entry_date": "YYYY-MM-DD or null", '
         '"entry": "all visit notes combined into a single text block", '
-        '"address": "client street address from header or null"}'
+        '"address": "client street address from header or null", '
+        '"date_of_birth": "client date of birth in YYYY-MM-DD format from header or null"}'
     ),
     "birth": (
         "This is a handwritten birth log page from a doula's client care handbook.\n"

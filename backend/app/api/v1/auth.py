@@ -17,7 +17,7 @@ from app.dependencies import (
 )
 from app.core.audit import AuditLogger
 from app.models.user import User
-from app.schemas.admin import UserRead
+from app.schemas.admin import ProviderSettingsRead, ProviderSettingsUpdate, UserRead
 from app.schemas.auth import (
     LoginRequest,
     MFASetupResponse,
@@ -26,6 +26,7 @@ from app.schemas.auth import (
     TokenResponse,
 )
 from app.services.auth_service import AuthService
+from app.services.eligibility_service import EligibilityService
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 limiter = Limiter(key_func=get_remote_address)
@@ -123,6 +124,34 @@ async def get_me(
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     return UserRead.model_validate(user)
+
+
+@router.get("/me/provider-settings", response_model=ProviderSettingsRead)
+async def get_provider_settings(
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    audit: Annotated[AuditLogger, Depends(get_audit)],
+) -> ProviderSettingsRead:
+    try:
+        return await EligibilityService(db, audit).get_provider_settings(current_user.id)
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+
+
+@router.patch("/me/provider-settings", response_model=ProviderSettingsRead)
+async def update_provider_settings(
+    request: Request,
+    body: ProviderSettingsUpdate,
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    audit: Annotated[AuditLogger, Depends(get_audit)],
+) -> ProviderSettingsRead:
+    try:
+        return await EligibilityService(db, audit).update_provider_settings(
+            current_user.id, body, get_client_ip(request), get_user_agent(request)
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
 @router.post("/mfa/verify", status_code=status.HTTP_204_NO_CONTENT)

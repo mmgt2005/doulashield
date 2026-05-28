@@ -1,0 +1,197 @@
+from __future__ import annotations
+
+import logging
+import time
+import uuid
+from datetime import datetime, timezone
+from typing import TYPE_CHECKING
+
+import httpx
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
+
+from app.core.audit import AuditLogger
+from app.core.encryption import decrypt_field, encrypt_field
+from app.models.patient import Patient
+from app.models.user import User
+from app.schemas.admin import ProviderSettingsRead, ProviderSettingsUpdate
+
+if TYPE_CHECKING:
+    pass
+
+logger = logging.getLogger(__name__)
+
+MCO_PAYER_IDS: dict[str, str] = {
+    "AmeriHealth Caritas": "AMCRN",
+    "UPMC For You": "UPMCF",
+    "Geisinger Health Plan": "GEISP",
+    "Health Partners Plans": "HLTHP",
+    "Aetna Better Health": "AETNB",
+    "UnitedHealthcare Community Plan": "87726",
+    "Highmark Wholecare": "HMKWC",
+    "FFS": "77799",
+}
+
+# In-memory token cache: { user_id_str: (token, expires_at_epoch) }
+_token_cache: dict[str, tuple[str, float]] = {}
+
+AVAILITY_TOKEN_URL = "https://api.availity.com/availity/v1/token"
+AVAILITY_COVERAGES_URL = "https://api.availity.com/availity/v1/coverages"
+
+
+async def _get_token(client_id: str, client_secret: str, user_id: str) -> str:
+    cached = _token_cache.get(user_id)
+    if cached and time.time() < cached[1]:
+        return cached[0]
+
+    async with httpx.AsyncClient(timeout=15) as client:
+        resp = await client.post(
+            AVAILITY_TOKEN_URL,
+            data={
+                "grant_type": "client_credentials",
+                "client_id": client_id,
+                "client_secret": client_secret,
+            },
+        )
+        resp.raise_for_status()
+        data = resp.json()
+
+    token = data["access_token"]
+    expires_in = int(data.get("expires_in", 3600))
+    _token_cache[user_id] = (token, time.time() + expires_in - 60)
+    return token
+
+
+class EligibilityService:
+    def __init__(self, db: AsyncSession, audit: AuditLogger) -> None:
+        self._db = db
+        self._audit = audit
+
+    async def get_provider_settings(self, user_id: uuid.UUID) -> ProviderSettingsRead:
+        result = await self._db.execute(select(User).where(User.id == user_id))
+        user = result.scalar_one_or_none()
+        if not user:
+            raise ValueError("User not found")
+        return ProviderSettingsRead(
+            npi=user.npi,
+            availity_connected=bool(user.availity_client_id_encrypted and user.availity_client_secret_encrypted),
+        )
+
+    async def update_provider_settings(
+        self,
+        user_id: uuid.UUID,
+        data: ProviderSettingsUpdate,
+        ip: str,
+        user_agent: str,
+    ) -> ProviderSettingsRead:
+        result = await self._db.execute(select(User).where(User.id == user_id))
+        user = result.scalar_one_or_none()
+        if not user:
+            raise ValueError("User not found")
+
+        if data.npi is not None:
+            user.npi = data.npi
+        if data.availity_client_id is not None:
+            user.availity_client_id_encrypted = encrypt_field(data.availity_client_id)
+        if data.availity_client_secret is not None:
+            user.availity_client_secret_encrypted = encrypt_field(data.availity_client_secret)
+
+        await self._db.commit()
+        await self._db.refresh(user)
+
+        await self._audit.log(
+            action="UPDATE_PROVIDER_SETTINGS",
+            resource_type="user",
+            resource_id=user_id,
+            ip_address=ip,
+            user_agent=user_agent,
+            user_id=user_id,
+        )
+        return ProviderSettingsRead(
+            npi=user.npi,
+            availity_connected=bool(user.availity_client_id_encrypted and user.availity_client_secret_encrypted),
+        )
+
+    async def check_eligibility(
+        self,
+        patient_id: uuid.UUID,
+        requesting_user_id: uuid.UUID,
+        ip: str,
+        user_agent: str,
+    ) -> dict:
+        # Load user credentials
+        user_result = await self._db.execute(select(User).where(User.id == requesting_user_id))
+        user = user_result.scalar_one_or_none()
+        if not user or not user.availity_client_id_encrypted or not user.availity_client_secret_encrypted:
+            raise ValueError("Provider credentials not configured — connect Availity in Settings")
+        if not user.npi:
+            raise ValueError("NPI not configured — add your NPI in Settings")
+
+        # Load patient
+        patient_result = await self._db.execute(select(Patient).where(Patient.id == patient_id))
+        patient = patient_result.scalar_one_or_none()
+        if not patient or not patient.is_active:
+            raise ValueError("Patient not found")
+
+        if not patient.date_of_birth:
+            raise ValueError("Date of birth required — add it to the client profile first")
+
+        mco = patient.mco or "FFS"
+        payer_id = MCO_PAYER_IDS.get(mco)
+        if not payer_id:
+            raise ValueError(f"MCO '{mco}' is not recognized — update the client's MCO")
+
+        medicaid_id = decrypt_field(patient.medicaid_id_encrypted)
+        name = decrypt_field(patient.name_encrypted)
+        name_parts = name.strip().split()
+        first_name = name_parts[0] if name_parts else ""
+        last_name = name_parts[-1] if len(name_parts) > 1 else ""
+
+        client_id = decrypt_field(user.availity_client_id_encrypted)
+        client_secret = decrypt_field(user.availity_client_secret_encrypted)
+        token = await _get_token(client_id, client_secret, str(requesting_user_id))
+
+        async with httpx.AsyncClient(timeout=20) as http:
+            resp = await http.post(
+                AVAILITY_COVERAGES_URL,
+                json={
+                    "subscriber": {
+                        "memberId": medicaid_id,
+                        "firstName": first_name,
+                        "lastName": last_name,
+                        "birthDate": patient.date_of_birth.isoformat(),
+                    },
+                    "payer": {"id": payer_id},
+                    "providers": [{"npi": user.npi}],
+                    "serviceType": ["30"],
+                },
+                headers={"Authorization": f"Bearer {token}"},
+            )
+            resp.raise_for_status()
+            coverage = resp.json()
+
+        active = coverage.get("subscriberStatus", "").lower() == "active"
+        plan_name = coverage.get("planDescription") or mco
+        effective_date = coverage.get("effectiveDate")
+
+        now = datetime.now(timezone.utc)
+        patient.eligibility_status = "active" if active else "inactive"
+        patient.eligibility_checked_at = now
+        await self._db.commit()
+
+        await self._audit.log(
+            action="CHECK_ELIGIBILITY",
+            resource_type="patient",
+            resource_id=patient_id,
+            ip_address=ip,
+            user_agent=user_agent,
+            user_id=requesting_user_id,
+            extra_context={"mco": mco, "active": active},
+        )
+
+        return {
+            "active": active,
+            "plan_name": plan_name,
+            "effective_date": effective_date,
+            "checked_at": now.isoformat(),
+        }

@@ -9,6 +9,7 @@ import { clearAccessToken } from '@/lib/auth'
 const providerLinks = [
   { href: '/dashboard', label: 'Dashboard' },
   { href: '/clients', label: 'Clients' },
+  { href: '/settings', label: 'Settings' },
 ]
 
 const adminLinks = [

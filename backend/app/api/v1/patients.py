@@ -15,6 +15,7 @@ from app.dependencies import (
     require_admin,
 )
 from app.schemas.patient import PatientCreate, PatientRead, PatientReadWithMedicaidId, PatientUpdate, PatientSearch
+from app.services.eligibility_service import EligibilityService
 from app.services.patient_service import PatientService
 
 router = APIRouter(prefix="/patients", tags=["patients"])
@@ -119,6 +120,22 @@ async def update_patient(
         )
     except ValueError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+
+
+@router.post("/{patient_id}/eligibility-check")
+async def check_eligibility(
+    request: Request,
+    patient_id: uuid.UUID,
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    audit: Annotated[AuditLogger, Depends(get_audit)],
+) -> dict:
+    try:
+        return await EligibilityService(db, audit).check_eligibility(
+            patient_id, current_user.id, get_client_ip(request), get_user_agent(request)
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.patch("/{patient_id}/deactivate", status_code=status.HTTP_204_NO_CONTENT)

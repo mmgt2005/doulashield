@@ -15,6 +15,7 @@ import { VISIT_SLOTS, VISIT_GROUPS } from '@/lib/visit-config'
 interface EditFormData {
   name: string
   mco: string
+  date_of_birth: string
   address: string
   latitude?: number
   longitude?: number
@@ -29,6 +30,8 @@ export default function ClientDetailPage() {
   const [error, setError] = useState<string | null>(null)
   const [editing, setEditing] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
+  const [checkingElig, setCheckingElig] = useState(false)
+  const [eligError, setEligError] = useState<string | null>(null)
 
   const { register, handleSubmit, reset, watch, setValue, formState: { isSubmitting } } = useForm<EditFormData>()
 
@@ -53,6 +56,7 @@ export default function ClientDetailPage() {
   const handleEditScanned = (data: Record<string, unknown>) => {
     if (data.name) setValue('name', String(data.name))
     if (data.mco) setValue('mco', String(data.mco))
+    if (data.date_of_birth) setValue('date_of_birth', String(data.date_of_birth))
     if (data.address) {
       setValue('address', String(data.address))
       setValue('latitude', undefined)
@@ -63,7 +67,14 @@ export default function ClientDetailPage() {
 
   const startEdit = () => {
     if (!patient) return
-    reset({ name: patient.name, mco: patient.mco ?? '', address: patient.address ?? '', latitude: patient.latitude ?? undefined, longitude: patient.longitude ?? undefined })
+    reset({
+      name: patient.name,
+      mco: patient.mco ?? '',
+      date_of_birth: patient.date_of_birth ?? '',
+      address: patient.address ?? '',
+      latitude: patient.latitude ?? undefined,
+      longitude: patient.longitude ?? undefined,
+    })
     setSaveError(null)
     setEditing(true)
   }
@@ -80,7 +91,15 @@ export default function ClientDetailPage() {
       }
       const res = await axios.patch<Patient>(
         `${process.env.NEXT_PUBLIC_API_URL}/api/v1/patients/${clientId}`,
-        { name: data.name, mco: data.mco || null, address: data.address || null, latitude: lat ?? null, longitude: lng ?? null, ...(data.medicaid_card_image_path ? { medicaid_card_image_path: data.medicaid_card_image_path } : {}) },
+        {
+          name: data.name,
+          mco: data.mco || null,
+          date_of_birth: data.date_of_birth || null,
+          address: data.address || null,
+          latitude: lat ?? null,
+          longitude: lng ?? null,
+          ...(data.medicaid_card_image_path ? { medicaid_card_image_path: data.medicaid_card_image_path } : {}),
+        },
         { headers: { Authorization: `Bearer ${getAccessToken()}` } }
       )
       setPatient(res.data)
@@ -90,8 +109,40 @@ export default function ClientDetailPage() {
     }
   }
 
+  const handleCheckEligibility = async () => {
+    setCheckingElig(true)
+    setEligError(null)
+    try {
+      const res = await axios.post<{ active: boolean; plan_name: string; effective_date: string | null; checked_at: string }>(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/patients/${clientId}/eligibility-check`,
+        {},
+        { headers: { Authorization: `Bearer ${getAccessToken()}` } }
+      )
+      setPatient((p) => p ? {
+        ...p,
+        eligibility_status: res.data.active ? 'active' : 'inactive',
+        eligibility_checked_at: res.data.checked_at,
+      } : p)
+    } catch (err) {
+      const detail = axios.isAxiosError(err) ? err.response?.data?.detail : null
+      setEligError(detail || 'Eligibility check failed. Please try again.')
+    } finally {
+      setCheckingElig(false)
+    }
+  }
+
   if (loading) return <p className="text-sm text-gray-500">Loading…</p>
   if (error || !patient) return <p className="text-sm text-red-600">{error ?? 'Not found.'}</p>
+
+  const formatDate = (iso: string) => {
+    const [y, m, d] = iso.split('-')
+    return `${m}/${d}/${y}`
+  }
+
+  const eligCanCheck = !!(patient.mco && patient.date_of_birth)
+  const eligCheckedDate = patient.eligibility_checked_at
+    ? new Date(patient.eligibility_checked_at).toLocaleDateString()
+    : null
 
   return (
     <div className="space-y-6">
@@ -111,6 +162,10 @@ export default function ClientDetailPage() {
             <div>
               <label className="block text-xs font-medium text-gray-600">MCO</label>
               <input {...register('mco')} className="mt-1 block w-full rounded border border-gray-300 px-3 py-1.5 text-sm" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600">Date of birth</label>
+              <input {...register('date_of_birth')} type="date" className="mt-1 block w-full rounded border border-gray-300 px-3 py-1.5 text-sm sm:w-40" />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600">Home address</label>
@@ -146,6 +201,9 @@ export default function ClientDetailPage() {
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">{patient.name}</h1>
                 {patient.mco && <p className="mt-1 text-sm text-gray-500">MCO: {patient.mco}</p>}
+                {patient.date_of_birth && (
+                  <p className="mt-0.5 text-sm text-gray-500">DOB: {formatDate(patient.date_of_birth)}</p>
+                )}
                 {patient.address && (
                   <p className="mt-0.5 flex items-center gap-1 text-sm text-gray-500">
                     {patient.latitude !== null && (
@@ -156,6 +214,38 @@ export default function ClientDetailPage() {
                     {patient.address}
                   </p>
                 )}
+
+                {/* Eligibility row */}
+                <div className="mt-2 flex items-center gap-2 flex-wrap">
+                  {patient.eligibility_status === 'active' && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                      ✓ Active
+                    </span>
+                  )}
+                  {patient.eligibility_status === 'inactive' && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
+                      ✗ Inactive
+                    </span>
+                  )}
+                  {eligCheckedDate && (
+                    <span className="text-xs text-gray-400">Last checked {eligCheckedDate}</span>
+                  )}
+                  {eligCanCheck ? (
+                    <button
+                      type="button"
+                      onClick={handleCheckEligibility}
+                      disabled={checkingElig}
+                      className="text-xs text-blue-600 hover:text-blue-800 disabled:opacity-50"
+                    >
+                      {checkingElig ? 'Checking…' : patient.eligibility_status ? 'Re-check' : 'Check eligibility'}
+                    </button>
+                  ) : (
+                    <span className="text-xs text-gray-400">
+                      {!patient.mco ? 'Set MCO to check eligibility' : 'Add date of birth to check eligibility'}
+                    </span>
+                  )}
+                  {eligError && <p className="w-full text-xs text-red-600">{eligError}</p>}
+                </div>
               </div>
               <button onClick={startEdit} className="text-xs text-blue-600 hover:text-blue-800 mt-1">Edit profile</button>
             </div>
