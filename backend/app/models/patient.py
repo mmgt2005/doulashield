@@ -33,3 +33,4 @@ class Patient(Base):
     soap_notes: Mapped[list["SOAPNote"]] = relationship(back_populates="patient", cascade="all, delete-orphan")  # type: ignore[name-defined]
     prenatal_postnatal_logs: Mapped[list["PrenatalPostnatalLog"]] = relationship(back_populates="patient", cascade="all, delete-orphan")  # type: ignore[name-defined]
     birth_logs: Mapped[list["BirthLog"]] = relationship(back_populates="patient", cascade="all, delete-orphan")  # type: ignore[name-defined]
+    visits: Mapped[list["Visit"]] = relationship(back_populates="patient", cascade="all, delete-orphan")  # type: ignore[name-defined]

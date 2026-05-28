@@ -58,6 +58,30 @@ export interface BirthLog {
   created_at: string
 }
 
+export type VisitType =
+  | 'prenatal_1' | 'prenatal_2' | 'prenatal_3' | 'prenatal_4' | 'prenatal_5' | 'prenatal_6'
+  | 'labor'
+  | 'postnatal_1' | 'postnatal_2' | 'postnatal_3' | 'postnatal_4' | 'postnatal_5' | 'postnatal_6'
+
+export interface Visit {
+  id: string
+  patient_id: string
+  provider_id: string
+  visit_type: VisitType
+  visit_date: string | null
+  subjective: string | null
+  objective: string | null
+  assessment: string | null
+  plan: string | null
+  entry: string | null
+  birth_time: string | null
+  birth_location: string | null
+  birth_notes: string | null
+  source_image_path: string | null
+  created_at: string
+  updated_at: string
+}
+
 export interface AuditLogEntry {
   id: string
   user_id: string | null
