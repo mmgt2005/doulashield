@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import base64
 import json
+import logging
 import uuid
 from datetime import datetime, timezone
 
@@ -10,6 +11,8 @@ import anthropic
 import httpx
 
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 _PROMPTS: dict[str, str] = {
     "medicaid_card": (
@@ -39,28 +42,39 @@ _PROMPTS: dict[str, str] = {
 
 
 def _run_claude(image_bytes: bytes, content_type: str, page_type: str) -> dict:
+    if not image_bytes:
+        raise ValueError("Empty image data received — file may not have uploaded correctly")
+
+    logger.info("OCR request: size=%d bytes, content_type=%s, page_type=%s",
+                len(image_bytes), content_type, page_type)
+
     client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
     b64 = base64.standard_b64encode(image_bytes).decode()
-    msg = client.messages.create(
-        model="claude-3-5-haiku-20241022",
-        max_tokens=1024,
-        messages=[
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "image",
-                        "source": {
-                            "type": "base64",
-                            "media_type": content_type,
-                            "data": b64,
+    try:
+        msg = client.messages.create(
+            model="claude-3-5-haiku-20241022",
+            max_tokens=1024,
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image",
+                            "source": {
+                                "type": "base64",
+                                "media_type": content_type,
+                                "data": b64,
+                            },
                         },
-                    },
-                    {"type": "text", "text": _PROMPTS[page_type]},
-                ],
-            }
-        ],
-    )
+                        {"type": "text", "text": _PROMPTS[page_type]},
+                    ],
+                }
+            ],
+        )
+    except anthropic.BadRequestError as exc:
+        logger.error("Anthropic 400: %s", exc)
+        raise ValueError("Anthropic rejected the image request") from exc
+
     raw = msg.content[0].text.strip()
     # Strip markdown code fences if Claude wraps the JSON
     if raw.startswith("```"):
@@ -75,7 +89,10 @@ async def extract_image(image_bytes: bytes, content_type: str, page_type: str) -
     """Call Claude Haiku vision to extract structured data from an image."""
     try:
         return await asyncio.to_thread(_run_claude, image_bytes, content_type, page_type)
+    except ValueError:
+        raise
     except (json.JSONDecodeError, KeyError, IndexError, Exception) as exc:
+        logger.error("OCR extraction failed: %s", exc)
         raise ValueError("Could not extract information from image") from exc
 
 
