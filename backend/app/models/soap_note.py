@@ -24,6 +24,7 @@ class SOAPNote(Base):
     assessment: Mapped[str | None] = mapped_column(Text, nullable=True)
     plan: Mapped[str | None] = mapped_column(Text, nullable=True)
     visit_date: Mapped[date] = mapped_column(Date, nullable=False)
+    source_image_path: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

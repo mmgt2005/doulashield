@@ -16,7 +16,11 @@ const adminLinks = [
   { href: '/admin/audit-logs', label: 'Audit Logs' },
 ]
 
-export default function Sidebar() {
+interface SidebarProps {
+  onClose?: () => void
+}
+
+export default function Sidebar({ onClose }: SidebarProps) {
   const pathname = usePathname()
   const { user, logout } = useAuthStore()
 
@@ -36,7 +40,7 @@ export default function Sidebar() {
   const links = [...providerLinks, ...(user?.role === 'admin' ? adminLinks : [])]
 
   return (
-    <aside className="w-56 flex-shrink-0 bg-white border-r border-gray-200 flex flex-col">
+    <aside className="w-56 flex-shrink-0 bg-white border-r border-gray-200 flex flex-col h-full">
       <div className="px-4 py-5 border-b border-gray-200">
         <span className="text-lg font-bold text-blue-700">DoulaShield</span>
       </div>
@@ -45,6 +49,7 @@ export default function Sidebar() {
           <Link
             key={href}
             href={href}
+            onClick={onClose}
             className={`block px-3 py-2 rounded text-sm font-medium transition-colors ${
               pathname.startsWith(href)
                 ? 'bg-blue-50 text-blue-700'

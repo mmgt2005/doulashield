@@ -7,11 +7,13 @@ import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import axios from 'axios'
 import { getAccessToken } from '@/lib/auth'
+import ImageUploadScanner from '@/components/ui/ImageUploadScanner'
 
 const schema = z.object({
   name: z.string().min(1, 'Name is required'),
   medicaid_id: z.string().min(1, 'Medicaid ID is required'),
   mco: z.string().optional(),
+  medicaid_card_image_path: z.string().optional(),
 })
 
 type FormData = z.infer<typeof schema>
@@ -20,9 +22,16 @@ export default function NewClientPage() {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
 
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({
+  const { register, handleSubmit, setValue, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
   })
+
+  const handleScanned = (data: Record<string, unknown>) => {
+    if (data.name) setValue('name', String(data.name))
+    if (data.medicaid_id) setValue('medicaid_id', String(data.medicaid_id))
+    if (data.mco) setValue('mco', String(data.mco))
+    if (data.image_path) setValue('medicaid_card_image_path', String(data.image_path))
+  }
 
   const onSubmit = async (data: FormData) => {
     setError(null)
@@ -41,6 +50,12 @@ export default function NewClientPage() {
   return (
     <div className="max-w-lg space-y-4">
       <h1 className="text-2xl font-bold text-gray-900">Add new client</h1>
+
+      <ImageUploadScanner
+        endpoint="/api/v1/ocr/medicaid-card"
+        onExtracted={handleScanned}
+        label="Scan Medicaid Card"
+      />
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 bg-white p-6 rounded-lg border border-gray-200">
         <div>
@@ -76,9 +91,11 @@ export default function NewClientPage() {
           />
         </div>
 
+        <input type="hidden" {...register('medicaid_card_image_path')} />
+
         {error && <p className="text-sm text-red-600">{error}</p>}
 
-        <div className="flex gap-3 pt-2">
+        <div className="flex flex-col gap-3 pt-2 sm:flex-row">
           <button
             type="submit"
             disabled={isSubmitting}

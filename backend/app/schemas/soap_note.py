@@ -10,6 +10,7 @@ class SOAPNoteCreate(BaseModel):
     objective: str | None = None
     assessment: str | None = None
     plan: str | None = None
+    source_image_path: str | None = None
 
 
 class SOAPNoteUpdate(BaseModel):
@@ -29,6 +30,7 @@ class SOAPNoteRead(BaseModel):
     objective: str | None
     assessment: str | None
     plan: str | None
+    source_image_path: str | None
     created_at: datetime
     updated_at: datetime
 

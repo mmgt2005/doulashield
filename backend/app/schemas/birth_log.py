@@ -9,6 +9,7 @@ class BirthLogCreate(BaseModel):
     birth_time: time | None = None
     birth_location: str | None = None
     notes: str | None = None
+    source_image_path: str | None = None
 
 
 class BirthLogRead(BaseModel):
@@ -19,6 +20,7 @@ class BirthLogRead(BaseModel):
     birth_time: time | None
     birth_location: str | None
     notes: str | None
+    source_image_path: str | None
     created_at: datetime
 
     model_config = {"from_attributes": True}

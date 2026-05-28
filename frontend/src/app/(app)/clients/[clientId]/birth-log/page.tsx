@@ -8,12 +8,14 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import axios from 'axios'
 import { getAccessToken } from '@/lib/auth'
 import { BirthLog } from '@/types/domain'
+import ImageUploadScanner from '@/components/ui/ImageUploadScanner'
 
 const schema = z.object({
   birth_date: z.string().min(1, 'Birth date is required'),
   birth_time: z.string().optional(),
   birth_location: z.string().optional(),
   notes: z.string().optional(),
+  source_image_path: z.string().optional(),
 })
 type FormData = z.infer<typeof schema>
 
@@ -23,7 +25,7 @@ export default function BirthLogPage() {
   const [loading, setLoading] = useState(true)
   const [submitError, setSubmitError] = useState<string | null>(null)
 
-  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<FormData>({
+  const { register, handleSubmit, reset, setValue, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
   })
 
@@ -37,6 +39,14 @@ export default function BirthLogPage() {
       .finally(() => setLoading(false))
 
   useEffect(() => { fetchLogs() }, [clientId])
+
+  const handleScanned = (data: Record<string, unknown>) => {
+    if (data.birth_date) setValue('birth_date', String(data.birth_date))
+    if (data.birth_time) setValue('birth_time', String(data.birth_time))
+    if (data.birth_location) setValue('birth_location', String(data.birth_location))
+    if (data.notes) setValue('notes', String(data.notes))
+    if (data.image_path) setValue('source_image_path', String(data.image_path))
+  }
 
   const onSubmit = async (data: FormData) => {
     setSubmitError(null)
@@ -57,8 +67,15 @@ export default function BirthLogPage() {
     <div className="max-w-2xl space-y-6">
       <h1 className="text-xl font-bold text-gray-900">Birth Log</h1>
 
+      <ImageUploadScanner
+        endpoint="/api/v1/ocr/handbook"
+        extraFields={{ page_type: 'birth', patient_id: clientId }}
+        onExtracted={handleScanned}
+        label="Scan Birth Log Page"
+      />
+
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 bg-white p-4 rounded-lg border border-gray-200">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label htmlFor="birth_date" className="block text-sm font-medium text-gray-700">Birth date</label>
             <input {...register('birth_date')} id="birth_date" type="date" className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm" />
@@ -77,8 +94,9 @@ export default function BirthLogPage() {
           <label htmlFor="notes" className="block text-sm font-medium text-gray-700">Notes</label>
           <textarea {...register('notes')} id="notes" rows={4} className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm" />
         </div>
+        <input type="hidden" {...register('source_image_path')} />
         {submitError && <p className="text-sm text-red-600">{submitError}</p>}
-        <button type="submit" disabled={isSubmitting} className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">
+        <button type="submit" disabled={isSubmitting} className="w-full rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 sm:w-auto">
           Add birth record
         </button>
       </form>

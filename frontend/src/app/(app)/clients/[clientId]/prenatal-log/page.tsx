@@ -8,11 +8,13 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import axios from 'axios'
 import { getAccessToken } from '@/lib/auth'
 import { PrenatalLog } from '@/types/domain'
+import ImageUploadScanner from '@/components/ui/ImageUploadScanner'
 
 const schema = z.object({
   log_type: z.enum(['prenatal', 'postnatal']),
   entry_date: z.string().min(1, 'Date is required'),
   entry: z.string().min(1, 'Entry is required'),
+  source_image_path: z.string().optional(),
 })
 type FormData = z.infer<typeof schema>
 
@@ -22,7 +24,7 @@ export default function PrenatalLogPage() {
   const [loading, setLoading] = useState(true)
   const [submitError, setSubmitError] = useState<string | null>(null)
 
-  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<FormData>({
+  const { register, handleSubmit, reset, setValue, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: { log_type: 'prenatal' },
   })
@@ -37,6 +39,15 @@ export default function PrenatalLogPage() {
       .finally(() => setLoading(false))
 
   useEffect(() => { fetchLogs() }, [clientId])
+
+  const handleScanned = (data: Record<string, unknown>) => {
+    if (data.log_type === 'prenatal' || data.log_type === 'postnatal') {
+      setValue('log_type', data.log_type)
+    }
+    if (data.entry_date) setValue('entry_date', String(data.entry_date))
+    if (data.entry) setValue('entry', String(data.entry))
+    if (data.image_path) setValue('source_image_path', String(data.image_path))
+  }
 
   const onSubmit = async (data: FormData) => {
     setSubmitError(null)
@@ -57,8 +68,15 @@ export default function PrenatalLogPage() {
     <div className="max-w-2xl space-y-6">
       <h1 className="text-xl font-bold text-gray-900">Prenatal / Postnatal Log</h1>
 
+      <ImageUploadScanner
+        endpoint="/api/v1/ocr/handbook"
+        extraFields={{ page_type: 'prenatal', patient_id: clientId }}
+        onExtracted={handleScanned}
+        label="Scan Visit Page"
+      />
+
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 bg-white p-4 rounded-lg border border-gray-200">
-        <div className="flex gap-4">
+        <div className="flex flex-col gap-4 sm:flex-row">
           <div className="flex-1">
             <label htmlFor="log_type" className="block text-sm font-medium text-gray-700">Type</label>
             <select {...register('log_type')} id="log_type" className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm">
@@ -77,8 +95,9 @@ export default function PrenatalLogPage() {
           <textarea {...register('entry')} id="entry" rows={4} className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm" />
           {errors.entry && <p className="mt-1 text-xs text-red-600">{errors.entry.message}</p>}
         </div>
+        <input type="hidden" {...register('source_image_path')} />
         {submitError && <p className="text-sm text-red-600">{submitError}</p>}
-        <button type="submit" disabled={isSubmitting} className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">
+        <button type="submit" disabled={isSubmitting} className="w-full rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 sm:w-auto">
           Add entry
         </button>
       </form>

@@ -8,6 +8,7 @@ class PatientCreate(BaseModel):
     name: str
     medicaid_id: str
     mco: str | None = None
+    medicaid_card_image_path: str | None = None
 
 
 class PatientUpdate(BaseModel):
@@ -21,6 +22,7 @@ class PatientRead(BaseModel):
     provider_id: uuid.UUID
     name: str           # Decrypted by service before returning
     mco: str | None
+    medicaid_card_image_path: str | None
     is_active: bool
     created_at: datetime
     updated_at: datetime

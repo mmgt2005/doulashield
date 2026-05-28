@@ -22,6 +22,7 @@ class PrenatalPostnatalLog(Base):
     log_type: Mapped[str] = mapped_column(nullable=False)  # 'prenatal' | 'postnatal'
     entry: Mapped[str] = mapped_column(Text, nullable=False)
     entry_date: Mapped[date] = mapped_column(Date, nullable=False)
+    source_image_path: Mapped[str | None] = mapped_column(Text, nullable=True)
     # Intentionally no updated_at — log entries are immutable after creation
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False

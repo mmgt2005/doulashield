@@ -17,6 +17,7 @@ def _to_read(patient: Patient) -> PatientRead:
         provider_id=patient.provider_id,
         name=decrypt_field(patient.name_encrypted),
         mco=patient.mco,
+        medicaid_card_image_path=patient.medicaid_card_image_path,
         is_active=patient.is_active,
         created_at=patient.created_at,
         updated_at=patient.updated_at,
@@ -36,6 +37,7 @@ class PatientService:
             name_encrypted=encrypt_field(data.name),
             medicaid_id_encrypted=encrypt_field(data.medicaid_id),
             mco=data.mco,
+            medicaid_card_image_path=data.medicaid_card_image_path,
         )
         self._db.add(patient)
         await self._db.commit()

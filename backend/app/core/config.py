@@ -24,6 +24,10 @@ class Settings(BaseSettings):
     # CORS
     FRONTEND_ORIGIN: str
 
+    # OCR / document scanning
+    ANTHROPIC_API_KEY: str = ""
+    SUPABASE_STORAGE_BUCKET: str = "client-documents"
+
     # Rate limiting
     RATE_LIMIT_AUTH: str = "10/minute"
     REDIS_URL: str = "redis://localhost:6379/0"

@@ -9,6 +9,7 @@ class PrenatalLogCreate(BaseModel):
     log_type: Literal["prenatal", "postnatal"]
     entry: str
     entry_date: date
+    source_image_path: str | None = None
 
 
 class PrenatalLogRead(BaseModel):
@@ -18,6 +19,7 @@ class PrenatalLogRead(BaseModel):
     log_type: str
     entry: str
     entry_date: date
+    source_image_path: str | None
     created_at: datetime
 
     model_config = {"from_attributes": True}

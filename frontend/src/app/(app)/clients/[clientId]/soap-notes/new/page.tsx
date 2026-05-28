@@ -7,6 +7,7 @@ import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
 import axios from 'axios'
 import { getAccessToken } from '@/lib/auth'
+import ImageUploadScanner from '@/components/ui/ImageUploadScanner'
 
 const schema = z.object({
   visit_date: z.string().min(1, 'Visit date is required'),
@@ -14,6 +15,7 @@ const schema = z.object({
   objective: z.string().optional(),
   assessment: z.string().optional(),
   plan: z.string().optional(),
+  source_image_path: z.string().optional(),
 })
 
 type FormData = z.infer<typeof schema>
@@ -31,9 +33,18 @@ export default function NewSOAPNotePage() {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
 
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({
+  const { register, handleSubmit, setValue, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
   })
+
+  const handleScanned = (data: Record<string, unknown>) => {
+    if (data.visit_date) setValue('visit_date', String(data.visit_date))
+    if (data.subjective) setValue('subjective', String(data.subjective))
+    if (data.objective) setValue('objective', String(data.objective))
+    if (data.assessment) setValue('assessment', String(data.assessment))
+    if (data.plan) setValue('plan', String(data.plan))
+    if (data.image_path) setValue('source_image_path', String(data.image_path))
+  }
 
   const onSubmit = async (data: FormData) => {
     setError(null)
@@ -52,6 +63,14 @@ export default function NewSOAPNotePage() {
   return (
     <div className="max-w-2xl space-y-4">
       <h1 className="text-xl font-bold text-gray-900">New SOAP Note</h1>
+
+      <ImageUploadScanner
+        endpoint="/api/v1/ocr/handbook"
+        extraFields={{ page_type: 'soap_note', patient_id: clientId }}
+        onExtracted={handleScanned}
+        label="Scan SOAP Note Page"
+      />
+
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 bg-white p-6 rounded-lg border border-gray-200">
         {fields.map(({ key, label, full }) => (
           <div key={key}>
@@ -76,8 +95,11 @@ export default function NewSOAPNotePage() {
             )}
           </div>
         ))}
+
+        <input type="hidden" {...register('source_image_path')} />
+
         {error && <p className="text-sm text-red-600">{error}</p>}
-        <div className="flex gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row">
           <button
             type="submit"
             disabled={isSubmitting}
