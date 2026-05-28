@@ -52,7 +52,7 @@ def _run_claude(image_bytes: bytes, content_type: str, page_type: str) -> dict:
     b64 = base64.standard_b64encode(image_bytes).decode()
     try:
         msg = client.messages.create(
-            model="claude-3-5-haiku-20241022",
+            model="claude-haiku-4-5-20251001",
             max_tokens=1024,
             messages=[
                 {
