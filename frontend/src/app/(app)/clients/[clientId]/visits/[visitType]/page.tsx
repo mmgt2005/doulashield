@@ -12,6 +12,13 @@ import { Patient, Visit } from '@/types/domain'
 import { getSlotConfig } from '@/lib/visit-config'
 import ImageUploadScanner from '@/components/ui/ImageUploadScanner'
 
+const SOAP_PLACEHOLDERS: Record<string, string> = {
+  subjective: 'How is the client feeling today? Did she report any specific concerns?',
+  objective: 'What did you observe? (e.g., movement, mood, vitals, engagement level)',
+  assessment: 'What is your professional assessment of her current status?',
+  plan: 'What are the next steps for the client and the doula?',
+}
+
 const schema = z.object({
   visit_date: z.string().min(1, 'Visit date is required'),
   subjective: z.string().optional(),
@@ -50,7 +57,12 @@ export default function VisitFormPage() {
 
   const slot = getSlotConfig(visitType)
 
-  const { register, handleSubmit, setValue, formState: { errors, isSubmitting } } = useForm<FormData>({
+  // SOAP AI draft state
+  const [translating, setTranslating] = useState(false)
+  const [translateError, setTranslateError] = useState<string | null>(null)
+  const [soapDraft, setSoapDraft] = useState<{ subjective: string | null; objective: string | null; assessment: string | null; plan: string | null } | null>(null)
+
+  const { register, handleSubmit, setValue, watch, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
   })
 
@@ -197,6 +209,30 @@ export default function VisitFormPage() {
         )
         setPatient((p) => p ? { ...p, date_of_birth: String(data.date_of_birth) } : p)
       } catch { /* non-blocking */ }
+    }
+  }
+
+  const handleDraftSoap = async () => {
+    setTranslating(true)
+    setTranslateError(null)
+    setSoapDraft(null)
+    try {
+      const res = await axios.post<{ subjective: string | null; objective: string | null; assessment: string | null; plan: string | null }>(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/ocr/soap-translate`,
+        {
+          subjective: watch('subjective') || null,
+          objective: watch('objective') || null,
+          assessment: watch('assessment') || null,
+          plan: watch('plan') || null,
+          patient_id: clientId,
+        },
+        { headers: { Authorization: `Bearer ${getAccessToken()}` } }
+      )
+      setSoapDraft(res.data)
+    } catch {
+      setTranslateError('Translation failed — please try again.')
+    } finally {
+      setTranslating(false)
     }
   }
 
@@ -404,7 +440,63 @@ export default function VisitFormPage() {
         )}
 
         <div className="space-y-4">
-          <h2 className="text-sm font-semibold text-gray-700 border-b pb-1">SOAP Note</h2>
+          <div className="flex items-center justify-between border-b pb-1">
+            <h2 className="text-sm font-semibold text-gray-700">SOAP Note</h2>
+            <button
+              type="button"
+              onClick={handleDraftSoap}
+              disabled={translating}
+              className="flex items-center gap-1.5 rounded border border-blue-300 bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 hover:bg-blue-100 disabled:opacity-50"
+            >
+              {translating ? (
+                <>
+                  <span className="h-3 w-3 animate-spin rounded-full border-2 border-blue-400 border-t-transparent" />
+                  Drafting…
+                </>
+              ) : (
+                '✨ Draft SOAP Note'
+              )}
+            </button>
+          </div>
+
+          {translateError && <p className="text-xs text-red-600">{translateError}</p>}
+
+          {soapDraft && (
+            <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 space-y-2">
+              <p className="text-xs font-semibold text-blue-800">AI Clinical Draft — review before applying</p>
+              {(['subjective', 'objective', 'assessment', 'plan'] as const).map((field) =>
+                soapDraft[field] ? (
+                  <div key={field}>
+                    <p className="text-xs font-medium text-blue-700 capitalize">{field}</p>
+                    <p className="text-xs text-blue-900 leading-relaxed">{soapDraft[field]}</p>
+                  </div>
+                ) : null
+              )}
+              <div className="flex gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (soapDraft.subjective) setValue('subjective', soapDraft.subjective)
+                    if (soapDraft.objective) setValue('objective', soapDraft.objective)
+                    if (soapDraft.assessment) setValue('assessment', soapDraft.assessment)
+                    if (soapDraft.plan) setValue('plan', soapDraft.plan)
+                    setSoapDraft(null)
+                  }}
+                  className="rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700"
+                >
+                  Apply to Form
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSoapDraft(null)}
+                  className="rounded border border-blue-300 px-3 py-1 text-xs font-medium text-blue-700 hover:bg-blue-100"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          )}
+
           {(['subjective', 'objective', 'assessment', 'plan'] as const).map((field) => (
             <div key={field}>
               <label htmlFor={field} className="block text-sm font-medium text-gray-700 capitalize">{field}</label>
@@ -412,7 +504,8 @@ export default function VisitFormPage() {
                 {...register(field)}
                 id={field}
                 rows={3}
-                className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm"
+                placeholder={SOAP_PLACEHOLDERS[field]}
+                className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm placeholder:text-gray-400"
               />
             </div>
           ))}

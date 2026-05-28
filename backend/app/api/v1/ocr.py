@@ -4,6 +4,8 @@ import logging
 import uuid
 from typing import Annotated, Literal
 
+from pydantic import BaseModel
+
 logger = logging.getLogger(__name__)
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request, UploadFile, status
@@ -118,6 +120,48 @@ async def scan_handbook(
     )
 
     return {**extracted, "image_path": image_path}
+
+
+class _SoapTranslateRequest(BaseModel):
+    subjective: str | None = None
+    objective: str | None = None
+    assessment: str | None = None
+    plan: str | None = None
+    patient_id: uuid.UUID | None = None
+
+
+@router.post("/soap-translate")
+async def translate_soap_note(
+    request: Request,
+    body: _SoapTranslateRequest,
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    audit: Annotated[AuditLogger, Depends(get_audit)],
+) -> dict:
+    """Translate plain-language SOAP fields into professional clinical documentation."""
+    try:
+        result = await ocr_service.translate_soap({
+            "subjective": body.subjective,
+            "objective": body.objective,
+            "assessment": body.assessment,
+            "plan": body.plan,
+        })
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="SOAP translation failed — please try again.",
+        )
+
+    await audit.log(
+        action="TRANSLATE_SOAP_NOTE",
+        resource_type="patient" if body.patient_id else None,
+        resource_id=body.patient_id,
+        ip_address=get_client_ip(request),
+        user_agent=get_user_agent(request),
+        user_id=current_user.id,
+        extra_context={"patient_id": str(body.patient_id)} if body.patient_id else None,
+    )
+
+    return result
 
 
 @router.get("/image")

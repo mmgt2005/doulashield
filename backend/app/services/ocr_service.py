@@ -52,6 +52,68 @@ _PROMPTS: dict[str, str] = {
 }
 
 
+_SOAP_TRANSLATE_PROMPT = (
+    "You are a professional clinical scribe specializing in perinatal health and Medicaid "
+    "documentation for Pennsylvania Type 13 doula services.\n"
+    "Translate the plain-language doula notes below into professional clinical SOAP format "
+    "suitable for insurance audit. Constraints:\n"
+    "1. Do NOT hallucinate — only use information present in the input. Never invent clinical details.\n"
+    "2. Use objective, concise clinical language. Replace informal terms with professional equivalents "
+    "(e.g., 'really tired' → 'reports increased fatigue'; 'scared' → 'expresses anxiety regarding').\n"
+    "3. Do not use ICD-10 O-codes. Permitted: Z-codes and general health status language.\n"
+    "4. If a section input is empty or 'Not provided', return null for that field.\n"
+    "5. Ensure the note supports billing justification for T1032/T1033.\n"
+    "Return ONLY valid JSON with no commentary:\n"
+    '{\"subjective\": \"translated text or null\", \"objective\": \"translated text or null\", '
+    '\"assessment\": \"translated text or null\", \"plan\": \"translated text or null\"}\n\n'
+    "Input:\n"
+    "Subjective: {subjective}\n"
+    "Objective: {objective}\n"
+    "Assessment: {assessment}\n"
+    "Plan: {plan}"
+)
+
+
+def _run_soap_translate(inputs: dict) -> dict:
+    subj = inputs.get("subjective") or "Not provided"
+    obj = inputs.get("objective") or "Not provided"
+    asmt = inputs.get("assessment") or "Not provided"
+    plan = inputs.get("plan") or "Not provided"
+
+    prompt = _SOAP_TRANSLATE_PROMPT.format(
+        subjective=subj, objective=obj, assessment=asmt, plan=plan
+    )
+    client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+    try:
+        msg = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=2048,
+            messages=[{"role": "user", "content": prompt}],
+        )
+    except anthropic.BadRequestError as exc:
+        logger.error("Anthropic 400 (SOAP translate): %s", exc)
+        raise ValueError("Translation request rejected") from exc
+
+    raw = msg.content[0].text.strip()
+    if raw.startswith("```"):
+        parts = raw.split("```")
+        raw = parts[1]
+        if raw.startswith("json"):
+            raw = raw[4:]
+    return json.loads(raw.strip())
+
+
+async def translate_soap(inputs: dict) -> dict:
+    """Call Claude Haiku to translate plain-language SOAP notes into clinical format."""
+    try:
+        return await asyncio.to_thread(_run_soap_translate, inputs)
+    except ValueError:
+        raise
+    except (json.JSONDecodeError, KeyError, IndexError, Exception) as exc:
+        logger.error("SOAP translation failed: %s", exc)
+        raise ValueError("SOAP translation failed") from exc
+
+
 def _run_claude(image_bytes: bytes, content_type: str, page_type: str) -> dict:
     if not image_bytes:
         raise ValueError("Empty image data received — file may not have uploaded correctly")
