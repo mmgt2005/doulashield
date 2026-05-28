@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import logging
 import uuid
 from typing import Annotated, Literal
+
+logger = logging.getLogger(__name__)
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request, UploadFile, status
 
@@ -48,8 +51,8 @@ async def scan_medicaid_card(
         image_path = await ocr_service.store_image(
             image_bytes, content_type, pid, current_user.id, "medicaid-card"
         )
-    except Exception:
-        pass  # Storage failure must not block extraction
+    except Exception as _store_err:
+        logger.warning("Storage upload failed (non-blocking): %s", _store_err)
 
     try:
         extracted = await ocr_service.extract_image(image_bytes, content_type, "medicaid_card")
@@ -93,8 +96,8 @@ async def scan_handbook(
         image_path = await ocr_service.store_image(
             image_bytes, content_type, pid, current_user.id, page_type
         )
-    except Exception:
-        pass
+    except Exception as _store_err:
+        logger.warning("Storage upload failed (non-blocking): %s", _store_err)
 
     try:
         extracted = await ocr_service.extract_image(image_bytes, content_type, page_type)
