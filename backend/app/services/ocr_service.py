@@ -42,7 +42,7 @@ def _run_claude(image_bytes: bytes, content_type: str, page_type: str) -> dict:
     client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
     b64 = base64.standard_b64encode(image_bytes).decode()
     msg = client.messages.create(
-        model="claude-haiku-4-5-20251001",
+        model="claude-3-5-haiku-20241022",
         max_tokens=1024,
         messages=[
             {
