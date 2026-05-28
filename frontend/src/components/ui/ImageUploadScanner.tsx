@@ -54,13 +54,14 @@ export default function ImageUploadScanner({
     <div className="rounded-lg border border-dashed border-blue-300 bg-blue-50 p-4">
       <p className="mb-2 text-sm font-medium text-blue-700">{label}</p>
       <p className="mb-3 text-xs text-blue-500">
-        Take a photo or upload an image — fields will be pre-filled for you to review.
+        Take a photo — fields will be pre-filled for you to review.
       </p>
 
       <input
         ref={inputRef}
         type="file"
         accept="image/jpeg,image/png"
+        capture="environment"
         className="hidden"
         onChange={(e) => {
           const file = e.target.files?.[0]
@@ -83,7 +84,7 @@ export default function ImageUploadScanner({
             Scanning…
           </span>
         ) : (
-          'Choose photo'
+          'Take photo'
         )}
       </button>
 
