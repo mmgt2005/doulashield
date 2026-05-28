@@ -107,6 +107,7 @@ export default function ClientDetailPage() {
                 geocoded={watch('latitude') != null && !isNaN(Number(watch('latitude')))}
                 inputClassName="mt-1 block w-full rounded border border-gray-300 px-3 py-1.5 text-sm"
               />
+              <input type="hidden" {...register('address')} />
               <input type="hidden" {...register('latitude', { valueAsNumber: true })} />
               <input type="hidden" {...register('longitude', { valueAsNumber: true })} />
             </div>
