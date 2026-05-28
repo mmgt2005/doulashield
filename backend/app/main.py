@@ -18,7 +18,7 @@ logging.basicConfig(
 limiter = Limiter(key_func=get_remote_address)
 
 app = FastAPI(
-    title="DolaShield API",
+    title="DoulaShield API",
     version="1.0.0",
     # Disable interactive docs in production — no PHI in Swagger UI
     docs_url=None if settings.ENVIRONMENT == "production" else "/docs",

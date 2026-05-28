@@ -130,7 +130,7 @@ class AuthService:
         user.totp_secret = secret  # type: ignore[attr-defined]
         await self._db.commit()
         totp = pyotp.TOTP(secret)
-        return totp.provisioning_uri(name=user.email, issuer_name="DolaShield")
+        return totp.provisioning_uri(name=user.email, issuer_name="DoulaShield")
 
     async def verify_mfa(self, user_id: uuid.UUID, code: str, ip: str, user_agent: str) -> None:
         result = await self._db.execute(select(User).where(User.id == user_id))

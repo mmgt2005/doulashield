@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'DolaShield',
+  title: 'DoulaShield',
   description: 'HIPAA-compliant documentation for doulas',
   robots: 'noindex, nofollow', // PHI application — never index
 }

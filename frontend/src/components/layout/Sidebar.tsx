@@ -38,7 +38,7 @@ export default function Sidebar() {
   return (
     <aside className="w-56 flex-shrink-0 bg-white border-r border-gray-200 flex flex-col">
       <div className="px-4 py-5 border-b border-gray-200">
-        <span className="text-lg font-bold text-blue-700">DolaShield</span>
+        <span className="text-lg font-bold text-blue-700">DoulaShield</span>
       </div>
       <nav className="flex-1 px-2 py-4 space-y-1">
         {links.map(({ href, label }) => (
