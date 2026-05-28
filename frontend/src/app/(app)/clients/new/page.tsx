@@ -9,6 +9,7 @@ import axios from 'axios'
 import { getAccessToken } from '@/lib/auth'
 import { geocodeAddress } from '@/lib/geo'
 import ImageUploadScanner from '@/components/ui/ImageUploadScanner'
+import AddressAutocomplete from '@/components/ui/AddressAutocomplete'
 
 const schema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -26,7 +27,7 @@ export default function NewClientPage() {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
 
-  const { register, handleSubmit, setValue, formState: { errors, isSubmitting } } = useForm<FormData>({
+  const { register, handleSubmit, setValue, watch, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
   })
 
@@ -41,7 +42,7 @@ export default function NewClientPage() {
   const onSubmit = async (data: FormData) => {
     setError(null)
     try {
-      if (data.address) {
+      if (data.address && (data.latitude == null || isNaN(data.latitude as number))) {
         const coords = await geocodeAddress(data.address)
         if (coords) {
           data.latitude = coords.lat
@@ -105,15 +106,22 @@ export default function NewClientPage() {
 
         <div>
           <label htmlFor="address" className="block text-sm font-medium text-gray-700">Home address <span className="text-gray-400">(optional)</span></label>
-          <input
-            {...register('address')}
+          <AddressAutocomplete
             id="address"
-            type="text"
+            value={watch('address') ?? ''}
+            onChange={(v) => setValue('address', v)}
+            onSelect={(addr, lat, lng) => {
+              setValue('address', addr)
+              setValue('latitude', lat)
+              setValue('longitude', lng)
+            }}
             placeholder="123 Main St, City, State"
-            className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            inputClassName="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           />
         </div>
 
+        <input type="hidden" {...register('latitude', { valueAsNumber: true })} />
+        <input type="hidden" {...register('longitude', { valueAsNumber: true })} />
         <input type="hidden" {...register('medicaid_card_image_path')} />
 
         {error && <p className="text-sm text-red-600">{error}</p>}

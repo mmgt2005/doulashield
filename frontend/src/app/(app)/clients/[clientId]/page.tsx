@@ -7,6 +7,7 @@ import { useForm } from 'react-hook-form'
 import axios from 'axios'
 import { getAccessToken } from '@/lib/auth'
 import { geocodeAddress } from '@/lib/geo'
+import AddressAutocomplete from '@/components/ui/AddressAutocomplete'
 import { Patient, Visit, VisitType } from '@/types/domain'
 import { VISIT_SLOTS, VISIT_GROUPS } from '@/lib/visit-config'
 
@@ -14,6 +15,8 @@ interface EditFormData {
   name: string
   mco: string
   address: string
+  latitude?: number
+  longitude?: number
 }
 
 export default function ClientDetailPage() {
@@ -25,7 +28,7 @@ export default function ClientDetailPage() {
   const [editing, setEditing] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
 
-  const { register, handleSubmit, reset, formState: { isSubmitting } } = useForm<EditFormData>()
+  const { register, handleSubmit, reset, watch, setValue, formState: { isSubmitting } } = useForm<EditFormData>()
 
   useEffect(() => {
     const headers = { Authorization: `Bearer ${getAccessToken()}` }
@@ -55,11 +58,12 @@ export default function ClientDetailPage() {
   const onSaveProfile = async (data: EditFormData) => {
     setSaveError(null)
     try {
-      let lat: number | undefined
-      let lng: number | undefined
-      if (data.address) {
+      let lat = data.latitude
+      let lng = data.longitude
+      if (data.address && (lat == null || isNaN(lat))) {
         const coords = await geocodeAddress(data.address)
-        if (coords) { lat = coords.lat; lng = coords.lng }
+        lat = coords?.lat
+        lng = coords?.lng
       }
       const res = await axios.patch<Patient>(
         `${process.env.NEXT_PUBLIC_API_URL}/api/v1/patients/${clientId}`,
@@ -92,7 +96,18 @@ export default function ClientDetailPage() {
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600">Home address</label>
-              <input {...register('address')} className="mt-1 block w-full rounded border border-gray-300 px-3 py-1.5 text-sm" />
+              <AddressAutocomplete
+                value={watch('address') ?? ''}
+                onChange={(v) => setValue('address', v)}
+                onSelect={(addr, lat, lng) => {
+                  setValue('address', addr)
+                  setValue('latitude', lat)
+                  setValue('longitude', lng)
+                }}
+                inputClassName="mt-1 block w-full rounded border border-gray-300 px-3 py-1.5 text-sm"
+              />
+              <input type="hidden" {...register('latitude', { valueAsNumber: true })} />
+              <input type="hidden" {...register('longitude', { valueAsNumber: true })} />
             </div>
             {saveError && <p className="text-xs text-red-600">{saveError}</p>}
             <div className="flex gap-2">
