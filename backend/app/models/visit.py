@@ -4,7 +4,7 @@ import enum
 import uuid
 from datetime import date, datetime, time
 
-from sqlalchemy import CheckConstraint, Date, DateTime, Double, ForeignKey, Text, Time, UniqueConstraint, func
+from sqlalchemy import CheckConstraint, Date, DateTime, Double, ForeignKey, String, Text, Time, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -63,6 +63,8 @@ class Visit(Base):
     visit_started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     provider_latitude: Mapped[float | None] = mapped_column(Double, nullable=True)
     provider_longitude: Mapped[float | None] = mapped_column(Double, nullable=True)
+    location_type: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    alternate_location: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

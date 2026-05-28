@@ -34,11 +34,13 @@ class ProviderSettingsUpdate(BaseModel):
     npi: str | None = None
     availity_client_id: str | None = None
     availity_client_secret: str | None = None
+    telehealth_link: str | None = None
 
 
 class ProviderSettingsRead(BaseModel):
     npi: str | None
     availity_connected: bool
+    telehealth_link: str | None
 
 
 class AuditLogRead(BaseModel):

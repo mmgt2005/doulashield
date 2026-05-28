@@ -20,6 +20,8 @@ class VisitCreate(BaseModel):
     visit_started_at: datetime | None = None
     provider_latitude: float | None = None
     provider_longitude: float | None = None
+    location_type: str | None = None
+    alternate_location: str | None = None
 
 
 class VisitRead(BaseModel):
@@ -42,5 +44,7 @@ class VisitRead(BaseModel):
     visit_started_at: datetime | None
     provider_latitude: float | None
     provider_longitude: float | None
+    location_type: str | None
+    alternate_location: str | None
     created_at: datetime
     updated_at: datetime

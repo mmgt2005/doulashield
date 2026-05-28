@@ -30,6 +30,7 @@ class EligibilityService:
         return ProviderSettingsRead(
             npi=user.npi,
             availity_connected=bool(user.availity_client_id_encrypted and user.availity_client_secret_encrypted),
+            telehealth_link=user.telehealth_link,
         )
 
     async def update_provider_settings(
@@ -50,6 +51,8 @@ class EligibilityService:
             user.availity_client_id_encrypted = encrypt_field(data.availity_client_id)
         if data.availity_client_secret is not None:
             user.availity_client_secret_encrypted = encrypt_field(data.availity_client_secret)
+        if data.telehealth_link is not None:
+            user.telehealth_link = data.telehealth_link
 
         await self._db.commit()
         await self._db.refresh(user)
@@ -65,6 +68,7 @@ class EligibilityService:
         return ProviderSettingsRead(
             npi=user.npi,
             availity_connected=bool(user.availity_client_id_encrypted and user.availity_client_secret_encrypted),
+            telehealth_link=user.telehealth_link,
         )
 
     async def check_eligibility(

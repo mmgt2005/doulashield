@@ -88,6 +88,8 @@ export interface Visit {
   visit_started_at: string | null
   provider_latitude: number | null
   provider_longitude: number | null
+  location_type: 'in_person' | 'telehealth' | null
+  alternate_location: string | null
   created_at: string
   updated_at: string
 }

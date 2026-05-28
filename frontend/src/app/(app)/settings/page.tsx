@@ -9,6 +9,7 @@ interface SettingsFormData {
   npi: string
   availity_client_id: string
   availity_client_secret: string
+  telehealth_link: string
 }
 
 export default function SettingsPage() {
@@ -21,12 +22,13 @@ export default function SettingsPage() {
 
   useEffect(() => {
     axios
-      .get<{ npi: string | null; availity_connected: boolean }>(
+      .get<{ npi: string | null; availity_connected: boolean; telehealth_link: string | null }>(
         `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/me/provider-settings`,
         { headers: { Authorization: `Bearer ${getAccessToken()}` } }
       )
       .then((r) => {
         if (r.data.npi) setValue('npi', r.data.npi)
+        if (r.data.telehealth_link) setValue('telehealth_link', r.data.telehealth_link)
         setConnected(r.data.availity_connected)
       })
       .finally(() => setLoading(false))
@@ -40,6 +42,7 @@ export default function SettingsPage() {
       if (data.npi) body.npi = data.npi
       if (data.availity_client_id) body.availity_client_id = data.availity_client_id
       if (data.availity_client_secret) body.availity_client_secret = data.availity_client_secret
+      if (data.telehealth_link) body.telehealth_link = data.telehealth_link
 
       const res = await axios.patch<{ npi: string | null; availity_connected: boolean }>(
         `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/me/provider-settings`,
@@ -109,6 +112,23 @@ export default function SettingsPage() {
                 className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
             </div>
+          </div>
+        </div>
+
+        <div className="border-t pt-4">
+          <h2 className="text-sm font-semibold text-gray-700 mb-3">Telehealth</h2>
+          <p className="text-xs text-gray-500 mb-3">
+            Enter your personal meeting room link. Doxy.me is recommended — it's free, HIPAA-compliant, and requires no patient download. Zoom requires a paid Pro plan with HIPAA BAA.
+          </p>
+          <div>
+            <label htmlFor="telehealth_link" className="block text-sm font-medium text-gray-700">Telehealth meeting link</label>
+            <input
+              {...register('telehealth_link')}
+              id="telehealth_link"
+              type="url"
+              placeholder="https://doxy.me/yourname"
+              className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
           </div>
         </div>
 

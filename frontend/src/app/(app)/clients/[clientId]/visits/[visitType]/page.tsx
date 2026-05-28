@@ -26,6 +26,8 @@ const schema = z.object({
   visit_started_at: z.string().optional(),
   provider_latitude: z.number().optional(),
   provider_longitude: z.number().optional(),
+  location_type: z.enum(['in_person', 'telehealth']).default('in_person'),
+  alternate_location: z.string().optional(),
 })
 type FormData = z.infer<typeof schema>
 
@@ -35,7 +37,12 @@ export default function VisitFormPage() {
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [patient, setPatient] = useState<Patient | null>(null)
 
-  // Start Visit state
+  // Location type toggle
+  const [locationType, setLocationType] = useState<'in_person' | 'telehealth'>('in_person')
+  const [telehealthLink, setTelehealthLink] = useState<string | null>(null)
+  const [telehealthStarted, setTelehealthStarted] = useState<Date | null>(null)
+
+  // Start Visit state (in-person)
   const [visitStarted, setVisitStarted] = useState<Date | null>(null)
   const [locating, setLocating] = useState(false)
   const [locationError, setLocationError] = useState<string | null>(null)
@@ -55,8 +62,13 @@ export default function VisitFormPage() {
     Promise.all([
       axios.get<Patient>(`${base}/api/v1/patients/${clientId}`, { headers }),
       axios.get<Visit>(`${base}/api/v1/patients/${clientId}/visits/${visitType}`, { headers }).catch(() => null),
-    ]).then(([patientRes, visitRes]) => {
+      axios.get<{ npi: string | null; availity_connected: boolean; telehealth_link: string | null }>(
+        `${base}/api/v1/auth/me/provider-settings`,
+        { headers }
+      ).catch(() => null),
+    ]).then(([patientRes, visitRes, settingsRes]) => {
       setPatient(patientRes.data)
+      if (settingsRes) setTelehealthLink(settingsRes.data.telehealth_link ?? null)
       if (visitRes) {
         const v = visitRes.data
         if (v.visit_date) setValue('visit_date', v.visit_date)
@@ -69,9 +81,19 @@ export default function VisitFormPage() {
         if (v.birth_location) setValue('birth_location', v.birth_location)
         if (v.birth_notes) setValue('birth_notes', v.birth_notes)
         if (v.source_image_path) setValue('source_image_path', v.source_image_path)
+        if (v.alternate_location) setValue('alternate_location', v.alternate_location)
+        if (v.location_type) {
+          const lt = v.location_type as 'in_person' | 'telehealth'
+          setLocationType(lt)
+          setValue('location_type', lt)
+        }
         if (v.visit_started_at) {
           const started = new Date(v.visit_started_at)
-          setVisitStarted(started)
+          if (v.location_type === 'telehealth') {
+            setTelehealthStarted(started)
+          } else {
+            setVisitStarted(started)
+          }
           setValue('visit_started_at', v.visit_started_at)
           if (v.provider_latitude != null) setValue('provider_latitude', v.provider_latitude)
           if (v.provider_longitude != null) setValue('provider_longitude', v.provider_longitude)
@@ -103,13 +125,13 @@ export default function VisitFormPage() {
         setValue('visit_started_at', now.toISOString())
         setValue('provider_latitude', provLat)
         setValue('provider_longitude', provLng)
+        setValue('location_type', 'in_person')
         setLocating(false)
 
-        // Persist immediately without requiring full form save
         try {
           await axios.put(
             `${process.env.NEXT_PUBLIC_API_URL}/api/v1/patients/${clientId}/visits/${visitType}`,
-            { visit_started_at: now.toISOString(), provider_latitude: provLat, provider_longitude: provLng },
+            { visit_started_at: now.toISOString(), provider_latitude: provLat, provider_longitude: provLng, location_type: 'in_person' },
             { headers: { Authorization: `Bearer ${getAccessToken()}` } }
           )
         } catch { /* non-blocking */ }
@@ -121,6 +143,22 @@ export default function VisitFormPage() {
       { enableHighAccuracy: true, timeout: 10000 }
     )
   }, [patient, clientId, visitType, setValue])
+
+  const handleStartTelehealth = useCallback(async () => {
+    if (!telehealthLink) return
+    window.open(telehealthLink, '_blank', 'noopener')
+    const now = new Date()
+    setTelehealthStarted(now)
+    setValue('visit_started_at', now.toISOString())
+    setValue('location_type', 'telehealth')
+    try {
+      await axios.put(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/patients/${clientId}/visits/${visitType}`,
+        { visit_started_at: now.toISOString(), location_type: 'telehealth' },
+        { headers: { Authorization: `Bearer ${getAccessToken()}` } }
+      )
+    } catch { /* non-blocking */ }
+  }, [telehealthLink, clientId, visitType, setValue])
 
   const handleScanned = async (data: Record<string, unknown>) => {
     const dateVal = data.entry_date ?? data.birth_date ?? data.visit_date
@@ -138,7 +176,6 @@ export default function VisitFormPage() {
     const base = process.env.NEXT_PUBLIC_API_URL
     const headers = { Authorization: `Bearer ${getAccessToken()}` }
 
-    // Auto-save extracted address to patient profile
     if (data.address && patient) {
       try {
         const coords = await geocodeAddress(String(data.address))
@@ -151,7 +188,6 @@ export default function VisitFormPage() {
       } catch { /* non-blocking */ }
     }
 
-    // Auto-save extracted DOB to patient profile (only if not already set)
     if (data.date_of_birth && patient && !patient.date_of_birth) {
       try {
         await axios.patch(
@@ -201,44 +237,126 @@ export default function VisitFormPage() {
         <h1 className="text-xl font-bold text-gray-900">{slot.label}</h1>
       </div>
 
-      {/* Start Visit panel */}
-      {!visitStarted ? (
-        <div className="rounded-lg border border-gray-200 bg-white p-4">
-          <p className="text-xs text-gray-500 mb-2">Record your arrival location and time before beginning the visit.</p>
-          <button
-            type="button"
-            onClick={handleStartVisit}
-            disabled={locating}
-            className="flex items-center gap-2 rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-          >
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-            {locating ? 'Getting location…' : 'Start Visit'}
-          </button>
-          {locationError && <p className="mt-2 text-xs text-red-600">{locationError}</p>}
-        </div>
-      ) : distanceFt !== null && distanceFt > 500 ? (
-        <div className="rounded-lg border border-amber-300 bg-amber-50 p-4">
-          <p className="text-sm font-medium text-amber-800">
-            ⚠ Started at {formatTime(visitStarted)}
-          </p>
-          <p className="text-xs text-amber-700 mt-0.5">
-            You are {formatDist(distanceFt)} from the client's address — confirm you are at the correct location.
-          </p>
-        </div>
-      ) : (
-        <div className="rounded-lg border border-green-200 bg-green-50 p-4">
-          <p className="text-sm font-medium text-green-800">
-            ✓ Started at {formatTime(visitStarted)}
-            {distanceFt !== null
-              ? ` · ${formatDist(distanceFt)} from client`
-              : patient?.address
-                ? ' · Location not verified (address could not be geocoded)'
-                : ' · Location not verified (no address on file)'}
-          </p>
-        </div>
+      {/* Location type toggle */}
+      <div className="flex rounded-lg border border-gray-200 overflow-hidden w-fit">
+        <button
+          type="button"
+          onClick={() => { setLocationType('in_person'); setValue('location_type', 'in_person') }}
+          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors ${
+            locationType === 'in_person'
+              ? 'bg-blue-600 text-white'
+              : 'bg-white text-gray-700 hover:bg-gray-50'
+          }`}
+        >
+          <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+          </svg>
+          In Person
+        </button>
+        <button
+          type="button"
+          onClick={() => { setLocationType('telehealth'); setValue('location_type', 'telehealth') }}
+          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors border-l ${
+            locationType === 'telehealth'
+              ? 'bg-blue-600 text-white border-blue-600'
+              : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-200'
+          }`}
+        >
+          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+              d="M15 10l4.553-2.069A1 1 0 0121 8.867v6.266a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          </svg>
+          Telehealth
+        </button>
+      </div>
+
+      {/* In-person Start Visit panel */}
+      {locationType === 'in_person' && (
+        <>
+          {!visitStarted ? (
+            <div className="rounded-lg border border-gray-200 bg-white p-4">
+              <p className="text-xs text-gray-500 mb-2">Record your arrival location and time before beginning the visit.</p>
+              <button
+                type="button"
+                onClick={handleStartVisit}
+                disabled={locating}
+                className="flex items-center gap-2 rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                {locating ? 'Getting location…' : 'Start Visit'}
+              </button>
+              {locationError && <p className="mt-2 text-xs text-red-600">{locationError}</p>}
+            </div>
+          ) : distanceFt !== null && distanceFt > 500 ? (
+            <div className="rounded-lg border border-amber-300 bg-amber-50 p-4">
+              <p className="text-sm font-medium text-amber-800">
+                ⚠ Started at {formatTime(visitStarted)}
+              </p>
+              <p className="text-xs text-amber-700 mt-0.5">
+                You are {formatDist(distanceFt)} from the client's address — confirm you are at the correct location.
+              </p>
+              <p className="mt-2 text-xs font-medium text-amber-800">Are you meeting at a different location?</p>
+              <input
+                {...register('alternate_location')}
+                type="text"
+                placeholder="Describe the location (e.g., clinic, hospital)"
+                className="mt-1 w-full rounded border border-amber-300 bg-white px-3 py-1.5 text-sm focus:outline-none focus:border-amber-500"
+              />
+            </div>
+          ) : (
+            <div className="rounded-lg border border-green-200 bg-green-50 p-4">
+              <p className="text-sm font-medium text-green-800">
+                ✓ Started at {formatTime(visitStarted)}
+                {distanceFt !== null
+                  ? ` · ${formatDist(distanceFt)} from client`
+                  : patient?.address
+                    ? ' · Location not verified (address could not be geocoded)'
+                    : ' · Location not verified (no address on file)'}
+              </p>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Telehealth panel */}
+      {locationType === 'telehealth' && (
+        <>
+          {!telehealthLink ? (
+            <div className="rounded-lg border border-gray-200 bg-white p-4">
+              <p className="text-sm text-gray-600">Configure your telehealth meeting link in Settings before starting a telehealth session.</p>
+              <a
+                href="/settings"
+                className="mt-2 inline-block text-sm text-blue-600 hover:text-blue-800"
+              >
+                → Go to Settings
+              </a>
+            </div>
+          ) : !telehealthStarted ? (
+            <div className="rounded-lg border border-gray-200 bg-white p-4">
+              <p className="text-xs text-gray-500 mb-2">Opens your meeting room in a new tab and records the session start time.</p>
+              <button
+                type="button"
+                onClick={handleStartTelehealth}
+                className="flex items-center gap-2 rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M15 10l4.553-2.069A1 1 0 0121 8.867v6.266a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                Start Telehealth
+              </button>
+            </div>
+          ) : (
+            <div className="rounded-lg border border-green-200 bg-green-50 p-4">
+              <p className="text-sm font-medium text-green-800">
+                ✓ Telehealth session started at {formatTime(telehealthStarted)}
+              </p>
+            </div>
+          )}
+        </>
       )}
 
       <ImageUploadScanner
@@ -304,6 +422,7 @@ export default function VisitFormPage() {
         <input type="hidden" {...register('visit_started_at')} />
         <input type="hidden" {...register('provider_latitude')} />
         <input type="hidden" {...register('provider_longitude')} />
+        <input type="hidden" {...register('location_type')} />
 
         {submitError && <p className="text-sm text-red-600">{submitError}</p>}
         <div className="flex flex-col gap-3 sm:flex-row">
