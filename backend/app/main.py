@@ -34,7 +34,7 @@ app.add_middleware(
     allow_origins=[settings.FRONTEND_ORIGIN],
     allow_credentials=True,
     # DELETE is intentionally omitted — soft-delete via PATCH only
-    allow_methods=["GET", "POST", "PATCH", "OPTIONS"],
+    allow_methods=["GET", "POST", "PATCH", "PUT", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type"],
 )
 

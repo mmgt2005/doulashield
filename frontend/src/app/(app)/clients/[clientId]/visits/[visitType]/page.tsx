@@ -219,7 +219,9 @@ export default function VisitFormPage() {
             ✓ Started at {formatTime(visitStarted)}
             {distanceFt !== null
               ? ` · ${formatDist(distanceFt)} from client`
-              : ' · Location not verified (no address on file)'}
+              : patient?.address
+                ? ' · Location not verified (address could not be geocoded)'
+                : ' · Location not verified (no address on file)'}
           </p>
         </div>
       )}
