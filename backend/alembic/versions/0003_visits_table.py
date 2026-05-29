@@ -21,7 +21,18 @@ _VALID_TYPES = (
 def upgrade() -> None:
     valid_list = ", ".join(f"'{v}'" for v in _VALID_TYPES)
 
-    op.execute(f"CREATE TYPE IF NOT EXISTS public.visit_type_enum AS ENUM ({valid_list})")
+    op.execute(f"""
+        DO $$
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM pg_type t
+                JOIN pg_namespace n ON n.oid = t.typnamespace
+                WHERE t.typname = 'visit_type_enum' AND n.nspname = 'public'
+            ) THEN
+                CREATE TYPE public.visit_type_enum AS ENUM ({valid_list});
+            END IF;
+        END $$
+    """)
 
     op.execute(f"""
         CREATE TABLE IF NOT EXISTS public.visits (
