@@ -20,7 +20,6 @@ export default function SettingsPage() {
   const isAdmin = user?.role === 'admin'
   const [connected, setConnected] = useState(false)
   const [zipzignConnected, setZipzignConnected] = useState(false)
-  const [loading, setLoading] = useState(true)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
 
@@ -40,7 +39,6 @@ export default function SettingsPage() {
         setConnected(r.data.availity_connected)
         setZipzignConnected(r.data.zipzign_connected)
       })
-      .finally(() => setLoading(false))
   }, [setValue, isAuthenticated])
 
   const onSubmit = async (data: SettingsFormData) => {
@@ -84,7 +82,7 @@ export default function SettingsPage() {
     }
   }
 
-  if (loading || authLoading) return <p className="text-sm text-gray-500">Loading…</p>
+  if (authLoading) return <p className="text-sm text-gray-500">Loading…</p>
 
   return (
     <div className="max-w-lg space-y-6">
