@@ -18,6 +18,8 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 ### Added
 - Role badge in the sidebar footer (purple "Admin" / blue "Provider") shown below the user's email address
 - Role badge in the Settings page heading so users always know which role they are operating under
+- ZipZign "Disconnect" button in Settings: when a key is saved, a red "Disconnect" link appears inline next to the label; clicking it immediately clears the stored key and removes the Connected badge
+- ZipZign API key placeholder updated to "Enter a new key to replace the saved one" when connected, making it clear the field accepts updates
 
 ---
 
