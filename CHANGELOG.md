@@ -11,6 +11,9 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 ## [Unreleased]
 
 ### Added
+- Sequential visit enforcement: within prenatal and postnatal groups, a provider cannot navigate to the next visit until the previous one has a recorded `visit_ended_at`; blocked slots show a lock icon and "Complete X first" message on the client overview and render a non-clickable `<div>` instead of a link; navigating directly to a blocked visit URL shows an amber warning with a link back to the previous visit
+- Prenatal 1 in-person requirement: the Telehealth toggle is disabled (greyed out, tooltip "First prenatal visit must be in-person") on the Prenatal 1 visit form; stored `location_type` values are not applied on load for this visit type
+- Visit slot 4-state display on client overview: complete (gray + green checkmark), in-progress (amber + clock icon + "In progress"), blocked (gray + lock icon + prev label), pending (blue + arrow)
 - Visit end timestamp: "End Visit" button appears in the started banner (both in-person and telehealth) after a visit is started; tapping it records `visit_ended_at` immediately to the backend and displays end time + duration (e.g., "✓ Ended at 11:15 AM · Duration: 47m"); end time pre-populates on reload
 - Live visit timer: after starting a visit, a ticking MM:SS stopwatch shows in amber with a "X min to 30" countdown until the Medicaid 30-minute minimum is met, then turns green; "End Visit" freezes the timer to the final duration
 - 30-minute billing warning: if a visit is ended under 30 minutes, the duration displays in amber with ⚠ and a billing warning panel ("Medicaid requires at least 30 minutes for T1032/T1033 reimbursement") appears above the Save button (non-blocking)
