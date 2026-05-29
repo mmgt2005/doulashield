@@ -10,6 +10,9 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ## [Unreleased]
 
+### Added
+- Visit end timestamp: "End Visit" button appears in the started banner (both in-person and telehealth) after a visit is started; tapping it records `visit_ended_at` immediately to the backend and displays end time + duration (e.g., "✓ Ended at 11:15 AM · Duration: 47m"); end time pre-populates on reload
+
 ### Fixed
 - Settings page called `useAuth()` in addition to the layout, causing two concurrent `/auth/refresh` requests; if the refresh token is single-use the second call triggered `logout()` (user=null), hiding the ZipZign API key field and role badge — settings page now reads from `useAuthStore()` directly and gates its data fetch on `isAuthenticated` so it only fires after the layout has hydrated the token
 - Settings page stuck on "Loading…" indefinitely when auth resolved to unauthenticated — removed the settings-data loading gate; page now renders as soon as `authLoading` clears and settings data fills in asynchronously
