@@ -69,6 +69,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
         >
           Sign out
         </button>
+        <p className="mt-2 text-xs text-gray-400">v{process.env.NEXT_PUBLIC_APP_VERSION}</p>
       </div>
     </aside>
   )

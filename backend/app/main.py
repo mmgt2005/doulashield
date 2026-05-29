@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -15,11 +16,13 @@ logging.basicConfig(
     format='{"time":"%(asctime)s","level":"%(levelname)s","logger":"%(name)s","message":"%(message)s"}',
 )
 
+_VERSION = Path(__file__).parent.parent.joinpath("VERSION").read_text().strip()
+
 limiter = Limiter(key_func=get_remote_address)
 
 app = FastAPI(
     title="DoulaShield API",
-    version="1.0.0",
+    version=_VERSION,
     # Disable interactive docs in production — no PHI in Swagger UI
     docs_url=None if settings.ENVIRONMENT == "production" else "/docs",
     redoc_url=None,
@@ -46,4 +49,4 @@ app.include_router(api_router, prefix="/api/v1")
 
 @app.get("/health", include_in_schema=False)
 async def health() -> dict:
-    return {"status": "ok"}
+    return {"status": "ok", "version": _VERSION}

@@ -1,13 +1,57 @@
 # DoulaShield Changelog
 
-All notable changes to this project are documented here. This file is updated with every commit.
+All notable changes to this project are documented here.
+
+Format: `## [version] — YYYY-MM-DD`. Changes accumulate under `[Unreleased]`; on each release that section is renamed to the new version and a fresh `[Unreleased]` stub is added above it.
+
+Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new features; **major** (x.0.0): breaking auth/schema changes.
 
 ---
 
 ## [Unreleased]
 
-### Changed
-- Added `*.tsbuildinfo` to `.gitignore` to exclude TypeScript incremental build artifacts from version control
+---
+
+## [1.0.0] — 2026-05-29
+
+First production release.
+
+### Infrastructure
+- HIPAA-compliant FastAPI backend on Railway; Next.js 15 frontend on Vercel; Supabase PostgreSQL with Row Level Security
+- JWT auth (15-min access tokens in memory, 7-day refresh cookie); TOTP MFA; bcrypt(12) passwords
+- Fernet symmetric encryption for Medicaid ID and provider credentials
+- Immutable audit log (PostgreSQL rules block UPDATE/DELETE on `audit_logs`)
+- Rate limiting on login (10 req/min, slowapi + Redis); session timeout 15 min with 60-sec modal
+- Security headers: HSTS, CSP, X-Frame-Options; CORS locked to single origin
+- Alembic migrations (0001–0009) made idempotent with `IF NOT EXISTS` guards
+- Version number exposed in `GET /health` response and sidebar footer
+
+### Patient & Visit Management
+- Patient CRUD with soft-delete (admin only); Fernet-encrypted name and Medicaid ID
+- 13-slot structured visit tracker (6 prenatal, 1 labor, 6 postnatal) with SOAP notes per visit
+- Client address with Nominatim geocoding, address autocomplete, and geocode-verified indicator
+- Date of birth field; eligibility status display
+- Email field on client profile; `PATCH /patients/{id}` for profile updates
+
+### Scanning & AI
+- Image OCR via Claude Haiku 4.5 — Medicaid card and handwritten handbook page scanning; images stored in Supabase Storage (private bucket)
+- MCO name normalised to 7 canonical Pennsylvania MCO names on scan
+- AI-powered SOAP note clinical translation (plain language → Medicaid audit-ready clinical documentation); provider review required before saving
+
+### Integibility & Claims (Availity)
+- Per-provider Availity OAuth credentials (Fernet-encrypted); Redis token cache (55-min TTL)
+- Eligibility verification (270/271); claims (837P); prior authorizations (278); remittance advice (835); document submission; provider directory search
+
+### Telehealth & Signatures
+- Per-visit location type toggle (in-person / telehealth); alternate location field when provider is >500 ft from client
+- Telehealth meeting link in Settings; "Start Telehealth" opens doxy.me and fires a `mailto:` with the room link to the client
+- MA 91 Pennsylvania Medicaid certification: canvas signature pad (in-person) and ZipZign e-signature (telehealth)
+- ZipZign API key stored as admin-only shared credential
+
+### Bug Fixes
+- Added `psycopg2-binary` to fix Alembic startup crash on Railway
+- Added `sslmode=require` to Alembic psycopg2 connection URL (Supabase requires SSL)
+- Fixed ZipZign base URL (`api.zipzign.com` → `zipzign.com`), endpoint (`/api/documents`), request body, webhook event names, metadata parsing, and HMAC signature verification
 
 ---
 
