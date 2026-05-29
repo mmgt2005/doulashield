@@ -8,8 +8,8 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import axios from 'axios'
 import { getAccessToken } from '@/lib/auth'
 import { geocodeAddress, haversineFeet } from '@/lib/geo'
-import { Patient, Visit } from '@/types/domain'
-import { getSlotConfig } from '@/lib/visit-config'
+import { Patient, Visit, VisitType } from '@/types/domain'
+import { getSlotConfig, getPrevSlotInGroup } from '@/lib/visit-config'
 import ImageUploadScanner from '@/components/ui/ImageUploadScanner'
 import dynamic from 'next/dynamic'
 
@@ -75,6 +75,10 @@ export default function VisitFormPage() {
   const [distanceFt, setDistanceFt] = useState<number | null>(null)
 
   const slot = getSlotConfig(visitType)
+  const forcedInPerson = visitType === 'prenatal_1'
+
+  // Sequential enforcement
+  const [blockedByPrev, setBlockedByPrev] = useState(false)
 
   // SOAP AI draft state
   const [translating, setTranslating] = useState(false)
@@ -107,7 +111,7 @@ export default function VisitFormPage() {
         `${base}/api/v1/auth/me/provider-settings`,
         { headers }
       ).catch(() => null),
-    ]).then(([patientRes, visitRes, settingsRes]) => {
+    ]).then(async ([patientRes, visitRes, settingsRes]) => {
       setPatient(patientRes.data)
       if (patientRes.data.email) setMa91PatientEmail(patientRes.data.email)
       if (settingsRes) {
@@ -127,7 +131,7 @@ export default function VisitFormPage() {
         if (v.birth_notes) setValue('birth_notes', v.birth_notes)
         if (v.source_image_path) setValue('source_image_path', v.source_image_path)
         if (v.alternate_location) setValue('alternate_location', v.alternate_location)
-        if (v.location_type) {
+        if (v.location_type && visitType !== 'prenatal_1') {
           const lt = v.location_type as 'in_person' | 'telehealth'
           setLocationType(lt)
           setValue('location_type', lt)
@@ -152,6 +156,21 @@ export default function VisitFormPage() {
           if (v.provider_latitude != null && v.provider_longitude != null && patientRes.data.latitude != null && patientRes.data.longitude != null) {
             setDistanceFt(haversineFeet(v.provider_latitude, v.provider_longitude, patientRes.data.latitude, patientRes.data.longitude))
           }
+        }
+      }
+
+      // Check sequential enforcement: fetch previous visit in group
+      const prevType = getPrevSlotInGroup(visitType as VisitType)
+      if (prevType) {
+        try {
+          const prevRes = await axios.get<Visit>(
+            `${base}/api/v1/patients/${clientId}/visits/${prevType}`,
+            { headers }
+          )
+          if (!prevRes.data?.visit_ended_at) setBlockedByPrev(true)
+        } catch {
+          // 404 = previous visit never started → blocked
+          setBlockedByPrev(true)
         }
       }
     }).catch(() => { /* non-blocking */ })
@@ -372,6 +391,31 @@ export default function VisitFormPage() {
     return <p className="text-sm text-red-600">Unknown visit type.</p>
   }
 
+  if (blockedByPrev) {
+    const prevType = getPrevSlotInGroup(visitType as VisitType)
+    const prevSlot = prevType ? getSlotConfig(prevType) : null
+    return (
+      <div className="max-w-2xl space-y-4">
+        <div className="flex items-center gap-3">
+          <button type="button" onClick={() => router.push(`/clients/${clientId}`)} className="text-sm text-gray-500 hover:text-gray-700">
+            ← Back
+          </button>
+          <h1 className="text-xl font-bold text-gray-900">{slot.label}</h1>
+        </div>
+        <div className="rounded-lg border border-amber-300 bg-amber-50 p-4">
+          <p className="text-sm font-medium text-amber-800">
+            ⚠ You must end the previous visit before starting this one.
+          </p>
+          {prevType && prevSlot && (
+            <a href={`/clients/${clientId}/visits/${prevType}`} className="mt-2 inline-block text-sm text-blue-600 hover:text-blue-800">
+              → Go to {prevSlot.label}
+            </a>
+          )}
+        </div>
+      </div>
+    )
+  }
+
   const formatTime = (d: Date) =>
     d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 
@@ -409,12 +453,14 @@ export default function VisitFormPage() {
         </button>
         <button
           type="button"
-          onClick={() => { setLocationType('telehealth'); setValue('location_type', 'telehealth') }}
+          onClick={() => { if (!forcedInPerson) { setLocationType('telehealth'); setValue('location_type', 'telehealth') } }}
+          disabled={forcedInPerson}
+          title={forcedInPerson ? 'First prenatal visit must be in-person' : undefined}
           className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition-colors border-l ${
             locationType === 'telehealth'
               ? 'bg-blue-600 text-white border-blue-600'
-              : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-200'
-          }`}
+              : 'bg-white text-gray-700 border-gray-200'
+          } ${forcedInPerson ? 'opacity-40 cursor-not-allowed' : 'hover:bg-gray-50'}`}
         >
           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}

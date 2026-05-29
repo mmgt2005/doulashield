@@ -33,3 +33,12 @@ export const VISIT_GROUPS: { key: 'prenatal' | 'labor' | 'postnatal'; label: str
 export function getSlotConfig(visitType: string): VisitSlotConfig | undefined {
   return VISIT_SLOTS.find((s) => s.visitType === visitType)
 }
+
+export function getPrevSlotInGroup(visitType: VisitType): VisitType | null {
+  const current = getSlotConfig(visitType)
+  if (!current || current.group === 'labor') return null
+  const groupSlots = VISIT_SLOTS.filter((s) => s.group === current.group)
+  const idx = groupSlots.findIndex((s) => s.visitType === visitType)
+  if (idx <= 0) return null
+  return groupSlots[idx - 1].visitType as VisitType
+}
