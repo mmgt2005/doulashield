@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import axios from 'axios'
 import { useAuthStore } from '@/store/auth-store'
-import { setAccessToken } from '@/lib/auth'
+import { User } from '@/types/domain'
 
 const schema = z.object({
   email: z.string().email('Enter a valid email'),
@@ -44,8 +44,12 @@ export default function LoginPage() {
         return
       }
 
-      setAccessToken(res.data.access_token)
-      // Redirect; auth store user will be hydrated by the app layout
+      const token = res.data.access_token
+      const meRes = await axios.get<User>(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/me`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+      setUser(meRes.data, token)
       router.push('/dashboard')
     } catch {
       setError('Invalid email or password.')
