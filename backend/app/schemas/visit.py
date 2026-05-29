@@ -22,6 +22,11 @@ class VisitCreate(BaseModel):
     provider_longitude: float | None = None
     location_type: str | None = None
     alternate_location: str | None = None
+    ma91_signed_at: datetime | None = None
+    ma91_signature_path: str | None = None
+    ma91_signed_by_name: str | None = None
+    ma91_zipzign_request_id: str | None = None
+    ma91_status: str | None = None
 
 
 class VisitRead(BaseModel):
@@ -46,5 +51,10 @@ class VisitRead(BaseModel):
     provider_longitude: float | None
     location_type: str | None
     alternate_location: str | None
+    ma91_signed_at: datetime | None
+    ma91_signature_path: str | None
+    ma91_signed_by_name: str | None
+    ma91_zipzign_request_id: str | None
+    ma91_status: str | None
     created_at: datetime
     updated_at: datetime

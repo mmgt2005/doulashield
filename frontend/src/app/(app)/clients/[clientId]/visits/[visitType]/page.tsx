@@ -11,6 +11,9 @@ import { geocodeAddress, haversineFeet } from '@/lib/geo'
 import { Patient, Visit } from '@/types/domain'
 import { getSlotConfig } from '@/lib/visit-config'
 import ImageUploadScanner from '@/components/ui/ImageUploadScanner'
+import dynamic from 'next/dynamic'
+
+const SignaturePad = dynamic(() => import('@/components/ui/SignaturePad'), { ssr: false })
 
 const SOAP_PLACEHOLDERS: Record<string, string> = {
   subjective: 'How is the client feeling today? Did she report any specific concerns?',
@@ -62,6 +65,16 @@ export default function VisitFormPage() {
   const [translateError, setTranslateError] = useState<string | null>(null)
   const [soapDraft, setSoapDraft] = useState<{ subjective: string | null; objective: string | null; assessment: string | null; plan: string | null } | null>(null)
 
+  // MA 91 signature state
+  const [ma91Status, setMa91Status] = useState<string | null>(null)
+  const [ma91SignedByName, setMa91SignedByName] = useState<string | null>(null)
+  const [ma91SignedAt, setMa91SignedAt] = useState<string | null>(null)
+  const [ma91PatientName, setMa91PatientName] = useState('')
+  const [ma91PatientEmail, setMa91PatientEmail] = useState('')
+  const [ma91Submitting, setMa91Submitting] = useState(false)
+  const [ma91Error, setMa91Error] = useState<string | null>(null)
+  const [zipzignConnected, setZipzignConnected] = useState(false)
+
   const { register, handleSubmit, setValue, watch, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
   })
@@ -80,7 +93,10 @@ export default function VisitFormPage() {
       ).catch(() => null),
     ]).then(([patientRes, visitRes, settingsRes]) => {
       setPatient(patientRes.data)
-      if (settingsRes) setTelehealthLink(settingsRes.data.telehealth_link ?? null)
+      if (settingsRes) {
+        setTelehealthLink(settingsRes.data.telehealth_link ?? null)
+        setZipzignConnected((settingsRes.data as { zipzign_connected?: boolean }).zipzign_connected ?? false)
+      }
       if (visitRes) {
         const v = visitRes.data
         if (v.visit_date) setValue('visit_date', v.visit_date)
@@ -99,6 +115,12 @@ export default function VisitFormPage() {
           setLocationType(lt)
           setValue('location_type', lt)
         }
+        if (v.ma91_status) setMa91Status(v.ma91_status)
+        if (v.ma91_signed_by_name) {
+          setMa91SignedByName(v.ma91_signed_by_name)
+          setMa91PatientName(v.ma91_signed_by_name)
+        }
+        if (v.ma91_signed_at) setMa91SignedAt(v.ma91_signed_at)
         if (v.visit_started_at) {
           const started = new Date(v.visit_started_at)
           if (v.location_type === 'telehealth') {
@@ -233,6 +255,45 @@ export default function VisitFormPage() {
       setTranslateError('Translation failed — please try again.')
     } finally {
       setTranslating(false)
+    }
+  }
+
+  const handleInPersonSign = async (dataUrl: string) => {
+    setMa91Submitting(true)
+    setMa91Error(null)
+    try {
+      await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/patients/${clientId}/visits/${visitType}/sign-in-person`,
+        { signature_data_url: dataUrl, patient_name: ma91PatientName },
+        { headers: { Authorization: `Bearer ${getAccessToken()}` } }
+      )
+      setMa91Status('signed')
+      setMa91SignedByName(ma91PatientName)
+      setMa91SignedAt(new Date().toISOString())
+    } catch (e: unknown) {
+      const msg = (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail
+      setMa91Error(msg ?? 'Signature save failed — please try again.')
+    } finally {
+      setMa91Submitting(false)
+    }
+  }
+
+  const handleRequestTelehealthSignature = async () => {
+    setMa91Submitting(true)
+    setMa91Error(null)
+    try {
+      await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/patients/${clientId}/visits/${visitType}/request-telehealth-signature`,
+        { patient_email: ma91PatientEmail, patient_name: ma91PatientName },
+        { headers: { Authorization: `Bearer ${getAccessToken()}` } }
+      )
+      setMa91Status('pending')
+      setMa91SignedByName(ma91PatientName)
+    } catch (e: unknown) {
+      const msg = (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail
+      setMa91Error(msg ?? 'Failed to send signature request — please try again.')
+    } finally {
+      setMa91Submitting(false)
     }
   }
 
@@ -516,6 +577,112 @@ export default function VisitFormPage() {
         <input type="hidden" {...register('provider_latitude')} />
         <input type="hidden" {...register('provider_longitude')} />
         <input type="hidden" {...register('location_type')} />
+
+        {/* MA 91 Encounter Form Certification */}
+        <div className="space-y-3 border-t pt-4">
+          <h2 className="text-sm font-semibold text-gray-700">MA 91 Patient Certification</h2>
+          <div className="rounded border border-gray-200 bg-gray-50 p-3">
+            <p className="text-xs text-gray-600 leading-relaxed">
+              <span className="font-medium">Official MA 91 Encounter Form Certification:</span>{' '}
+              "My signature certifies that I received a service or item on the date listed above.
+              I understand that payment for this service will be from Federal and State funds,
+              and that any false claims or concealment of material may be prosecuted under Federal and State laws."
+            </p>
+          </div>
+
+          {/* Signed status banner */}
+          {ma91Status === 'signed' && (
+            <div className="rounded-lg border border-green-200 bg-green-50 p-3">
+              <p className="text-sm font-medium text-green-800">
+                ✓ Signed by {ma91SignedByName}
+                {ma91SignedAt && ` on ${new Date(ma91SignedAt).toLocaleDateString()}`}
+              </p>
+            </div>
+          )}
+          {ma91Status === 'pending' && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+              <p className="text-sm font-medium text-amber-800">
+                ⏳ Signature request sent to {ma91PatientName}
+              </p>
+              <p className="text-xs text-amber-700 mt-0.5">Patient will receive an email with the MA 91 form to sign.</p>
+            </div>
+          )}
+          {ma91Status === 'declined' && (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-3">
+              <p className="text-sm font-medium text-red-800">✗ Patient declined the signature request</p>
+            </div>
+          )}
+
+          {/* Patient name field — shown when not yet signed */}
+          {ma91Status !== 'signed' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Patient name</label>
+              <input
+                type="text"
+                value={ma91PatientName}
+                onChange={(e) => setMa91PatientName(e.target.value)}
+                placeholder="Patient's full name"
+                className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
+          )}
+
+          {/* In-person canvas signature */}
+          {locationType === 'in_person' && ma91Status !== 'signed' && (
+            <div className="space-y-2">
+              <p className="text-xs text-gray-500">Patient signs below on your device:</p>
+              <SignaturePad
+                onSave={handleInPersonSign}
+                onClear={() => setMa91Error(null)}
+                disabled={ma91Submitting || !ma91PatientName.trim()}
+              />
+              {!ma91PatientName.trim() && (
+                <p className="text-xs text-gray-400">Enter patient name above before signing.</p>
+              )}
+            </div>
+          )}
+
+          {/* Telehealth e-signature via ZipZign */}
+          {locationType === 'telehealth' && ma91Status !== 'signed' && ma91Status !== 'pending' && (
+            <div className="space-y-2">
+              {!zipzignConnected ? (
+                <p className="text-xs text-gray-500">
+                  Configure ZipZign in{' '}
+                  <a href="/settings" className="text-blue-600 hover:text-blue-800">Settings</a>
+                  {' '}to enable telehealth e-signatures.
+                </p>
+              ) : (
+                <>
+                  <label className="block text-sm font-medium text-gray-700">Patient email</label>
+                  <input
+                    type="email"
+                    value={ma91PatientEmail}
+                    onChange={(e) => setMa91PatientEmail(e.target.value)}
+                    placeholder="patient@example.com"
+                    className="block w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleRequestTelehealthSignature}
+                    disabled={ma91Submitting || !ma91PatientName.trim() || !ma91PatientEmail.trim()}
+                    className="flex items-center gap-2 rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    {ma91Submitting ? (
+                      <>
+                        <span className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                        Sending…
+                      </>
+                    ) : (
+                      '✉ Send MA 91 via Email'
+                    )}
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+
+          {ma91Error && <p className="text-xs text-red-600">{ma91Error}</p>}
+        </div>
 
         {submitError && <p className="text-sm text-red-600">{submitError}</p>}
         <div className="flex flex-col gap-3 sm:flex-row">

@@ -65,6 +65,11 @@ class Visit(Base):
     provider_longitude: Mapped[float | None] = mapped_column(Double, nullable=True)
     location_type: Mapped[str | None] = mapped_column(String(20), nullable=True)
     alternate_location: Mapped[str | None] = mapped_column(Text, nullable=True)
+    ma91_signed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    ma91_signature_path: Mapped[str | None] = mapped_column(Text, nullable=True)
+    ma91_signed_by_name: Mapped[str | None] = mapped_column(Text, nullable=True)
+    ma91_zipzign_request_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    ma91_status: Mapped[str | None] = mapped_column(String(20), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

@@ -10,6 +10,7 @@ from app.api.v1.patients import router as patients_router
 from app.api.v1.prenatal_logs import router as prenatal_logs_router
 from app.api.v1.prior_auth import router as prior_auth_router
 from app.api.v1.remittances import router as remittances_router
+from app.api.v1.signatures import router as signatures_router
 from app.api.v1.soap_notes import router as soap_notes_router
 from app.api.v1.visits import router as visits_router
 from app.api.v1.admin.users import router as admin_users_router
@@ -24,6 +25,7 @@ api_router.include_router(soap_notes_router)
 api_router.include_router(prenatal_logs_router)
 api_router.include_router(birth_logs_router)
 api_router.include_router(visits_router)
+api_router.include_router(signatures_router)
 api_router.include_router(claims_router)
 api_router.include_router(prior_auth_router)
 api_router.include_router(remittances_router)

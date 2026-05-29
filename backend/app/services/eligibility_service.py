@@ -31,6 +31,8 @@ class EligibilityService:
             npi=user.npi,
             availity_connected=bool(user.availity_client_id_encrypted and user.availity_client_secret_encrypted),
             telehealth_link=user.telehealth_link,
+            contact_email=user.contact_email,
+            zipzign_connected=bool(user.zipzign_api_key_encrypted),
         )
 
     async def update_provider_settings(
@@ -53,6 +55,10 @@ class EligibilityService:
             user.availity_client_secret_encrypted = encrypt_field(data.availity_client_secret)
         if data.telehealth_link is not None:
             user.telehealth_link = data.telehealth_link
+        if data.contact_email is not None:
+            user.contact_email = data.contact_email
+        if data.zipzign_api_key is not None:
+            user.zipzign_api_key_encrypted = encrypt_field(data.zipzign_api_key)
 
         await self._db.commit()
         await self._db.refresh(user)
@@ -69,6 +75,8 @@ class EligibilityService:
             npi=user.npi,
             availity_connected=bool(user.availity_client_id_encrypted and user.availity_client_secret_encrypted),
             telehealth_link=user.telehealth_link,
+            contact_email=user.contact_email,
+            zipzign_connected=bool(user.zipzign_api_key_encrypted),
         )
 
     async def check_eligibility(

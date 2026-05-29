@@ -90,6 +90,11 @@ export interface Visit {
   provider_longitude: number | null
   location_type: 'in_person' | 'telehealth' | null
   alternate_location: string | null
+  ma91_signed_at: string | null
+  ma91_signature_path: string | null
+  ma91_signed_by_name: string | null
+  ma91_zipzign_request_id: string | null
+  ma91_status: 'signed' | 'pending' | 'declined' | null
   created_at: string
   updated_at: string
 }
