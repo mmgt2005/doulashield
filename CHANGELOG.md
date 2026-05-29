@@ -12,6 +12,8 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ### Added
 - Visit end timestamp: "End Visit" button appears in the started banner (both in-person and telehealth) after a visit is started; tapping it records `visit_ended_at` immediately to the backend and displays end time + duration (e.g., "✓ Ended at 11:15 AM · Duration: 47m"); end time pre-populates on reload
+- Live visit timer: after starting a visit, a ticking MM:SS stopwatch shows in amber with a "X min to 30" countdown until the Medicaid 30-minute minimum is met, then turns green; "End Visit" freezes the timer to the final duration
+- 30-minute billing warning: if a visit is ended under 30 minutes, the duration displays in amber with ⚠ and a billing warning panel ("Medicaid requires at least 30 minutes for T1032/T1033 reimbursement") appears above the Save button (non-blocking)
 
 ### Fixed
 - Settings page called `useAuth()` in addition to the layout, causing two concurrent `/auth/refresh` requests; if the refresh token is single-use the second call triggered `logout()` (user=null), hiding the ZipZign API key field and role badge — settings page now reads from `useAuthStore()` directly and gates its data fetch on `isAuthenticated` so it only fires after the layout has hydrated the token
