@@ -11,6 +11,16 @@ All notable changes to this project are documented here. This file is updated wi
 
 ---
 
+## [2026-05-29] — ZipZign API Key Moved to Admin-Only Shared Credential
+
+### Changed
+- **ZipZign API key is now a single shared credential** — only the admin user enters it in Settings; all providers use the same key automatically. Per-provider `zipzign_api_key_encrypted` columns remain in the DB but are no longer written or read for non-admin users
+- **Settings page** — ZipZign API key input is now hidden for provider-role users; the "✓ Connected" badge and contact email field remain visible for all roles
+- `signature_service.py` — `request_telehealth_signature` now queries for any admin user with a configured key instead of using the requesting provider's key; error message updated accordingly
+- `eligibility_service.py` — `zipzign_connected` in `ProviderSettingsRead` now reflects whether the admin has a key configured, not the current user's own key (applied to both `get_provider_settings` and `update_provider_settings`)
+
+---
+
 ## [2026-05-29] — MA 91 Encounter Form Certification Signature
 
 ### Added
