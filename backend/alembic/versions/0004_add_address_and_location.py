@@ -4,7 +4,6 @@ Revision ID: 0004
 Revises: 0003
 Create Date: 2026-05-28
 """
-import sqlalchemy as sa
 from alembic import op
 
 revision = "0004"
@@ -14,19 +13,19 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.add_column("patients", sa.Column("address", sa.Text, nullable=True), schema="public")
-    op.add_column("patients", sa.Column("latitude", sa.Double, nullable=True), schema="public")
-    op.add_column("patients", sa.Column("longitude", sa.Double, nullable=True), schema="public")
+    op.execute("ALTER TABLE public.patients ADD COLUMN IF NOT EXISTS address TEXT")
+    op.execute("ALTER TABLE public.patients ADD COLUMN IF NOT EXISTS latitude DOUBLE PRECISION")
+    op.execute("ALTER TABLE public.patients ADD COLUMN IF NOT EXISTS longitude DOUBLE PRECISION")
 
-    op.add_column("visits", sa.Column("visit_started_at", sa.DateTime(timezone=True), nullable=True), schema="public")
-    op.add_column("visits", sa.Column("provider_latitude", sa.Double, nullable=True), schema="public")
-    op.add_column("visits", sa.Column("provider_longitude", sa.Double, nullable=True), schema="public")
+    op.execute("ALTER TABLE public.visits ADD COLUMN IF NOT EXISTS visit_started_at TIMESTAMPTZ")
+    op.execute("ALTER TABLE public.visits ADD COLUMN IF NOT EXISTS provider_latitude DOUBLE PRECISION")
+    op.execute("ALTER TABLE public.visits ADD COLUMN IF NOT EXISTS provider_longitude DOUBLE PRECISION")
 
 
 def downgrade() -> None:
-    op.drop_column("visits", "provider_longitude", schema="public")
-    op.drop_column("visits", "provider_latitude", schema="public")
-    op.drop_column("visits", "visit_started_at", schema="public")
-    op.drop_column("patients", "longitude", schema="public")
-    op.drop_column("patients", "latitude", schema="public")
-    op.drop_column("patients", "address", schema="public")
+    op.execute("ALTER TABLE public.visits DROP COLUMN IF EXISTS provider_longitude")
+    op.execute("ALTER TABLE public.visits DROP COLUMN IF EXISTS provider_latitude")
+    op.execute("ALTER TABLE public.visits DROP COLUMN IF EXISTS visit_started_at")
+    op.execute("ALTER TABLE public.patients DROP COLUMN IF EXISTS longitude")
+    op.execute("ALTER TABLE public.patients DROP COLUMN IF EXISTS latitude")
+    op.execute("ALTER TABLE public.patients DROP COLUMN IF EXISTS address")

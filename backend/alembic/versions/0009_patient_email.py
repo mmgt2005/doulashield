@@ -5,7 +5,6 @@ Revises: 0008
 Create Date: 2026-05-29
 """
 from alembic import op
-import sqlalchemy as sa
 
 revision = "0009"
 down_revision = "0008"
@@ -14,12 +13,8 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.add_column(
-        "patients",
-        sa.Column("email", sa.Text, nullable=True),
-        schema="public",
-    )
+    op.execute("ALTER TABLE public.patients ADD COLUMN IF NOT EXISTS email TEXT")
 
 
 def downgrade() -> None:
-    op.drop_column("patients", "email", schema="public")
+    op.execute("ALTER TABLE public.patients DROP COLUMN IF EXISTS email")

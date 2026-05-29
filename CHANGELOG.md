@@ -11,6 +11,14 @@ All notable changes to this project are documented here. This file is updated wi
 
 ---
 
+## [2026-05-29] — Make all Alembic migrations idempotent
+
+### Fixed
+- Rewrote `upgrade()` in migrations 0002–0009 to use raw SQL with `ADD COLUMN IF NOT EXISTS`, `CREATE TABLE IF NOT EXISTS`, `CREATE TYPE IF NOT EXISTS`, `CREATE INDEX IF NOT EXISTS`, and `DO $$` guards for `CREATE POLICY` — prevents crashes when the DB schema is already ahead of Alembic's version table (which happens when SQL was applied manually but Alembic's `alembic_version` row was not updated)
+- Also rewrote `downgrade()` functions to use `DROP … IF EXISTS` for symmetry
+
+---
+
 ## [2026-05-29] — Fix Railway startup crash: add psycopg2-binary
 
 ### Fixed

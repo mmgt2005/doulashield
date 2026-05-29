@@ -4,7 +4,6 @@ Revision ID: 0005
 Revises: 0004
 Create Date: 2026-05-28
 """
-import sqlalchemy as sa
 from alembic import op
 
 revision = "0005"
@@ -14,20 +13,19 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.add_column("patients", sa.Column("date_of_birth", sa.Date, nullable=True), schema="public")
-    op.add_column("patients", sa.Column("eligibility_status", sa.String(50), nullable=True), schema="public")
-    op.add_column("patients", sa.Column("eligibility_checked_at", sa.DateTime(timezone=True), nullable=True), schema="public")
+    op.execute("ALTER TABLE public.patients ADD COLUMN IF NOT EXISTS date_of_birth DATE")
+    op.execute("ALTER TABLE public.patients ADD COLUMN IF NOT EXISTS eligibility_status VARCHAR(50)")
+    op.execute("ALTER TABLE public.patients ADD COLUMN IF NOT EXISTS eligibility_checked_at TIMESTAMPTZ")
 
-    op.add_column("users", sa.Column("npi", sa.String(10), nullable=True), schema="public")
-    op.add_column("users", sa.Column("availity_client_id_encrypted", sa.Text, nullable=True), schema="public")
-    op.add_column("users", sa.Column("availity_client_secret_encrypted", sa.Text, nullable=True), schema="public")
+    op.execute("ALTER TABLE public.users ADD COLUMN IF NOT EXISTS npi VARCHAR(10)")
+    op.execute("ALTER TABLE public.users ADD COLUMN IF NOT EXISTS availity_client_id_encrypted TEXT")
+    op.execute("ALTER TABLE public.users ADD COLUMN IF NOT EXISTS availity_client_secret_encrypted TEXT")
 
 
 def downgrade() -> None:
-    op.drop_column("users", "availity_client_secret_encrypted", schema="public")
-    op.drop_column("users", "availity_client_id_encrypted", schema="public")
-    op.drop_column("users", "npi", schema="public")
-
-    op.drop_column("patients", "eligibility_checked_at", schema="public")
-    op.drop_column("patients", "eligibility_status", schema="public")
-    op.drop_column("patients", "date_of_birth", schema="public")
+    op.execute("ALTER TABLE public.users DROP COLUMN IF EXISTS availity_client_secret_encrypted")
+    op.execute("ALTER TABLE public.users DROP COLUMN IF EXISTS availity_client_id_encrypted")
+    op.execute("ALTER TABLE public.users DROP COLUMN IF EXISTS npi")
+    op.execute("ALTER TABLE public.patients DROP COLUMN IF EXISTS eligibility_checked_at")
+    op.execute("ALTER TABLE public.patients DROP COLUMN IF EXISTS eligibility_status")
+    op.execute("ALTER TABLE public.patients DROP COLUMN IF EXISTS date_of_birth")

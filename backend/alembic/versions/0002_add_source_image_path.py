@@ -14,14 +14,14 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.add_column("soap_notes", sa.Column("source_image_path", sa.Text, nullable=True), schema="public")
-    op.add_column("prenatal_postnatal_logs", sa.Column("source_image_path", sa.Text, nullable=True), schema="public")
-    op.add_column("birth_logs", sa.Column("source_image_path", sa.Text, nullable=True), schema="public")
-    op.add_column("patients", sa.Column("medicaid_card_image_path", sa.Text, nullable=True), schema="public")
+    op.execute("ALTER TABLE public.soap_notes ADD COLUMN IF NOT EXISTS source_image_path TEXT")
+    op.execute("ALTER TABLE public.prenatal_postnatal_logs ADD COLUMN IF NOT EXISTS source_image_path TEXT")
+    op.execute("ALTER TABLE public.birth_logs ADD COLUMN IF NOT EXISTS source_image_path TEXT")
+    op.execute("ALTER TABLE public.patients ADD COLUMN IF NOT EXISTS medicaid_card_image_path TEXT")
 
 
 def downgrade() -> None:
-    op.drop_column("patients", "medicaid_card_image_path", schema="public")
-    op.drop_column("birth_logs", "source_image_path", schema="public")
-    op.drop_column("prenatal_postnatal_logs", "source_image_path", schema="public")
-    op.drop_column("soap_notes", "source_image_path", schema="public")
+    op.execute("ALTER TABLE public.patients DROP COLUMN IF EXISTS medicaid_card_image_path")
+    op.execute("ALTER TABLE public.birth_logs DROP COLUMN IF EXISTS source_image_path")
+    op.execute("ALTER TABLE public.prenatal_postnatal_logs DROP COLUMN IF EXISTS source_image_path")
+    op.execute("ALTER TABLE public.soap_notes DROP COLUMN IF EXISTS source_image_path")
