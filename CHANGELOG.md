@@ -12,6 +12,7 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ### Fixed
 - Settings page called `useAuth()` in addition to the layout, causing two concurrent `/auth/refresh` requests; if the refresh token is single-use the second call triggered `logout()` (user=null), hiding the ZipZign API key field and role badge — settings page now reads from `useAuthStore()` directly and gates its data fetch on `isAuthenticated` so it only fires after the layout has hydrated the token
+- Settings page stuck on "Loading…" indefinitely when auth resolved to unauthenticated — removed the settings-data loading gate; page now renders as soon as `authLoading` clears and settings data fills in asynchronously
 
 ---
 
