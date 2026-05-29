@@ -6,6 +6,9 @@ All notable changes to this project are documented here. This file is updated wi
 
 ## [Unreleased]
 
+### Changed
+- Added `*.tsbuildinfo` to `.gitignore` to exclude TypeScript incremental build artifacts from version control
+
 ---
 
 ## [2026-05-29] — MA 91 Encounter Form Certification Signature
