@@ -11,6 +11,19 @@ All notable changes to this project are documented here. This file is updated wi
 
 ---
 
+## [2026-05-29] — Fix ZipZign API integration against live API docs
+
+### Fixed
+- **Correct endpoint**: changed from `POST {base}/requests` to `POST https://zipzign.com/api/documents`
+- **Correct base URL**: `ZIPZIGN_BASE_URL` default changed from `https://zipzign.com/api/v1` to `https://zipzign.com`
+- **Correct request body**: removed non-existent `document` wrapper, `title`, `sender`, `webhook_url` fields; replaced with `"type": "signable"` at top level; removed invalid `"role"` field on signers; added `notify_emails` so provider is emailed when patient signs; added patient-facing `message` in the invite email
+- **Correct webhook event name**: handler now checks for `"document.signed"` (was `"signed"`); removed `"declined"` handler (ZipZign has no such event)
+- **Correct webhook metadata parsing**: `metadata` is nested under `payload["document"]` as an array of `{key, value}` dicts, not a top-level flat dict
+- **Correct webhook signature verification**: replaced naive string comparison with proper HMAC-SHA256 verification using `t=<unix_ms>,v1=<hex>` Stripe-style format; rejects events older than 5 minutes
+- **Setup note**: ZipZign webhook URL (`https://{BACKEND_URL}/api/v1/signatures/webhook`) must be registered once in the ZipZign dashboard; the signing secret returned at registration goes into `ZIPZIGN_WEBHOOK_SECRET` env var
+
+---
+
 ## [2026-05-29] — Fix Railway healthcheck: add sslmode=require for Alembic psycopg2 connection
 
 ### Fixed

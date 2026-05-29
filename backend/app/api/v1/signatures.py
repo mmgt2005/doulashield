@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+import hashlib
+import hmac as _hmac
+import json as _json
 import logging
+import time
 import uuid
 from typing import Annotated
 
@@ -28,9 +32,29 @@ class _TelehealthSignRequest(BaseModel):
     visit_date: str = ""
 
 
-class _WebhookPayload(BaseModel):
-    event: str = ""
-    metadata: dict = {}
+def _verify_zipzign_signature(raw_body: bytes, sig_header: str, secret: str) -> bool:
+    """Verify X-ZipZign-Signature using HMAC-SHA256 (Stripe-style: t=<unix_ms>,v1=<hex>)."""
+    try:
+        parts: dict[str, str] = {}
+        for part in sig_header.split(","):
+            if "=" in part:
+                k, v = part.split("=", 1)
+                parts[k.strip()] = v.strip()
+        timestamp = parts.get("t")
+        expected = parts.get("v1")
+        if not timestamp or not expected:
+            return False
+        if abs(time.time() * 1000 - float(timestamp)) > 300_000:
+            return False
+        signed_payload = f"{timestamp}.{raw_body.decode('utf-8')}"
+        computed = _hmac.new(
+            secret.encode("utf-8"),
+            signed_payload.encode("utf-8"),
+            hashlib.sha256,
+        ).hexdigest()
+        return _hmac.compare_digest(computed, expected)
+    except Exception:
+        return False
 
 
 @router.post("/patients/{patient_id}/visits/{visit_type}/sign-in-person")
@@ -127,21 +151,27 @@ async def request_telehealth_signature(
 @router.post("/signatures/webhook", status_code=200)
 async def zipzign_webhook(
     request: Request,
-    body: _WebhookPayload,
     audit: Annotated[AuditLogger, Depends(get_audit)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> dict:
     """Receive ZipZign webhook events for MA 91 signature completion."""
     from app.core.config import settings
 
+    raw_body = await request.body()
+
     if settings.ZIPZIGN_WEBHOOK_SECRET:
-        incoming = request.headers.get("X-ZipZign-Signature", "")
-        if incoming != settings.ZIPZIGN_WEBHOOK_SECRET:
+        sig_header = request.headers.get("X-ZipZign-Signature", "")
+        if not _verify_zipzign_signature(raw_body, sig_header, settings.ZIPZIGN_WEBHOOK_SECRET):
             raise HTTPException(status_code=403, detail="Invalid webhook signature.")
 
     try:
+        payload = _json.loads(raw_body)
+    except _json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid JSON body.")
+
+    try:
         await signature_service.handle_zipzign_webhook(
-            payload=body.model_dump(),
+            payload=payload,
             db=db,
             audit=audit,
         )

@@ -118,30 +118,23 @@ async def request_telehealth_signature(
         visit_date=visit_date,
     )
 
-    webhook_url = f"{settings.BACKEND_URL}/api/v1/signatures/webhook"
+    body: dict = {
+        "type": "signable",
+        "html": html_document,
+        "signers": [{"name": patient_name, "email": patient_email}],
+        "message": (
+            f"Please sign your MA 91 Pennsylvania Medicaid certification "
+            f"for your doula services visit on {visit_date}."
+        ),
+        "metadata": {"visit_id": str(visit_id)},
+    }
+    if user.contact_email:
+        body["notify_emails"] = [user.contact_email]
 
     async with httpx.AsyncClient(timeout=30) as client:
         resp = await client.post(
-            f"{ZIPZIGN_BASE}/requests",
-            json={
-                "document": {
-                    "html": html_document,
-                    "title": "MA 91 Encounter Form Certification",
-                },
-                "signers": [
-                    {
-                        "name": patient_name,
-                        "email": patient_email,
-                        "role": "patient",
-                    }
-                ],
-                "sender": {
-                    "name": provider_name,
-                    "email": user.contact_email,
-                },
-                "webhook_url": webhook_url,
-                "metadata": {"visit_id": str(visit_id)},
-            },
+            f"{ZIPZIGN_BASE}/api/documents",
+            json=body,
             headers={
                 "Authorization": f"Bearer {api_key}",
                 "Content-Type": "application/json",
@@ -153,7 +146,7 @@ async def request_telehealth_signature(
         raise ValueError("Failed to send signature request — check your ZipZign API key")
 
     data = resp.json()
-    request_id = data.get("id") or data.get("request_id") or str(data)
+    request_id = data.get("id", "")
 
     result = await db.execute(select(Visit).where(Visit.id == visit_id))
     visit = result.scalar_one_or_none()
@@ -185,8 +178,15 @@ async def handle_zipzign_webhook(
 ) -> None:
     """Process a ZipZign webhook event (signed / declined) and update the visit MA 91 status."""
     event = payload.get("event", "")
-    metadata = payload.get("metadata") or {}
-    visit_id_str = metadata.get("visit_id")
+
+    # metadata is nested under "document" as an array of {key, value} dicts
+    document = payload.get("document") or {}
+    metadata_list = document.get("metadata") or []
+    visit_id_str = next(
+        (item.get("value") for item in metadata_list
+         if isinstance(item, dict) and item.get("key") == "visit_id"),
+        None,
+    )
 
     if not visit_id_str:
         logger.warning("ZipZign webhook missing visit_id in metadata: %s", payload)
@@ -204,11 +204,9 @@ async def handle_zipzign_webhook(
         logger.warning("ZipZign webhook: visit %s not found", visit_id)
         return
 
-    if event == "signed":
+    if event == "document.signed":
         visit.ma91_status = "signed"
         visit.ma91_signed_at = datetime.now(timezone.utc)
-    elif event == "declined":
-        visit.ma91_status = "declined"
     else:
         logger.info("ZipZign webhook unhandled event '%s' for visit %s", event, visit_id)
         return
