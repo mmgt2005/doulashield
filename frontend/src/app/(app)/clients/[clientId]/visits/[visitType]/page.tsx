@@ -120,7 +120,11 @@ export default function VisitFormPage() {
       }
       if (visitRes) {
         const v = visitRes.data
-        if (v.visit_date) setValue('visit_date', v.visit_date)
+        if (v.visit_date) {
+          setValue('visit_date', v.visit_date)
+        } else if (v.visit_started_at) {
+          setValue('visit_date', v.visit_started_at.split('T')[0])
+        }
         if (v.subjective) setValue('subjective', v.subjective)
         if (v.objective) setValue('objective', v.objective)
         if (v.assessment) setValue('assessment', v.assessment)
@@ -211,6 +215,7 @@ export default function VisitFormPage() {
         setDistanceFt(dist)
         setVisitStarted(now)
         setValue('visit_started_at', now.toISOString())
+        setValue('visit_date', now.toISOString().split('T')[0])
         setValue('provider_latitude', provLat)
         setValue('provider_longitude', provLng)
         setValue('location_type', 'in_person')
@@ -247,6 +252,7 @@ export default function VisitFormPage() {
     const now = new Date()
     setTelehealthStarted(now)
     setValue('visit_started_at', now.toISOString())
+    setValue('visit_date', now.toISOString().split('T')[0])
     setValue('location_type', 'telehealth')
     try {
       await axios.put(
