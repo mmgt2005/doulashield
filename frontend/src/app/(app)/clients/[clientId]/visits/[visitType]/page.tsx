@@ -59,6 +59,7 @@ export default function VisitFormPage() {
   const { clientId, visitType } = useParams<{ clientId: string; visitType: string }>()
   const router = useRouter()
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [saveSuccess, setSaveSuccess] = useState(false)
   const [patient, setPatient] = useState<Patient | null>(null)
 
   // Location type toggle
@@ -387,6 +388,8 @@ export default function VisitFormPage() {
         data,
         { headers: { Authorization: `Bearer ${getAccessToken()}` } }
       )
+      setSaveSuccess(true)
+      await new Promise((r) => setTimeout(r, 1500))
       router.push(`/clients/${clientId}`)
     } catch {
       setSubmitError('Failed to save visit. Please try again.')
@@ -506,8 +509,9 @@ export default function VisitFormPage() {
               </p>
               <p className="mt-2 text-xs font-medium text-amber-800">Are you meeting at a different location?</p>
               <input
-                {...register('alternate_location')}
                 type="text"
+                value={watch('alternate_location') ?? ''}
+                onChange={(e) => setValue('alternate_location', e.target.value)}
                 placeholder="Describe the location (e.g., clinic, hospital)"
                 className="mt-1 w-full rounded border border-amber-300 bg-white px-3 py-1.5 text-sm focus:outline-none focus:border-amber-500"
               />
@@ -746,6 +750,7 @@ export default function VisitFormPage() {
         <input type="hidden" {...register('provider_latitude')} />
         <input type="hidden" {...register('provider_longitude')} />
         <input type="hidden" {...register('location_type')} />
+        <input type="hidden" {...register('alternate_location')} />
 
         {/* MA 91 Encounter Form Certification */}
         <div className="space-y-3 border-t pt-4">
@@ -858,6 +863,11 @@ export default function VisitFormPage() {
             <p className="text-sm font-medium text-amber-800">
               ⚠ Visit duration is {durationMins} min — Medicaid requires at least 30 minutes for T1032/T1033 reimbursement. Verify your start and end times before saving.
             </p>
+          </div>
+        )}
+        {saveSuccess && (
+          <div className="rounded-lg border border-green-200 bg-green-50 p-3">
+            <p className="text-sm font-medium text-green-800">✓ Visit saved successfully.</p>
           </div>
         )}
         {submitError && <p className="text-sm text-red-600">{submitError}</p>}
