@@ -11,6 +11,13 @@ All notable changes to this project are documented here. This file is updated wi
 
 ---
 
+## [2026-05-29] — Fix Railway startup crash: add psycopg2-binary
+
+### Fixed
+- Added `psycopg2-binary==2.9.10` to `backend/requirements.txt` — Alembic's synchronous `create_engine` uses the `postgresql://` dialect which requires psycopg2; without it the `alembic upgrade head` step in the Dockerfile CMD failed immediately, preventing the server from ever starting
+
+---
+
 ## [2026-05-29] — Client Email Field & Telehealth Room Link via Email
 
 ### Fixed
