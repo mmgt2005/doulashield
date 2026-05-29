@@ -11,6 +11,7 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 ## [Unreleased]
 
 ### Added
+- Visit date auto-populates from the start timestamp when "Start Visit" or "Start Telehealth" is tapped, eliminating the need to type the date manually; also falls back to the stored `visit_started_at` when reloading a visit that was started but never form-saved
 - Sequential visit enforcement: within prenatal and postnatal groups, a provider cannot navigate to the next visit until the previous one has a recorded `visit_ended_at`; blocked slots show a lock icon and "Complete X first" message on the client overview and render a non-clickable `<div>` instead of a link; navigating directly to a blocked visit URL shows an amber warning with a link back to the previous visit
 - Prenatal 1 in-person requirement: the Telehealth toggle is disabled (greyed out, tooltip "First prenatal visit must be in-person") on the Prenatal 1 visit form; stored `location_type` values are not applied on load for this visit type
 - Visit slot 4-state display on client overview: complete (gray + green checkmark), in-progress (amber + clock icon + "In progress"), blocked (gray + lock icon + prev label), pending (blue + arrow)
