@@ -13,6 +13,11 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 ### Fixed
 - Migration 0003: replaced `CREATE TYPE IF NOT EXISTS` (PostgreSQL 16+ only) with a `DO $$ BEGIN IF NOT EXISTS … END $$` pg_type check — Supabase runs PostgreSQL 15 which does not support the `IF NOT EXISTS` clause on `CREATE TYPE`
 - ZipZign error messages now include the actual HTTP status and response body (401 → "API key rejected", 400 → ZipZign's error detail) instead of a generic message, making diagnosis possible without reading Railway logs
+- Admin users could not see the ZipZign API key field in Settings because the auth store `user` was not hydrated before the component rendered — `useAuth()` is now called in the app layout so user + role are available on every page; Settings also gates on `authLoading` before rendering role-sensitive fields
+
+### Added
+- Role badge in the sidebar footer (purple "Admin" / blue "Provider") shown below the user's email address
+- Role badge in the Settings page heading so users always know which role they are operating under
 
 ---
 
