@@ -24,7 +24,7 @@ MA91_TEXT = (
     "any false claims or concealment of material may be prosecuted under Federal and State laws."
 )
 
-ZIPZIGN_BASE = "https://api.zipzign.com/v1"
+ZIPZIGN_BASE = settings.ZIPZIGN_BASE_URL
 
 
 async def save_in_person_signature(

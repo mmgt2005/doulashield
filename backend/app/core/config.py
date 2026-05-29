@@ -35,6 +35,7 @@ class Settings(BaseSettings):
     # Webhook and external service config
     BACKEND_URL: str = "https://your-backend.railway.app"
     ZIPZIGN_WEBHOOK_SECRET: str = ""
+    ZIPZIGN_BASE_URL: str = "https://zipzign.com/api/v1"
 
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
 
