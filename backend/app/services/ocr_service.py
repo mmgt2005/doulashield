@@ -64,8 +64,8 @@ _SOAP_TRANSLATE_PROMPT = (
     "4. If a section input is empty or 'Not provided', return null for that field.\n"
     "5. Ensure the note supports billing justification for T1032/T1033.\n"
     "Return ONLY valid JSON with no commentary:\n"
-    '{\"subjective\": \"translated text or null\", \"objective\": \"translated text or null\", '
-    '\"assessment\": \"translated text or null\", \"plan\": \"translated text or null\"}\n\n'
+    '{{"subjective": "translated text or null", "objective": "translated text or null", '
+    '"assessment": "translated text or null", "plan": "translated text or null"}}\n\n'
     "Input:\n"
     "Subjective: {subjective}\n"
     "Objective: {objective}\n"
