@@ -143,7 +143,15 @@ async def request_telehealth_signature(
 
     if resp.status_code not in (200, 201):
         logger.error("ZipZign API error %s: %s", resp.status_code, resp.text)
-        raise ValueError("Failed to send signature request — check your ZipZign API key")
+        if resp.status_code == 401:
+            raise ValueError("ZipZign rejected the API key (401) — verify the key in Settings is correct and not expired")
+        if resp.status_code == 400:
+            try:
+                detail = resp.json()
+            except Exception:
+                detail = resp.text
+            raise ValueError(f"ZipZign rejected the request (400): {detail}")
+        raise ValueError(f"ZipZign returned {resp.status_code} — check Railway logs for the full response")
 
     data = resp.json()
     request_id = data.get("id", "")
