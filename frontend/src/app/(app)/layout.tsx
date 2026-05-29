@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Sidebar from '@/components/layout/Sidebar'
 import SessionTimeoutModal from '@/components/layout/SessionTimeoutModal'
 import { useSessionTimeout } from '@/hooks/useSessionTimeout'
+import { useAuth } from '@/hooks/useAuth'
 import { useAuthStore } from '@/store/auth-store'
 import axios from 'axios'
 import { clearAccessToken } from '@/lib/auth'
@@ -12,6 +13,8 @@ import { clearAccessToken } from '@/lib/auth'
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const { logout } = useAuthStore()
+  // Hydrates user + role into the auth store for all pages under (app).
+  useAuth()
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const handleTimeout = useCallback(async () => {

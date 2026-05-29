@@ -63,9 +63,18 @@ export default function Sidebar({ onClose }: SidebarProps) {
       </nav>
       <div className="px-4 py-4 border-t border-gray-200">
         <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+        {user?.role && (
+          <span className={`mt-1 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+            user.role === 'admin'
+              ? 'bg-purple-100 text-purple-700'
+              : 'bg-blue-100 text-blue-700'
+          }`}>
+            {user.role === 'admin' ? 'Admin' : 'Provider'}
+          </span>
+        )}
         <button
           onClick={handleLogout}
-          className="mt-2 text-xs text-red-600 hover:underline"
+          className="mt-2 block text-xs text-red-600 hover:underline"
         >
           Sign out
         </button>

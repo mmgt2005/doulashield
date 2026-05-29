@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import axios from 'axios'
 import { getAccessToken } from '@/lib/auth'
-import { useAuthStore } from '@/store/auth-store'
+import { useAuth } from '@/hooks/useAuth'
 
 interface SettingsFormData {
   npi: string
@@ -16,7 +16,7 @@ interface SettingsFormData {
 }
 
 export default function SettingsPage() {
-  const { user } = useAuthStore()
+  const { user, isLoading: authLoading } = useAuth()
   const isAdmin = user?.role === 'admin'
   const [connected, setConnected] = useState(false)
   const [zipzignConnected, setZipzignConnected] = useState(false)
@@ -67,11 +67,23 @@ export default function SettingsPage() {
     }
   }
 
-  if (loading) return <p className="text-sm text-gray-500">Loading…</p>
+  if (loading || authLoading) return <p className="text-sm text-gray-500">Loading…</p>
 
   return (
     <div className="max-w-lg space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Provider settings</h1>
+      <div className="flex items-center gap-3">
+        <h1 className="text-2xl font-bold text-gray-900">Provider settings</h1>
+        {user?.role === 'admin' && (
+          <span className="inline-flex items-center rounded-full bg-purple-100 px-2.5 py-0.5 text-xs font-medium text-purple-700">
+            Admin
+          </span>
+        )}
+        {user?.role === 'provider' && (
+          <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-700">
+            Provider
+          </span>
+        )}
+      </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 bg-white p-6 rounded-lg border border-gray-200">
         <div>
