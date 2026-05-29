@@ -61,6 +61,7 @@ class Visit(Base):
     birth_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     source_image_path: Mapped[str | None] = mapped_column(Text, nullable=True)
     visit_started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    visit_ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     provider_latitude: Mapped[float | None] = mapped_column(Double, nullable=True)
     provider_longitude: Mapped[float | None] = mapped_column(Double, nullable=True)
     location_type: Mapped[str | None] = mapped_column(String(20), nullable=True)

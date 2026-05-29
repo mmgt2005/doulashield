@@ -18,6 +18,7 @@ class VisitCreate(BaseModel):
     birth_notes: str | None = None
     source_image_path: str | None = None
     visit_started_at: datetime | None = None
+    visit_ended_at: datetime | None = None
     provider_latitude: float | None = None
     provider_longitude: float | None = None
     location_type: str | None = None
@@ -47,6 +48,7 @@ class VisitRead(BaseModel):
     birth_notes: str | None
     source_image_path: str | None
     visit_started_at: datetime | None
+    visit_ended_at: datetime | None
     provider_latitude: float | None
     provider_longitude: float | None
     location_type: str | None

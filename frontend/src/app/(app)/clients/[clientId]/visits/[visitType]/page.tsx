@@ -15,6 +15,11 @@ import dynamic from 'next/dynamic'
 
 const SignaturePad = dynamic(() => import('@/components/ui/SignaturePad'), { ssr: false })
 
+function formatDuration(start: Date, end: Date): string {
+  const mins = Math.round((end.getTime() - start.getTime()) / 60000)
+  return mins >= 60 ? `${Math.floor(mins / 60)}h ${mins % 60}m` : `${mins}m`
+}
+
 const SOAP_PLACEHOLDERS: Record<string, string> = {
   subjective: 'How is the client feeling today? Did she report any specific concerns?',
   objective: 'What did you observe? (e.g., movement, mood, vitals, engagement level)',
@@ -34,6 +39,7 @@ const schema = z.object({
   birth_notes: z.string().optional(),
   source_image_path: z.string().optional(),
   visit_started_at: z.string().optional(),
+  visit_ended_at: z.string().optional(),
   provider_latitude: z.number().optional(),
   provider_longitude: z.number().optional(),
   location_type: z.enum(['in_person', 'telehealth']).default('in_person'),
@@ -52,8 +58,9 @@ export default function VisitFormPage() {
   const [telehealthLink, setTelehealthLink] = useState<string | null>(null)
   const [telehealthStarted, setTelehealthStarted] = useState<Date | null>(null)
 
-  // Start Visit state (in-person)
+  // Start/end Visit state (in-person)
   const [visitStarted, setVisitStarted] = useState<Date | null>(null)
+  const [visitEnded, setVisitEnded] = useState<Date | null>(null)
   const [locating, setLocating] = useState(false)
   const [locationError, setLocationError] = useState<string | null>(null)
   const [distanceFt, setDistanceFt] = useState<number | null>(null)
@@ -122,6 +129,7 @@ export default function VisitFormPage() {
           setMa91PatientName(v.ma91_signed_by_name)
         }
         if (v.ma91_signed_at) setMa91SignedAt(v.ma91_signed_at)
+        if (v.visit_ended_at) setVisitEnded(new Date(v.visit_ended_at))
         if (v.visit_started_at) {
           const started = new Date(v.visit_started_at)
           if (v.location_type === 'telehealth') {
@@ -203,6 +211,19 @@ export default function VisitFormPage() {
       )
     } catch { /* non-blocking */ }
   }, [telehealthLink, patient, clientId, visitType, setValue])
+
+  const handleEndVisit = useCallback(async () => {
+    const now = new Date()
+    setVisitEnded(now)
+    setValue('visit_ended_at', now.toISOString())
+    try {
+      await axios.put(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/patients/${clientId}/visits/${visitType}`,
+        { visit_ended_at: now.toISOString() },
+        { headers: { Authorization: `Bearer ${getAccessToken()}` } }
+      )
+    } catch { /* non-blocking */ }
+  }, [clientId, visitType, setValue])
 
   const handleScanned = async (data: Record<string, unknown>) => {
     const dateVal = data.entry_date ?? data.birth_date ?? data.visit_date
@@ -423,6 +444,19 @@ export default function VisitFormPage() {
                     ? ' · Location not verified (address could not be geocoded)'
                     : ' · Location not verified (no address on file)'}
               </p>
+              {visitEnded ? (
+                <p className="mt-1 text-sm text-green-700">
+                  ✓ Ended at {formatTime(visitEnded)} · Duration: {formatDuration(visitStarted, visitEnded)}
+                </p>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleEndVisit}
+                  className="mt-2 rounded border border-red-300 bg-red-50 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-100"
+                >
+                  End Visit
+                </button>
+              )}
             </div>
           )}
         </>
@@ -469,6 +503,19 @@ export default function VisitFormPage() {
               </p>
               {!patient?.email && (
                 <p className="mt-1 text-xs text-amber-700">No client email on file — add one in the client profile to send the link automatically next time.</p>
+              )}
+              {visitEnded ? (
+                <p className="mt-1 text-sm text-green-700">
+                  ✓ Ended at {formatTime(visitEnded)} · Duration: {formatDuration(telehealthStarted, visitEnded)}
+                </p>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleEndVisit}
+                  className="mt-2 rounded border border-red-300 bg-red-50 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-100"
+                >
+                  End Visit
+                </button>
               )}
             </div>
           )}
@@ -593,6 +640,7 @@ export default function VisitFormPage() {
 
         <input type="hidden" {...register('source_image_path')} />
         <input type="hidden" {...register('visit_started_at')} />
+        <input type="hidden" {...register('visit_ended_at')} />
         <input type="hidden" {...register('provider_latitude')} />
         <input type="hidden" {...register('provider_longitude')} />
         <input type="hidden" {...register('location_type')} />

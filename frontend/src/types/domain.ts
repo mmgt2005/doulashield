@@ -87,6 +87,7 @@ export interface Visit {
   birth_notes: string | null
   source_image_path: string | null
   visit_started_at: string | null
+  visit_ended_at: string | null
   provider_latitude: number | null
   provider_longitude: number | null
   location_type: 'in_person' | 'telehealth' | null
