@@ -67,6 +67,22 @@ export default function SettingsPage() {
     }
   }
 
+  const handleDisconnectZipzign = async () => {
+    setSaveError(null)
+    setSaved(false)
+    try {
+      const res = await axios.patch<{ zipzign_connected: boolean }>(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/me/provider-settings`,
+        { zipzign_api_key: '' },
+        { headers: { Authorization: `Bearer ${getAccessToken()}` } }
+      )
+      setZipzignConnected(res.data.zipzign_connected)
+      setSaved(true)
+    } catch {
+      setSaveError('Failed to disconnect. Please try again.')
+    }
+  }
+
   if (loading || authLoading) return <p className="text-sm text-gray-500">Loading…</p>
 
   return (
@@ -182,12 +198,23 @@ export default function SettingsPage() {
             </div>
             {isAdmin && (
               <div>
-                <label htmlFor="zipzign_api_key" className="block text-sm font-medium text-gray-700">ZipZign API key</label>
+                <div className="flex items-center justify-between">
+                  <label htmlFor="zipzign_api_key" className="block text-sm font-medium text-gray-700">ZipZign API key</label>
+                  {zipzignConnected && (
+                    <button
+                      type="button"
+                      onClick={handleDisconnectZipzign}
+                      className="text-xs text-red-600 hover:underline"
+                    >
+                      Disconnect
+                    </button>
+                  )}
+                </div>
                 <input
                   {...register('zipzign_api_key')}
                   id="zipzign_api_key"
                   type="password"
-                  placeholder={zipzignConnected ? '●●●●●● saved' : 'Enter API key'}
+                  placeholder={zipzignConnected ? 'Enter a new key to replace the saved one' : 'Enter API key'}
                   className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 />
               </div>

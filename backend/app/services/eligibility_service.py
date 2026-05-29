@@ -62,7 +62,7 @@ class EligibilityService:
         if data.contact_email is not None:
             user.contact_email = data.contact_email
         if data.zipzign_api_key is not None:
-            user.zipzign_api_key_encrypted = encrypt_field(data.zipzign_api_key)
+            user.zipzign_api_key_encrypted = None if data.zipzign_api_key == "" else encrypt_field(data.zipzign_api_key)
 
         await self._db.commit()
         await self._db.refresh(user)
