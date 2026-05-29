@@ -8,6 +8,23 @@ All notable changes to this project are documented here. This file is updated wi
 
 ---
 
+## [2026-05-29] — MA 91 Encounter Form Certification Signature
+
+### Added
+- **MA 91 signature section** on every visit form — displays the official Pennsylvania Medicaid certification text and collects patient signature before billing
+- **In-person canvas signature pad** — patient draws signature directly on provider's phone/tablet using `signature_pad`; PNG saved to Supabase Storage (`clients/{patient_id}/ma91-{visit_id}.png`)
+- **Telehealth e-signature via ZipZign** — generates a hosted MA 91 PDF from HTML, emails it to the patient; patient signs without creating an account; ZipZign webhook updates visit `ma91_status` to `signed` or `declined`
+- **MA 91 status badges** — green "✓ Signed", amber "⏳ Signature request sent", red "✗ Patient declined" shown on visit form
+- **Contact email + ZipZign API key** in Provider Settings — contact email used as From address; API key Fernet-encrypted at rest; "Connected ✓" badge shown when configured
+- `POST /patients/{id}/visits/{type}/sign-in-person` — saves base64 PNG canvas signature to Supabase Storage; audits `SIGN_MA91_IN_PERSON`
+- `POST /patients/{id}/visits/{type}/request-telehealth-signature` — calls ZipZign API to send e-signature request; audits `REQUEST_TELEHEALTH_MA91`
+- `POST /signatures/webhook` — receives ZipZign signed/declined events; verifies shared secret; audits `MA91_WEBHOOK_RECEIVED`
+- `signature_service.py` — handles storage upload, ZipZign HTTP call, webhook processing, and MA 91 HTML generation
+- Migration 0008: adds `ma91_signed_at`, `ma91_signature_path`, `ma91_signed_by_name`, `ma91_zipzign_request_id`, `ma91_status` to `visits`; adds `contact_email`, `zipzign_api_key_encrypted` to `users`
+- `BACKEND_URL` and `ZIPZIGN_WEBHOOK_SECRET` config vars for webhook verification
+
+---
+
 ## [2026-05-28] — AI-Powered SOAP Note Clinical Translation
 
 ### Added
