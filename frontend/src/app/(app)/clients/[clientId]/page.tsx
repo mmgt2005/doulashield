@@ -14,6 +14,7 @@ import { VISIT_SLOTS, VISIT_GROUPS } from '@/lib/visit-config'
 
 interface EditFormData {
   name: string
+  email: string
   mco: string
   date_of_birth: string
   address: string
@@ -69,6 +70,7 @@ export default function ClientDetailPage() {
     if (!patient) return
     reset({
       name: patient.name,
+      email: patient.email ?? '',
       mco: patient.mco ?? '',
       date_of_birth: patient.date_of_birth ?? '',
       address: patient.address ?? '',
@@ -93,6 +95,7 @@ export default function ClientDetailPage() {
         `${process.env.NEXT_PUBLIC_API_URL}/api/v1/patients/${clientId}`,
         {
           name: data.name,
+          email: data.email || null,
           mco: data.mco || null,
           date_of_birth: data.date_of_birth || null,
           address: data.address || null,
@@ -160,6 +163,10 @@ export default function ClientDetailPage() {
               <input {...register('name')} className="mt-1 block w-full rounded border border-gray-300 px-3 py-1.5 text-sm" />
             </div>
             <div>
+              <label className="block text-xs font-medium text-gray-600">Email <span className="font-normal text-gray-400">(used to send telehealth link)</span></label>
+              <input {...register('email')} type="email" placeholder="client@example.com" className="mt-1 block w-full rounded border border-gray-300 px-3 py-1.5 text-sm" />
+            </div>
+            <div>
               <label className="block text-xs font-medium text-gray-600">MCO</label>
               <input {...register('mco')} className="mt-1 block w-full rounded border border-gray-300 px-3 py-1.5 text-sm" />
             </div>
@@ -213,6 +220,9 @@ export default function ClientDetailPage() {
                     )}
                     {patient.address}
                   </p>
+                )}
+                {patient.email && (
+                  <p className="mt-0.5 text-sm text-gray-500">{patient.email}</p>
                 )}
 
                 {/* Eligibility row */}

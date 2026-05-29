@@ -93,6 +93,7 @@ export default function VisitFormPage() {
       ).catch(() => null),
     ]).then(([patientRes, visitRes, settingsRes]) => {
       setPatient(patientRes.data)
+      if (patientRes.data.email) setMa91PatientEmail(patientRes.data.email)
       if (settingsRes) {
         setTelehealthLink(settingsRes.data.telehealth_link ?? null)
         setZipzignConnected((settingsRes.data as { zipzign_connected?: boolean }).zipzign_connected ?? false)
@@ -180,7 +181,16 @@ export default function VisitFormPage() {
 
   const handleStartTelehealth = useCallback(async () => {
     if (!telehealthLink) return
-    window.open(telehealthLink, '_blank', 'noopener')
+    window.open('https://doxy.me', '_blank', 'noopener')
+    if (patient?.email) {
+      const subject = encodeURIComponent('Your telehealth appointment link')
+      const body = encodeURIComponent(
+        `Hello,\n\nYour provider has started your telehealth appointment. Please click the link below to join:\n\n${telehealthLink}\n\nThank you.`
+      )
+      const a = document.createElement('a')
+      a.href = `mailto:${patient.email}?subject=${subject}&body=${body}`
+      a.click()
+    }
     const now = new Date()
     setTelehealthStarted(now)
     setValue('visit_started_at', now.toISOString())
@@ -192,7 +202,7 @@ export default function VisitFormPage() {
         { headers: { Authorization: `Bearer ${getAccessToken()}` } }
       )
     } catch { /* non-blocking */ }
-  }, [telehealthLink, clientId, visitType, setValue])
+  }, [telehealthLink, patient, clientId, visitType, setValue])
 
   const handleScanned = async (data: Record<string, unknown>) => {
     const dateVal = data.entry_date ?? data.birth_date ?? data.visit_date
@@ -433,7 +443,12 @@ export default function VisitFormPage() {
             </div>
           ) : !telehealthStarted ? (
             <div className="rounded-lg border border-gray-200 bg-white p-4">
-              <p className="text-xs text-gray-500 mb-2">Opens your meeting room in a new tab and records the session start time.</p>
+              <p className="text-xs text-gray-500 mb-2">
+                Opens doxy.me so you can log in and start your room. The client will receive their join link via email.
+                {!patient?.email && (
+                  <span className="block mt-1 text-amber-600">No client email on file — add one in the client profile to send the link automatically.</span>
+                )}
+              </p>
               <button
                 type="button"
                 onClick={handleStartTelehealth}
@@ -450,7 +465,11 @@ export default function VisitFormPage() {
             <div className="rounded-lg border border-green-200 bg-green-50 p-4">
               <p className="text-sm font-medium text-green-800">
                 ✓ Telehealth session started at {formatTime(telehealthStarted)}
+                {patient?.email && ' · Join link sent to client'}
               </p>
+              {!patient?.email && (
+                <p className="mt-1 text-xs text-amber-700">No client email on file — add one in the client profile to send the link automatically next time.</p>
+              )}
             </div>
           )}
         </>

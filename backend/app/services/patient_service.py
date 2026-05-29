@@ -16,6 +16,7 @@ def _to_read(patient: Patient) -> PatientRead:
         id=patient.id,
         provider_id=patient.provider_id,
         name=decrypt_field(patient.name_encrypted),
+        email=patient.email,
         mco=patient.mco,
         date_of_birth=patient.date_of_birth,
         address=patient.address,
@@ -42,6 +43,7 @@ class PatientService:
             provider_id=provider_id,
             name_encrypted=encrypt_field(data.name),
             medicaid_id_encrypted=encrypt_field(data.medicaid_id),
+            email=data.email,
             mco=data.mco,
             date_of_birth=data.date_of_birth,
             address=data.address,
@@ -127,6 +129,8 @@ class PatientService:
 
         if data.name is not None:
             patient.name_encrypted = encrypt_field(data.name)
+        if data.email is not None:
+            patient.email = data.email
         if data.mco is not None:
             patient.mco = data.mco
         if data.date_of_birth is not None:

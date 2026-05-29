@@ -14,6 +14,7 @@ export interface Patient {
   id: string
   provider_id: string
   name: string
+  email: string | null
   mco: string | null
   date_of_birth: string | null
   address: string | null

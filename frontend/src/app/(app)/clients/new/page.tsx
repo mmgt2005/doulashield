@@ -14,6 +14,7 @@ import AddressAutocomplete from '@/components/ui/AddressAutocomplete'
 const schema = z.object({
   name: z.string().min(1, 'Name is required'),
   medicaid_id: z.string().min(1, 'Medicaid ID is required'),
+  email: z.string().email('Invalid email address').optional().or(z.literal('')),
   mco: z.string().optional(),
   date_of_birth: z.string().optional(),
   address: z.string().optional(),
@@ -114,6 +115,18 @@ export default function NewClientPage() {
             type="date"
             className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:w-48"
           />
+        </div>
+
+        <div>
+          <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email <span className="text-gray-400">(optional — used to send telehealth link)</span></label>
+          <input
+            {...register('email')}
+            id="email"
+            type="email"
+            placeholder="client@example.com"
+            className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          />
+          {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email.message}</p>}
         </div>
 
         <div>

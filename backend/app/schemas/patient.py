@@ -7,6 +7,7 @@ from pydantic import BaseModel
 class PatientCreate(BaseModel):
     name: str
     medicaid_id: str
+    email: str | None = None
     mco: str | None = None
     date_of_birth: date | None = None
     address: str | None = None
@@ -17,6 +18,7 @@ class PatientCreate(BaseModel):
 
 class PatientUpdate(BaseModel):
     name: str | None = None
+    email: str | None = None
     mco: str | None = None
     date_of_birth: date | None = None
     address: str | None = None
@@ -30,6 +32,7 @@ class PatientRead(BaseModel):
     id: uuid.UUID
     provider_id: uuid.UUID
     name: str           # Decrypted by service before returning
+    email: str | None
     mco: str | None
     date_of_birth: date | None
     address: str | None
