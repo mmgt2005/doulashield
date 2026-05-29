@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import axios from 'axios'
 import { getAccessToken } from '@/lib/auth'
-import { useAuth } from '@/hooks/useAuth'
+import { useAuthStore } from '@/store/auth-store'
 
 interface SettingsFormData {
   npi: string
@@ -16,7 +16,7 @@ interface SettingsFormData {
 }
 
 export default function SettingsPage() {
-  const { user, isLoading: authLoading } = useAuth()
+  const { user, isLoading: authLoading, isAuthenticated } = useAuthStore()
   const isAdmin = user?.role === 'admin'
   const [connected, setConnected] = useState(false)
   const [zipzignConnected, setZipzignConnected] = useState(false)
@@ -27,6 +27,7 @@ export default function SettingsPage() {
   const { register, handleSubmit, setValue, formState: { isSubmitting } } = useForm<SettingsFormData>()
 
   useEffect(() => {
+    if (!isAuthenticated) return
     axios
       .get<{ npi: string | null; availity_connected: boolean; telehealth_link: string | null; contact_email: string | null; zipzign_connected: boolean }>(
         `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/me/provider-settings`,
@@ -40,7 +41,7 @@ export default function SettingsPage() {
         setZipzignConnected(r.data.zipzign_connected)
       })
       .finally(() => setLoading(false))
-  }, [setValue])
+  }, [setValue, isAuthenticated])
 
   const onSubmit = async (data: SettingsFormData) => {
     setSaveError(null)
