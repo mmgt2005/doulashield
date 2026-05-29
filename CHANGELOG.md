@@ -11,6 +11,13 @@ All notable changes to this project are documented here. This file is updated wi
 
 ---
 
+## [2026-05-29] — Fix Railway healthcheck: add sslmode=require for Alembic psycopg2 connection
+
+### Fixed
+- Added `sslmode=require` to the psycopg2 connection URL in `backend/alembic/env.py` when not already present — Supabase rejects all PostgreSQL connections without SSL; psycopg2 does not add it automatically, causing `alembic upgrade head` to hang/fail and preventing uvicorn from starting
+
+---
+
 ## [2026-05-29] — Make all Alembic migrations idempotent
 
 ### Fixed

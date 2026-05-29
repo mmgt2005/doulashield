@@ -19,6 +19,9 @@ target_metadata = Base.metadata
 _db_url = os.environ["DATABASE_URL"].replace(
     "postgresql+asyncpg://", "postgresql://"
 )
+# Supabase requires SSL; psycopg2 does not add it automatically.
+if "sslmode" not in _db_url:
+    _db_url += ("&" if "?" in _db_url else "?") + "sslmode=require"
 
 
 def run_migrations_offline() -> None:
