@@ -21,6 +21,7 @@ node_modules/
 .next/
 out/
 frontend/.env.local
+*.tsbuildinfo
 
 # Alembic
 alembic/versions/*.pyc
