@@ -96,12 +96,19 @@ async def request_telehealth_signature(
     user = user_result.scalar_one_or_none()
     if not user:
         raise ValueError("User not found")
-    if not user.zipzign_api_key_encrypted:
-        raise ValueError("ZipZign not configured — add your API key in Settings")
     if not user.contact_email:
         raise ValueError("Provider email not configured — add your contact email in Settings")
 
-    api_key = decrypt_field(user.zipzign_api_key_encrypted)
+    admin_result = await db.execute(
+        select(User)
+        .where(User.role == "admin", User.zipzign_api_key_encrypted.isnot(None))
+        .limit(1)
+    )
+    admin = admin_result.scalar_one_or_none()
+    if not admin:
+        raise ValueError("ZipZign not configured — an admin must add the API key in Settings")
+
+    api_key = decrypt_field(admin.zipzign_api_key_encrypted)
     provider_name = user.full_name or user.email
 
     html_document = _build_ma91_html(

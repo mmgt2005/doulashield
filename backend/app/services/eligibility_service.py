@@ -27,12 +27,16 @@ class EligibilityService:
         user = result.scalar_one_or_none()
         if not user:
             raise ValueError("User not found")
+        admin_q = await self._db.execute(
+            select(User).where(User.role == "admin", User.zipzign_api_key_encrypted.isnot(None)).limit(1)
+        )
+        zipzign_configured = admin_q.scalar_one_or_none() is not None
         return ProviderSettingsRead(
             npi=user.npi,
             availity_connected=bool(user.availity_client_id_encrypted and user.availity_client_secret_encrypted),
             telehealth_link=user.telehealth_link,
             contact_email=user.contact_email,
-            zipzign_connected=bool(user.zipzign_api_key_encrypted),
+            zipzign_connected=zipzign_configured,
         )
 
     async def update_provider_settings(
@@ -71,12 +75,16 @@ class EligibilityService:
             user_agent=user_agent,
             user_id=user_id,
         )
+        admin_q2 = await self._db.execute(
+            select(User).where(User.role == "admin", User.zipzign_api_key_encrypted.isnot(None)).limit(1)
+        )
+        zipzign_configured = admin_q2.scalar_one_or_none() is not None
         return ProviderSettingsRead(
             npi=user.npi,
             availity_connected=bool(user.availity_client_id_encrypted and user.availity_client_secret_encrypted),
             telehealth_link=user.telehealth_link,
             contact_email=user.contact_email,
-            zipzign_connected=bool(user.zipzign_api_key_encrypted),
+            zipzign_connected=zipzign_configured,
         )
 
     async def check_eligibility(

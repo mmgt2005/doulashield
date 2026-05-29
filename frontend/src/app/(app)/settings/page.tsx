@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import axios from 'axios'
 import { getAccessToken } from '@/lib/auth'
+import { useAuthStore } from '@/store/auth-store'
 
 interface SettingsFormData {
   npi: string
@@ -15,6 +16,8 @@ interface SettingsFormData {
 }
 
 export default function SettingsPage() {
+  const { user } = useAuthStore()
+  const isAdmin = user?.role === 'admin'
   const [connected, setConnected] = useState(false)
   const [zipzignConnected, setZipzignConnected] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -165,16 +168,18 @@ export default function SettingsPage() {
                 className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
             </div>
-            <div>
-              <label htmlFor="zipzign_api_key" className="block text-sm font-medium text-gray-700">ZipZign API key</label>
-              <input
-                {...register('zipzign_api_key')}
-                id="zipzign_api_key"
-                type="password"
-                placeholder={zipzignConnected ? '●●●●●● saved' : 'Enter API key'}
-                className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
+            {isAdmin && (
+              <div>
+                <label htmlFor="zipzign_api_key" className="block text-sm font-medium text-gray-700">ZipZign API key</label>
+                <input
+                  {...register('zipzign_api_key')}
+                  id="zipzign_api_key"
+                  type="password"
+                  placeholder={zipzignConnected ? '●●●●●● saved' : 'Enter API key'}
+                  className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+            )}
           </div>
         </div>
 
