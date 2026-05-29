@@ -10,6 +10,9 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ## [Unreleased]
 
+### Fixed
+- Settings page called `useAuth()` in addition to the layout, causing two concurrent `/auth/refresh` requests; if the refresh token is single-use the second call triggered `logout()` (user=null), hiding the ZipZign API key field and role badge — settings page now reads from `useAuthStore()` directly and gates its data fetch on `isAuthenticated` so it only fires after the layout has hydrated the token
+
 ---
 
 ## [1.0.1] — 2026-05-29
