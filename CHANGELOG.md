@@ -11,6 +11,18 @@ All notable changes to this project are documented here. This file is updated wi
 
 ---
 
+## [2026-05-29] — Client Email Field & Telehealth Room Link via Email
+
+### Added
+- **Email field on client profile** — optional email address stored per client; shown in the profile header and editable via "Edit profile"
+- **Email field on new client form** — providers can enter a client email when creating a new record
+- **Telehealth room link sent to client automatically** — clicking "Start Telehealth" now opens doxy.me (so the provider can log in and start their room) and opens the provider's default email client with a pre-filled message containing the room link for the client to join; no backend email service required
+- **No-email warning** — if no email is on file for the client, the telehealth panel shows an amber note prompting the provider to add one
+- **MA 91 email pre-filled** — the patient email field in the MA 91 telehealth e-signature section is now pre-populated from the stored client email
+- Migration 0009: adds nullable `email` (TEXT) column to `patients` table
+
+---
+
 ## [2026-05-29] — ZipZign API Key Moved to Admin-Only Shared Credential
 
 ### Changed
