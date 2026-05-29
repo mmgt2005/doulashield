@@ -20,6 +20,14 @@ function formatDuration(start: Date, end: Date): string {
   return mins >= 60 ? `${Math.floor(mins / 60)}h ${mins % 60}m` : `${mins}m`
 }
 
+function formatElapsed(secs: number): string {
+  const h = Math.floor(secs / 3600)
+  const m = Math.floor((secs % 3600) / 60)
+  const s = secs % 60
+  if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+}
+
 const SOAP_PLACEHOLDERS: Record<string, string> = {
   subjective: 'How is the client feeling today? Did she report any specific concerns?',
   objective: 'What did you observe? (e.g., movement, mood, vitals, engagement level)',
@@ -61,6 +69,7 @@ export default function VisitFormPage() {
   // Start/end Visit state (in-person)
   const [visitStarted, setVisitStarted] = useState<Date | null>(null)
   const [visitEnded, setVisitEnded] = useState<Date | null>(null)
+  const [elapsedSecs, setElapsedSecs] = useState(0)
   const [locating, setLocating] = useState(false)
   const [locationError, setLocationError] = useState<string | null>(null)
   const [distanceFt, setDistanceFt] = useState<number | null>(null)
@@ -147,6 +156,23 @@ export default function VisitFormPage() {
       }
     }).catch(() => { /* non-blocking */ })
   }, [clientId, visitType, slot, setValue])
+
+  // Live elapsed-time ticker — runs while visit is started but not ended
+  useEffect(() => {
+    const startTime = locationType === 'telehealth' ? telehealthStarted : visitStarted
+    if (!startTime || visitEnded) return
+    setElapsedSecs(Math.floor((Date.now() - startTime.getTime()) / 1000))
+    const id = setInterval(() => {
+      setElapsedSecs(Math.floor((Date.now() - startTime.getTime()) / 1000))
+    }, 1000)
+    return () => clearInterval(id)
+  }, [visitStarted, telehealthStarted, visitEnded, locationType])
+
+  const startTime = locationType === 'telehealth' ? telehealthStarted : visitStarted
+  const durationMins = startTime && visitEnded
+    ? Math.round((visitEnded.getTime() - startTime.getTime()) / 60000)
+    : null
+  const elapsedMins = Math.floor(elapsedSecs / 60)
 
   const handleStartVisit = useCallback(() => {
     setLocating(true)
@@ -445,17 +471,29 @@ export default function VisitFormPage() {
                     : ' · Location not verified (no address on file)'}
               </p>
               {visitEnded ? (
-                <p className="mt-1 text-sm text-green-700">
-                  ✓ Ended at {formatTime(visitEnded)} · Duration: {formatDuration(visitStarted, visitEnded)}
-                </p>
+                <>
+                  <p className={`mt-1 text-sm font-medium ${durationMins !== null && durationMins < 30 ? 'text-amber-700' : 'text-green-700'}`}>
+                    ✓ Ended at {formatTime(visitEnded)} · Duration: {formatDuration(visitStarted, visitEnded)}
+                    {durationMins !== null && durationMins < 30 && ' ⚠'}
+                  </p>
+                  {durationMins !== null && durationMins < 30 && (
+                    <p className="mt-0.5 text-xs text-amber-600">Under 30 minutes — see billing warning below.</p>
+                  )}
+                </>
               ) : (
-                <button
-                  type="button"
-                  onClick={handleEndVisit}
-                  className="mt-2 rounded border border-red-300 bg-red-50 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-100"
-                >
-                  End Visit
-                </button>
+                <div className="mt-2 flex items-center gap-3">
+                  <span className={`font-mono text-sm font-semibold tabular-nums ${elapsedMins < 30 ? 'text-amber-700' : 'text-green-700'}`}>
+                    {formatElapsed(elapsedSecs)}
+                    {elapsedMins < 30 && ` (${30 - elapsedMins} min to 30)`}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleEndVisit}
+                    className="rounded border border-red-300 bg-red-50 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-100"
+                  >
+                    End Visit
+                  </button>
+                </div>
               )}
             </div>
           )}
@@ -505,17 +543,29 @@ export default function VisitFormPage() {
                 <p className="mt-1 text-xs text-amber-700">No client email on file — add one in the client profile to send the link automatically next time.</p>
               )}
               {visitEnded ? (
-                <p className="mt-1 text-sm text-green-700">
-                  ✓ Ended at {formatTime(visitEnded)} · Duration: {formatDuration(telehealthStarted, visitEnded)}
-                </p>
+                <>
+                  <p className={`mt-1 text-sm font-medium ${durationMins !== null && durationMins < 30 ? 'text-amber-700' : 'text-green-700'}`}>
+                    ✓ Ended at {formatTime(visitEnded)} · Duration: {formatDuration(telehealthStarted, visitEnded)}
+                    {durationMins !== null && durationMins < 30 && ' ⚠'}
+                  </p>
+                  {durationMins !== null && durationMins < 30 && (
+                    <p className="mt-0.5 text-xs text-amber-600">Under 30 minutes — see billing warning below.</p>
+                  )}
+                </>
               ) : (
-                <button
-                  type="button"
-                  onClick={handleEndVisit}
-                  className="mt-2 rounded border border-red-300 bg-red-50 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-100"
-                >
-                  End Visit
-                </button>
+                <div className="mt-2 flex items-center gap-3">
+                  <span className={`font-mono text-sm font-semibold tabular-nums ${elapsedMins < 30 ? 'text-amber-700' : 'text-green-700'}`}>
+                    {formatElapsed(elapsedSecs)}
+                    {elapsedMins < 30 && ` (${30 - elapsedMins} min to 30)`}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleEndVisit}
+                    className="rounded border border-red-300 bg-red-50 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-100"
+                  >
+                    End Visit
+                  </button>
+                </div>
               )}
             </div>
           )}
@@ -751,6 +801,13 @@ export default function VisitFormPage() {
           {ma91Error && <p className="text-xs text-red-600">{ma91Error}</p>}
         </div>
 
+        {durationMins !== null && durationMins < 30 && (
+          <div className="rounded-lg border border-amber-300 bg-amber-50 p-3">
+            <p className="text-sm font-medium text-amber-800">
+              ⚠ Visit duration is {durationMins} min — Medicaid requires at least 30 minutes for T1032/T1033 reimbursement. Verify your start and end times before saving.
+            </p>
+          </div>
+        )}
         {submitError && <p className="text-sm text-red-600">{submitError}</p>}
         <div className="flex flex-col gap-3 sm:flex-row">
           <button
