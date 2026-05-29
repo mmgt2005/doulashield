@@ -13,6 +13,9 @@ All notable changes to this project are documented here. This file is updated wi
 
 ## [2026-05-29] — Client Email Field & Telehealth Room Link via Email
 
+### Fixed
+- ZipZign base URL corrected from non-existent `api.zipzign.com` to `zipzign.com/api/v1`; now configurable via `ZIPZIGN_BASE_URL` env var
+
 ### Added
 - **Email field on client profile** — optional email address stored per client; shown in the profile header and editable via "Edit profile"
 - **Email field on new client form** — providers can enter a client email when creating a new record
