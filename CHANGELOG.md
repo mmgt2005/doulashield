@@ -10,6 +10,9 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ## [Unreleased]
 
+### Internal
+- `frontend/tsconfig.json` and `frontend/next-env.d.ts` updated by `next build` (mandatory: jsx → react-jsx, target → ES2017, added `.next/dev/types` include path)
+
 ### Added
 - Visit date auto-populates from the start timestamp when "Start Visit" or "Start Telehealth" is tapped, eliminating the need to type the date manually; also falls back to the stored `visit_started_at` when reloading a visit that was started but never form-saved
 - Sequential visit enforcement: within prenatal and postnatal groups, a provider cannot navigate to the next visit until the previous one has a recorded `visit_ended_at`; blocked slots show a lock icon and "Complete X first" message on the client overview and render a non-clickable `<div>` instead of a link; navigating directly to a blocked visit URL shows an amber warning with a link back to the previous visit
