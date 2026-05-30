@@ -26,6 +26,8 @@ class User(Base):
     telehealth_link: Mapped[str | None] = mapped_column(Text, nullable=True)
     contact_email: Mapped[str | None] = mapped_column(Text, nullable=True)
     zipzign_api_key_encrypted: Mapped[str | None] = mapped_column(Text, nullable=True)
+    zone: Mapped[str | None] = mapped_column(String(4), nullable=True)
+    county: Mapped[str | None] = mapped_column(String(64), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

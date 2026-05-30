@@ -13,6 +13,38 @@ interface SettingsFormData {
   telehealth_link: string
   contact_email: string
   zipzign_api_key: string
+  zone: string
+  county: string
+}
+
+type ZoneKey = 'SE' | 'SW' | 'LC' | 'NE' | 'NW'
+
+const PA_ZONES: Record<ZoneKey, { label: string; counties: string[]; mcos: string[] }> = {
+  SE: {
+    label: 'Southeast (SE)',
+    counties: ['Bucks', 'Chester', 'Delaware', 'Montgomery', 'Philadelphia'],
+    mcos: ['Keystone First', 'Health Partners Plans (HPP)', 'UnitedHealthcare Community Plan', 'Aetna Better Health', 'UPMC For You'],
+  },
+  SW: {
+    label: 'Southwest (SW)',
+    counties: ['Allegheny', 'Armstrong', 'Beaver', 'Bedford', 'Blair', 'Butler', 'Cambria', 'Fayette', 'Greene', 'Indiana', 'Lawrence', 'Somerset', 'Washington', 'Westmoreland'],
+    mcos: ['UPMC For You', 'AmeriHealth Caritas', 'Highmark Wholecare', 'Geisinger Health Plan', 'Health Partners Plans (HPP)'],
+  },
+  LC: {
+    label: 'Lehigh/Capital (LC)',
+    counties: ['Adams', 'Berks', 'Cumberland', 'Dauphin', 'Franklin', 'Fulton', 'Huntingdon', 'Lancaster', 'Lebanon', 'Lehigh', 'Northampton', 'Perry', 'York'],
+    mcos: ['AmeriHealth Caritas', 'Geisinger Health Plan', 'Highmark Wholecare', 'Health Partners Plans (HPP)', 'UPMC For You'],
+  },
+  NE: {
+    label: 'Northeast (NE)',
+    counties: ['Bradford', 'Carbon', 'Centre', 'Clinton', 'Columbia', 'Juniata', 'Lackawanna', 'Luzerne', 'Lycoming', 'Mifflin', 'Monroe', 'Montour', 'Northumberland', 'Pike', 'Schuylkill', 'Snyder', 'Sullivan', 'Susquehanna', 'Tioga', 'Union', 'Wayne', 'Wyoming'],
+    mcos: ['Geisinger Health Plan', 'AmeriHealth Caritas', 'Health Partners Plans (HPP)', 'Highmark Wholecare', 'UPMC For You'],
+  },
+  NW: {
+    label: 'Northwest (NW)',
+    counties: ['Cameron', 'Clarion', 'Clearfield', 'Crawford', 'Elk', 'Erie', 'Forest', 'Jefferson', 'McKean', 'Mercer', 'Potter', 'Venango', 'Warren'],
+    mcos: ['UPMC For You', 'AmeriHealth Caritas', 'Geisinger Health Plan', 'Health Partners Plans (HPP)'],
+  },
 }
 
 export default function SettingsPage() {
@@ -23,12 +55,13 @@ export default function SettingsPage() {
   const [saveError, setSaveError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
 
-  const { register, handleSubmit, setValue, formState: { isSubmitting } } = useForm<SettingsFormData>()
+  const { register, handleSubmit, setValue, watch, formState: { isSubmitting } } = useForm<SettingsFormData>()
+  const selectedZone = watch('zone') as ZoneKey | '' | undefined
 
   useEffect(() => {
     if (!isAuthenticated) return
     axios
-      .get<{ npi: string | null; availity_connected: boolean; telehealth_link: string | null; contact_email: string | null; zipzign_connected: boolean }>(
+      .get<{ npi: string | null; availity_connected: boolean; telehealth_link: string | null; contact_email: string | null; zipzign_connected: boolean; zone: string | null; county: string | null }>(
         `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/me/provider-settings`,
         { headers: { Authorization: `Bearer ${getAccessToken()}` } }
       )
@@ -36,6 +69,8 @@ export default function SettingsPage() {
         if (r.data.npi) setValue('npi', r.data.npi)
         if (r.data.telehealth_link) setValue('telehealth_link', r.data.telehealth_link)
         if (r.data.contact_email) setValue('contact_email', r.data.contact_email)
+        if (r.data.zone) setValue('zone', r.data.zone)
+        if (r.data.county) setValue('county', r.data.county)
         setConnected(r.data.availity_connected)
         setZipzignConnected(r.data.zipzign_connected)
       })
@@ -52,6 +87,8 @@ export default function SettingsPage() {
       if (data.telehealth_link) body.telehealth_link = data.telehealth_link
       if (data.contact_email) body.contact_email = data.contact_email
       if (data.zipzign_api_key) body.zipzign_api_key = data.zipzign_api_key
+      body.zone = data.zone || ''
+      body.county = data.county || ''
 
       const res = await axios.patch<{ npi: string | null; availity_connected: boolean; zipzign_connected: boolean }>(
         `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/me/provider-settings`,
@@ -115,6 +152,52 @@ export default function SettingsPage() {
             placeholder="10-digit NPI"
             className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:w-48"
           />
+        </div>
+
+        <div className="border-t pt-4 space-y-4">
+          <h2 className="text-sm font-semibold text-gray-700">PA HealthChoices Zone</h2>
+          <p className="text-xs text-gray-500">
+            Pennsylvania Medicaid is divided into 5 geographic zones. Selecting your zone ensures the correct MCOs
+            are available for eligibility checks and billing.
+          </p>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label htmlFor="zone" className="block text-sm font-medium text-gray-700">Primary zone</label>
+              <select
+                {...register('zone')}
+                id="zone"
+                onChange={(e) => { setValue('zone', e.target.value); setValue('county', '') }}
+                className="mt-1 block w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              >
+                <option value="">— Select zone —</option>
+                {(Object.keys(PA_ZONES) as ZoneKey[]).map((key) => (
+                  <option key={key} value={key}>{PA_ZONES[key].label}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label htmlFor="county" className="block text-sm font-medium text-gray-700">County</label>
+              <select
+                {...register('county')}
+                id="county"
+                disabled={!selectedZone || !(selectedZone in PA_ZONES)}
+                className="mt-1 block w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-400"
+              >
+                <option value="">— Select county —</option>
+                {selectedZone && selectedZone in PA_ZONES &&
+                  PA_ZONES[selectedZone as ZoneKey].counties.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))
+                }
+              </select>
+            </div>
+          </div>
+          {selectedZone && selectedZone in PA_ZONES && (
+            <div className="rounded-lg border border-blue-100 bg-blue-50 px-3 py-2">
+              <p className="text-xs font-medium text-blue-700 mb-1">Active MCOs in this zone:</p>
+              <p className="text-xs text-blue-800">{PA_ZONES[selectedZone as ZoneKey].mcos.join(' · ')}</p>
+            </div>
+          )}
         </div>
 
         <div className="border-t pt-4">
