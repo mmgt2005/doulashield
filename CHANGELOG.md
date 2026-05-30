@@ -11,7 +11,10 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 ## [Unreleased]
 
 ### Added
-- Stripe billing integration: escrow agreement sign flow, automated $99 deposit collection, and $39/month subscription management
+- **Create Provider + send invite** (`POST /admin/billing/create-and-invite`): admin fills in email and optional full name; backend generates a cryptographically secure 14-char temp password, creates the provider account, generates a Stripe Checkout link (if configured), and sends one combined welcome email containing the login credentials and deposit payment button — the admin never handles or sees the password
+- **Change Password** section on the Settings page: providers can update their own password after first login by entering their current password, new password, and confirmation; validated against the existing 12-char complexity rules; `POST /auth/me/change-password` endpoint with `CHANGE_PASSWORD` audit log entry
+
+### Stripe billing integration: escrow agreement sign flow, automated $99 deposit collection, and $39/month subscription management
   - **Backend**: migration 0013 adds billing columns to `users` (`stripe_customer_id`, `escrow_agreed_at/version`, `deposit_paid/at`, `escrow_balance_remaining`, `stripe_subscription_id`, `subscription_status`) and creates `escrow_deductions` table; new `stripe_service`, `email_service`, and `billing` API router
   - **Deposit flow**: admin clicks "Send Deposit Email" → backend creates a Stripe Checkout session with `setup_future_usage=off_session` (saves card for future charges) and `metadata.user_id`, then sends the link via Resend; when the provider pays, `checkout.session.completed` webhook auto-links `stripe_customer_id` and sets `deposit_paid=True` — no manual copy-paste required
   - **Fallback**: "Link Customer ID" modal lets admins manually paste a `cus_…` ID for providers whose deposit was collected outside Stripe (cash/check)
