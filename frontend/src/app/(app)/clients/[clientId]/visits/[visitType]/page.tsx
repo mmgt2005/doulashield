@@ -62,9 +62,9 @@ const MCO_CHANNEL: Record<string, 'availity' | 'uhc' | 'manual'> = {
 }
 
 const MCO_PORTAL: Record<string, { name: string; url: string }> = {
-  'UPMC For You': { name: 'UPMC Health Plan Provider Portal', url: 'https://www.upmchealthplan.com/providers/' },
-  'Health Partners Plans': { name: 'HPPServe (Change Healthcare)', url: 'https://www.healthpartnersplans.com/providers/' },
-  'FFS': { name: 'PROMISe™ (PA DHS)', url: 'https://promise.dpw.state.pa.us/' },
+  'UPMC For You': { name: 'UPMC Provider Portal', url: 'https://provider.upmc.com/' },
+  'Health Partners Plans': { name: 'HPPServe (Change Healthcare)', url: 'https://www.hppserve.com/' },
+  'FFS': { name: 'PROMISe™ (PA DHS)', url: 'https://promise.dhs.pa.gov/portal/provider' },
 }
 
 function submissionChannel(mco: string | null | undefined): 'availity' | 'uhc' | 'manual' {

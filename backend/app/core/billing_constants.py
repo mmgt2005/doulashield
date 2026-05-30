@@ -20,16 +20,16 @@ MCO_SUBMISSION_CHANNEL: dict[str, str] = {
 # Portal links for manual MCOs (shown when provider must submit outside the app)
 MCO_PORTAL_LINKS: dict[str, dict[str, str]] = {
     "UPMC For You": {
-        "name": "UPMC Health Plan Provider Portal",
-        "url": "https://www.upmchealthplan.com/providers/",
+        "name": "UPMC Provider Portal",
+        "url": "https://provider.upmc.com/",
     },
     "Health Partners Plans": {
-        "name": "HPPServe (via Change Healthcare / Emdeon)",
-        "url": "https://www.healthpartnersplans.com/providers/",
+        "name": "HPPServe (Change Healthcare)",
+        "url": "https://www.hppserve.com/",
     },
     "FFS": {
         "name": "PROMISe™ Provider Portal (PA DHS)",
-        "url": "https://promise.dpw.state.pa.us/",
+        "url": "https://promise.dhs.pa.gov/portal/provider",
     },
 }
 
