@@ -18,6 +18,7 @@ interface EditFormData {
   email: string
   mco: string
   date_of_birth: string
+  referring_provider_npi: string
   address: string
   latitude?: number
   longitude?: number
@@ -75,6 +76,7 @@ export default function ClientDetailPage() {
       email: patient.email ?? '',
       mco: patient.mco ?? '',
       date_of_birth: patient.date_of_birth ?? '',
+      referring_provider_npi: patient.referring_provider_npi ?? '',
       address: patient.address ?? '',
       latitude: patient.latitude ?? undefined,
       longitude: patient.longitude ?? undefined,
@@ -104,6 +106,7 @@ export default function ClientDetailPage() {
           address: data.address || null,
           latitude: lat ?? null,
           longitude: lng ?? null,
+          referring_provider_npi: data.referring_provider_npi || null,
           ...(data.medicaid_card_image_path ? { medicaid_card_image_path: data.medicaid_card_image_path } : {}),
         },
         { headers: { Authorization: `Bearer ${getAccessToken()}` } }
@@ -176,6 +179,19 @@ export default function ClientDetailPage() {
             <div>
               <label className="block text-xs font-medium text-gray-600">Date of birth</label>
               <input {...register('date_of_birth')} type="date" className="mt-1 block w-full rounded border border-gray-300 px-3 py-1.5 text-sm sm:w-40" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600">
+                Referring Provider NPI
+                <span className="ml-1 font-normal text-gray-400">(Box 17b — referring doctor)</span>
+              </label>
+              <input
+                {...register('referring_provider_npi')}
+                type="text"
+                maxLength={10}
+                placeholder="10-digit NPI"
+                className="mt-1 block w-full rounded border border-gray-300 px-3 py-1.5 text-sm sm:w-40"
+              />
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600">Sex</label>

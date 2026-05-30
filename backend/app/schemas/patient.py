@@ -15,6 +15,7 @@ class PatientCreate(BaseModel):
     latitude: float | None = None
     longitude: float | None = None
     medicaid_card_image_path: str | None = None
+    referring_provider_npi: str | None = None
 
 
 class PatientUpdate(BaseModel):
@@ -27,6 +28,7 @@ class PatientUpdate(BaseModel):
     latitude: float | None = None
     longitude: float | None = None
     medicaid_card_image_path: str | None = None
+    referring_provider_npi: str | None = None
     # medicaid_id updates go through a separate admin-only flow
 
 
@@ -42,6 +44,7 @@ class PatientRead(BaseModel):
     latitude: float | None
     longitude: float | None
     medicaid_card_image_path: str | None
+    referring_provider_npi: str | None
     eligibility_status: str | None
     eligibility_checked_at: datetime | None
     is_active: bool

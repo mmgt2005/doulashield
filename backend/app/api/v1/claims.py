@@ -91,11 +91,13 @@ async def download_cms1500(
                 "date_of_birth": patient.date_of_birth,
                 "gender": patient.gender,
                 "address": patient.address or "",
+                "referring_provider_npi": patient.referring_provider_npi or "",
             },
             visit_data={
                 "visit_type": visit_type,
                 "visit_date": svc_date,
                 "location_type": location_type,
+                "prior_auth_number": visit.prior_auth_number if visit else None,
             },
             provider_data={
                 "npi": user.npi or "",

@@ -16,6 +16,7 @@ export interface Patient {
   name: string
   gender: string
   email: string | null
+  referring_provider_npi: string | null
   mco: string | null
   date_of_birth: string | null
   address: string | null
@@ -99,6 +100,7 @@ export interface Visit {
   ma91_signed_by_name: string | null
   ma91_zipzign_request_id: string | null
   ma91_status: 'signed' | 'pending' | 'declined' | null
+  prior_auth_number: string | null
   created_at: string
   updated_at: string
 }

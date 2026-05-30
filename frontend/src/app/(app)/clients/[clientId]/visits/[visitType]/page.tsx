@@ -67,6 +67,7 @@ const schema = z.object({
   provider_longitude: z.preprocess((v) => (v === '' || v == null) ? undefined : Number(v), z.number().optional()),
   location_type: z.enum(['in_person', 'telehealth']).default('in_person'),
   alternate_location: z.string().optional(),
+  prior_auth_number: z.string().optional(),
 })
 type FormData = z.infer<typeof schema>
 
@@ -76,6 +77,7 @@ export default function VisitFormPage() {
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [saveSuccess, setSaveSuccess] = useState(false)
   const [patient, setPatient] = useState<Patient | null>(null)
+  const [referringNpi, setReferringNpi] = useState('')
 
   // Location type toggle
   const [locationType, setLocationType] = useState<'in_person' | 'telehealth'>('in_person')
@@ -141,6 +143,7 @@ export default function VisitFormPage() {
     ]).then(async ([patientRes, visitRes, settingsRes, claimsRes]) => {
       if (claimsRes?.data?.length) setExistingClaim(claimsRes.data[0])
       setPatient(patientRes.data)
+      if (patientRes.data.referring_provider_npi) setReferringNpi(patientRes.data.referring_provider_npi)
       if (patientRes.data.email) setMa91PatientEmail(patientRes.data.email)
       if (settingsRes) {
         setTelehealthLink(settingsRes.data.telehealth_link ?? null)
@@ -163,6 +166,7 @@ export default function VisitFormPage() {
         if (v.birth_notes) setValue('birth_notes', v.birth_notes)
         if (v.source_image_path) setValue('source_image_path', v.source_image_path)
         if (v.alternate_location) setValue('alternate_location', v.alternate_location)
+        if (v.prior_auth_number) setValue('prior_auth_number', v.prior_auth_number)
         if (v.location_type && visitType !== 'prenatal_1') {
           const lt = v.location_type as 'in_person' | 'telehealth'
           setLocationType(lt)
@@ -457,6 +461,18 @@ export default function VisitFormPage() {
     if (!res.ok) throw new Error(await res.text())
     const blob = await res.blob()
     return URL.createObjectURL(blob)
+  }
+
+  const handleSaveReferringNpi = async (npi: string) => {
+    if (!npi || npi === patient?.referring_provider_npi) return
+    try {
+      await axios.patch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/patients/${clientId}`,
+        { referring_provider_npi: npi },
+        { headers: { Authorization: `Bearer ${getAccessToken()}` } }
+      )
+      setPatient(p => p ? { ...p, referring_provider_npi: npi } : p)
+    } catch { /* non-blocking */ }
   }
 
   const handleOpenCms1500 = async () => {
@@ -867,6 +883,7 @@ export default function VisitFormPage() {
         <input type="hidden" {...register('provider_longitude')} />
         <input type="hidden" {...register('location_type')} />
         <input type="hidden" {...register('alternate_location')} />
+        <input type="hidden" {...register('prior_auth_number')} />
 
         {/* MA 91 Encounter Form Certification */}
         <div className="space-y-3 border-t pt-4">
@@ -1001,13 +1018,73 @@ export default function VisitFormPage() {
                   </button>
                 </div>
               ) : (
-                <div className="rounded border border-gray-200 bg-gray-50 p-3 space-y-2">
+                <div className="rounded border border-gray-200 bg-gray-50 p-3 space-y-3">
+                  {/* Auto-determined billing summary */}
                   <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-700">
                     <span>Procedure: <span className="font-medium">{billing.code}</span>{billing.modifier && <span className="font-medium"> · {billing.modifier}</span>}</span>
                     <span>Rate: <span className="font-medium">${billing.rate.toFixed(2)}</span></span>
                     <span>Diagnosis: <span className="font-medium">{billing.diag.join(', ')}</span></span>
                   </div>
                   <p className="text-xs text-gray-500">{billing.note}</p>
+
+                  {/* MCO-specific warnings */}
+                  {patient?.mco && ['UPMC For You', 'AmeriHealth Caritas', 'Geisinger Health Plan'].includes(patient.mco) && (
+                    <div className="rounded border border-blue-100 bg-blue-50 px-3 py-2 text-xs text-blue-800 space-y-1">
+                      {patient.mco === 'UPMC For You' && (
+                        <p>⏱ UPMC strictly enforces the 30-minute minimum — verify your start/end times before submitting.</p>
+                      )}
+                      {patient.mco === 'AmeriHealth Caritas' && (
+                        <p>📋 AmeriHealth Caritas requires the signed MA 91 on file for 7 years per audit requirements.</p>
+                      )}
+                      {patient.mco === 'Geisinger Health Plan' && (
+                        <p>🔐 Geisinger may require a prior authorization number in Block 23 — enter it below.</p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Block 17b — Referring Provider NPI (mandatory) */}
+                  <div className="space-y-1">
+                    <label className="block text-xs font-medium text-gray-700">
+                      Referring Provider NPI <span className="text-red-500">*</span>
+                      <span className="ml-1 font-normal text-gray-400">(Box 17b — required or claim will be rejected)</span>
+                    </label>
+                    <input
+                      type="text"
+                      maxLength={10}
+                      placeholder="10-digit referring doctor NPI"
+                      value={referringNpi}
+                      onChange={(e) => setReferringNpi(e.target.value)}
+                      onBlur={(e) => handleSaveReferringNpi(e.target.value)}
+                      className="w-full rounded border border-gray-300 px-2 py-1 text-sm focus:border-blue-400 focus:outline-none"
+                    />
+                    {!referringNpi ? (
+                      <p className="text-xs text-amber-600">⚠ Enter the referring doctor's NPI — saved to this client&apos;s profile for all visits</p>
+                    ) : patient?.referring_provider_npi && (
+                      <p className="text-xs text-gray-400">Saved to client profile</p>
+                    )}
+                  </div>
+
+                  {/* Block 23 — Prior Auth Number */}
+                  <div className="space-y-1">
+                    <label className="block text-xs font-medium text-gray-700">
+                      Prior Authorization Number
+                      <span className="ml-1 font-normal text-gray-400">
+                        (Box 23{patient?.mco === 'Geisinger Health Plan' ? ' — required for Geisinger' : ' — if required'})
+                      </span>
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Authorization number if required"
+                      value={watch('prior_auth_number') ?? ''}
+                      onChange={(e) => setValue('prior_auth_number', e.target.value)}
+                      className={`w-full rounded border px-2 py-1 text-sm focus:outline-none ${
+                        patient?.mco === 'Geisinger Health Plan' && !watch('prior_auth_number')
+                          ? 'border-amber-400 focus:border-amber-500'
+                          : 'border-gray-300 focus:border-blue-400'
+                      }`}
+                    />
+                  </div>
+
                   {claimError && <p className="text-xs text-red-600">{claimError}</p>}
                   <button
                     type="button"
@@ -1054,7 +1131,14 @@ export default function VisitFormPage() {
                           <tr className="border-b"><td className="py-1.5 font-medium text-gray-500">Box 2 — Patient name</td><td className="py-1.5">{patient?.name}</td></tr>
                           <tr className="border-b"><td className="py-1.5 font-medium text-gray-500">Box 3 — DOB / Sex</td><td className="py-1.5">{patient?.date_of_birth ?? '—'} / {patient?.gender === 'M' ? 'M' : 'F'}</td></tr>
                           <tr className="border-b"><td className="py-1.5 font-medium text-gray-500">Box 5 — Address</td><td className="py-1.5">{patient?.address ?? '—'}</td></tr>
+                          <tr className="border-b">
+                            <td className="py-1.5 font-medium text-gray-500">Box 17b — Referring NPI</td>
+                            <td className={`py-1.5 ${!referringNpi ? 'text-red-500' : 'font-semibold'}`}>
+                              {referringNpi || '⚠ Missing — claim will be rejected'}
+                            </td>
+                          </tr>
                           <tr className="border-b"><td className="py-1.5 font-medium text-gray-500">Box 21 — Diagnosis</td><td className="py-1.5 font-semibold">{billing.diag.join(', ')}</td></tr>
+                          <tr className="border-b"><td className="py-1.5 font-medium text-gray-500">Box 23 — Prior Auth</td><td className="py-1.5">{watch('prior_auth_number') || '—'}</td></tr>
                           <tr className="border-b"><td className="py-1.5 font-medium text-gray-500">Box 24A — Service date</td><td className="py-1.5">{watch('visit_date') ?? '—'}</td></tr>
                           <tr className="border-b"><td className="py-1.5 font-medium text-gray-500">Box 24B — Place of service</td><td className="py-1.5">{locationType === 'telehealth' ? '02 (Telehealth)' : '12 (Home)'}</td></tr>
                           <tr className="border-b"><td className="py-1.5 font-medium text-gray-500">Box 24D — Procedure / Modifier</td><td className="py-1.5 font-semibold">{billing.code}{billing.modifier && ` · ${billing.modifier}`}</td></tr>

@@ -26,6 +26,7 @@ class Patient(Base):
     longitude: Mapped[float | None] = mapped_column(Double, nullable=True)
     gender: Mapped[str] = mapped_column(String(1), server_default="F", nullable=False)
     email: Mapped[str | None] = mapped_column(Text, nullable=True)
+    referring_provider_npi: Mapped[str | None] = mapped_column(String(10), nullable=True)
     medicaid_card_image_path: Mapped[str | None] = mapped_column(String, nullable=True)
     eligibility_status: Mapped[str | None] = mapped_column(String, nullable=True)
     eligibility_checked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

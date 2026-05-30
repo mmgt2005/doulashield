@@ -141,8 +141,9 @@ def generate_pdf(
     Fills the official CMS 1500 blank form with claim data and returns PDF bytes.
 
     patient_data keys: name, medicaid_id, date_of_birth (date|None), gender (str),
-                       address (str|None)
-    visit_data keys:   visit_type (str), visit_date (date|str|None), location_type (str|None)
+                       address (str|None), referring_provider_npi (str|None)
+    visit_data keys:   visit_type (str), visit_date (date|str|None), location_type (str|None),
+                       prior_auth_number (str|None)
     provider_data keys: npi (str), full_name (str)
     """
     proc_code, modifier, rate_cents, diag_codes, _ = billing_for_visit(
@@ -267,6 +268,12 @@ def generate_pdf(
 
         # Box 33b — Taxonomy as group qualifier
         "grp": DOULA_TAXONOMY,
+
+        # Box 17b — Referring/supervising provider NPI (MANDATORY — claim rejected without it)
+        "ref_physician": patient_data.get("referring_provider_npi") or "",
+
+        # Box 23 — Prior authorization number (required by Geisinger)
+        "prior_auth": visit_data.get("prior_auth_number") or "",
     }
 
     # -----------------------------------------------------------------------
