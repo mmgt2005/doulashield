@@ -14,6 +14,7 @@ import { VISIT_SLOTS, VISIT_GROUPS, getPrevSlotInGroup, getSlotConfig } from '@/
 
 interface EditFormData {
   name: string
+  gender: string
   email: string
   mco: string
   date_of_birth: string
@@ -70,6 +71,7 @@ export default function ClientDetailPage() {
     if (!patient) return
     reset({
       name: patient.name,
+      gender: patient.gender ?? 'F',
       email: patient.email ?? '',
       mco: patient.mco ?? '',
       date_of_birth: patient.date_of_birth ?? '',
@@ -95,6 +97,7 @@ export default function ClientDetailPage() {
         `${process.env.NEXT_PUBLIC_API_URL}/api/v1/patients/${clientId}`,
         {
           name: data.name,
+          gender: data.gender,
           email: data.email || null,
           mco: data.mco || null,
           date_of_birth: data.date_of_birth || null,
@@ -173,6 +176,14 @@ export default function ClientDetailPage() {
             <div>
               <label className="block text-xs font-medium text-gray-600">Date of birth</label>
               <input {...register('date_of_birth')} type="date" className="mt-1 block w-full rounded border border-gray-300 px-3 py-1.5 text-sm sm:w-40" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600">Sex</label>
+              <select {...register('gender')} className="mt-1 block rounded border border-gray-300 px-3 py-1.5 text-sm">
+                <option value="F">Female</option>
+                <option value="M">Male</option>
+                <option value="U">Unknown</option>
+              </select>
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600">Home address</label>
@@ -264,7 +275,7 @@ export default function ClientDetailPage() {
       </div>
 
       {VISIT_GROUPS.map(({ key, label }) => {
-        const slots = VISIT_SLOTS.filter((s) => s.group === key)
+        const slots = VISIT_SLOTS.filter((s) => s.group === (key as string))
         return (
           <div key={key}>
             <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">
@@ -345,6 +356,54 @@ export default function ClientDetailPage() {
           </div>
         )
       })}
+
+      {/* Crisis / Bereavement Visits — ad-hoc, capped at 2 per year */}
+      {(() => {
+        const crisisVisits = [
+          visitMap.get('crisis_loss_1' as VisitType),
+          visitMap.get('crisis_loss_2' as VisitType),
+        ].filter(Boolean) as Visit[]
+        const nextSlot = crisisVisits.length < 2 ? `crisis_loss_${crisisVisits.length + 1}` : null
+        return (
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+                Crisis / Bereavement Visits
+              </h2>
+              <span className="text-xs text-gray-400">({crisisVisits.length} of 2 used this year)</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {crisisVisits.map((v, i) => (
+                <Link
+                  key={v.id}
+                  href={`/clients/${clientId}/visits/crisis_loss_${i + 1}`}
+                  className={
+                    v.visit_ended_at
+                      ? 'block rounded-lg border border-gray-200 bg-gray-50 p-3 text-gray-500 hover:border-gray-300 transition-colors'
+                      : 'block rounded-lg border border-amber-300 bg-amber-50 p-3 text-amber-800 hover:border-amber-400 transition-colors'
+                  }
+                >
+                  <span className="text-xs font-medium">Crisis/Loss Visit {i + 1}</span>
+                  {v.visit_date && <p className="mt-0.5 text-xs text-gray-400">{v.visit_date}</p>}
+                  {!v.visit_ended_at && <p className="mt-0.5 text-xs text-amber-600">In progress</p>}
+                </Link>
+              ))}
+              {nextSlot && (
+                <Link
+                  href={`/clients/${clientId}/visits/${nextSlot}`}
+                  className="block rounded-lg border border-purple-200 bg-white p-3 text-gray-800 hover:border-purple-400 transition-colors"
+                >
+                  <span className="text-xs font-medium text-purple-700">+ Add Crisis/Loss Visit</span>
+                  <p className="mt-0.5 text-xs text-gray-400">T1032 · U9 · $175</p>
+                </Link>
+              )}
+              {crisisVisits.length === 0 && !nextSlot && (
+                <p className="text-xs text-gray-400">2 of 2 crisis/loss visits used this year.</p>
+              )}
+            </div>
+          </div>
+        )
+      })()}
     </div>
   )
 }

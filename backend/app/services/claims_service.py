@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
 from app.core.audit import AuditLogger
+from app.core.billing_constants import DOULA_TAXONOMY, PROVIDER_TYPE, billing_for_visit, rate_dollars
 from app.core.encryption import decrypt_field
 from app.models.claim import Claim
 from app.models.patient import Patient
@@ -62,21 +63,41 @@ class ClaimsService:
         first_name = name_parts[0] if name_parts else ""
         last_name = name_parts[-1] if len(name_parts) > 1 else ""
 
+        proc_code, modifier, rate_cents, diag_codes, _ = billing_for_visit(data.visit_type)
+        billed_amount = data.billed_amount if data.billed_amount is not None else rate_dollars(data.visit_type)
+        diagnosis_codes = data.diagnosis_codes if data.diagnosis_codes else diag_codes
+        procedure_codes = data.procedure_codes if data.procedure_codes else [proc_code]
+        pos_code = "02" if data.location_type == "telehealth" else "12"
+
         availity = self._make_client(user)
         now = datetime.now(timezone.utc)
+
+        provider_name_parts = (user.full_name or "").strip().split()
+        provider_first = provider_name_parts[0] if provider_name_parts else ""
+        provider_last = provider_name_parts[-1] if len(provider_name_parts) > 1 else ""
 
         claim_body: dict = {
             "subscriber": {
                 "memberId": medicaid_id,
                 "firstName": first_name,
                 "lastName": last_name,
+                "gender": patient.gender,
+                "birthDate": patient.date_of_birth.isoformat() if patient.date_of_birth else None,
             },
             "payer": {"id": payer_id},
-            "providers": [{"npi": user.npi}],
+            "providers": [{
+                "npi": user.npi,
+                "taxonomyCode": DOULA_TAXONOMY,
+                "providerType": PROVIDER_TYPE,
+                "firstName": provider_first,
+                "lastName": provider_last,
+            }],
             "serviceDate": data.service_date.isoformat(),
-            "billedAmount": str(data.billed_amount),
-            "diagnosisCodes": data.diagnosis_codes,
-            "procedureCodes": data.procedure_codes,
+            "placeOfService": pos_code,
+            "billedAmount": str(billed_amount),
+            "diagnosisCodes": diagnosis_codes,
+            "procedureCodes": procedure_codes,
+            "modifiers": [modifier] if modifier else [],
         }
         if data.claim_data:
             claim_body.update(data.claim_data)
@@ -89,7 +110,7 @@ class ClaimsService:
             availity_claim_id=raw_response.get("claimId"),
             status=raw_response.get("status", "submitted"),
             service_date=data.service_date,
-            billed_amount=data.billed_amount,
+            billed_amount=billed_amount,
             payer_id=payer_id,
             claim_data=claim_body,
             raw_response=raw_response,

@@ -8,12 +8,15 @@ from pydantic import BaseModel, ConfigDict
 
 
 class ClaimCreate(BaseModel):
+    visit_type: str  # determines procedure_code, modifier, rate, and diag_codes automatically
     service_date: date
-    billed_amount: Decimal
+    location_type: str | None = None  # 'in_person' → POS 12, 'telehealth' → POS 02
     payer_id: str | None = None  # if None, derived from patient.mco in service layer
-    diagnosis_codes: list[str] = []
-    procedure_codes: list[str] = []
-    claim_data: dict | None = None  # additional raw claim fields
+    # billed_amount, diagnosis_codes, procedure_codes derived from visit_type via billing_constants
+    billed_amount: Decimal | None = None  # override; auto-calculated if not provided
+    diagnosis_codes: list[str] = []      # override; auto-calculated if empty
+    procedure_codes: list[str] = []      # override; auto-calculated if empty
+    claim_data: dict | None = None       # additional raw claim fields
 
 
 class ClaimRead(BaseModel):

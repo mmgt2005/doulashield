@@ -14,6 +14,7 @@ export interface Patient {
   id: string
   provider_id: string
   name: string
+  gender: string
   email: string | null
   mco: string | null
   date_of_birth: string | null
@@ -70,6 +71,7 @@ export type VisitType =
   | 'prenatal_1' | 'prenatal_2' | 'prenatal_3' | 'prenatal_4' | 'prenatal_5' | 'prenatal_6'
   | 'labor'
   | 'postnatal_1' | 'postnatal_2' | 'postnatal_3' | 'postnatal_4' | 'postnatal_5' | 'postnatal_6'
+  | 'crisis_loss_1' | 'crisis_loss_2'
 
 export interface Visit {
   id: string
@@ -97,6 +99,22 @@ export interface Visit {
   ma91_signed_by_name: string | null
   ma91_zipzign_request_id: string | null
   ma91_status: 'signed' | 'pending' | 'declined' | null
+  created_at: string
+  updated_at: string
+}
+
+export interface Claim {
+  id: string
+  patient_id: string
+  provider_id: string
+  availity_claim_id: string | null
+  status: string | null
+  service_date: string | null
+  billed_amount: string | null
+  paid_amount: string | null
+  payer_id: string | null
+  submitted_at: string | null
+  status_checked_at: string | null
   created_at: string
   updated_at: string
 }

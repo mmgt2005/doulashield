@@ -14,6 +14,7 @@ import AddressAutocomplete from '@/components/ui/AddressAutocomplete'
 const schema = z.object({
   name: z.string().min(1, 'Name is required'),
   medicaid_id: z.string().min(1, 'Medicaid ID is required'),
+  gender: z.enum(['F', 'M', 'U']).default('F'),
   email: z.string().email('Invalid email address').optional().or(z.literal('')),
   mco: z.string().optional(),
   date_of_birth: z.string().optional(),
@@ -31,6 +32,7 @@ export default function NewClientPage() {
 
   const { register, handleSubmit, setValue, watch, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
+    defaultValues: { gender: 'F' },
   })
 
   const handleScanned = (data: Record<string, unknown>) => {
@@ -115,6 +117,19 @@ export default function NewClientPage() {
             type="date"
             className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:w-48"
           />
+        </div>
+
+        <div>
+          <label htmlFor="gender" className="block text-sm font-medium text-gray-700">Sex</label>
+          <select
+            {...register('gender')}
+            id="gender"
+            className="mt-1 block rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          >
+            <option value="F">Female</option>
+            <option value="M">Male</option>
+            <option value="U">Unknown</option>
+          </select>
         </div>
 
         <div>

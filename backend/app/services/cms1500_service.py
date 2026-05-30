@@ -1,0 +1,230 @@
+"""
+Generates a filled CMS 1500 (02/12) claim form PDF.
+
+Fills the official blank form's AcroForm fields by name using pypdf.
+The blank form is the 1500CMS.COM AcroForm PDF stored at app/static/cms1500_blank.pdf.
+"""
+from __future__ import annotations
+
+import io
+from datetime import date
+from decimal import Decimal
+from pathlib import Path
+
+from pypdf import PdfReader, PdfWriter
+from pypdf.generic import NameObject
+
+from app.core.billing_constants import DOULA_TAXONOMY, billing_for_visit
+
+_BLANK_FORM = Path(__file__).parent.parent / "static" / "cms1500_blank.pdf"
+
+
+# ---------------------------------------------------------------------------
+# Helpers for setting radio group values
+# ---------------------------------------------------------------------------
+
+def _set_radio(writer: PdfWriter, page_idx: int, field_name: str, on_state: str) -> None:
+    """Set a radio button group to the given on_state (e.g. '/Medicaid', '/F')."""
+    for annot_ref in writer.pages[page_idx].get("/Annots", []):
+        annot = annot_ref.get_object()
+        t = annot.get("/T", "")
+        ft = annot.get("/FT", "")
+        if str(t) == field_name and str(ft) == "/Btn":
+            kids = annot.get("/Kids", [])
+            for kid_ref in kids:
+                kid = kid_ref.get_object()
+                ap = kid.get("/AP", {})
+                ap_obj = ap.get_object() if hasattr(ap, "get_object") else ap
+                n = ap_obj.get("/N", {}) if ap_obj else {}
+                n_obj = n.get_object() if hasattr(n, "get_object") else n
+                states = list(n_obj.keys()) if hasattr(n_obj, "keys") else []
+                if on_state in states:
+                    kid.update({NameObject("/AS"): NameObject(on_state)})
+                else:
+                    kid.update({NameObject("/AS"): NameObject("/Off")})
+            # Also set /V on the parent
+            annot.update({NameObject("/V"): NameObject(on_state)})
+            return
+
+
+def _parse_address(address: str) -> tuple[str, str, str, str]:
+    """
+    Best-effort split of '123 Main St, Philadelphia, PA 19103' into
+    (street, city, state, zip).
+    """
+    if not address:
+        return "", "", "", ""
+    parts = [p.strip() for p in address.split(",")]
+    street = parts[0] if parts else ""
+    city = parts[1] if len(parts) > 1 else ""
+    state_zip = parts[2] if len(parts) > 2 else ""
+    state_zip_parts = state_zip.split()
+    state = state_zip_parts[0] if state_zip_parts else ""
+    zip_code = state_zip_parts[1] if len(state_zip_parts) > 1 else ""
+    return street, city, state, zip_code
+
+
+# ---------------------------------------------------------------------------
+# Main public function
+# ---------------------------------------------------------------------------
+
+def generate_pdf(
+    patient_data: dict,
+    visit_data: dict,
+    provider_data: dict,
+) -> bytes:
+    """
+    Fills the official CMS 1500 blank form with claim data and returns PDF bytes.
+
+    patient_data keys: name, medicaid_id, date_of_birth (date|None), gender (str),
+                       address (str|None)
+    visit_data keys:   visit_type (str), visit_date (date|str|None), location_type (str|None)
+    provider_data keys: npi (str), full_name (str)
+    """
+    proc_code, modifier, rate_cents, diag_codes, _ = billing_for_visit(
+        visit_data.get("visit_type", "")
+    )
+    billed = Decimal(rate_cents) / 100
+    pos_code = "02" if visit_data.get("location_type") == "telehealth" else "12"
+
+    # Service date
+    svc_date_raw = visit_data.get("visit_date")
+    if isinstance(svc_date_raw, date):
+        svc_mm = svc_date_raw.strftime("%m")
+        svc_dd = svc_date_raw.strftime("%d")
+        svc_yy = svc_date_raw.strftime("%Y")
+    else:
+        parts = str(svc_date_raw or "").split("-")
+        svc_yy, svc_mm, svc_dd = (parts + ["", "", ""])[:3]
+
+    # Patient info
+    name = patient_data.get("name", "")
+    name_parts = name.strip().split()
+    last_name = name_parts[-1] if len(name_parts) > 1 else name
+    first_name = " ".join(name_parts[:-1]) if len(name_parts) > 1 else ""
+    patient_display = f"{last_name}, {first_name}".strip(", ")
+
+    gender = patient_data.get("gender", "F")
+    medicaid_id = patient_data.get("medicaid_id", "")
+    dob: date | None = patient_data.get("date_of_birth")
+    dob_mm = dob.strftime("%m") if dob else ""
+    dob_dd = dob.strftime("%d") if dob else ""
+    dob_yy = dob.strftime("%Y") if dob else ""
+
+    address = patient_data.get("address", "")
+    pt_street, pt_city, pt_state, pt_zip = _parse_address(address)
+
+    # Provider info
+    npi = provider_data.get("npi", "")
+    provider_name = provider_data.get("full_name", "")
+
+    # Diagnosis pointer (A, AB, etc.)
+    diag_ptr = "".join(chr(ord("A") + i) for i in range(len(diag_codes))) or "A"
+
+    # -----------------------------------------------------------------------
+    # Build field value map
+    # -----------------------------------------------------------------------
+    text_fields: dict[str, str] = {
+        # Box 1a — Insured's ID (Medicaid member ID)
+        "insurance_id": medicaid_id,
+
+        # Box 2 — Patient name (Last, First)
+        "pt_name": patient_display,
+
+        # Box 3 — Patient DOB
+        "birth_mm": dob_mm,
+        "birth_dd": dob_dd,
+        "birth_yy": dob_yy,
+
+        # Box 4 — Insured's name (same as patient for Medicaid self-pay)
+        "ins_name": patient_display,
+
+        # Box 5 — Patient address
+        "pt_street": pt_street,
+        "pt_city": pt_city,
+        "pt_state": pt_state,
+        "pt_zip": pt_zip,
+
+        # Box 21 — Diagnosis codes (ICD-10)
+        "diagnosis1": diag_codes[0] if len(diag_codes) > 0 else "",
+        "diagnosis2": diag_codes[1] if len(diag_codes) > 1 else "",
+        "diagnosis3": diag_codes[2] if len(diag_codes) > 2 else "",
+        "diagnosis4": diag_codes[3] if len(diag_codes) > 3 else "",
+
+        # Box 24A — Service date (line 1, from = to for single-day visit)
+        "sv1_mm_from": svc_mm,
+        "sv1_dd_from": svc_dd,
+        "sv1_yy_from": svc_yy,
+        "sv1_mm_end":  svc_mm,
+        "sv1_dd_end":  svc_dd,
+        "sv1_yy_end":  svc_yy,
+
+        # Box 24B — Place of service
+        "place1": pos_code,
+
+        # Box 24D — Procedure code + modifier
+        "cpt1":  proc_code,
+        "mod1":  modifier,
+
+        # Box 24E — Diagnosis pointer
+        "diag1": diag_ptr,
+
+        # Box 24F — Charges
+        "ch1": f"{billed:.2f}",
+
+        # Box 24G — Days/units
+        "day1": "1",
+
+        # Box 24J — Rendering provider NPI
+        "local1a": npi,
+
+        # Box 25 — Federal Tax ID (use NPI)
+        "tax_id": npi,
+
+        # Box 28 — Total charge
+        "t_charge": f"{billed:.2f}",
+
+        # Box 31 — Physician signature + date
+        "physician_signature": provider_name,
+        "physician_date": f"{svc_mm}/{svc_dd}/{svc_yy}" if svc_mm else "",
+
+        # Box 32 — Service facility (patient home for home visits)
+        "fac_name":     f"Patient Home" if pos_code == "12" else "Telehealth",
+        "fac_street":   pt_street,
+        "fac_location": f"{pt_city}, {pt_state} {pt_zip}".strip(", "),
+
+        # Box 33 — Billing provider
+        "doc_name":     provider_name,
+        "doc_street":   "",
+        "doc_location": f"NPI: {npi}  Taxonomy: {DOULA_TAXONOMY}",
+
+        # Box 33a — NPI
+        "pin": npi,
+
+        # Box 33b — Taxonomy as group qualifier
+        "grp": DOULA_TAXONOMY,
+    }
+
+    # -----------------------------------------------------------------------
+    # Fill the form
+    # -----------------------------------------------------------------------
+    reader = PdfReader(_BLANK_FORM)
+    writer = PdfWriter()
+    writer.append(reader)
+
+    # Fill text fields on page 0
+    writer.update_page_form_field_values(writer.pages[0], text_fields, auto_regenerate=False)
+
+    # Set radio buttons
+    _set_radio(writer, 0, "insurance_type", "/Medicaid")
+    _set_radio(writer, 0, "sex", "/F" if gender == "F" else "/M")
+    _set_radio(writer, 0, "rel_to_ins", "/S")   # Self
+    _set_radio(writer, 0, "assignment", "/YES")
+
+    # Flatten (make fields read-only in the output)
+    writer.compress_identical_objects(remove_identicals=True, remove_orphans=True)
+
+    buf = io.BytesIO()
+    writer.write(buf)
+    buf.seek(0)
+    return buf.read()

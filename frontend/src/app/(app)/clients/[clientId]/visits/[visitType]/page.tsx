@@ -8,7 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import axios from 'axios'
 import { getAccessToken } from '@/lib/auth'
 import { geocodeAddress, haversineFeet } from '@/lib/geo'
-import { Patient, Visit, VisitType } from '@/types/domain'
+import { Claim, Patient, Visit, VisitType } from '@/types/domain'
 import { getSlotConfig, getPrevSlotInGroup } from '@/lib/visit-config'
 import ImageUploadScanner from '@/components/ui/ImageUploadScanner'
 import dynamic from 'next/dynamic'
@@ -33,6 +33,20 @@ const SOAP_PLACEHOLDERS: Record<string, string> = {
   objective: 'What did you observe? (e.g., movement, mood, vitals, engagement level)',
   assessment: 'What is your professional assessment of her current status?',
   plan: 'What are the next steps for the client and the doula?',
+}
+
+const VISIT_BILLING = {
+  prenatal:    { code: 'T1032', modifier: 'U7', rate: 100,  diag: ['Z32.2', 'Z33.1'], note: 'Document topics/support provided' },
+  postnatal:   { code: 'T1032', modifier: 'U8', rate: 100,  diag: ['Z39.1', 'Z39.2'], note: 'Document physical/emotional recovery' },
+  labor:       { code: 'T1033', modifier: '',   rate: 1000, diag: ['Z33.1'],           note: 'One per pregnancy — include time-in/out' },
+  crisis_loss: { code: 'T1032', modifier: 'U9', rate: 175,  diag: ['Z39.2'],           note: 'Capped at 2 per year' },
+} as const
+
+function billingForVisit(vt: string) {
+  if (vt === 'labor') return VISIT_BILLING.labor
+  if (vt.startsWith('prenatal')) return VISIT_BILLING.prenatal
+  if (vt.startsWith('postnatal')) return VISIT_BILLING.postnatal
+  return VISIT_BILLING.crisis_loss
 }
 
 const schema = z.object({
@@ -97,6 +111,13 @@ export default function VisitFormPage() {
   const [ma91Error, setMa91Error] = useState<string | null>(null)
   const [zipzignConnected, setZipzignConnected] = useState(false)
 
+  // Claim state
+  const [existingClaim, setExistingClaim] = useState<Claim | null>(null)
+  const [claimSubmitting, setClaimSubmitting] = useState(false)
+  const [claimError, setClaimError] = useState<string | null>(null)
+  const [showCms1500, setShowCms1500] = useState(false)
+  const [claimStatusChecking, setClaimStatusChecking] = useState(false)
+
   const { register, handleSubmit, setValue, watch, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: { location_type: 'in_person' },
@@ -114,7 +135,9 @@ export default function VisitFormPage() {
         `${base}/api/v1/auth/me/provider-settings`,
         { headers }
       ).catch(() => null),
-    ]).then(async ([patientRes, visitRes, settingsRes]) => {
+      axios.get<Claim[]>(`${base}/api/v1/patients/${clientId}/claims`, { headers }).catch(() => null),
+    ]).then(async ([patientRes, visitRes, settingsRes, claimsRes]) => {
+      if (claimsRes?.data?.length) setExistingClaim(claimsRes.data[0])
       setPatient(patientRes.data)
       if (patientRes.data.email) setMa91PatientEmail(patientRes.data.email)
       if (settingsRes) {
@@ -379,6 +402,48 @@ export default function VisitFormPage() {
       setMa91Error(msg ?? 'Failed to send signature request — please try again.')
     } finally {
       setMa91Submitting(false)
+    }
+  }
+
+  const handleSubmitClaim = async () => {
+    setClaimSubmitting(true)
+    setClaimError(null)
+    const billing = billingForVisit(visitType)
+    const visitDate = watch('visit_date')
+    const locType = watch('location_type') || locationType
+    try {
+      const res = await axios.post<Claim>(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/patients/${clientId}/claims`,
+        {
+          visit_type: visitType,
+          service_date: visitDate,
+          location_type: locType,
+          diagnosis_codes: billing.diag,
+        },
+        { headers: { Authorization: `Bearer ${getAccessToken()}` } }
+      )
+      setExistingClaim(res.data)
+      setShowCms1500(false)
+    } catch (e: unknown) {
+      const msg = (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail
+      setClaimError(msg ?? 'Claim submission failed — please try again.')
+    } finally {
+      setClaimSubmitting(false)
+    }
+  }
+
+  const handleCheckClaimStatus = async () => {
+    if (!existingClaim) return
+    setClaimStatusChecking(true)
+    try {
+      const res = await axios.post<Claim>(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/claims/${existingClaim.id}/status-check`,
+        {},
+        { headers: { Authorization: `Bearer ${getAccessToken()}` } }
+      )
+      setExistingClaim(res.data)
+    } catch { /* non-blocking */ } finally {
+      setClaimStatusChecking(false)
     }
   }
 
@@ -861,6 +926,116 @@ export default function VisitFormPage() {
 
           {ma91Error && <p className="text-xs text-red-600">{ma91Error}</p>}
         </div>
+
+        {/* PA Medicaid Claim */}
+        {(() => {
+          const billing = billingForVisit(visitType)
+          return (
+            <div className="space-y-3 border-t pt-4">
+              <h2 className="text-sm font-semibold text-gray-700">PA Medicaid Claim</h2>
+
+              {existingClaim ? (
+                <div className="rounded-lg border border-green-200 bg-green-50 p-3 space-y-1">
+                  <p className="text-sm font-medium text-green-800">
+                    ✓ Claim {existingClaim.availity_claim_id ? `#${existingClaim.availity_claim_id}` : 'submitted'} · Status: {existingClaim.status ?? 'submitted'}
+                  </p>
+                  {existingClaim.submitted_at && (
+                    <p className="text-xs text-green-700">
+                      Submitted {new Date(existingClaim.submitted_at).toLocaleDateString()}
+                    </p>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleCheckClaimStatus}
+                    disabled={claimStatusChecking}
+                    className="text-xs text-blue-600 hover:text-blue-800 disabled:opacity-50"
+                  >
+                    {claimStatusChecking ? 'Checking…' : 'Refresh status'}
+                  </button>
+                </div>
+              ) : (
+                <div className="rounded border border-gray-200 bg-gray-50 p-3 space-y-2">
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-700">
+                    <span>Procedure: <span className="font-medium">{billing.code}</span>{billing.modifier && <span className="font-medium"> · {billing.modifier}</span>}</span>
+                    <span>Rate: <span className="font-medium">${billing.rate.toFixed(2)}</span></span>
+                    <span>Diagnosis: <span className="font-medium">{billing.diag.join(', ')}</span></span>
+                  </div>
+                  <p className="text-xs text-gray-500">{billing.note}</p>
+                  {claimError && <p className="text-xs text-red-600">{claimError}</p>}
+                  <button
+                    type="button"
+                    onClick={() => setShowCms1500(true)}
+                    className="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
+                  >
+                    Preview CMS 1500 &amp; Submit
+                  </button>
+                </div>
+              )}
+
+              {/* CMS 1500 Preview Modal */}
+              {showCms1500 && (
+                <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 p-4 overflow-y-auto">
+                  <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl my-8">
+                    <div className="flex items-center justify-between border-b px-6 py-4">
+                      <h3 className="text-base font-semibold text-gray-900">CMS 1500 Claim Preview</h3>
+                      <button type="button" onClick={() => setShowCms1500(false)} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
+                    </div>
+                    <div className="px-6 py-4 space-y-3 text-sm">
+                      <table className="w-full text-xs border-collapse">
+                        <tbody>
+                          <tr className="border-b"><td className="py-1.5 font-medium text-gray-500 w-1/3">Box 1 — Insurance type</td><td className="py-1.5 font-semibold">Medicaid</td></tr>
+                          <tr className="border-b"><td className="py-1.5 font-medium text-gray-500">Box 1a — Insured ID</td><td className="py-1.5">Medicaid ID on file</td></tr>
+                          <tr className="border-b"><td className="py-1.5 font-medium text-gray-500">Box 2 — Patient name</td><td className="py-1.5">{patient?.name}</td></tr>
+                          <tr className="border-b"><td className="py-1.5 font-medium text-gray-500">Box 3 — DOB / Sex</td><td className="py-1.5">{patient?.date_of_birth ?? '—'} / {patient?.gender === 'M' ? 'M' : 'F'}</td></tr>
+                          <tr className="border-b"><td className="py-1.5 font-medium text-gray-500">Box 5 — Address</td><td className="py-1.5">{patient?.address ?? '—'}</td></tr>
+                          <tr className="border-b"><td className="py-1.5 font-medium text-gray-500">Box 21 — Diagnosis</td><td className="py-1.5 font-semibold">{billing.diag.join(', ')}</td></tr>
+                          <tr className="border-b"><td className="py-1.5 font-medium text-gray-500">Box 24A — Service date</td><td className="py-1.5">{watch('visit_date') ?? '—'}</td></tr>
+                          <tr className="border-b"><td className="py-1.5 font-medium text-gray-500">Box 24B — Place of service</td><td className="py-1.5">{locationType === 'telehealth' ? '02 (Telehealth)' : '12 (Home)'}</td></tr>
+                          <tr className="border-b"><td className="py-1.5 font-medium text-gray-500">Box 24D — Procedure / Modifier</td><td className="py-1.5 font-semibold">{billing.code}{billing.modifier && ` · ${billing.modifier}`}</td></tr>
+                          <tr className="border-b"><td className="py-1.5 font-medium text-gray-500">Box 24F — Charge</td><td className="py-1.5 font-semibold">${billing.rate.toFixed(2)}</td></tr>
+                          <tr className="border-b"><td className="py-1.5 font-medium text-gray-500">Box 24G — Units</td><td className="py-1.5">1</td></tr>
+                          <tr className="border-b"><td className="py-1.5 font-medium text-gray-500">Box 28 — Total charge</td><td className="py-1.5 font-semibold">${billing.rate.toFixed(2)}</td></tr>
+                          <tr className="border-b"><td className="py-1.5 font-medium text-gray-500">Box 33 — Taxonomy</td><td className="py-1.5">374J00000X (Certified Doula)</td></tr>
+                        </tbody>
+                      </table>
+                      {claimError && <p className="text-xs text-red-600">{claimError}</p>}
+                    </div>
+                    <div className="flex gap-3 border-t px-6 py-4">
+                      <a
+                        href={`${process.env.NEXT_PUBLIC_API_URL}/api/v1/patients/${clientId}/visits/${visitType}/cms1500.pdf`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="rounded border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                      >
+                        Download PDF
+                      </a>
+                      <button
+                        type="button"
+                        onClick={handleSubmitClaim}
+                        disabled={claimSubmitting}
+                        className="rounded bg-blue-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                      >
+                        {claimSubmitting ? (
+                          <span className="flex items-center gap-2">
+                            <span className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                            Submitting…
+                          </span>
+                        ) : 'Submit to Availity'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowCms1500(false)}
+                        className="ml-auto text-sm text-gray-500 hover:text-gray-700"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )
+        })()}
 
         {durationMins !== null && durationMins < 30 && (
           <div className="rounded-lg border border-amber-300 bg-amber-50 p-3">
