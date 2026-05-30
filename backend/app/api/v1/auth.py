@@ -19,6 +19,7 @@ from app.core.audit import AuditLogger
 from app.models.user import User
 from app.schemas.admin import ProviderSettingsRead, ProviderSettingsUpdate, UserRead
 from app.schemas.auth import (
+    ChangePasswordRequest,
     LoginRequest,
     MFASetupResponse,
     MFAVerifyRequest,
@@ -27,6 +28,7 @@ from app.schemas.auth import (
 )
 from app.services.auth_service import AuthService
 from app.services.eligibility_service import EligibilityService
+from app.core.security import hash_password, is_valid_password, verify_password
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 limiter = Limiter(key_func=get_remote_address)
@@ -152,6 +154,42 @@ async def update_provider_settings(
         )
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
+
+@router.post("/me/change-password")
+async def change_password(
+    request: Request,
+    body: ChangePasswordRequest,
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    audit: Annotated[AuditLogger, Depends(get_audit)],
+) -> dict:
+    result = await db.execute(select(User).where(User.id == current_user.id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    if not verify_password(body.current_password, user.password_hash):  # type: ignore[arg-type]
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Current password is incorrect")
+
+    if not is_valid_password(body.new_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password must be at least 12 characters and include uppercase, lowercase, digit, and special character.",
+        )
+
+    user.password_hash = hash_password(body.new_password)  # type: ignore[assignment]
+    await db.commit()
+
+    await audit.log(
+        action="CHANGE_PASSWORD",
+        resource_type="user",
+        resource_id=current_user.id,
+        user_id=current_user.id,
+        ip_address=get_client_ip(request),
+        user_agent=get_user_agent(request),
+    )
+    return {"message": "Password updated"}
 
 
 @router.post("/mfa/verify", status_code=status.HTTP_204_NO_CONTENT)

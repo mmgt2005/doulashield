@@ -16,6 +16,12 @@ export default function AdminUsersPage() {
   const [linkError, setLinkError] = useState<string | null>(null)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
 
+  const [showCreate, setShowCreate] = useState(false)
+  const [createEmail, setCreateEmail] = useState('')
+  const [createFullName, setCreateFullName] = useState('')
+  const [createError, setCreateError] = useState<string | null>(null)
+  const [creating, setCreating] = useState(false)
+
   const headers = { Authorization: `Bearer ${getAccessToken()}` }
   const api = process.env.NEXT_PUBLIC_API_URL
 
@@ -97,11 +103,50 @@ export default function AdminUsersPage() {
     }
   }
 
+  const openCreateModal = () => {
+    setCreateEmail('')
+    setCreateFullName('')
+    setCreateError(null)
+    setShowCreate(true)
+  }
+
+  const submitCreateAndInvite = async () => {
+    if (!createEmail.trim()) {
+      setCreateError('Email is required')
+      return
+    }
+    setCreating(true)
+    setCreateError(null)
+    try {
+      await axios.post(
+        `${api}/api/v1/admin/billing/create-and-invite`,
+        { email: createEmail.trim(), full_name: createFullName.trim() || null },
+        { headers },
+      )
+      setShowCreate(false)
+      showToast(`Account created — welcome email sent to ${createEmail.trim()}`)
+      await reload()
+    } catch (e: unknown) {
+      const msg = axios.isAxiosError(e) ? e.response?.data?.detail : 'Failed to create account'
+      setCreateError(String(msg))
+    } finally {
+      setCreating(false)
+    }
+  }
+
   if (loading) return <p className="text-sm text-gray-500">Loading…</p>
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-bold text-gray-900">Users</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-bold text-gray-900">Users</h1>
+        <button
+          onClick={openCreateModal}
+          className="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
+        >
+          + Add Provider
+        </button>
+      </div>
 
       {actionToast && (
         <div className="rounded-lg bg-blue-50 border border-blue-200 px-4 py-2 text-sm text-blue-800">
@@ -206,6 +251,59 @@ export default function AdminUsersPage() {
           </tbody>
         </table>
       </div>
+
+      {/* Create Provider modal */}
+      {showCreate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md space-y-4">
+            <h3 className="text-base font-semibold text-gray-900">Create Provider Account</h3>
+            <div className="space-y-3">
+              <div>
+                <label htmlFor="create-email" className="block text-sm font-medium text-gray-700">Email *</label>
+                <input
+                  id="create-email"
+                  type="email"
+                  value={createEmail}
+                  onChange={(e) => setCreateEmail(e.target.value)}
+                  placeholder="provider@example.com"
+                  className="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label htmlFor="create-name" className="block text-sm font-medium text-gray-700">Full name</label>
+                <input
+                  id="create-name"
+                  type="text"
+                  value={createFullName}
+                  onChange={(e) => setCreateFullName(e.target.value)}
+                  placeholder="Jane Smith (optional)"
+                  className="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+              <p className="text-xs text-gray-500">
+                A welcome email will be sent automatically with login credentials and the $99 deposit payment link.
+              </p>
+            </div>
+            {createError && <p className="text-xs text-red-600">{createError}</p>}
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowCreate(false)}
+                disabled={creating}
+                className="rounded border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={submitCreateAndInvite}
+                disabled={creating}
+                className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+              >
+                {creating ? 'Creating…' : 'Create Account & Send Email'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Link Customer ID modal */}
       {linkModal && (

@@ -24,3 +24,8 @@ class MFASetupResponse(BaseModel):
 
 class MFAVerifyRequest(BaseModel):
     totp_code: str
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str

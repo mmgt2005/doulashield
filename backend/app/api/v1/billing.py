@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import secrets
+import string
 import uuid
 from datetime import datetime, timezone
 from typing import Annotated
@@ -13,8 +15,10 @@ from app.core.audit import AuditLogger
 from app.core.config import settings
 from app.dependencies import CurrentUser, get_audit, get_current_user, get_db, require_admin
 from app.models.user import User
+from app.schemas.admin import UserCreate
 from app.schemas.billing import (
     BillingStatusRead,
+    CreateAndInviteRequest,
     GenerateDepositLinkRequest,
     LinkStripeCustomerRequest,
     SignEscrowRequest,
@@ -22,6 +26,22 @@ from app.schemas.billing import (
     UserWithBillingRead,
 )
 from app.services import email_service, stripe_service
+from app.services.admin_service import AdminService
+
+_SPECIAL = "!@#$%^&*"
+_POOL = string.ascii_letters + string.digits + _SPECIAL
+
+
+def _generate_temp_password() -> str:
+    while True:
+        pwd = "".join(secrets.choice(_POOL) for _ in range(14))
+        if (
+            any(c.isupper() for c in pwd)
+            and any(c.islower() for c in pwd)
+            and any(c.isdigit() for c in pwd)
+            and any(c in _SPECIAL for c in pwd)
+        ):
+            return pwd
 
 router = APIRouter(tags=["billing"])
 
@@ -187,6 +207,56 @@ async def stripe_webhook(
 
 
 # ── Admin endpoints ───────────────────────────────────────────────────────────
+
+@router.post("/admin/billing/create-and-invite", status_code=status.HTTP_201_CREATED)
+async def create_and_invite(
+    body: CreateAndInviteRequest,
+    current_admin: Annotated[CurrentUser, Depends(require_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    audit: Annotated[AuditLogger, Depends(get_audit)],
+    request: Request,
+) -> dict:
+    if not email_service._configured():
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Email not configured — set RESEND_API_KEY")
+
+    existing = await db.execute(select(User).where(User.email == str(body.email)))
+    if existing.scalar_one_or_none():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="A user with this email already exists")
+
+    temp_password = _generate_temp_password()
+    new_user_read = await AdminService(db).create_user(
+        UserCreate(email=str(body.email), password=temp_password, full_name=body.full_name, role="provider")
+    )
+
+    result = await db.execute(select(User).where(User.id == new_user_read.id))
+    new_user = result.scalar_one()
+
+    checkout_url: str | None = None
+    if stripe_service._configured() and settings.STRIPE_DEPOSIT_PRICE_ID:
+        try:
+            checkout_url = await stripe_service.create_deposit_checkout_link(new_user, db)
+        except Exception:
+            checkout_url = None
+
+    await email_service.send_welcome_and_deposit(
+        provider_email=str(body.email),
+        provider_name=body.full_name or str(body.email),
+        temp_password=temp_password,
+        checkout_url=checkout_url,
+        frontend_origin=settings.FRONTEND_ORIGIN,
+    )
+
+    await audit.log(
+        action="CREATE_AND_INVITE_PROVIDER",
+        resource_type="user",
+        resource_id=new_user_read.id,
+        user_id=current_admin.id,
+        ip_address=request.headers.get("X-Forwarded-For", request.client.host if request.client else ""),
+        user_agent=request.headers.get("User-Agent", ""),
+        extra_context={"email": str(body.email), "deposit_link_included": checkout_url is not None},
+    )
+    return {"user_id": str(new_user_read.id), "email": str(body.email), "sent_to": str(body.email)}
+
 
 @router.post("/admin/billing/generate-deposit-link")
 async def generate_deposit_link(

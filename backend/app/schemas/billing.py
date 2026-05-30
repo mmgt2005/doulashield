@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 
 
 class BillingStatusRead(BaseModel):
@@ -33,6 +33,11 @@ class GenerateDepositLinkRequest(BaseModel):
 class LinkStripeCustomerRequest(BaseModel):
     provider_user_id: uuid.UUID
     stripe_customer_id: str
+
+
+class CreateAndInviteRequest(BaseModel):
+    email: EmailStr
+    full_name: str | None = None
 
 
 class UserWithBillingRead(BaseModel):

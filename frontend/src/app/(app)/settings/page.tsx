@@ -76,6 +76,13 @@ export default function SettingsPage() {
   const [signingEscrow, setSigningEscrow] = useState(false)
   const [escrowError, setEscrowError] = useState<string | null>(null)
 
+  const [pwCurrent, setPwCurrent] = useState('')
+  const [pwNew, setPwNew] = useState('')
+  const [pwConfirm, setPwConfirm] = useState('')
+  const [pwError, setPwError] = useState<string | null>(null)
+  const [pwSuccess, setPwSuccess] = useState(false)
+  const [pwSaving, setPwSaving] = useState(false)
+
   const { register, handleSubmit, setValue, watch, formState: { isSubmitting } } = useForm<SettingsFormData>()
   const selectedZone = watch('zone') as ZoneKey | '' | undefined
 
@@ -117,6 +124,31 @@ export default function SettingsPage() {
       setEscrowError('Failed to sign agreement. Please try again.')
     } finally {
       setSigningEscrow(false)
+    }
+  }
+
+  const handleChangePassword = async () => {
+    setPwError(null)
+    setPwSuccess(false)
+    if (!pwCurrent) { setPwError('Enter your current password'); return }
+    if (!pwNew) { setPwError('Enter a new password'); return }
+    if (pwNew !== pwConfirm) { setPwError('Passwords do not match'); return }
+    setPwSaving(true)
+    try {
+      await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/me/change-password`,
+        { current_password: pwCurrent, new_password: pwNew },
+        { headers: { Authorization: `Bearer ${getAccessToken()}` } },
+      )
+      setPwSuccess(true)
+      setPwCurrent('')
+      setPwNew('')
+      setPwConfirm('')
+    } catch (e: unknown) {
+      const msg = axios.isAxiosError(e) ? e.response?.data?.detail : 'Failed to update password'
+      setPwError(String(msg))
+    } finally {
+      setPwSaving(false)
     }
   }
 
@@ -244,6 +276,54 @@ export default function SettingsPage() {
         {!billing && (
           <p className="text-sm text-gray-400">Loading billing status…</p>
         )}
+      </div>
+
+      {/* Change Password */}
+      <div className="bg-white p-6 rounded-lg border border-gray-200 space-y-4">
+        <h2 className="text-sm font-semibold text-gray-700">Change Password</h2>
+        <div className="space-y-3">
+          <div>
+            <label htmlFor="pw-current" className="block text-sm font-medium text-gray-700">Current password</label>
+            <input
+              id="pw-current"
+              type="password"
+              value={pwCurrent}
+              onChange={(e) => setPwCurrent(e.target.value)}
+              className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label htmlFor="pw-new" className="block text-sm font-medium text-gray-700">New password</label>
+            <p className="text-xs text-gray-500 mb-1">12+ chars · uppercase · lowercase · number · special character</p>
+            <input
+              id="pw-new"
+              type="password"
+              value={pwNew}
+              onChange={(e) => setPwNew(e.target.value)}
+              className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label htmlFor="pw-confirm" className="block text-sm font-medium text-gray-700">Confirm new password</label>
+            <input
+              id="pw-confirm"
+              type="password"
+              value={pwConfirm}
+              onChange={(e) => setPwConfirm(e.target.value)}
+              className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+        {pwError && <p className="text-sm text-red-600">{pwError}</p>}
+        {pwSuccess && <p className="text-sm text-green-600">Password updated successfully.</p>}
+        <button
+          type="button"
+          onClick={handleChangePassword}
+          disabled={pwSaving}
+          className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+        >
+          {pwSaving ? 'Updating…' : 'Update Password'}
+        </button>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 bg-white p-6 rounded-lg border border-gray-200">
