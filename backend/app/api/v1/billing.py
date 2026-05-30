@@ -260,16 +260,17 @@ async def create_and_invite(
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="A user with this email already exists")
 
+    role = body.role if body.role in ("provider", "admin") else "provider"
     temp_password = _generate_temp_password()
     new_user_read = await AdminService(db).create_user(
-        UserCreate(email=str(body.email), password=temp_password, full_name=body.full_name, role="provider")
+        UserCreate(email=str(body.email), password=temp_password, full_name=body.full_name, role=role)
     )
 
     result = await db.execute(select(User).where(User.id == new_user_read.id))
     new_user = result.scalar_one()
 
     checkout_url: str | None = None
-    if stripe_service._configured() and settings.STRIPE_DEPOSIT_PRICE_ID:
+    if role == "provider" and stripe_service._configured() and settings.STRIPE_DEPOSIT_PRICE_ID:
         try:
             checkout_url = await stripe_service.create_deposit_checkout_link(new_user, db)
         except Exception:
@@ -290,7 +291,7 @@ async def create_and_invite(
         user_id=current_admin.id,
         ip_address=request.headers.get("X-Forwarded-For", request.client.host if request.client else ""),
         user_agent=request.headers.get("User-Agent", ""),
-        extra_context={"email": str(body.email), "deposit_link_included": checkout_url is not None},
+        extra_context={"email": str(body.email), "role": role, "deposit_link_included": checkout_url is not None},
     )
     return {"user_id": str(new_user_read.id), "email": str(body.email), "sent_to": str(body.email)}
 
@@ -307,9 +308,10 @@ async def create_account_only(
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="A user with this email already exists")
 
+    role = body.role if body.role in ("provider", "admin") else "provider"
     temp_password = _generate_temp_password()
     new_user_read = await AdminService(db).create_user(
-        UserCreate(email=str(body.email), password=temp_password, full_name=body.full_name, role="provider")
+        UserCreate(email=str(body.email), password=temp_password, full_name=body.full_name, role=role)
     )
 
     await audit.log(
@@ -319,7 +321,7 @@ async def create_account_only(
         user_id=current_admin.id,
         ip_address=request.headers.get("X-Forwarded-For", request.client.host if request.client else ""),
         user_agent=request.headers.get("User-Agent", ""),
-        extra_context={"email": str(body.email)},
+        extra_context={"email": str(body.email), "role": role},
     )
     return {"user_id": str(new_user_read.id), "email": str(body.email), "temp_password": temp_password}
 

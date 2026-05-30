@@ -38,11 +38,13 @@ class LinkStripeCustomerRequest(BaseModel):
 class CreateAndInviteRequest(BaseModel):
     email: EmailStr
     full_name: str | None = None
+    role: str = "provider"
 
 
 class CreateAccountOnlyRequest(BaseModel):
     email: EmailStr
     full_name: str | None = None
+    role: str = "provider"
 
 
 class SendWelcomeEmailRequest(BaseModel):

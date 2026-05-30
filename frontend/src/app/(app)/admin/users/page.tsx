@@ -21,6 +21,7 @@ export default function AdminUsersPage() {
   const [showCreate, setShowCreate] = useState(false)
   const [createEmail, setCreateEmail] = useState('')
   const [createFullName, setCreateFullName] = useState('')
+  const [createRole, setCreateRole] = useState<'provider' | 'admin'>('provider')
   const [createError, setCreateError] = useState<string | null>(null)
   const [creating, setCreating] = useState<'only' | 'send' | false>(false)
   const [credentials, setCredentials] = useState<{ email: string; password: string } | null>(null)
@@ -153,6 +154,7 @@ export default function AdminUsersPage() {
   const openCreateModal = () => {
     setCreateEmail('')
     setCreateFullName('')
+    setCreateRole('provider')
     setCreateError(null)
     setCredentials(null)
     setCopied(false)
@@ -176,7 +178,7 @@ export default function AdminUsersPage() {
     try {
       await axios.post(
         `${api}/api/v1/admin/billing/create-and-invite`,
-        { email: createEmail.trim(), full_name: createFullName.trim() || null },
+        { email: createEmail.trim(), full_name: createFullName.trim() || null, role: createRole },
         { headers },
       )
       setShowCreate(false)
@@ -200,7 +202,7 @@ export default function AdminUsersPage() {
     try {
       const res = await axios.post<{ user_id: string; email: string; temp_password: string }>(
         `${api}/api/v1/admin/billing/create-account-only`,
-        { email: createEmail.trim(), full_name: createFullName.trim() || null },
+        { email: createEmail.trim(), full_name: createFullName.trim() || null, role: createRole },
         { headers },
       )
       setCredentials({ email: res.data.email, password: res.data.temp_password })
@@ -234,7 +236,7 @@ export default function AdminUsersPage() {
           onClick={openCreateModal}
           className="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
         >
-          + Add Provider
+          + Add User
         </button>
       </div>
 
@@ -413,8 +415,27 @@ export default function AdminUsersPage() {
             ) : (
               /* Create form */
               <>
-                <h3 className="text-base font-semibold text-gray-900">Create Provider Account</h3>
+                <h3 className="text-base font-semibold text-gray-900">Create Account</h3>
                 <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                    <div className="flex rounded border border-gray-300 overflow-hidden w-fit">
+                      <button
+                        type="button"
+                        onClick={() => setCreateRole('provider')}
+                        className={`px-4 py-1.5 text-sm font-medium transition-colors ${createRole === 'provider' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}
+                      >
+                        Provider
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setCreateRole('admin')}
+                        className={`px-4 py-1.5 text-sm font-medium transition-colors border-l border-gray-300 ${createRole === 'admin' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}
+                      >
+                        Admin
+                      </button>
+                    </div>
+                  </div>
                   <div>
                     <label htmlFor="create-email" className="block text-sm font-medium text-gray-700">Email *</label>
                     <input
@@ -422,7 +443,7 @@ export default function AdminUsersPage() {
                       type="email"
                       value={createEmail}
                       onChange={(e) => setCreateEmail(e.target.value)}
-                      placeholder="provider@example.com"
+                      placeholder="user@example.com"
                       className="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                     />
                   </div>
