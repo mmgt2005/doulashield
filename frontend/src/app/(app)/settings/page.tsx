@@ -11,6 +11,8 @@ interface SettingsFormData {
   npi: string
   availity_client_id: string
   availity_client_secret: string
+  uhc_client_id: string
+  uhc_client_secret: string
   telehealth_link: string
   contact_email: string
   zipzign_api_key: string
@@ -68,6 +70,7 @@ export default function SettingsPage() {
   const { user, isLoading: authLoading, isAuthenticated } = useAuthStore()
   const isAdmin = user?.role === 'admin'
   const [connected, setConnected] = useState(false)
+  const [uhcConnected, setUhcConnected] = useState(false)
   const [zipzignConnected, setZipzignConnected] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
@@ -90,7 +93,7 @@ export default function SettingsPage() {
     if (!isAuthenticated) return
     const headers = { Authorization: `Bearer ${getAccessToken()}` }
     axios
-      .get<{ npi: string | null; availity_connected: boolean; telehealth_link: string | null; contact_email: string | null; zipzign_connected: boolean; zone: string | null; counties: string[] | null }>(
+      .get<{ npi: string | null; availity_connected: boolean; uhc_connected: boolean; telehealth_link: string | null; contact_email: string | null; zipzign_connected: boolean; zone: string | null; counties: string[] | null }>(
         `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/me/provider-settings`,
         { headers }
       )
@@ -101,6 +104,7 @@ export default function SettingsPage() {
         if (r.data.zone) setValue('zone', r.data.zone)
         if (r.data.counties?.length) setValue('counties', r.data.counties)
         setConnected(r.data.availity_connected)
+        setUhcConnected(r.data.uhc_connected ?? false)
         setZipzignConnected(r.data.zipzign_connected)
       })
     axios
@@ -160,18 +164,21 @@ export default function SettingsPage() {
       if (data.npi) body.npi = data.npi
       if (data.availity_client_id) body.availity_client_id = data.availity_client_id
       if (data.availity_client_secret) body.availity_client_secret = data.availity_client_secret
+      if (data.uhc_client_id) body.uhc_client_id = data.uhc_client_id
+      if (data.uhc_client_secret) body.uhc_client_secret = data.uhc_client_secret
       if (data.telehealth_link) body.telehealth_link = data.telehealth_link
       if (data.contact_email) body.contact_email = data.contact_email
       if (data.zipzign_api_key) body.zipzign_api_key = data.zipzign_api_key
       body.zone = data.zone || ''
       body.counties = data.counties || []
 
-      const res = await axios.patch<{ npi: string | null; availity_connected: boolean; zipzign_connected: boolean }>(
+      const res = await axios.patch<{ npi: string | null; availity_connected: boolean; uhc_connected: boolean; zipzign_connected: boolean }>(
         `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/me/provider-settings`,
         body,
         { headers: { Authorization: `Bearer ${getAccessToken()}` } }
       )
       setConnected(res.data.availity_connected)
+      setUhcConnected(res.data.uhc_connected ?? false)
       setZipzignConnected(res.data.zipzign_connected)
       setSaved(true)
     } catch {
@@ -432,6 +439,43 @@ export default function SettingsPage() {
                 id="availity_client_secret"
                 type="password"
                 placeholder={connected ? '●●●●●● saved' : 'Enter Client Secret'}
+                className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="border-t pt-4">
+          <div className="flex items-center gap-2 mb-3">
+            <h2 className="text-sm font-semibold text-gray-700">UnitedHealthcare API credentials</h2>
+            {uhcConnected && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                ✓ Connected
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-gray-500 mb-3">
+            Required for UnitedHealthcare Community Plan claims. Enroll at{' '}
+            <span className="font-medium">uhcprovider.com/api</span> to receive API credentials.
+          </p>
+          <div className="space-y-3">
+            <div>
+              <label htmlFor="uhc_client_id" className="block text-sm font-medium text-gray-700">Client ID</label>
+              <input
+                {...register('uhc_client_id')}
+                id="uhc_client_id"
+                type="text"
+                placeholder={uhcConnected ? '●●●●●● saved' : 'Enter UHC Client ID'}
+                className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label htmlFor="uhc_client_secret" className="block text-sm font-medium text-gray-700">Client Secret</label>
+              <input
+                {...register('uhc_client_secret')}
+                id="uhc_client_secret"
+                type="password"
+                placeholder={uhcConnected ? '●●●●●● saved' : 'Enter UHC Client Secret'}
                 className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
             </div>

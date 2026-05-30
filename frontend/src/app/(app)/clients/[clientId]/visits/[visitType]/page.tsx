@@ -49,6 +49,29 @@ function billingForVisit(vt: string) {
   return VISIT_BILLING.crisis_loss
 }
 
+const MCO_CHANNEL: Record<string, 'availity' | 'uhc' | 'manual'> = {
+  'AmeriHealth Caritas': 'availity',
+  'Keystone First': 'availity',
+  'Geisinger Health Plan': 'availity',
+  'Highmark Wholecare': 'availity',
+  'Aetna Better Health': 'availity',
+  'UnitedHealthcare Community Plan': 'uhc',
+  'UPMC For You': 'manual',
+  'Health Partners Plans': 'manual',
+  'FFS': 'manual',
+}
+
+const MCO_PORTAL: Record<string, { name: string; url: string }> = {
+  'UPMC For You': { name: 'UPMC Health Plan Provider Portal', url: 'https://www.upmchealthplan.com/providers/' },
+  'Health Partners Plans': { name: 'HPPServe (Change Healthcare)', url: 'https://www.healthpartnersplans.com/providers/' },
+  'FFS': { name: 'PROMISe™ (PA DHS)', url: 'https://promise.dpw.state.pa.us/' },
+}
+
+function submissionChannel(mco: string | null | undefined): 'availity' | 'uhc' | 'manual' {
+  if (!mco) return 'manual'
+  return MCO_CHANNEL[mco] ?? 'manual'
+}
+
 const schema = z.object({
   visit_date: z.string().min(1, 'Visit date is required'),
   subjective: z.string().optional(),
@@ -121,6 +144,7 @@ export default function VisitFormPage() {
   const [claimStatusChecking, setClaimStatusChecking] = useState(false)
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null)
   const [pdfLoading, setPdfLoading] = useState(false)
+  const [uhcConnected, setUhcConnected] = useState(false)
 
   const { register, handleSubmit, setValue, watch, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -147,7 +171,9 @@ export default function VisitFormPage() {
       if (patientRes.data.email) setMa91PatientEmail(patientRes.data.email)
       if (settingsRes) {
         setTelehealthLink(settingsRes.data.telehealth_link ?? null)
-        setZipzignConnected((settingsRes.data as { zipzign_connected?: boolean }).zipzign_connected ?? false)
+        const s = settingsRes.data as { zipzign_connected?: boolean; uhc_connected?: boolean }
+        setZipzignConnected(s.zipzign_connected ?? false)
+        setUhcConnected(s.uhc_connected ?? false)
       }
       if (visitRes) {
         const v = visitRes.data
@@ -994,6 +1020,8 @@ export default function VisitFormPage() {
         {/* PA Medicaid Claim */}
         {(() => {
           const billing = billingForVisit(visitType)
+          const channel = submissionChannel(patient?.mco)
+          const submitLabel = channel === 'uhc' ? 'Submit to UnitedHealthcare' : 'Submit to Availity'
           return (
             <div className="space-y-3 border-t pt-4">
               <h2 className="text-sm font-semibold text-gray-700">PA Medicaid Claim</h2>
@@ -1042,57 +1070,95 @@ export default function VisitFormPage() {
                     </div>
                   )}
 
-                  {/* Block 17b — Referring Provider NPI (mandatory) */}
-                  <div className="space-y-1">
-                    <label className="block text-xs font-medium text-gray-700">
-                      Referring Provider NPI <span className="text-red-500">*</span>
-                      <span className="ml-1 font-normal text-gray-400">(Box 17b — required or claim will be rejected)</span>
-                    </label>
-                    <input
-                      type="text"
-                      maxLength={10}
-                      placeholder="10-digit referring doctor NPI"
-                      value={referringNpi}
-                      onChange={(e) => setReferringNpi(e.target.value)}
-                      onBlur={(e) => handleSaveReferringNpi(e.target.value)}
-                      className="w-full rounded border border-gray-300 px-2 py-1 text-sm focus:border-blue-400 focus:outline-none"
-                    />
-                    {!referringNpi ? (
-                      <p className="text-xs text-amber-600">⚠ Enter the referring doctor's NPI — saved to this client&apos;s profile for all visits</p>
-                    ) : patient?.referring_provider_npi && (
-                      <p className="text-xs text-gray-400">Saved to client profile</p>
-                    )}
-                  </div>
+                  {/* Manual MCOs: PDF download + portal link only */}
+                  {channel === 'manual' ? (
+                    <div className="space-y-2">
+                      <p className="text-xs text-gray-600">
+                        {patient?.mco ?? 'This MCO'} claims must be submitted directly through their portal.
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={handleOpenCms1500}
+                          className="rounded border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                        >
+                          Preview &amp; Download CMS 1500
+                        </button>
+                        {patient?.mco && MCO_PORTAL[patient.mco] && (
+                          <a
+                            href={MCO_PORTAL[patient.mco].url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="rounded border border-blue-300 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-100"
+                          >
+                            Open {MCO_PORTAL[patient.mco].name} →
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Block 17b — Referring Provider NPI (mandatory) */}
+                      <div className="space-y-1">
+                        <label className="block text-xs font-medium text-gray-700">
+                          Referring Provider NPI <span className="text-red-500">*</span>
+                          <span className="ml-1 font-normal text-gray-400">(Box 17b — required or claim will be rejected)</span>
+                        </label>
+                        <input
+                          type="text"
+                          maxLength={10}
+                          placeholder="10-digit referring doctor NPI"
+                          value={referringNpi}
+                          onChange={(e) => setReferringNpi(e.target.value)}
+                          onBlur={(e) => handleSaveReferringNpi(e.target.value)}
+                          className="w-full rounded border border-gray-300 px-2 py-1 text-sm focus:border-blue-400 focus:outline-none"
+                        />
+                        {!referringNpi ? (
+                          <p className="text-xs text-amber-600">⚠ Enter the referring doctor&apos;s NPI — saved to this client&apos;s profile for all visits</p>
+                        ) : patient?.referring_provider_npi && (
+                          <p className="text-xs text-gray-400">Saved to client profile</p>
+                        )}
+                      </div>
 
-                  {/* Block 23 — Prior Auth Number */}
-                  <div className="space-y-1">
-                    <label className="block text-xs font-medium text-gray-700">
-                      Prior Authorization Number
-                      <span className="ml-1 font-normal text-gray-400">
-                        (Box 23{patient?.mco === 'Geisinger Health Plan' ? ' — required for Geisinger' : ' — if required'})
-                      </span>
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Authorization number if required"
-                      value={watch('prior_auth_number') ?? ''}
-                      onChange={(e) => setValue('prior_auth_number', e.target.value)}
-                      className={`w-full rounded border px-2 py-1 text-sm focus:outline-none ${
-                        patient?.mco === 'Geisinger Health Plan' && !watch('prior_auth_number')
-                          ? 'border-amber-400 focus:border-amber-500'
-                          : 'border-gray-300 focus:border-blue-400'
-                      }`}
-                    />
-                  </div>
+                      {/* Block 23 — Prior Auth Number */}
+                      <div className="space-y-1">
+                        <label className="block text-xs font-medium text-gray-700">
+                          Prior Authorization Number
+                          <span className="ml-1 font-normal text-gray-400">
+                            (Box 23{patient?.mco === 'Geisinger Health Plan' ? ' — required for Geisinger' : ' — if required'})
+                          </span>
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Authorization number if required"
+                          value={watch('prior_auth_number') ?? ''}
+                          onChange={(e) => setValue('prior_auth_number', e.target.value)}
+                          className={`w-full rounded border px-2 py-1 text-sm focus:outline-none ${
+                            patient?.mco === 'Geisinger Health Plan' && !watch('prior_auth_number')
+                              ? 'border-amber-400 focus:border-amber-500'
+                              : 'border-gray-300 focus:border-blue-400'
+                          }`}
+                        />
+                      </div>
 
-                  {claimError && <p className="text-xs text-red-600">{claimError}</p>}
-                  <button
-                    type="button"
-                    onClick={handleOpenCms1500}
-                    className="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
-                  >
-                    Preview CMS 1500 &amp; Submit
-                  </button>
+                      {/* UHC credentials warning */}
+                      {channel === 'uhc' && !uhcConnected && (
+                        <p className="text-xs text-amber-600">
+                          ⚠ UHC API credentials not configured — add them in{' '}
+                          <a href="/settings" className="underline">Settings</a> to submit electronically.
+                        </p>
+                      )}
+
+                      {claimError && <p className="text-xs text-red-600">{claimError}</p>}
+                      <button
+                        type="button"
+                        onClick={handleOpenCms1500}
+                        className="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
+                      >
+                        Preview CMS 1500 &amp; Submit
+                      </button>
+                    </>
+                  )}
                 </div>
               )}
 
@@ -1158,19 +1224,22 @@ export default function VisitFormPage() {
                       >
                         Download PDF
                       </button>
-                      <button
-                        type="button"
-                        onClick={handleSubmitClaim}
-                        disabled={claimSubmitting}
-                        className="rounded bg-blue-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-                      >
-                        {claimSubmitting ? (
-                          <span className="flex items-center gap-2">
-                            <span className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                            Submitting…
-                          </span>
-                        ) : 'Submit to Availity'}
-                      </button>
+                      {channel !== 'manual' && (
+                        <button
+                          type="button"
+                          onClick={handleSubmitClaim}
+                          disabled={claimSubmitting || (channel === 'uhc' && !uhcConnected)}
+                          className="rounded bg-blue-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                          title={channel === 'uhc' && !uhcConnected ? 'Add UHC API credentials in Settings first' : undefined}
+                        >
+                          {claimSubmitting ? (
+                            <span className="flex items-center gap-2">
+                              <span className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                              Submitting…
+                            </span>
+                          ) : submitLabel}
+                        </button>
+                      )}
                       <button
                         type="button"
                         onClick={() => setShowCms1500(false)}

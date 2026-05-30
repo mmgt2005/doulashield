@@ -8,13 +8,20 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
 from app.core.audit import AuditLogger
-from app.core.billing_constants import DOULA_TAXONOMY, PROVIDER_TYPE, billing_for_visit, rate_dollars
+from app.core.billing_constants import (
+    DOULA_TAXONOMY,
+    MCO_SUBMISSION_CHANNEL,
+    PROVIDER_TYPE,
+    billing_for_visit,
+    rate_dollars,
+)
 from app.core.encryption import decrypt_field
 from app.models.claim import Claim
 from app.models.patient import Patient
 from app.models.user import User
 from app.schemas.claim import ClaimCreate, ClaimRead
 from app.services.availity_client import AvailityClient, MCO_PAYER_IDS
+from app.services.uhc_client import UHCClient
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +37,17 @@ class ClaimsService:
         return AvailityClient(
             decrypt_field(user.availity_client_id_encrypted),
             decrypt_field(user.availity_client_secret_encrypted),
+            str(user.id),
+        )
+
+    def _make_uhc_client(self, user: User) -> UHCClient:
+        if not user.uhc_client_id_encrypted or not user.uhc_client_secret_encrypted:
+            raise ValueError(
+                "UHC API credentials not configured — add UHC Client ID and Secret in Settings"
+            )
+        return UHCClient(
+            decrypt_field(user.uhc_client_id_encrypted),
+            decrypt_field(user.uhc_client_secret_encrypted),
             str(user.id),
         )
 
@@ -53,8 +71,15 @@ class ClaimsService:
         if not patient or not patient.is_active:
             raise ValueError("Patient not found")
 
+        channel = MCO_SUBMISSION_CHANNEL.get(patient.mco or "", "manual")
+        if channel == "manual":
+            raise ValueError(
+                f"Claims for {patient.mco or 'this MCO'} must be submitted manually — "
+                "download the CMS 1500 PDF and upload to the correct portal"
+            )
+
         payer_id = data.payer_id or MCO_PAYER_IDS.get(patient.mco or "")
-        if not payer_id:
+        if not payer_id and channel == "availity":
             raise ValueError("Cannot determine payer — set a recognized MCO on the client profile")
 
         medicaid_id = decrypt_field(patient.medicaid_id_encrypted)
@@ -69,7 +94,6 @@ class ClaimsService:
         procedure_codes = data.procedure_codes if data.procedure_codes else [proc_code]
         pos_code = "02" if data.location_type == "telehealth" else "12"
 
-        availity = self._make_client(user)
         now = datetime.now(timezone.utc)
 
         provider_name_parts = (user.full_name or "").strip().split()
@@ -102,7 +126,12 @@ class ClaimsService:
         if data.claim_data:
             claim_body.update(data.claim_data)
 
-        raw_response = await availity.post("/claims", body=claim_body)
+        if channel == "uhc":
+            client = self._make_uhc_client(user)
+            raw_response = await client.post("/claims", body=claim_body)
+        else:
+            client = self._make_client(user)
+            raw_response = await client.post("/claims", body=claim_body)
 
         claim = Claim(
             patient_id=patient_id,
@@ -145,15 +174,25 @@ class ClaimsService:
         if not claim:
             raise ValueError("Claim not found")
         if not claim.availity_claim_id:
-            raise ValueError("Claim has no Availity ID — it may not have been submitted successfully")
+            raise ValueError("Claim has no submission ID — it may not have been submitted successfully")
 
         user_result = await self._db.execute(select(User).where(User.id == requesting_user_id))
         user = user_result.scalar_one_or_none()
         if not user:
             raise ValueError("User not found")
 
-        availity = self._make_client(user)
-        raw_response = await availity.get(f"/claims/{claim.availity_claim_id}/status")
+        patient_result = await self._db.execute(
+            select(Patient).where(Patient.id == claim.patient_id)
+        )
+        patient = patient_result.scalar_one_or_none()
+        channel = MCO_SUBMISSION_CHANNEL.get(patient.mco or "" if patient else "", "availity")
+
+        if channel == "uhc":
+            client = self._make_uhc_client(user)
+            raw_response = await client.get(f"/claims/{claim.availity_claim_id}/status")
+        else:
+            availity = self._make_client(user)
+            raw_response = await availity.get(f"/claims/{claim.availity_claim_id}/status")
 
         claim.status = raw_response.get("status", claim.status)
         claim.paid_amount = raw_response.get("paidAmount")

@@ -34,6 +34,8 @@ class ProviderSettingsUpdate(BaseModel):
     npi: str | None = None
     availity_client_id: str | None = None
     availity_client_secret: str | None = None
+    uhc_client_id: str | None = None
+    uhc_client_secret: str | None = None
     telehealth_link: str | None = None
     contact_email: str | None = None
     zipzign_api_key: str | None = None  # plain text on write; encrypted on save; never returned
@@ -44,6 +46,7 @@ class ProviderSettingsUpdate(BaseModel):
 class ProviderSettingsRead(BaseModel):
     npi: str | None
     availity_connected: bool
+    uhc_connected: bool
     telehealth_link: str | None
     contact_email: str | None
     zipzign_connected: bool
