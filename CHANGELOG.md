@@ -10,6 +10,17 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ## [Unreleased]
 
+### Added
+- Stripe billing integration: escrow agreement sign flow, automated $99 deposit collection, and $39/month subscription management
+  - **Backend**: migration 0013 adds billing columns to `users` (`stripe_customer_id`, `escrow_agreed_at/version`, `deposit_paid/at`, `escrow_balance_remaining`, `stripe_subscription_id`, `subscription_status`) and creates `escrow_deductions` table; new `stripe_service`, `email_service`, and `billing` API router
+  - **Deposit flow**: admin clicks "Send Deposit Email" → backend creates a Stripe Checkout session with `setup_future_usage=off_session` (saves card for future charges) and `metadata.user_id`, then sends the link via Resend; when the provider pays, `checkout.session.completed` webhook auto-links `stripe_customer_id` and sets `deposit_paid=True` — no manual copy-paste required
+  - **Fallback**: "Link Customer ID" modal lets admins manually paste a `cus_…` ID for providers whose deposit was collected outside Stripe (cash/check)
+  - **Subscriptions**: "Start Subscription" admin action creates a Stripe recurring subscription that auto-charges the saved card each month; disabled until deposit is paid
+  - **Escrow deductions**: each new remittance automatically triggers an off-session Stripe charge — 50% of the remittance amount (or full remaining balance if remittance ≥ $400); deduction recorded in `escrow_deductions` table
+  - **Webhook handler** (`POST /billing/webhook`): handles `checkout.session.completed`, `customer.subscription.*`, `invoice.payment_failed`, and `payment_intent.payment_failed`; all events produce audit log entries
+  - **Settings page**: scrollable escrow agreement text with checkbox + "Sign Agreement" button; after signing, shows balance remaining, clearance status, and subscription badge
+  - **Admin users page**: new Deposit / Balance / Subscription columns; per-row "Send Deposit Email", "Link Customer ID", and "Start Subscription" action buttons with green/amber/gray status badges
+
 ### Internal
 - `frontend/tsconfig.json` and `frontend/next-env.d.ts` updated by `next build` (mandatory: jsx → react-jsx, target → ES2017, added `.next/dev/types` include path); subsequent build updated routes import path in `next-env.d.ts`
 
