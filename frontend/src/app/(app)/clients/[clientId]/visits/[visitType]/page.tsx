@@ -369,7 +369,7 @@ export default function VisitFormPage() {
     try {
       await axios.post(
         `${process.env.NEXT_PUBLIC_API_URL}/api/v1/patients/${clientId}/visits/${visitType}/request-telehealth-signature`,
-        { patient_email: ma91PatientEmail, patient_name: ma91PatientName },
+        { patient_email: ma91PatientEmail, patient_name: ma91PatientName, visit_date: watch('visit_date') || '' },
         { headers: { Authorization: `Bearer ${getAccessToken()}` } }
       )
       setMa91Status('pending')
