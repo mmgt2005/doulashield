@@ -11,6 +11,7 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 ## [Unreleased]
 
 ### Added
+- **Role selector at account creation**: the "Create Account" modal now has a Provider / Admin toggle above the email field; selected role is passed to both the "Create Account Only" and "Create & Send Email" flows; admin accounts automatically skip Stripe deposit link generation; header button relabeled "+ Add User" and modal title updated to "Create Account"
 - **Role toggle on admin users page**: each row (except the currently logged-in admin) now has a "Make Admin" / "Make Provider" button that calls `PATCH /api/v1/admin/users/{id}` with the new role; after toggle the row updates immediately and the provider's sidebar navigation changes on their next page load
 - **Deactivate / Reactivate on admin users page**: each row (except the current admin) now has a "Deactivate" / "Reactivate" button; deactivated accounts receive a 401 on their next request; self-lockout is prevented by hiding both buttons on the logged-in admin's own row
 - **Admin billing exemption**: new accounts created with `role="admin"` automatically receive `deposit_paid=True` and `escrow_balance_remaining=0.00` — admins are never prompted for the $99 deposit or the $400 escrow balance; the Escrow & Billing section on the Settings page is hidden entirely for admin users; existing admin accounts need a one-time SQL update: `UPDATE public.users SET deposit_paid = true, escrow_balance_remaining = 0 WHERE role = 'admin'`
