@@ -11,6 +11,8 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 ## [Unreleased]
 
 ### Added
+- **Two-option Create Provider modal**: admin can now choose "Create Account Only" (account created, one-time credential panel shows the temp password for manual sharing) or "Create & Send Email" (existing flow — credentials delivered directly to the provider's inbox, admin never sees the password); both options generate a cryptographically secure 14-char temp password server-side
+- **Send Welcome Email** table-row action (`POST /admin/billing/send-welcome-email`): generates a fresh temp password, updates the provider's `password_hash`, optionally creates a Stripe Checkout link, and sends the combined welcome + deposit email; available for any provider where deposit is not yet paid; functions as both a first-time send (for accounts created without email) and a password-reset + re-invite
 - **Create Provider + send invite** (`POST /admin/billing/create-and-invite`): admin fills in email and optional full name; backend generates a cryptographically secure 14-char temp password, creates the provider account, generates a Stripe Checkout link (if configured), and sends one combined welcome email containing the login credentials and deposit payment button — the admin never handles or sees the password
 - **Change Password** section on the Settings page: providers can update their own password after first login by entering their current password, new password, and confirmation; validated against the existing 12-char complexity rules; `POST /auth/me/change-password` endpoint with `CHANGE_PASSWORD` audit log entry
 
