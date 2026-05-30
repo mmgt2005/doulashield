@@ -14,7 +14,7 @@ interface SettingsFormData {
   contact_email: string
   zipzign_api_key: string
   zone: string
-  county: string
+  counties: string[]
 }
 
 type ZoneKey = 'SE' | 'SW' | 'LC' | 'NE' | 'NW'
@@ -61,7 +61,7 @@ export default function SettingsPage() {
   useEffect(() => {
     if (!isAuthenticated) return
     axios
-      .get<{ npi: string | null; availity_connected: boolean; telehealth_link: string | null; contact_email: string | null; zipzign_connected: boolean; zone: string | null; county: string | null }>(
+      .get<{ npi: string | null; availity_connected: boolean; telehealth_link: string | null; contact_email: string | null; zipzign_connected: boolean; zone: string | null; counties: string[] | null }>(
         `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/me/provider-settings`,
         { headers: { Authorization: `Bearer ${getAccessToken()}` } }
       )
@@ -70,7 +70,7 @@ export default function SettingsPage() {
         if (r.data.telehealth_link) setValue('telehealth_link', r.data.telehealth_link)
         if (r.data.contact_email) setValue('contact_email', r.data.contact_email)
         if (r.data.zone) setValue('zone', r.data.zone)
-        if (r.data.county) setValue('county', r.data.county)
+        if (r.data.counties?.length) setValue('counties', r.data.counties)
         setConnected(r.data.availity_connected)
         setZipzignConnected(r.data.zipzign_connected)
       })
@@ -80,7 +80,7 @@ export default function SettingsPage() {
     setSaveError(null)
     setSaved(false)
     try {
-      const body: Record<string, string> = {}
+      const body: Record<string, string | string[]> = {}
       if (data.npi) body.npi = data.npi
       if (data.availity_client_id) body.availity_client_id = data.availity_client_id
       if (data.availity_client_secret) body.availity_client_secret = data.availity_client_secret
@@ -88,7 +88,7 @@ export default function SettingsPage() {
       if (data.contact_email) body.contact_email = data.contact_email
       if (data.zipzign_api_key) body.zipzign_api_key = data.zipzign_api_key
       body.zone = data.zone || ''
-      body.county = data.county || ''
+      body.counties = data.counties || []
 
       const res = await axios.patch<{ npi: string | null; availity_connected: boolean; zipzign_connected: boolean }>(
         `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/me/provider-settings`,
@@ -166,7 +166,7 @@ export default function SettingsPage() {
               <select
                 {...register('zone')}
                 id="zone"
-                onChange={(e) => { setValue('zone', e.target.value); setValue('county', '') }}
+                onChange={(e) => { setValue('zone', e.target.value); setValue('counties', []) }}
                 className="mt-1 block w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               >
                 <option value="">— Select zone —</option>
@@ -176,20 +176,31 @@ export default function SettingsPage() {
               </select>
             </div>
             <div>
-              <label htmlFor="county" className="block text-sm font-medium text-gray-700">County</label>
-              <select
-                {...register('county')}
-                id="county"
-                disabled={!selectedZone || !(selectedZone in PA_ZONES)}
-                className="mt-1 block w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 disabled:text-gray-400"
-              >
-                <option value="">— Select county —</option>
-                {selectedZone && selectedZone in PA_ZONES &&
-                  PA_ZONES[selectedZone as ZoneKey].counties.map((c) => (
-                    <option key={c} value={c}>{c}</option>
-                  ))
-                }
-              </select>
+              <label className="block text-sm font-medium text-gray-700">Counties served</label>
+              {selectedZone && selectedZone in PA_ZONES ? (
+                <div className="mt-1 max-h-48 overflow-y-auto rounded border border-gray-300 bg-white p-2 space-y-1">
+                  {PA_ZONES[selectedZone as ZoneKey].counties.map((c) => (
+                    <label key={c} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        value={c}
+                        checked={(watch('counties') ?? []).includes(c)}
+                        onChange={(e) => {
+                          const current = watch('counties') ?? []
+                          setValue(
+                            'counties',
+                            e.target.checked ? [...current, c] : current.filter((x) => x !== c)
+                          )
+                        }}
+                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-700">{c}</span>
+                    </label>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-1 text-sm text-gray-400">Select a zone first</p>
+              )}
             </div>
           </div>
           {selectedZone && selectedZone in PA_ZONES && (

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import logging
 import uuid
 from datetime import datetime, timezone
@@ -38,7 +39,7 @@ class EligibilityService:
             contact_email=user.contact_email,
             zipzign_connected=zipzign_configured,
             zone=user.zone,
-            county=user.county,
+            counties=json.loads(user.counties) if user.counties else None,
         )
 
     async def update_provider_settings(
@@ -67,8 +68,8 @@ class EligibilityService:
             user.zipzign_api_key_encrypted = None if data.zipzign_api_key == "" else encrypt_field(data.zipzign_api_key)
         if data.zone is not None:
             user.zone = data.zone or None
-        if data.county is not None:
-            user.county = data.county or None
+        if data.counties is not None:
+            user.counties = json.dumps(data.counties) if data.counties else None
 
         await self._db.commit()
         await self._db.refresh(user)
@@ -92,7 +93,7 @@ class EligibilityService:
             contact_email=user.contact_email,
             zipzign_connected=zipzign_configured,
             zone=user.zone,
-            county=user.county,
+            counties=json.loads(user.counties) if user.counties else None,
         )
 
     async def check_eligibility(

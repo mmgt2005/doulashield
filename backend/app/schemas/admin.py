@@ -37,8 +37,8 @@ class ProviderSettingsUpdate(BaseModel):
     telehealth_link: str | None = None
     contact_email: str | None = None
     zipzign_api_key: str | None = None  # plain text on write; encrypted on save; never returned
-    zone: str | None = None    # e.g. 'SE' | 'SW' | 'LC' | 'NE' | 'NW'
-    county: str | None = None  # county name within the selected zone
+    zone: str | None = None       # e.g. 'SE' | 'SW' | 'LC' | 'NE' | 'NW'
+    counties: list[str] | None = None  # county names within the selected zone
 
 
 class ProviderSettingsRead(BaseModel):
@@ -48,7 +48,7 @@ class ProviderSettingsRead(BaseModel):
     contact_email: str | None
     zipzign_connected: bool
     zone: str | None
-    county: str | None
+    counties: list[str] | None
 
 
 class AuditLogRead(BaseModel):
