@@ -6,6 +6,7 @@ from app.models.birth_log import BirthLog
 from app.models.visit import Visit, VisitType
 from app.models.audit_log import AuditLog
 from app.models.refresh_token import RefreshToken
+from app.models.escrow_deduction import EscrowDeduction
 
 __all__ = [
     "User",
@@ -17,4 +18,5 @@ __all__ = [
     "VisitType",
     "AuditLog",
     "RefreshToken",
+    "EscrowDeduction",
 ]

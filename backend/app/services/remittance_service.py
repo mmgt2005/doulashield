@@ -13,6 +13,7 @@ from app.models.remittance import Remittance
 from app.models.user import User
 from app.schemas.remittance import RemittanceFetchRequest, RemittanceRead
 from app.services.availity_client import AvailityClient
+from app.services.stripe_service import process_escrow_deduction
 
 logger = logging.getLogger(__name__)
 
@@ -95,6 +96,15 @@ class RemittanceService:
                 await self._db.commit()
                 await self._db.refresh(remittance)
                 saved.append(RemittanceRead.model_validate(remittance))
+
+                if remittance.total_payment and remittance.total_payment > 0:
+                    from decimal import Decimal
+                    await process_escrow_deduction(
+                        user,
+                        Decimal(str(remittance.total_payment)),
+                        remittance.id,
+                        self._db,
+                    )
 
         await self._audit.log(
             action="FETCH_REMITTANCES",

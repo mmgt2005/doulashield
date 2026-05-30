@@ -1,7 +1,8 @@
 import uuid
 from datetime import datetime, timezone
+from decimal import Decimal
 
-from sqlalchemy import Boolean, DateTime, String, Text, func
+from sqlalchemy import Boolean, DateTime, Numeric, String, Text, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -28,6 +29,17 @@ class User(Base):
     zipzign_api_key_encrypted: Mapped[str | None] = mapped_column(Text, nullable=True)
     zone: Mapped[str | None] = mapped_column(String(4), nullable=True)
     counties: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON array e.g. '["Bucks","Chester"]'
+
+    # Billing
+    stripe_customer_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    escrow_agreed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    escrow_agreement_version: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    deposit_paid: Mapped[bool] = mapped_column(Boolean, server_default="false", nullable=False)
+    deposit_paid_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    escrow_balance_remaining: Mapped[Decimal] = mapped_column(Numeric(10, 2), server_default="400.00", nullable=False)
+    stripe_subscription_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    subscription_status: Mapped[str | None] = mapped_column(String(32), nullable=True)
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form'
 import axios from 'axios'
 import { getAccessToken } from '@/lib/auth'
 import { useAuthStore } from '@/store/auth-store'
+import { BillingStatus } from '@/types/domain'
 
 interface SettingsFormData {
   npi: string
@@ -47,6 +48,22 @@ const PA_ZONES: Record<ZoneKey, { label: string; counties: string[]; mcos: strin
   },
 }
 
+const ESCROW_AGREEMENT_TEXT = `DoulaShield Escrow Agreement — Version 1.0
+
+By signing below, you agree to the following terms governing the DoulaShield platform fee escrow arrangement:
+
+1. NON-REFUNDABLE ENROLLMENT DEPOSIT
+A one-time, non-refundable deposit of $99.00 USD is required to initiate the credentialing and onboarding process. This deposit is collected prior to app access and covers administrative costs associated with enrolling you in the PA Medicaid billing grid.
+
+2. DEFERRED BALANCE
+In addition to the enrollment deposit, a deferred balance of $400.00 USD is owed to DoulaShield for platform setup and credentialing services rendered. This balance is not due upfront. Instead, it will be collected automatically from your MCO remittance payments as follows: 50% of each MCO remittance check will be withheld and applied to this balance until the full $400.00 has been collected. If any single remittance equals or exceeds $400.00, the entire remaining balance will be collected from that payment.
+
+3. MONTHLY PLATFORM SUBSCRIPTION
+Upon activation of your account, a monthly subscription fee of $39.00 USD will be charged automatically to your saved payment method on the same calendar date each month. This fee covers continued access to the DoulaShield platform, including billing tools, visit documentation, and MCO eligibility checks.
+
+4. AUTOMATIC PAYMENT AUTHORIZATION
+By agreeing to these terms, you authorize DoulaShield to charge your saved payment method on file for (a) the deferred balance deductions described in Section 2, and (b) the recurring monthly subscription described in Section 3. You understand that these charges are automatic and do not require additional action on your part. You may contact DoulaShield to update your payment method at any time.`
+
 export default function SettingsPage() {
   const { user, isLoading: authLoading, isAuthenticated } = useAuthStore()
   const isAdmin = user?.role === 'admin'
@@ -54,16 +71,21 @@ export default function SettingsPage() {
   const [zipzignConnected, setZipzignConnected] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
+  const [billing, setBilling] = useState<BillingStatus | null>(null)
+  const [escrowChecked, setEscrowChecked] = useState(false)
+  const [signingEscrow, setSigningEscrow] = useState(false)
+  const [escrowError, setEscrowError] = useState<string | null>(null)
 
   const { register, handleSubmit, setValue, watch, formState: { isSubmitting } } = useForm<SettingsFormData>()
   const selectedZone = watch('zone') as ZoneKey | '' | undefined
 
   useEffect(() => {
     if (!isAuthenticated) return
+    const headers = { Authorization: `Bearer ${getAccessToken()}` }
     axios
       .get<{ npi: string | null; availity_connected: boolean; telehealth_link: string | null; contact_email: string | null; zipzign_connected: boolean; zone: string | null; counties: string[] | null }>(
         `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/me/provider-settings`,
-        { headers: { Authorization: `Bearer ${getAccessToken()}` } }
+        { headers }
       )
       .then((r) => {
         if (r.data.npi) setValue('npi', r.data.npi)
@@ -74,7 +96,29 @@ export default function SettingsPage() {
         setConnected(r.data.availity_connected)
         setZipzignConnected(r.data.zipzign_connected)
       })
+    axios
+      .get<BillingStatus>(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/billing/status`, { headers })
+      .then((r) => setBilling(r.data))
+      .catch(() => {/* billing not configured — silently skip */})
   }, [setValue, isAuthenticated])
+
+  const handleSignEscrow = async () => {
+    if (!escrowChecked) return
+    setSigningEscrow(true)
+    setEscrowError(null)
+    try {
+      const r = await axios.post<BillingStatus>(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/billing/sign-escrow`,
+        { agreed: true },
+        { headers: { Authorization: `Bearer ${getAccessToken()}` } }
+      )
+      setBilling(r.data)
+    } catch {
+      setEscrowError('Failed to sign agreement. Please try again.')
+    } finally {
+      setSigningEscrow(false)
+    }
+  }
 
   const onSubmit = async (data: SettingsFormData) => {
     setSaveError(null)
@@ -134,6 +178,71 @@ export default function SettingsPage() {
           <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-700">
             Provider
           </span>
+        )}
+      </div>
+
+      {/* Escrow & Billing */}
+      <div className="bg-white p-6 rounded-lg border border-gray-200 space-y-4">
+        <h2 className="text-sm font-semibold text-gray-700">Escrow &amp; Billing</h2>
+
+        {billing && !billing.escrow_agreed_at && (
+          <div className="space-y-3">
+            <div className="rounded border border-gray-200 bg-gray-50 p-3 max-h-52 overflow-y-auto">
+              <pre className="text-xs text-gray-700 whitespace-pre-wrap font-sans leading-relaxed">
+                {ESCROW_AGREEMENT_TEXT}
+              </pre>
+            </div>
+            <label className="flex items-start gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={escrowChecked}
+                onChange={(e) => setEscrowChecked(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span className="text-sm text-gray-700">I have read and agree to the escrow terms above.</span>
+            </label>
+            {escrowError && <p className="text-xs text-red-600">{escrowError}</p>}
+            <button
+              type="button"
+              onClick={handleSignEscrow}
+              disabled={!escrowChecked || signingEscrow}
+              className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+            >
+              {signingEscrow ? 'Signing…' : 'Sign Agreement'}
+            </button>
+          </div>
+        )}
+
+        {billing?.escrow_agreed_at && (
+          <div className="space-y-2">
+            <p className="text-sm text-green-700">
+              ✓ Agreement signed on {new Date(billing.escrow_agreed_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+              {billing.escrow_agreement_version && ` (v${billing.escrow_agreement_version})`}
+            </p>
+            {billing.escrow_balance_remaining > 0 ? (
+              <p className="text-sm text-gray-700">
+                Deferred balance:{' '}
+                <span className="font-medium">${billing.escrow_balance_remaining.toFixed(2)} remaining</span> of $400.00
+                <span className="ml-1 text-gray-500 text-xs">— collected automatically from MCO remittances (50% per check)</span>
+              </p>
+            ) : (
+              <p className="text-sm text-gray-500">Deferred balance: <span className="text-green-700 font-medium">Cleared</span></p>
+            )}
+            <p className="text-sm text-gray-700">
+              Monthly subscription:{' '}
+              {billing.subscription_status === 'active' || billing.subscription_status === 'trialing' ? (
+                <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">Active ($39/mo)</span>
+              ) : billing.subscription_status === 'past_due' ? (
+                <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">Past Due</span>
+              ) : (
+                <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500">Not yet started</span>
+              )}
+            </p>
+          </div>
+        )}
+
+        {!billing && (
+          <p className="text-sm text-gray-400">Loading billing status…</p>
         )}
       </div>
 

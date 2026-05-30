@@ -101,6 +101,30 @@ export interface Visit {
   updated_at: string
 }
 
+export interface BillingStatus {
+  stripe_customer_id: string | null
+  escrow_agreed_at: string | null
+  escrow_agreement_version: string | null
+  deposit_paid: boolean
+  deposit_paid_at: string | null
+  escrow_balance_remaining: number
+  subscription_status: string | null
+}
+
+export interface UserWithBilling {
+  id: string
+  email: string
+  role: UserRole
+  full_name: string | null
+  is_active: boolean
+  stripe_customer_id: string | null
+  escrow_agreed_at: string | null
+  deposit_paid: boolean
+  deposit_paid_at: string | null
+  escrow_balance_remaining: number
+  subscription_status: string | null
+}
+
 export interface AuditLogEntry {
   id: string
   user_id: string | null

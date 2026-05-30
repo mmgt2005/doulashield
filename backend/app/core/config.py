@@ -37,6 +37,17 @@ class Settings(BaseSettings):
     ZIPZIGN_WEBHOOK_SECRET: str = ""
     ZIPZIGN_BASE_URL: str = "https://zipzign.com"
 
+    # Stripe billing
+    STRIPE_SECRET_KEY: str = ""
+    STRIPE_PUBLISHABLE_KEY: str = ""
+    STRIPE_WEBHOOK_SECRET: str = ""
+    STRIPE_DEPOSIT_PRICE_ID: str = ""
+    STRIPE_MONTHLY_PRICE_ID: str = ""
+
+    # Resend email
+    RESEND_API_KEY: str = ""
+    EMAIL_FROM: str = "DoulaShield <noreply@doulashield.com>"
+
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
 
 
