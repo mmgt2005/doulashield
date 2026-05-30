@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import uuid
+from decimal import Decimal
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -29,6 +30,9 @@ class AdminService:
             role=data.role,
             full_name=data.full_name,
         )
+        if data.role == "admin":
+            user.deposit_paid = True
+            user.escrow_balance_remaining = Decimal("0.00")
         self._db.add(user)
         await self._db.commit()
         await self._db.refresh(user)

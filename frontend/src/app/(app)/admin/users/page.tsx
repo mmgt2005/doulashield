@@ -3,11 +3,13 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 import { getAccessToken } from '@/lib/auth'
+import { useAuthStore } from '@/store/auth-store'
 import { User, UserWithBilling } from '@/types/domain'
 
 type MergedUser = User & Partial<Omit<UserWithBilling, keyof User>>
 
 export default function AdminUsersPage() {
+  const { user: currentUser } = useAuthStore()
   const [users, setUsers] = useState<MergedUser[]>([])
   const [loading, setLoading] = useState(true)
   const [actionToast, setActionToast] = useState<string | null>(null)
@@ -113,6 +115,35 @@ export default function AdminUsersPage() {
       await reload()
     } catch (e: unknown) {
       const msg = axios.isAxiosError(e) ? e.response?.data?.detail : 'Failed to start subscription'
+      showToast(`Error: ${msg}`)
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const toggleActive = async (userId: string, email: string, currentActive: boolean) => {
+    setActionLoading(`active-${userId}`)
+    try {
+      await axios.patch(`${api}/api/v1/admin/users/${userId}`, { is_active: !currentActive }, { headers })
+      showToast(`${email} ${!currentActive ? 'reactivated' : 'deactivated'}`)
+      await reload()
+    } catch (e: unknown) {
+      const msg = axios.isAxiosError(e) ? e.response?.data?.detail : 'Failed to update'
+      showToast(`Error: ${msg}`)
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const toggleRole = async (userId: string, email: string, currentRole: string) => {
+    const newRole = currentRole === 'admin' ? 'provider' : 'admin'
+    setActionLoading(`role-${userId}`)
+    try {
+      await axios.patch(`${api}/api/v1/admin/users/${userId}`, { role: newRole }, { headers })
+      showToast(`${email} is now ${newRole}`)
+      await reload()
+    } catch (e: unknown) {
+      const msg = axios.isAxiosError(e) ? e.response?.data?.detail : 'Failed to update role'
       showToast(`Error: ${msg}`)
     } finally {
       setActionLoading(null)
@@ -273,45 +304,65 @@ export default function AdminUsersPage() {
 
                   {/* Actions */}
                   <td className="px-4 py-3">
-                    {isProvider && (
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {!depositPaid && (
-                          <button
-                            onClick={() => sendWelcomeEmail(u.id, u.email)}
-                            disabled={actionLoading === `welcome-${u.id}`}
-                            className="rounded bg-indigo-600 px-2 py-1 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-50 whitespace-nowrap"
-                          >
-                            {actionLoading === `welcome-${u.id}` ? 'Sending…' : 'Send Welcome Email'}
-                          </button>
-                        )}
-                        {!depositPaid && (
-                          <button
-                            onClick={() => sendDepositEmail(u.id, u.email)}
-                            disabled={actionLoading === `deposit-${u.id}`}
-                            className="rounded border border-gray-300 px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50 whitespace-nowrap"
-                          >
-                            {actionLoading === `deposit-${u.id}` ? 'Sending…' : 'Send Deposit Email'}
-                          </button>
-                        )}
-                        {!depositPaid && (
-                          <button
-                            onClick={() => openLinkModal(u.id, u.email)}
-                            className="rounded border border-gray-300 px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap"
-                          >
-                            Link Customer ID
-                          </button>
-                        )}
-                        {depositPaid && !subActive && (
-                          <button
-                            onClick={() => startSubscription(u.id, u.email)}
-                            disabled={actionLoading === `sub-${u.id}`}
-                            className="rounded bg-green-600 px-2 py-1 text-xs font-medium text-white hover:bg-green-700 disabled:opacity-50 whitespace-nowrap"
-                          >
-                            {actionLoading === `sub-${u.id}` ? 'Starting…' : 'Start Subscription'}
-                          </button>
-                        )}
-                      </div>
-                    )}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {isProvider && !depositPaid && (
+                        <button
+                          onClick={() => sendWelcomeEmail(u.id, u.email)}
+                          disabled={actionLoading === `welcome-${u.id}`}
+                          className="rounded bg-indigo-600 px-2 py-1 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-50 whitespace-nowrap"
+                        >
+                          {actionLoading === `welcome-${u.id}` ? 'Sending…' : 'Send Welcome Email'}
+                        </button>
+                      )}
+                      {isProvider && !depositPaid && (
+                        <button
+                          onClick={() => sendDepositEmail(u.id, u.email)}
+                          disabled={actionLoading === `deposit-${u.id}`}
+                          className="rounded border border-gray-300 px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50 whitespace-nowrap"
+                        >
+                          {actionLoading === `deposit-${u.id}` ? 'Sending…' : 'Send Deposit Email'}
+                        </button>
+                      )}
+                      {isProvider && !depositPaid && (
+                        <button
+                          onClick={() => openLinkModal(u.id, u.email)}
+                          className="rounded border border-gray-300 px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-50 whitespace-nowrap"
+                        >
+                          Link Customer ID
+                        </button>
+                      )}
+                      {isProvider && depositPaid && !subActive && (
+                        <button
+                          onClick={() => startSubscription(u.id, u.email)}
+                          disabled={actionLoading === `sub-${u.id}`}
+                          className="rounded bg-green-600 px-2 py-1 text-xs font-medium text-white hover:bg-green-700 disabled:opacity-50 whitespace-nowrap"
+                        >
+                          {actionLoading === `sub-${u.id}` ? 'Starting…' : 'Start Subscription'}
+                        </button>
+                      )}
+                      {u.id !== currentUser?.id && (
+                        <button
+                          onClick={() => toggleActive(u.id, u.email, u.is_active)}
+                          disabled={actionLoading === `active-${u.id}`}
+                          className={`rounded px-2 py-1 text-xs font-medium disabled:opacity-50 whitespace-nowrap ${
+                            u.is_active
+                              ? 'border border-red-300 text-red-600 hover:bg-red-50'
+                              : 'border border-green-300 text-green-600 hover:bg-green-50'
+                          }`}
+                        >
+                          {actionLoading === `active-${u.id}` ? '…' : u.is_active ? 'Deactivate' : 'Reactivate'}
+                        </button>
+                      )}
+                      {u.id !== currentUser?.id && (
+                        <button
+                          onClick={() => toggleRole(u.id, u.email, u.role)}
+                          disabled={actionLoading === `role-${u.id}`}
+                          className="rounded border border-gray-300 px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50 whitespace-nowrap"
+                        >
+                          {actionLoading === `role-${u.id}` ? '…' : u.role === 'admin' ? 'Make Provider' : 'Make Admin'}
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               )

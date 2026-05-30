@@ -213,70 +213,72 @@ export default function SettingsPage() {
         )}
       </div>
 
-      {/* Escrow & Billing */}
-      <div className="bg-white p-6 rounded-lg border border-gray-200 space-y-4">
-        <h2 className="text-sm font-semibold text-gray-700">Escrow &amp; Billing</h2>
+      {/* Escrow & Billing — hidden for admins */}
+      {!isAdmin && (
+        <div className="bg-white p-6 rounded-lg border border-gray-200 space-y-4">
+          <h2 className="text-sm font-semibold text-gray-700">Escrow &amp; Billing</h2>
 
-        {billing && !billing.escrow_agreed_at && (
-          <div className="space-y-3">
-            <div className="rounded border border-gray-200 bg-gray-50 p-3 max-h-52 overflow-y-auto">
-              <pre className="text-xs text-gray-700 whitespace-pre-wrap font-sans leading-relaxed">
-                {ESCROW_AGREEMENT_TEXT}
-              </pre>
+          {billing && !billing.escrow_agreed_at && (
+            <div className="space-y-3">
+              <div className="rounded border border-gray-200 bg-gray-50 p-3 max-h-52 overflow-y-auto">
+                <pre className="text-xs text-gray-700 whitespace-pre-wrap font-sans leading-relaxed">
+                  {ESCROW_AGREEMENT_TEXT}
+                </pre>
+              </div>
+              <label className="flex items-start gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={escrowChecked}
+                  onChange={(e) => setEscrowChecked(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-sm text-gray-700">I have read and agree to the escrow terms above.</span>
+              </label>
+              {escrowError && <p className="text-xs text-red-600">{escrowError}</p>}
+              <button
+                type="button"
+                onClick={handleSignEscrow}
+                disabled={!escrowChecked || signingEscrow}
+                className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+              >
+                {signingEscrow ? 'Signing…' : 'Sign Agreement'}
+              </button>
             </div>
-            <label className="flex items-start gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={escrowChecked}
-                onChange={(e) => setEscrowChecked(e.target.checked)}
-                className="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <span className="text-sm text-gray-700">I have read and agree to the escrow terms above.</span>
-            </label>
-            {escrowError && <p className="text-xs text-red-600">{escrowError}</p>}
-            <button
-              type="button"
-              onClick={handleSignEscrow}
-              disabled={!escrowChecked || signingEscrow}
-              className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-            >
-              {signingEscrow ? 'Signing…' : 'Sign Agreement'}
-            </button>
-          </div>
-        )}
+          )}
 
-        {billing?.escrow_agreed_at && (
-          <div className="space-y-2">
-            <p className="text-sm text-green-700">
-              ✓ Agreement signed on {new Date(billing.escrow_agreed_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-              {billing.escrow_agreement_version && ` (v${billing.escrow_agreement_version})`}
-            </p>
-            {billing.escrow_balance_remaining > 0 ? (
-              <p className="text-sm text-gray-700">
-                Deferred balance:{' '}
-                <span className="font-medium">${billing.escrow_balance_remaining.toFixed(2)} remaining</span> of $400.00
-                <span className="ml-1 text-gray-500 text-xs">— collected automatically from MCO remittances (50% per check)</span>
+          {billing?.escrow_agreed_at && (
+            <div className="space-y-2">
+              <p className="text-sm text-green-700">
+                ✓ Agreement signed on {new Date(billing.escrow_agreed_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                {billing.escrow_agreement_version && ` (v${billing.escrow_agreement_version})`}
               </p>
-            ) : (
-              <p className="text-sm text-gray-500">Deferred balance: <span className="text-green-700 font-medium">Cleared</span></p>
-            )}
-            <p className="text-sm text-gray-700">
-              Monthly subscription:{' '}
-              {billing.subscription_status === 'active' || billing.subscription_status === 'trialing' ? (
-                <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">Active ($39/mo)</span>
-              ) : billing.subscription_status === 'past_due' ? (
-                <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">Past Due</span>
+              {billing.escrow_balance_remaining > 0 ? (
+                <p className="text-sm text-gray-700">
+                  Deferred balance:{' '}
+                  <span className="font-medium">${billing.escrow_balance_remaining.toFixed(2)} remaining</span> of $400.00
+                  <span className="ml-1 text-gray-500 text-xs">— collected automatically from MCO remittances (50% per check)</span>
+                </p>
               ) : (
-                <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500">Not yet started</span>
+                <p className="text-sm text-gray-500">Deferred balance: <span className="text-green-700 font-medium">Cleared</span></p>
               )}
-            </p>
-          </div>
-        )}
+              <p className="text-sm text-gray-700">
+                Monthly subscription:{' '}
+                {billing.subscription_status === 'active' || billing.subscription_status === 'trialing' ? (
+                  <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">Active ($39/mo)</span>
+                ) : billing.subscription_status === 'past_due' ? (
+                  <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">Past Due</span>
+                ) : (
+                  <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500">Not yet started</span>
+                )}
+              </p>
+            </div>
+          )}
 
-        {!billing && (
-          <p className="text-sm text-gray-400">Loading billing status…</p>
-        )}
-      </div>
+          {!billing && (
+            <p className="text-sm text-gray-400">Loading billing status…</p>
+          )}
+        </div>
+      )}
 
       {/* Change Password */}
       <div className="bg-white p-6 rounded-lg border border-gray-200 space-y-4">
