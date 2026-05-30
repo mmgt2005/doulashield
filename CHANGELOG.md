@@ -11,7 +11,7 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 ## [Unreleased]
 
 ### Internal
-- `frontend/tsconfig.json` and `frontend/next-env.d.ts` updated by `next build` (mandatory: jsx → react-jsx, target → ES2017, added `.next/dev/types` include path)
+- `frontend/tsconfig.json` and `frontend/next-env.d.ts` updated by `next build` (mandatory: jsx → react-jsx, target → ES2017, added `.next/dev/types` include path); subsequent build updated routes import path in `next-env.d.ts`
 
 ### Added
 - Visit date auto-populates from the start timestamp when "Start Visit" or "Start Telehealth" is tapped, eliminating the need to type the date manually; also falls back to the stored `visit_started_at` when reloading a visit that was started but never form-saved
