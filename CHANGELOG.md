@@ -10,6 +10,9 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ## [Unreleased]
 
+### Fixed
+- **MCO portal URLs corrected to official submission sites**: UPMC For You now links to `provider.upmc.com`, Health Partners Plans to `hppserve.com`, and FFS to `promise.dhs.pa.gov/portal/provider` (was previously linking to generic provider-info pages rather than the actual claim submission portals)
+
 ### Added
 - **MCO-Aware Claim Submission Routing**: claim submission now branches by MCO instead of routing everything through Availity; `MCO_SUBMISSION_CHANNEL` in `billing_constants.py` maps each of the 8 PA MCOs to one of three channels — `availity` (AmeriHealth Caritas, Keystone First, Geisinger, Highmark Wholecare, Aetna Better Health), `uhc` (UnitedHealthcare Community Plan — direct OAuth2 PKCE REST API), or `manual` (UPMC For You, Health Partners Plans, FFS — clearinghouse-only); the claims service raises a descriptive error for manual MCOs so providers know to download the CMS 1500 and use the payer portal; for UHC a new `UHCClient` class mirrors `AvailityClient` with OAuth2 PKCE (S256) token caching; `check_claim_status` also routes by channel; migration 0017 adds `uhc_client_id_encrypted` and `uhc_client_secret_encrypted` to the `users` table; Settings page adds a UHC API Credentials section with Client ID / Client Secret inputs and a "Connected ✓" badge; the visit form claim section shows the correct UI per channel: manual MCOs render a "Preview & Download CMS 1500" button plus a portal link (UPMC, HPP, FFS) instead of a submit button; UHC and Availity MCOs show "Submit to UnitedHealthcare" or "Submit to Availity" respectively in the modal; a warning is shown when UHC is the channel but credentials are not yet configured
 
