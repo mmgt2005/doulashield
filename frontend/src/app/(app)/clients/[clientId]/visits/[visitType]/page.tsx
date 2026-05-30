@@ -48,8 +48,8 @@ const schema = z.object({
   source_image_path: z.string().optional(),
   visit_started_at: z.string().optional(),
   visit_ended_at: z.string().optional(),
-  provider_latitude: z.number().optional(),
-  provider_longitude: z.number().optional(),
+  provider_latitude: z.preprocess((v) => (v === '' || v == null) ? undefined : Number(v), z.number().optional()),
+  provider_longitude: z.preprocess((v) => (v === '' || v == null) ? undefined : Number(v), z.number().optional()),
   location_type: z.enum(['in_person', 'telehealth']).default('in_person'),
   alternate_location: z.string().optional(),
 })
@@ -98,6 +98,7 @@ export default function VisitFormPage() {
 
   const { register, handleSubmit, setValue, watch, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
+    defaultValues: { location_type: 'in_person' },
   })
 
   useEffect(() => {
