@@ -11,6 +11,7 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 ## [Unreleased]
 
 ### Fixed
+- **CMS 1500 PDF embedded preview in modal**: clicking "Preview CMS 1500 & Submit" now fetches the authenticated PDF immediately and renders it in a 520 px iframe inside the modal, above the field summary table; spinner shown while loading; blob URL revoked on modal close to prevent memory leaks; "Download PDF" reuses the already-fetched blob when available; modal widened to `max-w-4xl` to better fit letter-sized layout
 - **CMS 1500 PDF download "Not authenticated" error**: replaced the `<a href>` direct-link approach (which never sends an Authorization header) with a `fetch()`-based download that attaches the Bearer token, converts the response to a blob, and triggers a programmatic download
 - **Diagnosis codes showing two values**: `billing_constants.py` and the frontend `VISIT_BILLING` constant now use a single ICD-10 code per visit type — Z32.2 (prenatal), Z39.1 (postnatal), Z33.1 (labor), Z39.2 (crisis/loss) — matching the ICD-10 billing reference; `diag.join(', ')` in the CMS 1500 modal and the claim payload now shows one code
 - **Patient city missing from CMS 1500 PDF**: `_parse_address()` in `cms1500_service.py` replaced with a robust parser that handles both the simple "Street, City, ST ZIP" format and the full Nominatim geocoder format ("Street, Neighborhood, City, County, State, ZIP, United States"); state full-name → abbreviation lookup table added so "Pennsylvania" correctly maps to "PA"
