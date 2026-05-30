@@ -117,6 +117,8 @@ export default function VisitFormPage() {
   const [claimError, setClaimError] = useState<string | null>(null)
   const [showCms1500, setShowCms1500] = useState(false)
   const [claimStatusChecking, setClaimStatusChecking] = useState(false)
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null)
+  const [pdfLoading, setPdfLoading] = useState(false)
 
   const { register, handleSubmit, setValue, watch, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -447,20 +449,46 @@ export default function VisitFormPage() {
     }
   }
 
+  const _fetchPdfBlob = async (): Promise<string> => {
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/v1/patients/${clientId}/visits/${visitType}/cms1500.pdf`,
+      { headers: { Authorization: `Bearer ${getAccessToken()}` } }
+    )
+    if (!res.ok) throw new Error(await res.text())
+    const blob = await res.blob()
+    return URL.createObjectURL(blob)
+  }
+
+  const handleOpenCms1500 = async () => {
+    setShowCms1500(true)
+    setPdfLoading(true)
+    setClaimError(null)
+    try {
+      const url = await _fetchPdfBlob()
+      setPdfPreviewUrl(url)
+    } catch {
+      setClaimError('Could not load PDF preview — try "Download PDF" instead.')
+    } finally {
+      setPdfLoading(false)
+    }
+  }
+
+  const handleCloseCms1500 = () => {
+    setShowCms1500(false)
+    if (pdfPreviewUrl) {
+      URL.revokeObjectURL(pdfPreviewUrl)
+      setPdfPreviewUrl(null)
+    }
+  }
+
   const handleDownloadPdf = async () => {
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/patients/${clientId}/visits/${visitType}/cms1500.pdf`,
-        { headers: { Authorization: `Bearer ${getAccessToken()}` } }
-      )
-      if (!res.ok) throw new Error(await res.text())
-      const blob = await res.blob()
-      const url = URL.createObjectURL(blob)
+      const url = pdfPreviewUrl ?? await _fetchPdfBlob()
       const a = document.createElement('a')
       a.href = url
       a.download = `cms1500_${visitType}.pdf`
       a.click()
-      URL.revokeObjectURL(url)
+      if (!pdfPreviewUrl) URL.revokeObjectURL(url)
     } catch {
       setClaimError('PDF download failed — please try again.')
     }
@@ -983,7 +1011,7 @@ export default function VisitFormPage() {
                   {claimError && <p className="text-xs text-red-600">{claimError}</p>}
                   <button
                     type="button"
-                    onClick={() => setShowCms1500(true)}
+                    onClick={handleOpenCms1500}
                     className="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
                   >
                     Preview CMS 1500 &amp; Submit
@@ -994,11 +1022,30 @@ export default function VisitFormPage() {
               {/* CMS 1500 Preview Modal */}
               {showCms1500 && (
                 <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 p-4 overflow-y-auto">
-                  <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl my-8">
+                  <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl my-8">
                     <div className="flex items-center justify-between border-b px-6 py-4">
                       <h3 className="text-base font-semibold text-gray-900">CMS 1500 Claim Preview</h3>
-                      <button type="button" onClick={() => setShowCms1500(false)} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
+                      <button type="button" onClick={handleCloseCms1500} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
                     </div>
+
+                    {/* Inline PDF preview */}
+                    <div className="px-6 pt-4">
+                      {pdfLoading && (
+                        <div className="flex items-center justify-center h-40 text-sm text-gray-500 gap-2">
+                          <span className="h-4 w-4 animate-spin rounded-full border-2 border-blue-400 border-t-transparent" />
+                          Loading form…
+                        </div>
+                      )}
+                      {pdfPreviewUrl && !pdfLoading && (
+                        <iframe
+                          src={pdfPreviewUrl}
+                          className="w-full rounded border border-gray-200"
+                          style={{ height: '520px' }}
+                          title="CMS 1500 Preview"
+                        />
+                      )}
+                    </div>
+
                     <div className="px-6 py-4 space-y-3 text-sm">
                       <table className="w-full text-xs border-collapse">
                         <tbody>
