@@ -22,6 +22,7 @@ const securityHeaders = [
       `connect-src 'self' ${apiUrl} https://nominatim.openstreetmap.org`,
       "img-src 'self' data:",
       "font-src 'self'",
+      "frame-src 'self' blob:",
       "frame-ancestors 'none'",
     ].join('; '),
   },
