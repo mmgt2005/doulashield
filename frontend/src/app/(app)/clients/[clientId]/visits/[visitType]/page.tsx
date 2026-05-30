@@ -675,7 +675,7 @@ export default function VisitFormPage() {
         )}
 
         <div className="space-y-4">
-          <div className="flex items-center justify-between border-b pb-1">
+          <div className="flex items-center gap-3 border-b pb-1">
             <h2 className="text-sm font-semibold text-gray-700">SOAP Note</h2>
             <button
               type="button"
@@ -734,13 +734,15 @@ export default function VisitFormPage() {
 
           {(['subjective', 'objective', 'assessment', 'plan'] as const).map((field) => (
             <div key={field}>
-              <label htmlFor={field} className="block text-sm font-medium text-gray-700 capitalize">{field}</label>
+              <label htmlFor={field} className="block text-sm text-gray-700">
+                <span className="font-medium capitalize">{field}</span>
+                <span className="ml-2 text-xs font-normal text-gray-400">— {SOAP_PLACEHOLDERS[field]}</span>
+              </label>
               <textarea
                 {...register(field)}
                 id={field}
                 rows={3}
-                placeholder={SOAP_PLACEHOLDERS[field]}
-                className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm placeholder:text-gray-400"
+                className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm"
               />
             </div>
           ))}
