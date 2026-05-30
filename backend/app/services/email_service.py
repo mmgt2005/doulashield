@@ -17,11 +17,20 @@ async def send_welcome_and_deposit(
     temp_password: str,
     checkout_url: str | None,
     frontend_origin: str,
+    role: str = "provider",
 ) -> None:
-    """Sends a combined welcome email with login credentials and the $99 deposit link."""
+    """Sends a combined welcome email with login credentials and (for providers) the $99 deposit link."""
     if not _configured():
         raise RuntimeError("Email not configured — set RESEND_API_KEY")
     resend.api_key = settings.RESEND_API_KEY
+
+    is_admin = role == "admin"
+    subject = (
+        "Welcome to DoulaShield — Your Account Details"
+        if is_admin
+        else "Welcome to DoulaShield — Your Account & Deposit Link"
+    )
+    account_label = "account" if is_admin else "provider account"
 
     deposit_section = ""
     if checkout_url:
@@ -41,13 +50,13 @@ async def send_welcome_and_deposit(
         {
             "from": settings.EMAIL_FROM,
             "to": [provider_email],
-            "subject": "Welcome to DoulaShield — Your Account & Deposit Link",
+            "subject": subject,
             "html": f"""
 <!DOCTYPE html>
 <html>
 <body style="font-family: sans-serif; color: #1a1a1a; max-width: 480px; margin: 0 auto; padding: 24px;">
   <p style="font-size: 16px;">Hi {provider_name},</p>
-  <p>Your DoulaShield provider account has been created. Here are your login details:</p>
+  <p>Your DoulaShield {account_label} has been created. Here are your login details:</p>
   <table style="margin:16px 0;border-collapse:collapse;">
     <tr>
       <td style="padding:4px 12px 4px 0;font-size:13px;color:#6b7280;">Email</td>
@@ -63,6 +72,42 @@ async def send_welcome_and_deposit(
     from the Settings page.
   </p>
   {deposit_section}
+  <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
+  <p style="color:#9ca3af;font-size:12px;">The DoulaShield Team</p>
+</body>
+</html>
+""",
+        },
+    )
+
+
+async def send_password_reset_email(email: str, name: str, reset_url: str) -> None:
+    if not _configured():
+        raise RuntimeError("Email not configured — set RESEND_API_KEY")
+    resend.api_key = settings.RESEND_API_KEY
+    await asyncio.to_thread(
+        resend.Emails.send,
+        {
+            "from": settings.EMAIL_FROM,
+            "to": [email],
+            "subject": "Reset your DoulaShield password",
+            "html": f"""
+<!DOCTYPE html>
+<html>
+<body style="font-family: sans-serif; color: #1a1a1a; max-width: 480px; margin: 0 auto; padding: 24px;">
+  <p style="font-size: 16px;">Hi {name},</p>
+  <p>We received a request to reset your DoulaShield password. Click the button below to set a new one.
+  This link expires in <strong>1 hour</strong>.</p>
+  <p style="margin: 28px 0;">
+    <a href="{reset_url}"
+       style="background:#2563eb;color:#fff;padding:12px 24px;border-radius:6px;
+              text-decoration:none;font-weight:600;font-size:15px;">
+      Reset Password &rarr;
+    </a>
+  </p>
+  <p style="color:#6b7280;font-size:13px;">
+    If you didn&rsquo;t request this, you can safely ignore this email &mdash; your password won&rsquo;t change.
+  </p>
   <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
   <p style="color:#9ca3af;font-size:12px;">The DoulaShield Team</p>
 </body>
