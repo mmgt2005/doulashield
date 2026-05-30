@@ -36,8 +36,8 @@ const SOAP_PLACEHOLDERS: Record<string, string> = {
 }
 
 const VISIT_BILLING = {
-  prenatal:    { code: 'T1032', modifier: 'U7', rate: 100,  diag: ['Z32.2', 'Z33.1'], note: 'Document topics/support provided' },
-  postnatal:   { code: 'T1032', modifier: 'U8', rate: 100,  diag: ['Z39.1', 'Z39.2'], note: 'Document physical/emotional recovery' },
+  prenatal:    { code: 'T1032', modifier: 'U7', rate: 100,  diag: ['Z32.2'], note: 'Document topics/support provided' },
+  postnatal:   { code: 'T1032', modifier: 'U8', rate: 100,  diag: ['Z39.1'], note: 'Document physical/emotional recovery' },
   labor:       { code: 'T1033', modifier: '',   rate: 1000, diag: ['Z33.1'],           note: 'One per pregnancy — include time-in/out' },
   crisis_loss: { code: 'T1032', modifier: 'U9', rate: 175,  diag: ['Z39.2'],           note: 'Capped at 2 per year' },
 } as const
@@ -444,6 +444,25 @@ export default function VisitFormPage() {
       setExistingClaim(res.data)
     } catch { /* non-blocking */ } finally {
       setClaimStatusChecking(false)
+    }
+  }
+
+  const handleDownloadPdf = async () => {
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/patients/${clientId}/visits/${visitType}/cms1500.pdf`,
+        { headers: { Authorization: `Bearer ${getAccessToken()}` } }
+      )
+      if (!res.ok) throw new Error(await res.text())
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `cms1500_${visitType}.pdf`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      setClaimError('PDF download failed — please try again.')
     }
   }
 
@@ -1001,14 +1020,13 @@ export default function VisitFormPage() {
                       {claimError && <p className="text-xs text-red-600">{claimError}</p>}
                     </div>
                     <div className="flex gap-3 border-t px-6 py-4">
-                      <a
-                        href={`${process.env.NEXT_PUBLIC_API_URL}/api/v1/patients/${clientId}/visits/${visitType}/cms1500.pdf`}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <button
+                        type="button"
+                        onClick={handleDownloadPdf}
                         className="rounded border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
                       >
                         Download PDF
-                      </a>
+                      </button>
                       <button
                         type="button"
                         onClick={handleSubmitClaim}

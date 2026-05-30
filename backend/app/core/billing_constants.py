@@ -6,8 +6,8 @@ SPECIALTY_CODE = "130"
 
 # visit_type prefix → (procedure_code, modifier, rate_cents, default_diag_codes, clinical_note)
 VISIT_BILLING: dict[str, tuple[str, str, int, list[str], str]] = {
-    "prenatal":    ("T1032", "U7", 10000,  ["Z32.2", "Z33.1"], "Document topics/support provided"),
-    "postnatal":   ("T1032", "U8", 10000,  ["Z39.1", "Z39.2"], "Document physical/emotional recovery"),
+    "prenatal":    ("T1032", "U7", 10000,  ["Z32.2"], "Document topics/support provided"),
+    "postnatal":   ("T1032", "U8", 10000,  ["Z39.1"], "Document physical/emotional recovery"),
     "labor":       ("T1033", "",  100000,  ["Z33.1"],           "One per pregnancy — include time-in/out"),
     "crisis_loss": ("T1032", "U9", 17500,  ["Z39.2"],           "Capped at 2 per year"),
 }

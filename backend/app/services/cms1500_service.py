@@ -7,6 +7,7 @@ The blank form is the 1500CMS.COM AcroForm PDF stored at app/static/cms1500_blan
 from __future__ import annotations
 
 import io
+import re
 from datetime import date
 from decimal import Decimal
 from pathlib import Path
@@ -47,20 +48,83 @@ def _set_radio(writer: PdfWriter, page_idx: int, field_name: str, on_state: str)
             return
 
 
+_STATE_NAMES: dict[str, str] = {
+    "alabama": "AL", "alaska": "AK", "arizona": "AZ", "arkansas": "AR",
+    "california": "CA", "colorado": "CO", "connecticut": "CT", "delaware": "DE",
+    "florida": "FL", "georgia": "GA", "hawaii": "HI", "idaho": "ID",
+    "illinois": "IL", "indiana": "IN", "iowa": "IA", "kansas": "KS",
+    "kentucky": "KY", "louisiana": "LA", "maine": "ME", "maryland": "MD",
+    "massachusetts": "MA", "michigan": "MI", "minnesota": "MN", "mississippi": "MS",
+    "missouri": "MO", "montana": "MT", "nebraska": "NE", "nevada": "NV",
+    "new hampshire": "NH", "new jersey": "NJ", "new mexico": "NM", "new york": "NY",
+    "north carolina": "NC", "north dakota": "ND", "ohio": "OH", "oklahoma": "OK",
+    "oregon": "OR", "pennsylvania": "PA", "rhode island": "RI", "south carolina": "SC",
+    "south dakota": "SD", "tennessee": "TN", "texas": "TX", "utah": "UT",
+    "vermont": "VT", "virginia": "VA", "washington": "WA", "west virginia": "WV",
+    "wisconsin": "WI", "wyoming": "WY",
+}
+
+
 def _parse_address(address: str) -> tuple[str, str, str, str]:
     """
-    Best-effort split of '123 Main St, Philadelphia, PA 19103' into
-    (street, city, state, zip).
+    Robust split of an address string into (street, city, state, zip).
+    Handles both simple 'Street, City, ST ZIP' and Nominatim full-form
+    'Street, Neighborhood, City, County, State, ZIP, Country' formats.
     """
     if not address:
         return "", "", "", ""
-    parts = [p.strip() for p in address.split(",")]
-    street = parts[0] if parts else ""
-    city = parts[1] if len(parts) > 1 else ""
-    state_zip = parts[2] if len(parts) > 2 else ""
-    state_zip_parts = state_zip.split()
-    state = state_zip_parts[0] if state_zip_parts else ""
-    zip_code = state_zip_parts[1] if len(state_zip_parts) > 1 else ""
+    parts = [p.strip() for p in address.split(",") if p.strip()]
+    if not parts:
+        return "", "", "", ""
+
+    street = parts[0]
+    zip_code = ""
+    state = ""
+
+    # Scan all parts (from the end) for zip and state
+    for part in reversed(parts[1:]):
+        part_s = part.strip()
+        # "PA 19103" pattern
+        m = re.match(r"([A-Z]{2})\s+(\d{5}(?:-\d{4})?)", part_s)
+        if m:
+            state = state or m.group(1)
+            zip_code = zip_code or m.group(2)[:5]
+            continue
+        # Pure 5-digit ZIP
+        if re.match(r"^\d{5}(?:-\d{4})?$", part_s):
+            zip_code = zip_code or part_s[:5]
+            continue
+        # 2-letter state abbreviation
+        if re.match(r"^[A-Z]{2}$", part_s):
+            state = state or part_s
+            continue
+        # Full state name (e.g. "Pennsylvania" from Nominatim)
+        if not state and part_s.lower() in _STATE_NAMES:
+            state = _STATE_NAMES[part_s.lower()]
+
+    # City: prefer the part immediately before the state/zip section.
+    # For simple format "Street, City, ST ZIP" → parts[1] is city.
+    # For Nominatim "Street, Neighborhood, City, County, State, ZIP, Country"
+    # → skip trailing non-city parts and take the last plausible city part.
+    # Heuristic: skip parts that are zip codes, state names/abbrevs, or "United States".
+    skip_set = {"united states", "usa"}
+    city = ""
+    for part in parts[1:]:
+        part_s = part.strip()
+        if re.match(r"^\d{5}(?:-\d{4})?$", part_s):
+            continue
+        if re.match(r"^[A-Z]{2}$", part_s):
+            continue
+        if re.match(r"([A-Z]{2})\s+(\d{5})", part_s):
+            continue
+        if part_s.lower() in _STATE_NAMES:
+            continue
+        if part_s.lower() in skip_set:
+            continue
+        # Accept the first non-skipped part as city
+        city = part_s
+        break
+
     return street, city, state, zip_code
 
 
