@@ -20,7 +20,9 @@ export default function AdminUsersPage() {
   const [createEmail, setCreateEmail] = useState('')
   const [createFullName, setCreateFullName] = useState('')
   const [createError, setCreateError] = useState<string | null>(null)
-  const [creating, setCreating] = useState(false)
+  const [creating, setCreating] = useState<'only' | 'send' | false>(false)
+  const [credentials, setCredentials] = useState<{ email: string; password: string } | null>(null)
+  const [copied, setCopied] = useState(false)
 
   const headers = { Authorization: `Bearer ${getAccessToken()}` }
   const api = process.env.NEXT_PUBLIC_API_URL
@@ -54,6 +56,20 @@ export default function AdminUsersPage() {
       await reload()
     } catch (e: unknown) {
       const msg = axios.isAxiosError(e) ? e.response?.data?.detail : 'Failed to send email'
+      showToast(`Error: ${msg}`)
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const sendWelcomeEmail = async (userId: string, email: string) => {
+    setActionLoading(`welcome-${userId}`)
+    try {
+      await axios.post(`${api}/api/v1/admin/billing/send-welcome-email`, { provider_user_id: userId }, { headers })
+      showToast(`Welcome email sent to ${email}`)
+      await reload()
+    } catch (e: unknown) {
+      const msg = axios.isAxiosError(e) ? e.response?.data?.detail : 'Failed to send welcome email'
       showToast(`Error: ${msg}`)
     } finally {
       setActionLoading(null)
@@ -107,15 +123,24 @@ export default function AdminUsersPage() {
     setCreateEmail('')
     setCreateFullName('')
     setCreateError(null)
+    setCredentials(null)
+    setCopied(false)
     setShowCreate(true)
   }
 
-  const submitCreateAndInvite = async () => {
+  const closeCreateModal = () => {
+    setShowCreate(false)
+    setCredentials(null)
+    setCopied(false)
+    reload()
+  }
+
+  const submitCreateAndSend = async () => {
     if (!createEmail.trim()) {
       setCreateError('Email is required')
       return
     }
-    setCreating(true)
+    setCreating('send')
     setCreateError(null)
     try {
       await axios.post(
@@ -131,6 +156,40 @@ export default function AdminUsersPage() {
       setCreateError(String(msg))
     } finally {
       setCreating(false)
+    }
+  }
+
+  const submitCreateOnly = async () => {
+    if (!createEmail.trim()) {
+      setCreateError('Email is required')
+      return
+    }
+    setCreating('only')
+    setCreateError(null)
+    try {
+      const res = await axios.post<{ user_id: string; email: string; temp_password: string }>(
+        `${api}/api/v1/admin/billing/create-account-only`,
+        { email: createEmail.trim(), full_name: createFullName.trim() || null },
+        { headers },
+      )
+      setCredentials({ email: res.data.email, password: res.data.temp_password })
+      await reload()
+    } catch (e: unknown) {
+      const msg = axios.isAxiosError(e) ? e.response?.data?.detail : 'Failed to create account'
+      setCreateError(String(msg))
+    } finally {
+      setCreating(false)
+    }
+  }
+
+  const copyPassword = async () => {
+    if (!credentials) return
+    try {
+      await navigator.clipboard.writeText(credentials.password)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      // fallback: select text
     }
   }
 
@@ -218,9 +277,18 @@ export default function AdminUsersPage() {
                       <div className="flex items-center gap-2 flex-wrap">
                         {!depositPaid && (
                           <button
+                            onClick={() => sendWelcomeEmail(u.id, u.email)}
+                            disabled={actionLoading === `welcome-${u.id}`}
+                            className="rounded bg-indigo-600 px-2 py-1 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-50 whitespace-nowrap"
+                          >
+                            {actionLoading === `welcome-${u.id}` ? 'Sending…' : 'Send Welcome Email'}
+                          </button>
+                        )}
+                        {!depositPaid && (
+                          <button
                             onClick={() => sendDepositEmail(u.id, u.email)}
                             disabled={actionLoading === `deposit-${u.id}`}
-                            className="rounded bg-blue-600 px-2 py-1 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50 whitespace-nowrap"
+                            className="rounded border border-gray-300 px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50 whitespace-nowrap"
                           >
                             {actionLoading === `deposit-${u.id}` ? 'Sending…' : 'Send Deposit Email'}
                           </button>
@@ -256,51 +324,97 @@ export default function AdminUsersPage() {
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md space-y-4">
-            <h3 className="text-base font-semibold text-gray-900">Create Provider Account</h3>
-            <div className="space-y-3">
-              <div>
-                <label htmlFor="create-email" className="block text-sm font-medium text-gray-700">Email *</label>
-                <input
-                  id="create-email"
-                  type="email"
-                  value={createEmail}
-                  onChange={(e) => setCreateEmail(e.target.value)}
-                  placeholder="provider@example.com"
-                  className="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label htmlFor="create-name" className="block text-sm font-medium text-gray-700">Full name</label>
-                <input
-                  id="create-name"
-                  type="text"
-                  value={createFullName}
-                  onChange={(e) => setCreateFullName(e.target.value)}
-                  placeholder="Jane Smith (optional)"
-                  className="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                />
-              </div>
-              <p className="text-xs text-gray-500">
-                A welcome email will be sent automatically with login credentials and the $99 deposit payment link.
-              </p>
-            </div>
-            {createError && <p className="text-xs text-red-600">{createError}</p>}
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setShowCreate(false)}
-                disabled={creating}
-                className="rounded border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={submitCreateAndInvite}
-                disabled={creating}
-                className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-              >
-                {creating ? 'Creating…' : 'Create Account & Send Email'}
-              </button>
-            </div>
+            {credentials ? (
+              /* One-time credential display */
+              <>
+                <h3 className="text-base font-semibold text-gray-900">Account Created</h3>
+                <p className="text-sm text-gray-500">
+                  Share these credentials securely with the provider.
+                </p>
+                <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-xs text-gray-500 w-16 shrink-0">Email</span>
+                    <span className="text-sm font-medium text-gray-900 flex-1">{credentials.email}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-xs text-gray-500 w-16 shrink-0">Password</span>
+                    <span className="text-sm font-semibold font-mono text-gray-900 flex-1 select-all">{credentials.password}</span>
+                  </div>
+                </div>
+                <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2">
+                  ⚠ Save this password — it will not be shown again.
+                </p>
+                <div className="flex justify-between gap-3">
+                  <button
+                    onClick={copyPassword}
+                    className="rounded border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  >
+                    {copied ? '✓ Copied' : 'Copy Password'}
+                  </button>
+                  <button
+                    onClick={closeCreateModal}
+                    className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                  >
+                    Done
+                  </button>
+                </div>
+              </>
+            ) : (
+              /* Create form */
+              <>
+                <h3 className="text-base font-semibold text-gray-900">Create Provider Account</h3>
+                <div className="space-y-3">
+                  <div>
+                    <label htmlFor="create-email" className="block text-sm font-medium text-gray-700">Email *</label>
+                    <input
+                      id="create-email"
+                      type="email"
+                      value={createEmail}
+                      onChange={(e) => setCreateEmail(e.target.value)}
+                      placeholder="provider@example.com"
+                      className="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="create-name" className="block text-sm font-medium text-gray-700">Full name</label>
+                    <input
+                      id="create-name"
+                      type="text"
+                      value={createFullName}
+                      onChange={(e) => setCreateFullName(e.target.value)}
+                      placeholder="Jane Smith (optional)"
+                      className="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+                {createError && <p className="text-xs text-red-600">{createError}</p>}
+                <div className="flex items-center justify-between gap-3 pt-1">
+                  <button
+                    onClick={() => setShowCreate(false)}
+                    disabled={creating !== false}
+                    className="rounded border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={submitCreateOnly}
+                      disabled={creating !== false}
+                      className="rounded border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                    >
+                      {creating === 'only' ? 'Creating…' : 'Create Account Only'}
+                    </button>
+                    <button
+                      onClick={submitCreateAndSend}
+                      disabled={creating !== false}
+                      className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      {creating === 'send' ? 'Creating…' : 'Create & Send Email'}
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

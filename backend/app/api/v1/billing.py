@@ -16,11 +16,14 @@ from app.core.config import settings
 from app.dependencies import CurrentUser, get_audit, get_current_user, get_db, require_admin
 from app.models.user import User
 from app.schemas.admin import UserCreate
+from app.core.security import hash_password
 from app.schemas.billing import (
     BillingStatusRead,
+    CreateAccountOnlyRequest,
     CreateAndInviteRequest,
     GenerateDepositLinkRequest,
     LinkStripeCustomerRequest,
+    SendWelcomeEmailRequest,
     SignEscrowRequest,
     StartSubscriptionRequest,
     UserWithBillingRead,
@@ -256,6 +259,79 @@ async def create_and_invite(
         extra_context={"email": str(body.email), "deposit_link_included": checkout_url is not None},
     )
     return {"user_id": str(new_user_read.id), "email": str(body.email), "sent_to": str(body.email)}
+
+
+@router.post("/admin/billing/create-account-only", status_code=status.HTTP_201_CREATED)
+async def create_account_only(
+    body: CreateAccountOnlyRequest,
+    current_admin: Annotated[CurrentUser, Depends(require_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    audit: Annotated[AuditLogger, Depends(get_audit)],
+    request: Request,
+) -> dict:
+    existing = await db.execute(select(User).where(User.email == str(body.email)))
+    if existing.scalar_one_or_none():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="A user with this email already exists")
+
+    temp_password = _generate_temp_password()
+    new_user_read = await AdminService(db).create_user(
+        UserCreate(email=str(body.email), password=temp_password, full_name=body.full_name, role="provider")
+    )
+
+    await audit.log(
+        action="CREATE_PROVIDER_ACCOUNT_ONLY",
+        resource_type="user",
+        resource_id=new_user_read.id,
+        user_id=current_admin.id,
+        ip_address=request.headers.get("X-Forwarded-For", request.client.host if request.client else ""),
+        user_agent=request.headers.get("User-Agent", ""),
+        extra_context={"email": str(body.email)},
+    )
+    return {"user_id": str(new_user_read.id), "email": str(body.email), "temp_password": temp_password}
+
+
+@router.post("/admin/billing/send-welcome-email")
+async def send_welcome_email(
+    body: SendWelcomeEmailRequest,
+    current_admin: Annotated[CurrentUser, Depends(require_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    audit: Annotated[AuditLogger, Depends(get_audit)],
+    request: Request,
+) -> dict:
+    if not email_service._configured():
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Email not configured — set RESEND_API_KEY")
+
+    provider = await _get_provider(body.provider_user_id, db)
+
+    temp_password = _generate_temp_password()
+    provider.password_hash = hash_password(temp_password)  # type: ignore[assignment]
+    await db.commit()
+
+    checkout_url: str | None = None
+    if stripe_service._configured() and settings.STRIPE_DEPOSIT_PRICE_ID:
+        try:
+            checkout_url = await stripe_service.create_deposit_checkout_link(provider, db)
+        except Exception:
+            checkout_url = None
+
+    await email_service.send_welcome_and_deposit(
+        provider_email=provider.email,
+        provider_name=provider.full_name or provider.email,
+        temp_password=temp_password,
+        checkout_url=checkout_url,
+        frontend_origin=settings.FRONTEND_ORIGIN,
+    )
+
+    await audit.log(
+        action="SEND_WELCOME_EMAIL",
+        resource_type="user",
+        resource_id=provider.id,
+        user_id=current_admin.id,
+        ip_address=request.headers.get("X-Forwarded-For", request.client.host if request.client else ""),
+        user_agent=request.headers.get("User-Agent", ""),
+        extra_context={"sent_to": provider.email, "deposit_link_included": checkout_url is not None},
+    )
+    return {"sent_to": provider.email}
 
 
 @router.post("/admin/billing/generate-deposit-link")

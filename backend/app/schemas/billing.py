@@ -40,6 +40,15 @@ class CreateAndInviteRequest(BaseModel):
     full_name: str | None = None
 
 
+class CreateAccountOnlyRequest(BaseModel):
+    email: EmailStr
+    full_name: str | None = None
+
+
+class SendWelcomeEmailRequest(BaseModel):
+    provider_user_id: uuid.UUID
+
+
 class UserWithBillingRead(BaseModel):
     id: uuid.UUID
     email: str
