@@ -146,6 +146,40 @@ async def stripe_webhook(
                     user_agent="",
                     extra_context={"stripe_customer_id": customer_id, "checkout_session_id": data.get("id")},
                 )
+                transfer = await stripe_service.transfer_to_partner(
+                    data.get("amount_total", 0),
+                    {"type": "deposit", "user_id": user_id_str, "checkout_session_id": data.get("id")},
+                )
+                if transfer:
+                    await audit.log(
+                        action="PARTNER_TRANSFER",
+                        resource_type="user",
+                        resource_id=uid,
+                        ip_address="stripe-webhook",
+                        user_agent="",
+                        extra_context={"transfer_id": transfer["transfer_id"], "amount_cents": transfer["amount"], "reason": "deposit"},
+                    )
+
+    elif event_type == "invoice.payment_succeeded":
+        sub_id = data.get("subscription")
+        amount_paid = data.get("amount_paid", 0)
+        if sub_id and amount_paid > 0:
+            result = await db.execute(select(User).where(User.stripe_subscription_id == sub_id))
+            user = result.scalar_one_or_none()
+            if user:
+                transfer = await stripe_service.transfer_to_partner(
+                    amount_paid,
+                    {"type": "subscription", "user_id": str(user.id), "invoice_id": data.get("id")},
+                )
+                if transfer:
+                    await audit.log(
+                        action="PARTNER_TRANSFER",
+                        resource_type="user",
+                        resource_id=user.id,
+                        ip_address="stripe-webhook",
+                        user_agent="",
+                        extra_context={"transfer_id": transfer["transfer_id"], "amount_cents": transfer["amount"], "reason": "subscription"},
+                    )
 
     elif event_type in ("customer.subscription.created", "customer.subscription.updated", "customer.subscription.deleted"):
         user_id_str = (data.get("metadata") or {}).get("user_id")

@@ -122,3 +122,22 @@ async def process_escrow_deduction(
     provider.escrow_balance_remaining = new_balance
     await db.commit()
     return {"amount_deducted": float(deduction), "balance_after": float(new_balance)}
+
+
+async def transfer_to_partner(amount_cents: int, metadata: dict) -> dict | None:
+    """Transfers STRIPE_PARTNER_SHARE of amount_cents to the configured partner account.
+    Returns transfer details or None if partner account not configured or amount is zero."""
+    if not settings.STRIPE_PARTNER_ACCOUNT_ID or amount_cents <= 0:
+        return None
+    partner_amount = int(amount_cents * settings.STRIPE_PARTNER_SHARE)
+    if partner_amount <= 0:
+        return None
+    _init()
+    transfer = await asyncio.to_thread(
+        stripe.Transfer.create,
+        amount=partner_amount,
+        currency="usd",
+        destination=settings.STRIPE_PARTNER_ACCOUNT_ID,
+        metadata=metadata,
+    )
+    return {"transfer_id": transfer.id, "amount": partner_amount}
