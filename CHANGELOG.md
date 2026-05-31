@@ -10,11 +10,14 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ## [Unreleased]
 
+### Changed
+- **Address autocomplete switched from Photon to Radar.io**: `geocodeAddress()` and `suggestAddresses()` in `geo.ts` now call `api.radar.io` endpoints (`/v1/search/autocomplete` and `/v1/geocode/forward`) with an `Authorization` header using `NEXT_PUBLIC_RADAR_API_KEY`; Radar's free tier allows 100k requests/month, returns structured address fields with `stateCode` already as a two-letter abbreviation (no lookup table needed), and filters to `country=US`; CSP `connect-src` updated from `photon.komoot.io` to `api.radar.io`; `NEXT_PUBLIC_RADAR_API_KEY` added to `.env.example`
+
+### Fixed
+- **Provider address field cut off in Settings**: `AddressAutocomplete` in the "Billing provider information" section was missing the `inputClassName` prop, so the input rendered unstyled and too narrow; added `w-full` class so the address field spans the full column width
+
 ### Fixed
 - **Address autocomplete dropdown not appearing**: CSP `connect-src` still listed `nominatim.openstreetmap.org` after switching to Photon, causing the browser to silently block every autocomplete fetch; replaced with `photon.komoot.io` in `next.config.js`
-
-### Changed
-- **Address autocomplete switched from Nominatim to Photon (komoot.io)**: `geocodeAddress()` and `suggestAddresses()` in `geo.ts` now call `photon.komoot.io` instead of `nominatim.openstreetmap.org`; Photon is purpose-built for autocomplete with no documented rate limit, no API key required, and returns clean GeoJSON with structured fields (`housenumber`, `street`, `city`, `state`, `postcode`) rather than requiring `addressdetails=1` and custom parsing; `countrycodes=us` restricts all results to US addresses; coordinates are standard GeoJSON `[lng, lat]` order, swapped on read
 
 ### Added
 - **Provider billing address and phone in Settings**: providers can now enter their practice address (with autocomplete, green geocoded-pin indicator) and phone number in Provider Settings; these fields are stored per-user in new `provider_address` and `provider_phone` columns (migration 0018); the address auto-populates CMS 1500 Box 33 (billing provider street/city/state/ZIP) and the phone populates the Box 33 phone field, replacing the previous placeholder "NPI: xxx Taxonomy: xxx" text in that field
