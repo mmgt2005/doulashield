@@ -41,6 +41,8 @@ class EligibilityService:
             zipzign_connected=zipzign_configured,
             zone=user.zone,
             counties=json.loads(user.counties) if user.counties else None,
+            provider_address=user.provider_address,
+            provider_phone=user.provider_phone,
         )
 
     async def update_provider_settings(
@@ -75,6 +77,10 @@ class EligibilityService:
             user.zone = data.zone or None
         if data.counties is not None:
             user.counties = json.dumps(data.counties) if data.counties else None
+        if data.provider_address is not None:
+            user.provider_address = data.provider_address or None
+        if data.provider_phone is not None:
+            user.provider_phone = data.provider_phone or None
 
         await self._db.commit()
         await self._db.refresh(user)
@@ -100,6 +106,8 @@ class EligibilityService:
             zipzign_connected=zipzign_configured,
             zone=user.zone,
             counties=json.loads(user.counties) if user.counties else None,
+            provider_address=user.provider_address,
+            provider_phone=user.provider_phone,
         )
 
     async def check_eligibility(

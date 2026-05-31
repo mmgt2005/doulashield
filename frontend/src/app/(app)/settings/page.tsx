@@ -6,9 +6,12 @@ import axios from 'axios'
 import { getAccessToken } from '@/lib/auth'
 import { useAuthStore } from '@/store/auth-store'
 import { BillingStatus } from '@/types/domain'
+import AddressAutocomplete from '@/components/ui/AddressAutocomplete'
 
 interface SettingsFormData {
   npi: string
+  provider_address: string
+  provider_phone: string
   availity_client_id: string
   availity_client_secret: string
   uhc_client_id: string
@@ -72,6 +75,7 @@ export default function SettingsPage() {
   const [connected, setConnected] = useState(false)
   const [uhcConnected, setUhcConnected] = useState(false)
   const [zipzignConnected, setZipzignConnected] = useState(false)
+  const [providerAddressGeocoded, setProviderAddressGeocoded] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
   const [billing, setBilling] = useState<BillingStatus | null>(null)
@@ -93,7 +97,7 @@ export default function SettingsPage() {
     if (!isAuthenticated) return
     const headers = { Authorization: `Bearer ${getAccessToken()}` }
     axios
-      .get<{ npi: string | null; availity_connected: boolean; uhc_connected: boolean; telehealth_link: string | null; contact_email: string | null; zipzign_connected: boolean; zone: string | null; counties: string[] | null }>(
+      .get<{ npi: string | null; availity_connected: boolean; uhc_connected: boolean; telehealth_link: string | null; contact_email: string | null; zipzign_connected: boolean; zone: string | null; counties: string[] | null; provider_address: string | null; provider_phone: string | null }>(
         `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/me/provider-settings`,
         { headers }
       )
@@ -103,6 +107,11 @@ export default function SettingsPage() {
         if (r.data.contact_email) setValue('contact_email', r.data.contact_email)
         if (r.data.zone) setValue('zone', r.data.zone)
         if (r.data.counties?.length) setValue('counties', r.data.counties)
+        if (r.data.provider_address) {
+          setValue('provider_address', r.data.provider_address)
+          setProviderAddressGeocoded(true)
+        }
+        if (r.data.provider_phone) setValue('provider_phone', r.data.provider_phone)
         setConnected(r.data.availity_connected)
         setUhcConnected(r.data.uhc_connected ?? false)
         setZipzignConnected(r.data.zipzign_connected)
@@ -171,6 +180,8 @@ export default function SettingsPage() {
       if (data.zipzign_api_key) body.zipzign_api_key = data.zipzign_api_key
       body.zone = data.zone || ''
       body.counties = data.counties || []
+      body.provider_address = data.provider_address || ''
+      body.provider_phone = data.provider_phone || ''
 
       const res = await axios.patch<{ npi: string | null; availity_connected: boolean; uhc_connected: boolean; zipzign_connected: boolean }>(
         `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/me/provider-settings`,
@@ -336,20 +347,58 @@ export default function SettingsPage() {
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 bg-white p-6 rounded-lg border border-gray-200">
-        <div>
-          <h2 className="text-sm font-semibold text-gray-700 mb-3">NPI</h2>
-          <label htmlFor="npi" className="block text-sm font-medium text-gray-700">
-            National Provider Identifier
-          </label>
-          <input
-            {...register('npi')}
-            id="npi"
-            type="text"
-            inputMode="numeric"
-            maxLength={10}
-            placeholder="10-digit NPI"
-            className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:w-48"
-          />
+        <div className="space-y-4">
+          <h2 className="text-sm font-semibold text-gray-700">Billing provider information</h2>
+          <p className="text-xs text-gray-500">
+            Used to populate Box 33 on the CMS 1500 claim form.
+          </p>
+          <div>
+            <label htmlFor="npi" className="block text-sm font-medium text-gray-700">
+              National Provider Identifier (NPI)
+            </label>
+            <input
+              {...register('npi')}
+              id="npi"
+              type="text"
+              inputMode="numeric"
+              maxLength={10}
+              placeholder="10-digit NPI"
+              className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:w-48"
+            />
+          </div>
+          <div>
+            <label htmlFor="provider_address" className="block text-sm font-medium text-gray-700">
+              Practice / billing address
+            </label>
+            <p className="text-xs text-gray-500 mb-1">Appears in Box 33 of the CMS 1500. Select from suggestions to ensure city is captured correctly.</p>
+            <AddressAutocomplete
+              id="provider_address"
+              value={watch('provider_address') ?? ''}
+              onChange={(v) => {
+                setValue('provider_address', v)
+                setProviderAddressGeocoded(false)
+              }}
+              onSelect={(addr) => {
+                setValue('provider_address', addr)
+                setProviderAddressGeocoded(true)
+              }}
+              placeholder="Start typing your address…"
+              geocoded={providerAddressGeocoded}
+            />
+          </div>
+          <div>
+            <label htmlFor="provider_phone" className="block text-sm font-medium text-gray-700">
+              Practice phone number
+            </label>
+            <input
+              {...register('provider_phone')}
+              id="provider_phone"
+              type="tel"
+              maxLength={20}
+              placeholder="(215) 555-0100"
+              className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:w-48"
+            />
+          </div>
         </div>
 
         <div className="border-t pt-4 space-y-4">

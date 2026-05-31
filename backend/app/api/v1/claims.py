@@ -102,6 +102,8 @@ async def download_cms1500(
             provider_data={
                 "npi": user.npi or "",
                 "full_name": user.full_name or "",
+                "provider_address": user.provider_address or "",
+                "provider_phone": user.provider_phone or "",
             },
         )
     except Exception as exc:

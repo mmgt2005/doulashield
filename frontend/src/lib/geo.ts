@@ -97,11 +97,15 @@ export async function suggestAddresses(query: string): Promise<AddressSuggestion
     )
     const data = await res.json()
     if (!Array.isArray(data)) return []
-    return data.map((r: { address: NominatimAddressComponents; lat: string; lon: string }) => ({
-      label: formatLabel(r.address),
-      lat: parseFloat(r.lat),
-      lng: parseFloat(r.lon),
-    }))
+    return data
+      .filter((r: { address: NominatimAddressComponents }) =>
+        !!(r.address.city ?? r.address.town ?? r.address.village ?? r.address.hamlet ?? r.address.municipality)
+      )
+      .map((r: { address: NominatimAddressComponents; lat: string; lon: string }) => ({
+        label: formatLabel(r.address),
+        lat: parseFloat(r.lat),
+        lng: parseFloat(r.lon),
+      }))
   } catch {
     return []
   }

@@ -41,6 +41,8 @@ class ProviderSettingsUpdate(BaseModel):
     zipzign_api_key: str | None = None  # plain text on write; encrypted on save; never returned
     zone: str | None = None       # e.g. 'SE' | 'SW' | 'LC' | 'NE' | 'NW'
     counties: list[str] | None = None  # county names within the selected zone
+    provider_address: str | None = None
+    provider_phone: str | None = None
 
 
 class ProviderSettingsRead(BaseModel):
@@ -52,6 +54,8 @@ class ProviderSettingsRead(BaseModel):
     zipzign_connected: bool
     zone: str | None
     counties: list[str] | None
+    provider_address: str | None
+    provider_phone: str | None
 
 
 class AuditLogRead(BaseModel):

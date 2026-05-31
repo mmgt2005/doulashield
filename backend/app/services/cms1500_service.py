@@ -144,7 +144,7 @@ def generate_pdf(
                        address (str|None), referring_provider_npi (str|None)
     visit_data keys:   visit_type (str), visit_date (date|str|None), location_type (str|None),
                        prior_auth_number (str|None)
-    provider_data keys: npi (str), full_name (str)
+    provider_data keys: npi (str), full_name (str), provider_address (str), provider_phone (str)
     """
     proc_code, modifier, rate_cents, diag_codes, _ = billing_for_visit(
         visit_data.get("visit_type", "")
@@ -182,6 +182,9 @@ def generate_pdf(
     # Provider info
     npi = provider_data.get("npi", "")
     provider_name = provider_data.get("full_name", "")
+    prov_addr = provider_data.get("provider_address", "")
+    prov_phone = provider_data.get("provider_phone", "")
+    doc_street, doc_city, doc_state, doc_zip = _parse_address(prov_addr)
 
     # Diagnosis pointer (A, AB, etc.)
     diag_ptr = "".join(chr(ord("A") + i) for i in range(len(diag_codes))) or "A"
@@ -260,8 +263,9 @@ def generate_pdf(
 
         # Box 33 — Billing provider
         "doc_name":     provider_name,
-        "doc_street":   "",
-        "doc_location": f"NPI: {npi}  Taxonomy: {DOULA_TAXONOMY}",
+        "doc_street":   doc_street,
+        "doc_location": f"{doc_city}, {doc_state} {doc_zip}".strip(", ") if doc_city else "",
+        "doc_phone":    prov_phone,
 
         # Box 33a — NPI
         "pin": npi,

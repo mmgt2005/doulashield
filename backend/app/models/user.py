@@ -31,6 +31,8 @@ class User(Base):
     zipzign_api_key_encrypted: Mapped[str | None] = mapped_column(Text, nullable=True)
     zone: Mapped[str | None] = mapped_column(String(4), nullable=True)
     counties: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON array e.g. '["Bucks","Chester"]'
+    provider_address: Mapped[str | None] = mapped_column(Text, nullable=True)
+    provider_phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
 
     # Billing
     stripe_customer_id: Mapped[str | None] = mapped_column(Text, nullable=True)
