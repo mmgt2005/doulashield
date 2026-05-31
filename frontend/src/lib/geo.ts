@@ -11,26 +11,17 @@ export function haversineFeet(lat1: number, lon1: number, lat2: number, lon2: nu
   return R * c * 3.28084 // metres → feet
 }
 
-export async function geocodeAddress(
-  address: string
-): Promise<{ lat: number; lng: number } | null> {
-  try {
-    const res = await fetch(
-      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1`,
-      { headers: { 'Accept-Language': 'en' } }
-    )
-    const data = await res.json()
-    if (!Array.isArray(data) || data.length === 0) return null
-    return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) }
-  } catch {
-    return null
-  }
-}
-
-export interface AddressSuggestion {
-  label: string
-  lat: number
-  lng: number
+// Photon GeoJSON feature properties
+interface PhotonProperties {
+  housenumber?: string
+  street?: string
+  city?: string
+  town?: string
+  village?: string
+  hamlet?: string
+  state?: string
+  postcode?: string
+  countrycode?: string
 }
 
 // US state full name → abbreviation
@@ -51,36 +42,19 @@ const US_STATE_ABBR: Record<string, string> = {
   'Puerto Rico': 'PR',
 }
 
-interface NominatimAddressComponents {
-  house_number?: string
-  road?: string
-  city?: string
-  town?: string
-  village?: string
-  hamlet?: string
-  municipality?: string
-  state?: string
-  postcode?: string
-}
-
-function formatLabel(components: NominatimAddressComponents): string {
+function formatLabel(props: PhotonProperties): string {
   const parts: string[] = []
 
-  const street = components.house_number && components.road
-    ? `${components.house_number} ${components.road}`
-    : components.road ?? null
+  const street = props.housenumber && props.street
+    ? `${props.housenumber} ${props.street}`
+    : props.street ?? null
   if (street) parts.push(street)
 
-  const city =
-    components.city ??
-    components.town ??
-    components.village ??
-    components.hamlet ??
-    components.municipality ?? null
+  const city = props.city ?? props.town ?? props.village ?? props.hamlet ?? null
   if (city) parts.push(city)
 
-  const stateAbbr = US_STATE_ABBR[components.state ?? ''] ?? components.state
-  const postcode = components.postcode
+  const stateAbbr = US_STATE_ABBR[props.state ?? ''] ?? props.state
+  const postcode = props.postcode
   if (stateAbbr && postcode) parts.push(`${stateAbbr} ${postcode}`)
   else if (stateAbbr) parts.push(stateAbbr)
   else if (postcode) parts.push(postcode)
@@ -88,23 +62,44 @@ function formatLabel(components: NominatimAddressComponents): string {
   return parts.join(', ')
 }
 
+export interface AddressSuggestion {
+  label: string
+  lat: number
+  lng: number
+}
+
+export async function geocodeAddress(
+  address: string
+): Promise<{ lat: number; lng: number } | null> {
+  try {
+    const res = await fetch(
+      `https://photon.komoot.io/api/?q=${encodeURIComponent(address)}&limit=1&lang=en&countrycodes=us`
+    )
+    const data = await res.json()
+    if (!data.features?.length) return null
+    const [lng, lat] = data.features[0].geometry.coordinates
+    return { lat, lng }
+  } catch {
+    return null
+  }
+}
+
 export async function suggestAddresses(query: string): Promise<AddressSuggestion[]> {
   if (query.length < 3) return []
   try {
     const res = await fetch(
-      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5&addressdetails=1`,
-      { headers: { 'Accept-Language': 'en' } }
+      `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=5&lang=en&countrycodes=us`
     )
     const data = await res.json()
-    if (!Array.isArray(data)) return []
-    return data
-      .filter((r: { address: NominatimAddressComponents }) =>
-        !!(r.address.city ?? r.address.town ?? r.address.village ?? r.address.hamlet ?? r.address.municipality)
+    if (!data.features?.length) return []
+    return data.features
+      .filter((f: { properties: PhotonProperties }) =>
+        !!(f.properties.city ?? f.properties.town ?? f.properties.village ?? f.properties.hamlet)
       )
-      .map((r: { address: NominatimAddressComponents; lat: string; lon: string }) => ({
-        label: formatLabel(r.address),
-        lat: parseFloat(r.lat),
-        lng: parseFloat(r.lon),
+      .map((f: { properties: PhotonProperties; geometry: { coordinates: [number, number] } }) => ({
+        label: formatLabel(f.properties),
+        lat: f.geometry.coordinates[1],
+        lng: f.geometry.coordinates[0],
       }))
   } catch {
     return []
