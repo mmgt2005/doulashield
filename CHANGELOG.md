@@ -10,6 +10,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ## [Unreleased]
 
+### Added
+- **Provider billing address and phone in Settings**: providers can now enter their practice address (with autocomplete, green geocoded-pin indicator) and phone number in Provider Settings; these fields are stored per-user in new `provider_address` and `provider_phone` columns (migration 0018); the address auto-populates CMS 1500 Box 33 (billing provider street/city/state/ZIP) and the phone populates the Box 33 phone field, replacing the previous placeholder "NPI: xxx Taxonomy: xxx" text in that field
+
+### Fixed
+- **CMS 1500 Box 33 always blank**: billing provider address and phone were never passed to the PDF generator; Box 33 `doc_street` was hardcoded to empty string and `doc_location` was overloaded with NPI/taxonomy text; now uses provider's stored address (parsed via the existing `_parse_address()` helper) and phone number
+- **Autocomplete suggestions missing city**: `suggestAddresses()` in `geo.ts` now filters out Nominatim results that have no `city`, `town`, `village`, `hamlet`, or `municipality` component, guaranteeing every suggestion shown to the user produces a complete "Street, City, ST ZIP" label that `_parse_address()` can parse into a valid CMS 1500 city field
+
 ### Fixed
 - **MCO portal URLs corrected to official submission sites**: UPMC For You now links to `provider.upmc.com`, Health Partners Plans to `hppserve.com`, and FFS to `promise.dhs.pa.gov/portal/provider` (was previously linking to generic provider-info pages rather than the actual claim submission portals)
 
