@@ -11,9 +11,10 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 ## [Unreleased]
 
 ### Changed
-- **Address autocomplete switched from Photon to Radar.io**: `geocodeAddress()` and `suggestAddresses()` in `geo.ts` now call `api.radar.io` endpoints (`/v1/search/autocomplete` and `/v1/geocode/forward`) with an `Authorization` header using `NEXT_PUBLIC_RADAR_API_KEY`; Radar's free tier allows 100k requests/month, returns structured address fields with `stateCode` already as a two-letter abbreviation (no lookup table needed), and filters to `country=US`; CSP `connect-src` updated from `photon.komoot.io` to `api.radar.io`; `NEXT_PUBLIC_RADAR_API_KEY` added to `.env.example`
+- **Address autocomplete switched from Photon to Radar.io (with Photon fallback)**: `geocodeAddress()` and `suggestAddresses()` in `geo.ts` now use Radar.io when `NEXT_PUBLIC_RADAR_API_KEY` is set (100k free requests/month, structured `stateCode` field, no state-name lookup table needed); when the key is absent both functions automatically fall back to Photon (komoot.io, no key required) so autocomplete works in all environments out of the box; CSP `connect-src` allows both `api.radar.io` and `photon.komoot.io`; `NEXT_PUBLIC_RADAR_API_KEY` added to `.env.example`
 
 ### Fixed
+- **Address autocomplete silently broken after Radar.io switch**: `suggestAddresses` and `geocodeAddress` returned immediately when `NEXT_PUBLIC_RADAR_API_KEY` was not set, leaving the dropdown blank on Settings and client profile pages; fixed by falling back to Photon when no Radar key is configured
 - **Provider address field cut off in Settings**: `AddressAutocomplete` in the "Billing provider information" section was missing the `inputClassName` prop, so the input rendered unstyled and too narrow; added `w-full` class so the address field spans the full column width
 
 ### Fixed
