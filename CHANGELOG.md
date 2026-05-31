@@ -10,6 +10,9 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ## [Unreleased]
 
+### Changed
+- **Address autocomplete switched from Nominatim to Photon (komoot.io)**: `geocodeAddress()` and `suggestAddresses()` in `geo.ts` now call `photon.komoot.io` instead of `nominatim.openstreetmap.org`; Photon is purpose-built for autocomplete with no documented rate limit, no API key required, and returns clean GeoJSON with structured fields (`housenumber`, `street`, `city`, `state`, `postcode`) rather than requiring `addressdetails=1` and custom parsing; `countrycodes=us` restricts all results to US addresses; coordinates are standard GeoJSON `[lng, lat]` order, swapped on read
+
 ### Added
 - **Provider billing address and phone in Settings**: providers can now enter their practice address (with autocomplete, green geocoded-pin indicator) and phone number in Provider Settings; these fields are stored per-user in new `provider_address` and `provider_phone` columns (migration 0018); the address auto-populates CMS 1500 Box 33 (billing provider street/city/state/ZIP) and the phone populates the Box 33 phone field, replacing the previous placeholder "NPI: xxx Taxonomy: xxx" text in that field
 
