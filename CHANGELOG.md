@@ -10,6 +10,9 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ## [Unreleased]
 
+### Fixed
+- **Address autocomplete dropdown not appearing**: CSP `connect-src` still listed `nominatim.openstreetmap.org` after switching to Photon, causing the browser to silently block every autocomplete fetch; replaced with `photon.komoot.io` in `next.config.js`
+
 ### Changed
 - **Address autocomplete switched from Nominatim to Photon (komoot.io)**: `geocodeAddress()` and `suggestAddresses()` in `geo.ts` now call `photon.komoot.io` instead of `nominatim.openstreetmap.org`; Photon is purpose-built for autocomplete with no documented rate limit, no API key required, and returns clean GeoJSON with structured fields (`housenumber`, `street`, `city`, `state`, `postcode`) rather than requiring `addressdetails=1` and custom parsing; `countrycodes=us` restricts all results to US addresses; coordinates are standard GeoJSON `[lng, lat]` order, swapped on read
 
