@@ -172,6 +172,54 @@ async def update_provider_settings(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
 
 
+@router.post("/me/provider-signature")
+async def save_provider_signature(
+    request: Request,
+    body: dict,
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    audit: Annotated[AuditLogger, Depends(get_audit)],
+) -> dict:
+    """Upload provider signature image and save the storage path."""
+    import base64
+    import datetime as dt
+    from app.services import ocr_service as _ocr
+
+    data_url: str = body.get("signature_data_url", "")
+    if not data_url.startswith("data:image/"):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid image data.")
+
+    try:
+        header, b64 = data_url.split(",", 1)
+        image_bytes = base64.b64decode(b64)
+    except Exception:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Could not decode image.")
+
+    content_type = "image/png"
+    try:
+        path = await _ocr.store_image(image_bytes, content_type, None, current_user.id, "provider-signature")
+    except Exception as exc:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Storage failed: {exc}")
+
+    result = await db.execute(select(User).where(User.id == current_user.id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    user.provider_signature_path = path
+    await db.commit()
+
+    await audit.log(
+        action="SAVE_PROVIDER_SIGNATURE",
+        resource_type="user",
+        resource_id=current_user.id,
+        user_id=current_user.id,
+        ip_address=get_client_ip(request),
+        user_agent=get_user_agent(request),
+    )
+    return {"path": path}
+
+
 @router.post("/me/change-password")
 async def change_password(
     request: Request,

@@ -141,6 +141,43 @@ def _parse_address(address: str) -> tuple[str, str, str, str]:
     return street, city, state, zip_code
 
 
+def _overlay_signature(pdf_bytes: bytes, sig_bytes: bytes, x: float, y: float, max_w: float, max_h: float) -> bytes:
+    """
+    Overlay a PNG signature image onto a PDF page at the given coordinates.
+    Returns merged PDF bytes, or original bytes unchanged if overlay fails.
+    x, y = bottom-left corner in points (letter page 612×792 pts from bottom-left).
+    """
+    try:
+        from reportlab.pdfgen import canvas as rl_canvas
+        from reportlab.lib.pagesizes import letter
+        from PIL import Image as PILImage
+
+        img = PILImage.open(io.BytesIO(sig_bytes))
+        img_w, img_h = img.size
+        scale = min(max_w / img_w, max_h / img_h)
+        draw_w = img_w * scale
+        draw_h = img_h * scale
+
+        overlay_buf = io.BytesIO()
+        c = rl_canvas.Canvas(overlay_buf, pagesize=letter)
+        c.drawInlineImage(img, x, y, width=draw_w, height=draw_h)
+        c.save()
+        overlay_buf.seek(0)
+
+        base_reader = PdfReader(io.BytesIO(pdf_bytes))
+        overlay_reader = PdfReader(overlay_buf)
+        merge_writer = PdfWriter()
+        pg = base_reader.pages[0]
+        pg.merge_page(overlay_reader.pages[0])
+        merge_writer.add_page(pg)
+        out = io.BytesIO()
+        merge_writer.write(out)
+        out.seek(0)
+        return out.read()
+    except Exception:
+        return pdf_bytes
+
+
 # ---------------------------------------------------------------------------
 # Main public function
 # ---------------------------------------------------------------------------
@@ -154,10 +191,14 @@ def generate_pdf(
     Fills the official CMS 1500 blank form with claim data and returns PDF bytes.
 
     patient_data keys: name, medicaid_id, date_of_birth (date|None), gender (str),
-                       address (str|None), referring_provider_npi (str|None)
+                       address (str|None), mco (str|None),
+                       referring_provider_npi (str|None), referring_provider_name (str|None),
+                       has_other_insurance (bool), ma91_signed_at (datetime|None),
+                       ma91_signature_bytes (bytes|None)
     visit_data keys:   visit_type (str), visit_date (date|str|None), location_type (str|None),
-                       prior_auth_number (str|None)
-    provider_data keys: npi (str), full_name (str), provider_address (str), provider_phone (str)
+                       prior_auth_number (str|None), alternate_location (str|None)
+    provider_data keys: npi (str), full_name (str), provider_address (str), provider_phone (str),
+                        provider_ssn (str), provider_signature_bytes (bytes|None)
     """
     proc_code, modifier, rate_cents, diag_codes, _ = billing_for_visit(
         visit_data.get("visit_type", "")
@@ -196,11 +237,38 @@ def generate_pdf(
     npi = provider_data.get("npi", "")
     provider_name = provider_data.get("full_name", "")
     prov_addr = provider_data.get("provider_address", "")
-    prov_phone = provider_data.get("provider_phone", "")
+    prov_phone_raw = provider_data.get("provider_phone", "")
+    prov_phone_digits = re.sub(r"\D", "", prov_phone_raw)
+    prov_phone_area = prov_phone_digits[:3] if len(prov_phone_digits) >= 10 else ""
+    prov_phone_num = prov_phone_digits[3:] if len(prov_phone_digits) >= 10 else prov_phone_digits
     doc_street, doc_city, doc_state, doc_zip = _parse_address(prov_addr)
+
+    provider_ssn = provider_data.get("provider_ssn", "")
+
+    # MA 91 date for Box 12
+    ma91_signed_at = patient_data.get("ma91_signed_at")
+    if ma91_signed_at:
+        try:
+            ma91_date_str = ma91_signed_at.strftime("%m/%d/%Y")
+        except AttributeError:
+            ma91_date_str = str(ma91_signed_at)[:10]
+    else:
+        ma91_date_str = ""
 
     # Diagnosis pointer (A, AB, etc.)
     diag_ptr = "".join(chr(ord("A") + i) for i in range(len(diag_codes))) or "A"
+
+    # Box 32 facility name
+    alternate_location = visit_data.get("alternate_location") or ""
+    if alternate_location:
+        fac_name = alternate_location
+    elif pos_code == "12":
+        fac_name = "Patient Home"
+    else:
+        fac_name = "Telehealth"
+
+    # Box 26 patient account number
+    pt_account = medicaid_id[-8:] if len(medicaid_id) >= 8 else medicaid_id
 
     # -----------------------------------------------------------------------
     # Build field value map
@@ -226,11 +294,41 @@ def generate_pdf(
         "pt_state": pt_state,
         "pt_zip": pt_zip,
 
+        # Box 7 — Insured's address (same as patient for Medicaid self-pay)
+        "ins_street": pt_street,
+        "ins_city": pt_city,
+        "ins_state": pt_state,
+        "ins_zip": pt_zip,
+
+        # Box 11a — Insured DOB (mirrors patient for self-pay)
+        "ins_dob_mm": dob_mm,
+        "ins_dob_dd": dob_dd,
+        "ins_dob_yy": dob_yy,
+
+        # Box 11c — Insurance plan / MCO name
+        "insurance_name": patient_data.get("mco") or "",
+
+        # Box 12 — Patient signature + MA 91 date
+        "pt_signature": "Signature on File",
+        "pt_date": ma91_date_str,
+
+        # Box 13 — Insured's authorization (benefits assignment)
+        "ins_signature": "Signature on File",
+
+        # Box 17 — Referring provider NAME (not NPI — field is ref_physician)
+        "ref_physician": patient_data.get("referring_provider_name") or "",
+
+        # Box 17b — Referring provider NPI (field is id_physician)
+        "id_physician": patient_data.get("referring_provider_npi") or "",
+
         # Box 21 — Diagnosis codes (ICD-10)
         "diagnosis1": diag_codes[0] if len(diag_codes) > 0 else "",
         "diagnosis2": diag_codes[1] if len(diag_codes) > 1 else "",
         "diagnosis3": diag_codes[2] if len(diag_codes) > 2 else "",
         "diagnosis4": diag_codes[3] if len(diag_codes) > 3 else "",
+
+        # Box 23 — Prior authorization number (Geisinger requires it)
+        "prior_auth": visit_data.get("prior_auth_number") or "",
 
         # Box 24A — Service date (line 1, from = to for single-day visit)
         "sv1_mm_from": svc_mm,
@@ -259,38 +357,36 @@ def generate_pdf(
         # Box 24J — Rendering provider NPI
         "local1a": npi,
 
-        # Box 25 — Federal Tax ID (use NPI)
-        "tax_id": npi,
+        # Box 25 — Federal Tax ID (SSN for sole proprietor)
+        "tax_id": provider_ssn,
+
+        # Box 26 — Patient account number
+        "pt_account": pt_account,
 
         # Box 28 — Total charge
         "t_charge": f"{billed:.2f}",
 
-        # Box 31 — Physician signature + date
+        # Box 31 — Physician signature + date (text fallback; image overlay applied below)
         "physician_signature": provider_name,
         "physician_date": f"{svc_mm}/{svc_dd}/{svc_yy}" if svc_mm else "",
 
-        # Box 32 — Service facility (patient home for home visits)
-        "fac_name":     f"Patient Home" if pos_code == "12" else "Telehealth",
+        # Box 32 — Service facility
+        "fac_name":     fac_name,
         "fac_street":   pt_street,
         "fac_location": f"{pt_city}, {pt_state} {pt_zip}".strip(", "),
 
         # Box 33 — Billing provider
-        "doc_name":     provider_name,
-        "doc_street":   doc_street,
-        "doc_location": f"{doc_city}, {doc_state} {doc_zip}".strip(", ") if doc_city else "",
-        "doc_phone":    prov_phone,
+        "doc_name":       provider_name,
+        "doc_street":     doc_street,
+        "doc_location":   f"{doc_city}, {doc_state} {doc_zip}".strip(", ") if doc_city else "",
+        "doc_phone area": prov_phone_area,
+        "doc_phone":      prov_phone_num,
 
         # Box 33a — NPI
         "pin": npi,
 
         # Box 33b — Taxonomy as group qualifier
         "grp": DOULA_TAXONOMY,
-
-        # Box 17b — Referring/supervising provider NPI (MANDATORY — claim rejected without it)
-        "ref_physician": patient_data.get("referring_provider_npi") or "",
-
-        # Box 23 — Prior authorization number (required by Geisinger)
-        "prior_auth": visit_data.get("prior_auth_number") or "",
     }
 
     # -----------------------------------------------------------------------
@@ -300,19 +396,35 @@ def generate_pdf(
     writer = PdfWriter()
     writer.append(reader)
 
-    # Fill text fields on page 0
     writer.update_page_form_field_values(writer.pages[0], text_fields, auto_regenerate=False)
 
-    # Set radio buttons
+    # Radio buttons
     _set_radio(writer, "insurance_type", "/Medicaid")
     _set_radio(writer, "sex", "/F" if gender == "F" else "/M")
-    _set_radio(writer, "rel_to_ins", "/S")   # Self
+    _set_radio(writer, "ins_sex", "/FEMALE" if gender == "F" else "/MALE")
+    _set_radio(writer, "rel_to_ins", "/S")    # Self
     _set_radio(writer, "assignment", "/YES")
+    _set_radio(writer, "ssn", "/SSN")         # Box 25 — SSN not EIN
+    _set_radio(writer, "ins_benefit_plan", "/YES" if patient_data.get("has_other_insurance") else "/NO")
 
-    # Flatten (make fields read-only in the output)
     writer.compress_identical_objects(remove_identicals=True, remove_orphans=True)
 
     buf = io.BytesIO()
     writer.write(buf)
     buf.seek(0)
-    return buf.read()
+    pdf_bytes = buf.read()
+
+    # -----------------------------------------------------------------------
+    # Overlay signature images if provided
+    # -----------------------------------------------------------------------
+    ma91_sig_bytes: bytes | None = patient_data.get("ma91_signature_bytes")
+    provider_sig_bytes: bytes | None = provider_data.get("provider_signature_bytes")
+
+    if ma91_sig_bytes:
+        # Box 12 patient signature area
+        pdf_bytes = _overlay_signature(pdf_bytes, ma91_sig_bytes, 27, 259, 150, 18)
+    if provider_sig_bytes:
+        # Box 31 provider signature area
+        pdf_bytes = _overlay_signature(pdf_bytes, provider_sig_bytes, 27, 184, 150, 18)
+
+    return pdf_bytes

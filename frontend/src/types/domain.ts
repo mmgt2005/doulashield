@@ -17,6 +17,8 @@ export interface Patient {
   gender: string
   email: string | null
   referring_provider_npi: string | null
+  referring_provider_name: string | null
+  has_other_insurance: boolean
   mco: string | null
   date_of_birth: string | null
   address: string | null

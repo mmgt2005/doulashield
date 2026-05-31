@@ -145,6 +145,8 @@ export default function VisitFormPage() {
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null)
   const [pdfLoading, setPdfLoading] = useState(false)
   const [uhcConnected, setUhcConnected] = useState(false)
+  const [providerSsnConnected, setProviderSsnConnected] = useState(false)
+  const [providerSignaturePath, setProviderSignaturePath] = useState<string | null>(null)
 
   const { register, handleSubmit, setValue, watch, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -174,6 +176,8 @@ export default function VisitFormPage() {
         const s = settingsRes.data as { zipzign_connected?: boolean; uhc_connected?: boolean }
         setZipzignConnected(s.zipzign_connected ?? false)
         setUhcConnected(s.uhc_connected ?? false)
+        setProviderSsnConnected(!!(s as { provider_ssn_connected?: boolean }).provider_ssn_connected)
+        setProviderSignaturePath((s as { provider_signature_path?: string | null }).provider_signature_path ?? null)
       }
       if (visitRes) {
         const v = visitRes.data
@@ -370,6 +374,22 @@ export default function VisitFormPage() {
           { headers }
         )
         setPatient((p) => p ? { ...p, date_of_birth: String(data.date_of_birth) } : p)
+      } catch { /* non-blocking */ }
+    }
+  }
+
+  const handleMa89Scanned = async (data: Record<string, unknown>) => {
+    const updates: Record<string, unknown> = {}
+    if (data.referring_provider_name) updates.referring_provider_name = String(data.referring_provider_name)
+    if (data.referring_provider_npi) updates.referring_provider_npi = String(data.referring_provider_npi)
+    if (Object.keys(updates).length > 0) {
+      try {
+        await axios.patch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/patients/${clientId}`,
+          updates,
+          { headers: { Authorization: `Bearer ${getAccessToken()}` } }
+        )
+        setPatient((p) => p ? { ...p, ...updates } as Patient : p)
       } catch { /* non-blocking */ }
     }
   }
@@ -791,6 +811,22 @@ export default function VisitFormPage() {
         label={`Scan ${slot.label} Page`}
       />
 
+      {visitType === 'prenatal_1' && (
+        <div className="rounded-lg border border-indigo-100 bg-indigo-50 p-3">
+          <p className="mb-2 text-xs font-medium text-indigo-700">MA 89 — Physician Certification Form</p>
+          <p className="mb-2 text-xs text-indigo-600">Scan the MA 89 to auto-fill the referring doctor name and NPI (Box 17 &amp; 17b on CMS 1500).</p>
+          {patient?.referring_provider_name && (
+            <p className="mb-2 text-xs text-green-700">✓ Referring doctor: {patient.referring_provider_name}{patient.referring_provider_npi ? ` · NPI ${patient.referring_provider_npi}` : ''}</p>
+          )}
+          <ImageUploadScanner
+            endpoint="/api/v1/ocr/handbook"
+            extraFields={{ page_type: 'ma_89', patient_id: clientId }}
+            onExtracted={handleMa89Scanned}
+            label="Scan MA 89 Form"
+          />
+        </div>
+      )}
+
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 bg-white p-4 rounded-lg border border-gray-200">
         <div>
           <label htmlFor="visit_date" className="block text-sm font-medium text-gray-700">Visit date</label>
@@ -1192,11 +1228,21 @@ export default function VisitFormPage() {
                     <div className="px-6 py-4 space-y-3 text-sm">
                       <table className="w-full text-xs border-collapse">
                         <tbody>
-                          <tr className="border-b"><td className="py-1.5 font-medium text-gray-500 w-1/3">Box 1 — Insurance type</td><td className="py-1.5 font-semibold">Medicaid</td></tr>
+                          <tr className="border-b"><td className="py-1.5 font-medium text-gray-500 w-1/3">Box 1 — Insurance type</td><td className="py-1.5 font-semibold">Medicaid ✓</td></tr>
                           <tr className="border-b"><td className="py-1.5 font-medium text-gray-500">Box 1a — Insured ID</td><td className="py-1.5">Medicaid ID on file</td></tr>
                           <tr className="border-b"><td className="py-1.5 font-medium text-gray-500">Box 2 — Patient name</td><td className="py-1.5">{patient?.name}</td></tr>
                           <tr className="border-b"><td className="py-1.5 font-medium text-gray-500">Box 3 — DOB / Sex</td><td className="py-1.5">{patient?.date_of_birth ?? '—'} / {patient?.gender === 'M' ? 'M' : 'F'}</td></tr>
-                          <tr className="border-b"><td className="py-1.5 font-medium text-gray-500">Box 5 — Address</td><td className="py-1.5">{patient?.address ?? '—'}</td></tr>
+                          <tr className="border-b"><td className="py-1.5 font-medium text-gray-500">Box 5 — Patient address</td><td className="py-1.5">{patient?.address ?? '—'}</td></tr>
+                          <tr className="border-b"><td className="py-1.5 font-medium text-gray-500">Box 7 — Insured address</td><td className="py-1.5 text-gray-400">{patient?.address ?? '—'} (same as Box 5)</td></tr>
+                          <tr className="border-b"><td className="py-1.5 font-medium text-gray-500">Box 11a — Insured DOB / Sex</td><td className="py-1.5 text-gray-400">{patient?.date_of_birth ?? '—'} / {patient?.gender === 'M' ? 'M' : 'F'} (same as Box 3)</td></tr>
+                          <tr className="border-b"><td className="py-1.5 font-medium text-gray-500">Box 11c — Insurance plan</td><td className="py-1.5">{patient?.mco ?? '—'}</td></tr>
+                          <tr className="border-b"><td className="py-1.5 font-medium text-gray-500">Box 11d — Other insurance</td><td className="py-1.5">{patient?.has_other_insurance ? 'YES' : 'NO'}</td></tr>
+                          <tr className="border-b"><td className="py-1.5 font-medium text-gray-500">Box 12 — Patient signature</td><td className="py-1.5">{ma91Status === 'signed' ? `Signature on File · ${ma91SignedAt ? new Date(ma91SignedAt).toLocaleDateString() : ''}` : <span className="text-amber-600">⚠ MA 91 not signed</span>}</td></tr>
+                          <tr className="border-b"><td className="py-1.5 font-medium text-gray-500">Box 13 — Assignment</td><td className="py-1.5 text-gray-400">Signature on File</td></tr>
+                          <tr className="border-b">
+                            <td className="py-1.5 font-medium text-gray-500">Box 17 — Referring doctor</td>
+                            <td className="py-1.5">{patient?.referring_provider_name ?? <span className="text-gray-400">—</span>}</td>
+                          </tr>
                           <tr className="border-b">
                             <td className="py-1.5 font-medium text-gray-500">Box 17b — Referring NPI</td>
                             <td className={`py-1.5 ${!referringNpi ? 'text-red-500' : 'font-semibold'}`}>
@@ -1210,7 +1256,21 @@ export default function VisitFormPage() {
                           <tr className="border-b"><td className="py-1.5 font-medium text-gray-500">Box 24D — Procedure / Modifier</td><td className="py-1.5 font-semibold">{billing.code}{billing.modifier && ` · ${billing.modifier}`}</td></tr>
                           <tr className="border-b"><td className="py-1.5 font-medium text-gray-500">Box 24F — Charge</td><td className="py-1.5 font-semibold">${billing.rate.toFixed(2)}</td></tr>
                           <tr className="border-b"><td className="py-1.5 font-medium text-gray-500">Box 24G — Units</td><td className="py-1.5">1</td></tr>
+                          <tr className="border-b">
+                            <td className="py-1.5 font-medium text-gray-500">Box 25 — Tax ID (SSN)</td>
+                            <td className={`py-1.5 ${!providerSsnConnected ? 'text-amber-600' : 'text-green-700'}`}>
+                              {providerSsnConnected ? '●●●●●●●●● on file' : '⚠ Missing — add SSN in Settings'}
+                            </td>
+                          </tr>
+                          <tr className="border-b"><td className="py-1.5 font-medium text-gray-500">Box 26 — Patient acct #</td><td className="py-1.5 text-gray-400">Last 8 of Medicaid ID</td></tr>
                           <tr className="border-b"><td className="py-1.5 font-medium text-gray-500">Box 28 — Total charge</td><td className="py-1.5 font-semibold">${billing.rate.toFixed(2)}</td></tr>
+                          <tr className="border-b">
+                            <td className="py-1.5 font-medium text-gray-500">Box 31 — Provider signature</td>
+                            <td className={`py-1.5 ${!providerSignaturePath ? 'text-amber-600' : 'text-green-700'}`}>
+                              {providerSignaturePath ? '✓ Signature on file' : '⚠ Missing — save signature in Settings'}
+                            </td>
+                          </tr>
+                          <tr className="border-b"><td className="py-1.5 font-medium text-gray-500">Box 32 — Service facility</td><td className="py-1.5 text-gray-400">{watch('alternate_location') || (locationType === 'telehealth' ? 'Telehealth' : 'Patient Home')}</td></tr>
                           <tr className="border-b"><td className="py-1.5 font-medium text-gray-500">Box 33 — Taxonomy</td><td className="py-1.5">374J00000X (Certified Doula)</td></tr>
                         </tbody>
                       </table>

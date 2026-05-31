@@ -21,6 +21,7 @@ interface SettingsFormData {
   zipzign_api_key: string
   zone: string
   counties: string[]
+  provider_ssn: string
 }
 
 type ZoneKey = 'SE' | 'SW' | 'LC' | 'NE' | 'NW'
@@ -83,6 +84,14 @@ export default function SettingsPage() {
   const [signingEscrow, setSigningEscrow] = useState(false)
   const [escrowError, setEscrowError] = useState<string | null>(null)
 
+  const [providerSsnConnected, setProviderSsnConnected] = useState(false)
+  const [providerSignaturePath, setProviderSignaturePath] = useState<string | null>(null)
+  const [sigSaving, setSigSaving] = useState(false)
+  const [sigSaved, setSigSaved] = useState(false)
+  const [sigError, setSigError] = useState<string | null>(null)
+  const [sigCanvasRef, setSigCanvasRef] = useState<HTMLCanvasElement | null>(null)
+  const [sigPad, setSigPad] = useState<import('signature_pad').default | null>(null)
+
   const [pwCurrent, setPwCurrent] = useState('')
   const [pwNew, setPwNew] = useState('')
   const [pwConfirm, setPwConfirm] = useState('')
@@ -97,7 +106,7 @@ export default function SettingsPage() {
     if (!isAuthenticated) return
     const headers = { Authorization: `Bearer ${getAccessToken()}` }
     axios
-      .get<{ npi: string | null; availity_connected: boolean; uhc_connected: boolean; telehealth_link: string | null; contact_email: string | null; zipzign_connected: boolean; zone: string | null; counties: string[] | null; provider_address: string | null; provider_phone: string | null }>(
+      .get<{ npi: string | null; availity_connected: boolean; uhc_connected: boolean; telehealth_link: string | null; contact_email: string | null; zipzign_connected: boolean; zone: string | null; counties: string[] | null; provider_address: string | null; provider_phone: string | null; provider_ssn_connected: boolean; provider_signature_path: string | null }>(
         `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/me/provider-settings`,
         { headers }
       )
@@ -115,6 +124,8 @@ export default function SettingsPage() {
         setConnected(r.data.availity_connected)
         setUhcConnected(r.data.uhc_connected ?? false)
         setZipzignConnected(r.data.zipzign_connected)
+        setProviderSsnConnected(r.data.provider_ssn_connected ?? false)
+        setProviderSignaturePath(r.data.provider_signature_path ?? null)
       })
     axios
       .get<BillingStatus>(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/billing/status`, { headers })
@@ -182,8 +193,9 @@ export default function SettingsPage() {
       body.counties = data.counties || []
       body.provider_address = data.provider_address || ''
       body.provider_phone = data.provider_phone || ''
+      if (data.provider_ssn) body.provider_ssn = data.provider_ssn
 
-      const res = await axios.patch<{ npi: string | null; availity_connected: boolean; uhc_connected: boolean; zipzign_connected: boolean }>(
+      const res = await axios.patch<{ npi: string | null; availity_connected: boolean; uhc_connected: boolean; zipzign_connected: boolean; provider_ssn_connected: boolean; provider_signature_path: string | null }>(
         `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/me/provider-settings`,
         body,
         { headers: { Authorization: `Bearer ${getAccessToken()}` } }
@@ -191,6 +203,7 @@ export default function SettingsPage() {
       setConnected(res.data.availity_connected)
       setUhcConnected(res.data.uhc_connected ?? false)
       setZipzignConnected(res.data.zipzign_connected)
+      setProviderSsnConnected(res.data.provider_ssn_connected ?? false)
       setSaved(true)
     } catch {
       setSaveError('Failed to save. Please try again.')
@@ -546,6 +559,97 @@ export default function SettingsPage() {
               placeholder="https://doxy.me/yourname"
               className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
+          </div>
+        </div>
+
+        <div className="border-t pt-4 space-y-4">
+          <h2 className="text-sm font-semibold text-gray-700">Billing Credentials (CMS 1500)</h2>
+          <div>
+            <label htmlFor="provider_ssn" className="block text-sm font-medium text-gray-700">
+              SSN — Tax ID for Box 25
+              {providerSsnConnected && (
+                <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                  ✓ Saved
+                </span>
+              )}
+            </label>
+            <input
+              {...register('provider_ssn')}
+              id="provider_ssn"
+              type="password"
+              maxLength={9}
+              placeholder={providerSsnConnected ? '●●●●●●●●● saved' : '9-digit SSN (no dashes)'}
+              className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+            <p className="mt-1 text-xs text-gray-400">Stored encrypted. Used as Box 25 Tax ID on CMS 1500 claims (sole proprietor SSN).</p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Provider Signature — Box 31
+              {providerSignaturePath && (
+                <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                  ✓ Signature on file
+                </span>
+              )}
+            </label>
+            <p className="text-xs text-gray-500 mb-2">Draw your signature below. It will be embedded in Box 31 of every CMS 1500 claim PDF.</p>
+            <div className="rounded border border-gray-300 bg-white" style={{ maxWidth: 420 }}>
+              <canvas
+                ref={(el) => {
+                  if (el && el !== sigCanvasRef) {
+                    setSigCanvasRef(el)
+                    import('signature_pad').then((mod) => {
+                      const SP = mod.default
+                      const pad = new SP(el, { backgroundColor: 'rgb(255,255,255)' })
+                      el.width = el.offsetWidth || 400
+                      el.height = 120
+                      setSigPad(pad)
+                    }).catch(() => {})
+                  }
+                }}
+                style={{ width: '100%', height: 120, display: 'block', cursor: 'crosshair' }}
+              />
+            </div>
+            <p className="mt-1 text-xs text-gray-400">Draw your signature above</p>
+            {sigError && <p className="text-xs text-red-600 mt-1">{sigError}</p>}
+            {sigSaved && <p className="text-xs text-green-600 mt-1">✓ Signature saved</p>}
+            <div className="mt-2 flex gap-2">
+              <button
+                type="button"
+                onClick={() => { sigPad?.clear(); setSigSaved(false) }}
+                className="rounded border border-gray-300 px-3 py-1 text-xs font-medium text-gray-600 hover:bg-gray-50"
+              >
+                Clear
+              </button>
+              <button
+                type="button"
+                disabled={sigSaving}
+                onClick={async () => {
+                  if (!sigPad || sigPad.isEmpty()) return
+                  setSigSaving(true)
+                  setSigError(null)
+                  setSigSaved(false)
+                  try {
+                    const dataUrl = sigPad.toDataURL('image/png')
+                    const res = await axios.post<{ path: string }>(
+                      `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/me/provider-signature`,
+                      { signature_data_url: dataUrl },
+                      { headers: { Authorization: `Bearer ${getAccessToken()}` } }
+                    )
+                    setProviderSignaturePath(res.data.path)
+                    setSigSaved(true)
+                    sigPad.clear()
+                  } catch {
+                    setSigError('Failed to save signature. Please try again.')
+                  } finally {
+                    setSigSaving(false)
+                  }
+                }}
+                className="rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+              >
+                {sigSaving ? 'Saving…' : 'Save Signature'}
+              </button>
+            </div>
           </div>
         </div>
 

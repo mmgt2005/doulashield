@@ -19,6 +19,8 @@ interface EditFormData {
   mco: string
   date_of_birth: string
   referring_provider_npi: string
+  referring_provider_name: string
+  has_other_insurance: boolean
   address: string
   latitude?: number
   longitude?: number
@@ -77,6 +79,8 @@ export default function ClientDetailPage() {
       mco: patient.mco ?? '',
       date_of_birth: patient.date_of_birth ?? '',
       referring_provider_npi: patient.referring_provider_npi ?? '',
+      referring_provider_name: patient.referring_provider_name ?? '',
+      has_other_insurance: patient.has_other_insurance ?? false,
       address: patient.address ?? '',
       latitude: patient.latitude ?? undefined,
       longitude: patient.longitude ?? undefined,
@@ -107,6 +111,8 @@ export default function ClientDetailPage() {
           latitude: lat ?? null,
           longitude: lng ?? null,
           referring_provider_npi: data.referring_provider_npi || null,
+          referring_provider_name: data.referring_provider_name || null,
+          has_other_insurance: data.has_other_insurance ?? false,
           ...(data.medicaid_card_image_path ? { medicaid_card_image_path: data.medicaid_card_image_path } : {}),
         },
         { headers: { Authorization: `Bearer ${getAccessToken()}` } }
@@ -194,6 +200,29 @@ export default function ClientDetailPage() {
               />
             </div>
             <div>
+              <label className="block text-xs font-medium text-gray-600">
+                Referring Provider Name
+                <span className="ml-1 font-normal text-gray-400">(Box 17 — doctor name)</span>
+              </label>
+              <input
+                {...register('referring_provider_name')}
+                type="text"
+                placeholder="Dr. Jane Smith"
+                className="mt-1 block w-full rounded border border-gray-300 px-3 py-1.5 text-sm"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                {...register('has_other_insurance')}
+                id="edit_has_other_insurance"
+                type="checkbox"
+                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <label htmlFor="edit_has_other_insurance" className="text-xs font-medium text-gray-600">
+                Patient has other insurance <span className="font-normal text-gray-400">(Box 11d)</span>
+              </label>
+            </div>
+            <div>
               <label className="block text-xs font-medium text-gray-600">Sex</label>
               <select {...register('gender')} className="mt-1 block rounded border border-gray-300 px-3 py-1.5 text-sm">
                 <option value="F">Female</option>
@@ -250,6 +279,12 @@ export default function ClientDetailPage() {
                 )}
                 {patient.email && (
                   <p className="mt-0.5 text-sm text-gray-500">{patient.email}</p>
+                )}
+                {patient.referring_provider_name && (
+                  <p className="mt-0.5 text-sm text-gray-500">Referring: {patient.referring_provider_name}</p>
+                )}
+                {patient.has_other_insurance && (
+                  <span className="mt-0.5 inline-block rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">Has other insurance</span>
                 )}
 
                 {/* Eligibility row */}

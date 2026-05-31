@@ -25,6 +25,8 @@ def _to_read(patient: Patient) -> PatientRead:
         longitude=patient.longitude,
         medicaid_card_image_path=patient.medicaid_card_image_path,
         referring_provider_npi=patient.referring_provider_npi,
+        referring_provider_name=patient.referring_provider_name,
+        has_other_insurance=patient.has_other_insurance,
         eligibility_status=patient.eligibility_status,
         eligibility_checked_at=patient.eligibility_checked_at,
         is_active=patient.is_active,
@@ -54,6 +56,8 @@ class PatientService:
             longitude=data.longitude,
             medicaid_card_image_path=data.medicaid_card_image_path,
             referring_provider_npi=data.referring_provider_npi,
+            referring_provider_name=data.referring_provider_name,
+            has_other_insurance=data.has_other_insurance,
         )
         self._db.add(patient)
         await self._db.commit()
@@ -151,6 +155,10 @@ class PatientService:
             patient.medicaid_card_image_path = data.medicaid_card_image_path
         if data.referring_provider_npi is not None:
             patient.referring_provider_npi = data.referring_provider_npi
+        if data.referring_provider_name is not None:
+            patient.referring_provider_name = data.referring_provider_name
+        if data.has_other_insurance is not None:
+            patient.has_other_insurance = data.has_other_insurance
 
         await self._db.commit()
         await self._db.refresh(patient)

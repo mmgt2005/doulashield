@@ -49,6 +49,13 @@ _PROMPTS: dict[str, str] = {
         '{"birth_date": "YYYY-MM-DD or null", "birth_time": "HH:MM 24-hour format or null", '
         '"birth_location": "location text or null", "notes": "additional notes or null"}'
     ),
+    "ma_89": (
+        "This is a Pennsylvania MA 89 Medical Assistance Physician Certification form.\n"
+        "Extract the referring physician information and return ONLY valid JSON with no commentary:\n"
+        '{"referring_provider_name": "physician full name as printed or null", '
+        '"referring_provider_npi": "10-digit NPI number or null"}\n'
+        "Use null for any field you cannot read clearly."
+    ),
 }
 
 

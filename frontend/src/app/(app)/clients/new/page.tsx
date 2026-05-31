@@ -18,6 +18,8 @@ const schema = z.object({
   email: z.string().email('Invalid email address').optional().or(z.literal('')),
   mco: z.string().optional(),
   date_of_birth: z.string().optional(),
+  referring_provider_name: z.string().optional(),
+  has_other_insurance: z.boolean().default(false),
   address: z.string().optional(),
   latitude: z.number().optional(),
   longitude: z.number().optional(),
@@ -130,6 +132,29 @@ export default function NewClientPage() {
             <option value="M">Male</option>
             <option value="U">Unknown</option>
           </select>
+        </div>
+
+        <div>
+          <label htmlFor="referring_provider_name" className="block text-sm font-medium text-gray-700">Referring provider name <span className="text-gray-400">(Box 17 — optional)</span></label>
+          <input
+            {...register('referring_provider_name')}
+            id="referring_provider_name"
+            type="text"
+            placeholder="Dr. Jane Smith"
+            className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          />
+        </div>
+
+        <div className="flex items-center gap-3">
+          <input
+            {...register('has_other_insurance')}
+            id="has_other_insurance"
+            type="checkbox"
+            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          />
+          <label htmlFor="has_other_insurance" className="text-sm font-medium text-gray-700">
+            Patient has other insurance <span className="font-normal text-gray-400">(Box 11d)</span>
+          </label>
         </div>
 
         <div>

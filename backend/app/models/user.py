@@ -33,6 +33,8 @@ class User(Base):
     counties: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON array e.g. '["Bucks","Chester"]'
     provider_address: Mapped[str | None] = mapped_column(Text, nullable=True)
     provider_phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    provider_ssn_encrypted: Mapped[str | None] = mapped_column(Text, nullable=True)
+    provider_signature_path: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Billing
     stripe_customer_id: Mapped[str | None] = mapped_column(Text, nullable=True)

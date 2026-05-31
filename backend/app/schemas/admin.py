@@ -43,6 +43,8 @@ class ProviderSettingsUpdate(BaseModel):
     counties: list[str] | None = None  # county names within the selected zone
     provider_address: str | None = None
     provider_phone: str | None = None
+    provider_ssn: str | None = None          # plain text on write; encrypted on save; never returned
+    provider_signature_path: str | None = None
 
 
 class ProviderSettingsRead(BaseModel):
@@ -56,6 +58,8 @@ class ProviderSettingsRead(BaseModel):
     counties: list[str] | None
     provider_address: str | None
     provider_phone: str | None
+    provider_ssn_connected: bool
+    provider_signature_path: str | None
 
 
 class AuditLogRead(BaseModel):
