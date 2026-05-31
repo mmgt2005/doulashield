@@ -24,28 +24,31 @@ _BLANK_FORM = Path(__file__).parent.parent / "static" / "cms1500_blank.pdf"
 # Helpers for setting radio group values
 # ---------------------------------------------------------------------------
 
-def _set_radio(writer: PdfWriter, page_idx: int, field_name: str, on_state: str) -> None:
-    """Set a radio button group to the given on_state (e.g. '/Medicaid', '/F')."""
-    for annot_ref in writer.pages[page_idx].get("/Annots", []):
-        annot = annot_ref.get_object()
-        t = annot.get("/T", "")
-        ft = annot.get("/FT", "")
-        if str(t) == field_name and str(ft) == "/Btn":
-            kids = annot.get("/Kids", [])
-            for kid_ref in kids:
-                kid = kid_ref.get_object()
-                ap = kid.get("/AP", {})
-                ap_obj = ap.get_object() if hasattr(ap, "get_object") else ap
-                n = ap_obj.get("/N", {}) if ap_obj else {}
-                n_obj = n.get_object() if hasattr(n, "get_object") else n
-                states = list(n_obj.keys()) if hasattr(n_obj, "keys") else []
-                if on_state in states:
-                    kid.update({NameObject("/AS"): NameObject(on_state)})
-                else:
-                    kid.update({NameObject("/AS"): NameObject("/Off")})
-            # Also set /V on the parent
-            annot.update({NameObject("/V"): NameObject(on_state)})
+def _set_radio(writer: PdfWriter, field_name: str, on_state: str) -> None:
+    """Set a radio button group by name, walking the AcroForm /Fields tree."""
+    root = writer._root_object
+    acroform = root.get("/AcroForm", {})
+    acroform_obj = acroform.get_object() if hasattr(acroform, "get_object") else acroform
+    fields_ref = acroform_obj.get("/Fields", [])
+    fields_arr = fields_ref.get_object() if hasattr(fields_ref, "get_object") else fields_ref
+    for field_ref in fields_arr:
+        field = field_ref.get_object() if hasattr(field_ref, "get_object") else field_ref
+        if str(field.get("/T", "")) != field_name or str(field.get("/FT", "")) != "/Btn":
+            continue
+        field.update({NameObject("/V"): NameObject(on_state)})
+        kids_ref = field.get("/Kids", None)
+        if kids_ref is None:
             return
+        kids = kids_ref.get_object() if hasattr(kids_ref, "get_object") else kids_ref
+        for kid_ref in kids:
+            kid = kid_ref.get_object() if hasattr(kid_ref, "get_object") else kid_ref
+            ap = kid.get("/AP", {})
+            ap_obj = ap.get_object() if hasattr(ap, "get_object") else ap
+            n = ap_obj.get("/N", {}) if ap_obj else {}
+            n_obj = n.get_object() if hasattr(n, "get_object") else n
+            states = list(n_obj.keys()) if hasattr(n_obj, "keys") else []
+            kid.update({NameObject("/AS"): NameObject(on_state if on_state in states else "/Off")})
+        return
 
 
 _STATE_NAMES: dict[str, str] = {
@@ -80,10 +83,18 @@ def _parse_address(address: str) -> tuple[str, str, str, str]:
     street = parts[0]
     zip_code = ""
     state = ""
+    city = ""
 
     # Scan all parts (from the end) for zip and state
     for part in reversed(parts[1:]):
         part_s = part.strip()
+        # "City ST ZIP" combined in one part — e.g. "Philadelphia PA 19103"
+        m2 = re.match(r"^(.+?)\s+([A-Z]{2})\s+(\d{5}(?:-\d{4})?)$", part_s)
+        if m2:
+            city = city or m2.group(1).strip()
+            state = state or m2.group(2)
+            zip_code = zip_code or m2.group(3)[:5]
+            continue
         # "PA 19103" pattern
         m = re.match(r"([A-Z]{2})\s+(\d{5}(?:-\d{4})?)", part_s)
         if m:
@@ -108,7 +119,6 @@ def _parse_address(address: str) -> tuple[str, str, str, str]:
     # → skip trailing non-city parts and take the last plausible city part.
     # Heuristic: skip parts that are zip codes, state names/abbrevs, or "United States".
     skip_set = {"united states", "usa"}
-    city = ""
     for part in parts[1:]:
         part_s = part.strip()
         if re.match(r"^\d{5}(?:-\d{4})?$", part_s):
@@ -117,6 +127,9 @@ def _parse_address(address: str) -> tuple[str, str, str, str]:
             continue
         if re.match(r"([A-Z]{2})\s+(\d{5})", part_s):
             continue
+        if re.match(r"^.+?\s+[A-Z]{2}\s+\d{5}", part_s):
+            # "City ST ZIP" combined — city already extracted in the reverse scan above
+            break
         if part_s.lower() in _STATE_NAMES:
             continue
         if part_s.lower() in skip_set:
@@ -291,10 +304,10 @@ def generate_pdf(
     writer.update_page_form_field_values(writer.pages[0], text_fields, auto_regenerate=False)
 
     # Set radio buttons
-    _set_radio(writer, 0, "insurance_type", "/Medicaid")
-    _set_radio(writer, 0, "sex", "/F" if gender == "F" else "/M")
-    _set_radio(writer, 0, "rel_to_ins", "/S")   # Self
-    _set_radio(writer, 0, "assignment", "/YES")
+    _set_radio(writer, "insurance_type", "/Medicaid")
+    _set_radio(writer, "sex", "/F" if gender == "F" else "/M")
+    _set_radio(writer, "rel_to_ins", "/S")   # Self
+    _set_radio(writer, "assignment", "/YES")
 
     # Flatten (make fields read-only in the output)
     writer.compress_identical_objects(remove_identicals=True, remove_orphans=True)
