@@ -10,6 +10,9 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ## [Unreleased]
 
+### Fixed
+- **CMS 1500 Box 11 always blank**: `ins_policy` (Insured's Policy/Group Number) was never included in the text fields dict; for PA Medicaid the Medicaid ID serves as the policy number and is now written to Box 11 on every generated PDF; Box 11a DOB/sex fields were already correct when patient DOB is stored
+
 ### Added
 - **CMS 1500 multi-box update**: fills significantly more boxes on the generated PDF — Box 7 (insured address mirrors patient), Box 11a (insured DOB/sex mirrors patient), Box 11c (MCO name), Box 11d (other insurance YES/NO radio), Box 12 (MA 91 patient signature image + date), Box 13 ("Signature on File"), Box 17 (referring provider name — was previously empty), Box 17b (referring provider NPI — was swapped with Box 17), Box 25 (provider SSN with SSN radio checked; stored encrypted, never returned in API), Box 26 (last 8 of Medicaid ID as patient account number), Box 31 (provider signature image overlaid via reportlab+PIL), Box 32 (alternate location from visit if set), Box 33 phone split into area code and number; signature images for Box 12 (MA 91 canvas) and Box 31 (provider signature) are fetched from Supabase Storage and embedded as overlay layers on the AcroForm PDF
 - **Referring provider name field on patient profile**: `referring_provider_name` column (migration 0019, VARCHAR 100) added to `patients`; editable in new client form and edit profile form; displayed in the client profile header; passed to CMS 1500 Box 17
