@@ -19,7 +19,7 @@ const securityHeaders = [
       // Next.js requires 'unsafe-inline' for hydration scripts; tighten to a nonce in v2
       "script-src 'self' 'unsafe-inline'",
       "style-src 'self' 'unsafe-inline'",
-      `connect-src 'self' ${apiUrl} https://photon.komoot.io`,
+      `connect-src 'self' ${apiUrl} https://api.radar.io`,
       "img-src 'self' data:",
       "font-src 'self'",
       "frame-src 'self' blob:",
