@@ -51,7 +51,10 @@ async def _enrich_zip4(address: str, client: "httpx.AsyncClient") -> str:
         # Prefer Radar's pre-formatted address which already contains ZIP+4
         formatted = addr.get("formattedAddress", "")
         if formatted:
-            log.debug("ZIP+4 enriched %r → %r", address, formatted)
+            if "-" in (addr.get("postalCode") or ""):
+                log.info("ZIP+4 enriched %r → %r", address[:60], formatted)
+            else:
+                log.info("Radar returned no ZIP+4 for %r (postalCode=%r) — update the address manually with the full 9-digit ZIP", address[:60], addr.get("postalCode"))
             return formatted
         # Fallback: build from components
         parts: list[str] = []
