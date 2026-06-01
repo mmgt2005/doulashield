@@ -15,7 +15,11 @@ from pathlib import Path
 from pypdf import PdfReader, PdfWriter
 from pypdf.generic import NameObject
 
+import logging
+
 from app.core.billing_constants import DOULA_TAXONOMY, billing_for_visit
+
+log = logging.getLogger(__name__)
 
 _BLANK_FORM = Path(__file__).parent.parent / "static" / "cms1500_blank.pdf"
 
@@ -152,7 +156,7 @@ def _overlay_signature(pdf_bytes: bytes, sig_bytes: bytes, x: float, y: float, m
         from reportlab.lib.pagesizes import letter
         from PIL import Image as PILImage
 
-        img = PILImage.open(io.BytesIO(sig_bytes))
+        img = PILImage.open(io.BytesIO(sig_bytes)).convert("RGBA")
         img_w, img_h = img.size
         scale = min(max_w / img_w, max_h / img_h)
         draw_w = img_w * scale
@@ -174,7 +178,8 @@ def _overlay_signature(pdf_bytes: bytes, sig_bytes: bytes, x: float, y: float, m
         merge_writer.write(out)
         out.seek(0)
         return out.read()
-    except Exception:
+    except Exception as exc:
+        log.warning("Signature overlay failed: %s", exc)
         return pdf_bytes
 
 
@@ -255,6 +260,10 @@ def generate_pdf(
     else:
         ma91_date_str = ""
 
+    # Signature bytes — checked early so text fields are set correctly below
+    ma91_sig_bytes: bytes | None = patient_data.get("ma91_signature_bytes")
+    provider_sig_bytes: bytes | None = provider_data.get("provider_signature_bytes")
+
     # Diagnosis pointer (A, AB, etc.)
     diag_ptr = "".join(chr(ord("A") + i) for i in range(len(diag_codes))) or "A"
 
@@ -312,7 +321,8 @@ def generate_pdf(
         "insurance_name": patient_data.get("mco") or "",
 
         # Box 12 — Patient signature + MA 91 date
-        "pt_signature": "Signature on File",
+        # Clear text field when actual image is available so it shows through
+        "pt_signature": "" if ma91_sig_bytes else "Signature on File",
         "pt_date": ma91_date_str,
 
         # Box 13 — Insured's authorization (benefits assignment)
@@ -370,8 +380,9 @@ def generate_pdf(
         # Box 28 — Total charge
         "t_charge": f"{billed:.2f}",
 
-        # Box 31 — Physician signature + date (text fallback; image overlay applied below)
-        "physician_signature": provider_name,
+        # Box 31 — Physician signature + date
+        # Clear text field when actual image is available so it shows through
+        "physician_signature": "" if provider_sig_bytes else provider_name,
         "physician_date": f"{svc_mm}/{svc_dd}/{svc_yy}" if svc_mm else "",
 
         # Box 32 — Service facility
@@ -420,15 +431,11 @@ def generate_pdf(
 
     # -----------------------------------------------------------------------
     # Overlay signature images if provided
+    # max_w=200 pts (≈2.8"), max_h=30 pts (≈0.4") — fits the signature line
     # -----------------------------------------------------------------------
-    ma91_sig_bytes: bytes | None = patient_data.get("ma91_signature_bytes")
-    provider_sig_bytes: bytes | None = provider_data.get("provider_signature_bytes")
-
     if ma91_sig_bytes:
-        # Box 12 patient signature area
-        pdf_bytes = _overlay_signature(pdf_bytes, ma91_sig_bytes, 27, 259, 150, 18)
+        pdf_bytes = _overlay_signature(pdf_bytes, ma91_sig_bytes, 27, 257, 200, 30)
     if provider_sig_bytes:
-        # Box 31 provider signature area
-        pdf_bytes = _overlay_signature(pdf_bytes, provider_sig_bytes, 27, 184, 150, 18)
+        pdf_bytes = _overlay_signature(pdf_bytes, provider_sig_bytes, 27, 182, 200, 30)
 
     return pdf_bytes
