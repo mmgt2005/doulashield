@@ -11,6 +11,7 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 ## [Unreleased]
 
 ### Fixed
+- **CMS 1500 Box 5 ZIP truncated to 5 digits**: `_parse_address()` had `[:5]` on all three ZIP extraction branches, stripping the `+4` extension from nine-digit ZIP codes; removed the truncation so addresses stored with ZIP+4 (e.g. from Radar.io autocomplete) now flow through to Box 5 intact
 - **CMS 1500 Box 11 always blank**: `ins_policy` (Insured's Policy/Group Number) was never included in the text fields dict; for PA Medicaid the Medicaid ID serves as the policy number and is now written to Box 11 on every generated PDF; Box 11a DOB/sex fields were already correct when patient DOB is stored
 
 ### Added
