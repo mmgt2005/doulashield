@@ -193,6 +193,18 @@ export default function ClientDetailPage() {
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600">
+                Policy / Group Number
+                <span className="ml-1 font-normal text-gray-400">(Box 11 — from Medicaid card)</span>
+              </label>
+              <input
+                {...register('policy_group')}
+                type="text"
+                placeholder="e.g. GRP-12345"
+                className="mt-1 block w-full rounded border border-gray-300 px-3 py-1.5 text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600">
                 Referring Provider NPI
                 <span className="ml-1 font-normal text-gray-400">(Box 17b — referring doctor)</span>
               </label>
@@ -287,6 +299,9 @@ export default function ClientDetailPage() {
                 )}
                 {patient.referring_provider_name && (
                   <p className="mt-0.5 text-sm text-gray-500">Referring: {patient.referring_provider_name}</p>
+                )}
+                {patient.policy_group && (
+                  <p className="mt-0.5 text-sm text-gray-500">Policy / Group: {patient.policy_group}</p>
                 )}
                 {patient.has_other_insurance && (
                   <span className="mt-0.5 inline-block rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">Has other insurance</span>
