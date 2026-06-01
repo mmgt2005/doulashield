@@ -49,9 +49,9 @@ class Settings(BaseSettings):
     # Geocoding (server-side key for ZIP+4 enrichment at PDF generation)
     RADAR_API_KEY: str = ""
 
-    # USPS Web Tools — free ZIP+4 address verification
-    # Register at: https://www.usps.com/business/web-tools-apis/
-    USPS_USER_ID: str = ""
+    # USPS v3 API — ZIP+4 address verification (register at developers.usps.com)
+    USPS_CLIENT_ID: str = ""
+    USPS_CLIENT_SECRET: str = ""
 
     # Resend email
     RESEND_API_KEY: str = ""

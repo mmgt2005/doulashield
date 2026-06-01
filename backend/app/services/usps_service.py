@@ -1,6 +1,6 @@
 import logging
 import re
-import xml.etree.ElementTree as ET
+import time
 from typing import Optional
 
 import httpx
@@ -9,14 +9,52 @@ from app.core.config import settings
 
 log = logging.getLogger(__name__)
 
-_USPS_URL = "https://secure.shippingapis.com/ShippingAPI.dll"
+_TOKEN_URL = "https://apis.usps.com/oauth2/v3/token"
+_ADDRESS_URL = "https://apis.usps.com/addresses/v3/address"
+
+# Module-level token cache: (token_str, expiry_monotonic)
+_token_cache: tuple[str, float] | None = None
+
+
+async def _get_token(client: httpx.AsyncClient) -> str | None:
+    """Return a valid OAuth2 Bearer token, refreshing when expired."""
+    global _token_cache
+
+    if _token_cache:
+        token, expiry = _token_cache
+        if time.monotonic() < expiry:
+            return token
+
+    if not settings.USPS_CLIENT_ID or not settings.USPS_CLIENT_SECRET:
+        return None
+
+    try:
+        resp = await client.post(
+            _TOKEN_URL,
+            data={
+                "grant_type": "client_credentials",
+                "client_id": settings.USPS_CLIENT_ID,
+                "client_secret": settings.USPS_CLIENT_SECRET,
+            },
+            timeout=5.0,
+        )
+        if resp.status_code != 200:
+            log.warning("USPS token HTTP %s: %s", resp.status_code, resp.text[:200])
+            return None
+        data = resp.json()
+        token = data.get("access_token", "")
+        expires_in = int(data.get("expires_in", 28800))  # default 8 hours
+        _token_cache = (token, time.monotonic() + expires_in - 60)
+        return token or None
+    except Exception as exc:
+        log.warning("USPS token fetch error: %s", exc)
+        return None
 
 
 def _parse_for_usps(address: str) -> tuple[str, str, str, str]:
     """Parse 'Street, City, ST ZIP' into (street, city, state, zip5).
 
     Returns empty strings for any part that cannot be determined.
-    USPS Address2 = primary street line; Address1 = apt/unit (kept blank).
     """
     parts = [p.strip() for p in address.split(",") if p.strip()]
     if not parts:
@@ -30,7 +68,7 @@ def _parse_for_usps(address: str) -> tuple[str, str, str, str]:
     for part in reversed(parts[1:]):
         part_s = part.strip()
 
-        # "ST ZIP" or "City ST ZIP" combined — e.g. "GA 30236" or "Jonesboro GA 30236"
+        # "ST ZIP" or "City ST ZIP" — e.g. "GA 30236" or "Jonesboro GA 30236"
         m = re.match(r"^(.*\s+)?([A-Z]{2})\s+(\d{5})(?:-\d{4})?$", part_s)
         if m:
             if m.group(1) and not city:
@@ -48,60 +86,48 @@ def _parse_for_usps(address: str) -> tuple[str, str, str, str]:
 
 
 async def lookup_zip4(address: str, client: httpx.AsyncClient) -> Optional[str]:
-    """Return the authoritative ZIP+4 string (e.g. '30236-1234') from USPS.
+    """Return authoritative ZIP+4 string (e.g. '30236-1234') from USPS v3 API.
 
-    Returns None when USPS_USER_ID is not configured, the address cannot be
-    parsed into components, or USPS cannot match the address.  Only the ZIP
-    digits are used from the USPS response; the original address formatting is
-    preserved by the caller.
+    Returns None when credentials are not configured, the address cannot be
+    parsed into components, or USPS cannot match the address.
     """
-    if not settings.USPS_USER_ID or not address:
+    if not settings.USPS_CLIENT_ID or not settings.USPS_CLIENT_SECRET or not address:
+        return None
+
+    token = await _get_token(client)
+    if not token:
         return None
 
     street, city, state, zip5 = _parse_for_usps(address)
-    if not street or not zip5:
+    if not street:
         return None
 
-    xml_req = (
-        f'<AddressValidateRequest USERID="{settings.USPS_USER_ID}">'
-        "<Revision>1</Revision>"
-        '<Address ID="0">'
-        "<Address1></Address1>"
-        f"<Address2>{street.upper()}</Address2>"
-        f"<City>{city.upper()}</City>"
-        f"<State>{state.upper()}</State>"
-        f"<Zip5>{zip5}</Zip5>"
-        "<Zip4></Zip4>"
-        "</Address>"
-        "</AddressValidateRequest>"
-    )
+    params: dict[str, str] = {"streetAddress": street}
+    if city:
+        params["city"] = city
+    if state:
+        params["state"] = state
+    if zip5:
+        params["ZIPCode"] = zip5
 
     try:
         resp = await client.get(
-            _USPS_URL,
-            params={"API": "Verify", "XML": xml_req},
+            _ADDRESS_URL,
+            params=params,
+            headers={"Authorization": f"Bearer {token}", "Accept": "application/json"},
             timeout=5.0,
         )
         if resp.status_code != 200:
-            log.warning("USPS ZIP+4 HTTP %s for %r", resp.status_code, address[:60])
+            log.info("USPS ZIP+4 HTTP %s for %r", resp.status_code, address[:60])
             return None
 
-        root = ET.fromstring(resp.text)
-        addr_el = root.find("Address")
-        if addr_el is None:
-            return None
+        data = resp.json()
+        addr = data.get("address", {})
+        zip_code = (addr.get("ZIPCode") or "").strip()
+        zip_plus4 = (addr.get("ZIPPlus4") or "").strip()
 
-        error_el = addr_el.find("Error")
-        if error_el is not None:
-            desc = error_el.findtext("Description", "")
-            log.info("USPS ZIP+4 no match for %r: %s", address[:60], desc)
-            return None
-
-        zip5_val = (addr_el.findtext("Zip5") or "").strip()
-        zip4_val = (addr_el.findtext("Zip4") or "").strip()
-
-        if zip5_val and zip4_val and zip4_val not in ("", "0000"):
-            result = f"{zip5_val}-{zip4_val}"
+        if zip_code and zip_plus4 and zip_plus4 not in ("", "0000"):
+            result = f"{zip_code}-{zip_plus4}"
             log.info("USPS ZIP+4 %r → %s", address[:60], result)
             return result
 
@@ -112,7 +138,7 @@ async def lookup_zip4(address: str, client: httpx.AsyncClient) -> Optional[str]:
 
 
 def substitute_zip4(address: str, full_zip4: str) -> str:
-    """Replace the bare 5-digit ZIP in *address* with *full_zip4* ('NNNNN-NNNN').
+    """Replace a bare 5-digit ZIP in *address* with *full_zip4* ('NNNNN-NNNN').
 
     Only replaces the first occurrence that is not already in ZIP+4 form.
     """
