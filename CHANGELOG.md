@@ -11,6 +11,7 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 ## [Unreleased]
 
 ### Fixed
+- **CMS 1500 Box 11a and Box 3 sex blank for pre-migration patients**: `patient_data.get("gender", "F")` returns `None` when the key exists with a null value — patients created before migration 0015 may have `NULL` gender since `server_default` only applies to new rows; changed to `patient_data.get("gender") or "F"` so `None` and empty string both fall back to Female
 - **CMS 1500 Box 12 date mismatched Box 31**: `pt_date` was populated from the MA 91 signing timestamp while `physician_date` (Box 31) uses the service/visit date; since both boxes now carry the provider signature they should show the same date — `pt_date` now uses the service date
 - **CMS 1500 signature boxes reassigned**: Box 12 and Box 31 now both carry the provider signature image; Box 13 carries the client MA 91 signature image; updated text-field clearing logic to match (`pt_signature` clears when provider image present, `ins_signature` clears when MA 91 image present); Box 13 overlay uses AcroForm field rect coordinates x=412, y=410, w=173, h=25
 - **CMS 1500 signature images placed outside Box 12 and Box 31**: `_overlay_signature()` was called with hardcoded coordinates (x=27, y=257 and x=27, y=182) that placed both images in the middle of the form body; corrected to the exact AcroForm field rect positions extracted from the blank PDF — Box 12 `pt_signature` at x=56, y=410 (w=180, h=25 pts) and Box 31 `physician_signature` at x=20, y=50 (w=156, h=25 pts)
