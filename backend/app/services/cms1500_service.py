@@ -357,8 +357,9 @@ def generate_pdf(
         # Box 24G — Days/units
         "day1": "1",
 
-        # Box 24J — Rendering provider NPI
-        "local1a": npi,
+        # Box 24I — Qualifier ("1" = NPI); Box 24J — Rendering provider NPI
+        "local1a": "1",
+        "local1":  npi,
 
         # Box 25 — Federal Tax ID (SSN for sole proprietor)
         "tax_id": provider_ssn,
