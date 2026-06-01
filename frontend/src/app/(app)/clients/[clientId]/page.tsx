@@ -98,6 +98,7 @@ export default function ClientDetailPage() {
         const coords = await geocodeAddress(data.address)
         lat = coords?.lat
         lng = coords?.lng
+        if (coords?.label) data.address = coords.label
       }
       const res = await axios.patch<Patient>(
         `${process.env.NEXT_PUBLIC_API_URL}/api/v1/patients/${clientId}`,

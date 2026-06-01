@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { AddressSuggestion, suggestAddresses } from '@/lib/geo'
+import { AddressSuggestion, geocodeAddress, suggestAddresses } from '@/lib/geo'
 
 interface Props {
   id?: string
@@ -72,6 +72,13 @@ export default function AddressAutocomplete({
     onSelect(s.label, s.lat, s.lng)
     setSuggestions([])
     setOpen(false)
+    // Enrich with ZIP+4 from Radar forward geocode (rooftop-level, async)
+    geocodeAddress(s.label).then((enriched) => {
+      if (enriched?.label && enriched.label !== s.label) {
+        onChange(enriched.label)
+        onSelect(enriched.label, enriched.lat, enriched.lng)
+      }
+    }).catch(() => {})
   }
 
   return (

@@ -54,6 +54,7 @@ export default function NewClientPage() {
         if (coords) {
           data.latitude = coords.lat
           data.longitude = coords.lng
+          if (coords.label) data.address = coords.label
         }
       }
       const res = await axios.post(

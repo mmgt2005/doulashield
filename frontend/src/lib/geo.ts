@@ -92,7 +92,7 @@ export interface AddressSuggestion {
 
 export async function geocodeAddress(
   address: string
-): Promise<{ lat: number; lng: number } | null> {
+): Promise<{ lat: number; lng: number; label?: string } | null> {
   try {
     if (RADAR_KEY) {
       const res = await fetch(
@@ -102,7 +102,8 @@ export async function geocodeAddress(
       const data = await res.json()
       const addr: RadarAddress | undefined = data.addresses?.[0]
       if (!addr) return null
-      return { lat: addr.latitude, lng: addr.longitude }
+      const label = radarLabel(addr)
+      return { lat: addr.latitude, lng: addr.longitude, label: label || undefined }
     }
     // Photon fallback
     const res = await fetch(
@@ -111,7 +112,9 @@ export async function geocodeAddress(
     const data = await res.json()
     if (!data.features?.length) return null
     const [lng, lat] = data.features[0].geometry.coordinates
-    return { lat, lng }
+    const props: PhotonProperties = data.features[0].properties
+    const label = photonLabel(props)
+    return { lat, lng, label: label || undefined }
   } catch {
     return null
   }
