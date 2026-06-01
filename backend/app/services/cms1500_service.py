@@ -321,12 +321,13 @@ def generate_pdf(
         "insurance_name": patient_data.get("mco") or "",
 
         # Box 12 — Patient signature + MA 91 date
-        # Clear text field when actual image is available so it shows through
-        "pt_signature": "" if ma91_sig_bytes else "Signature on File",
+        # Provider signs here (same image as Box 31); clear text when image is available
+        "pt_signature": "" if provider_sig_bytes else provider_name,
         "pt_date": ma91_date_str,
 
-        # Box 13 — Insured's authorization (benefits assignment)
-        "ins_signature": "Signature on File",
+        # Box 13 — Client/patient MA 91 signature (authorization to assign benefits)
+        # Clear text field when actual image is available so it shows through
+        "ins_signature": "" if ma91_sig_bytes else "Signature on File",
 
         # Box 17 — Referring provider NAME (not NPI — field is ref_physician)
         "ref_physician": patient_data.get("referring_provider_name") or "",
@@ -431,11 +432,14 @@ def generate_pdf(
 
     # -----------------------------------------------------------------------
     # Overlay signature images at AcroForm field positions (bottom-left origin)
-    # Box 12 pt_signature:       rect=[55.99, 412.79, 236.15, 424.79]
-    # Box 31 physician_signature: rect=[19.88,  53.88, 175.87,  65.88]
+    # Box 12 pt_signature:        rect=[55.99,  412.79, 236.15, 424.79]  — provider sig
+    # Box 13 ins_signature:       rect=[412.35, 412.79, 584.94, 424.79]  — client MA 91 sig
+    # Box 31 physician_signature: rect=[19.88,   53.88, 175.87,  65.88]  — provider sig
     # -----------------------------------------------------------------------
+    if provider_sig_bytes:
+        pdf_bytes = _overlay_signature(pdf_bytes, provider_sig_bytes, 56, 410, 180, 25)
     if ma91_sig_bytes:
-        pdf_bytes = _overlay_signature(pdf_bytes, ma91_sig_bytes, 56, 410, 180, 25)
+        pdf_bytes = _overlay_signature(pdf_bytes, ma91_sig_bytes, 412, 410, 173, 25)
     if provider_sig_bytes:
         pdf_bytes = _overlay_signature(pdf_bytes, provider_sig_bytes, 20, 50, 156, 25)
 
