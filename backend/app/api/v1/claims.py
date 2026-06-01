@@ -15,7 +15,7 @@ from app.models.patient import Patient
 from app.models.user import User
 from app.models.visit import Visit
 from app.schemas.claim import ClaimCreate, ClaimRead
-from app.services import cms1500_service
+from app.services import cms1500_service, usps_service
 from app.services.claims_service import ClaimsService
 
 router = APIRouter(tags=["claims"])
@@ -23,58 +23,70 @@ log = logging.getLogger(__name__)
 
 
 async def _enrich_zip4(address: str, client: "httpx.AsyncClient") -> str:
-    """Return address with ZIP+4 from Radar forward geocode; original on any failure.
+    """Return address enriched with ZIP+4.  Tries Radar first, then USPS.
 
     RADAR_API_KEY must be the Radar *secret* key (prj_live_sk_…).
     The publishable key is domain-restricted and returns 403 from a server.
     """
-    if not settings.RADAR_API_KEY or not address:
+    if not address:
         return address
-    try:
-        resp = await client.get(
-            "https://api.radar.io/v1/geocode/forward",
-            params={"query": address, "country": "US", "limit": 1},
-            headers={"Authorization": settings.RADAR_API_KEY},
-            timeout=3.0,
-        )
-        if resp.status_code != 200:
-            log.warning(
-                "Radar ZIP+4 enrichment HTTP %s for %r — %s. "
-                "Set RADAR_API_KEY to the Radar secret key (prj_live_sk_…), not the publishable key.",
-                resp.status_code, address[:60], resp.text[:200],
+
+    radar_formatted: str | None = None  # Radar-reformatted address (without ZIP+4)
+
+    # ── Try Radar ────────────────────────────────────────────────────────────
+    if settings.RADAR_API_KEY:
+        try:
+            resp = await client.get(
+                "https://api.radar.io/v1/geocode/forward",
+                params={"query": address, "country": "US", "limit": 1},
+                headers={"Authorization": settings.RADAR_API_KEY},
+                timeout=3.0,
             )
-            return address
-        data = resp.json()
-        addr = (data.get("addresses") or [None])[0]
-        if not addr:
-            return address
-        # Prefer Radar's pre-formatted address which already contains ZIP+4
-        formatted = addr.get("formattedAddress", "")
-        if formatted:
-            if "-" in (addr.get("postalCode") or ""):
-                log.info("ZIP+4 enriched %r → %r", address[:60], formatted)
+            if resp.status_code != 200:
+                log.warning(
+                    "Radar ZIP+4 enrichment HTTP %s for %r — %s. "
+                    "Set RADAR_API_KEY to the Radar secret key (prj_live_sk_…), not the publishable key.",
+                    resp.status_code, address[:60], resp.text[:200],
+                )
             else:
-                log.info("Radar returned no ZIP+4 for %r (postalCode=%r) — update the address manually with the full 9-digit ZIP", address[:60], addr.get("postalCode"))
-            return formatted
-        # Fallback: build from components
-        parts: list[str] = []
-        street = f"{addr.get('number', '')} {addr.get('street', '')}".strip()
-        if street:
-            parts.append(street)
-        if addr.get("city"):
-            parts.append(addr["city"])
-        state = addr.get("stateCode", "")
-        postal = addr.get("postalCode", "")
-        if state and postal:
-            parts.append(f"{state} {postal}")
-        elif state:
-            parts.append(state)
-        elif postal:
-            parts.append(postal)
-        return ", ".join(parts) if parts else address
-    except Exception as exc:
-        log.warning("Radar ZIP+4 enrichment error for %r: %s", address[:60], exc)
-        return address
+                data = resp.json()
+                addr = (data.get("addresses") or [None])[0]
+                if addr:
+                    formatted = addr.get("formattedAddress", "")
+                    if not formatted:
+                        parts: list[str] = []
+                        street = f"{addr.get('number', '')} {addr.get('street', '')}".strip()
+                        if street:
+                            parts.append(street)
+                        if addr.get("city"):
+                            parts.append(addr["city"])
+                        state = addr.get("stateCode", "")
+                        postal = addr.get("postalCode", "")
+                        if state and postal:
+                            parts.append(f"{state} {postal}")
+                        elif state:
+                            parts.append(state)
+                        elif postal:
+                            parts.append(postal)
+                        formatted = ", ".join(parts) if parts else address
+
+                    if "-" in (addr.get("postalCode") or ""):
+                        log.info("Radar ZIP+4 enriched %r → %r", address[:60], formatted)
+                        return formatted
+
+                    # Radar matched the address but has no ZIP+4
+                    radar_formatted = formatted
+        except Exception as exc:
+            log.warning("Radar ZIP+4 enrichment error for %r: %s", address[:60], exc)
+
+    # ── Try USPS fallback ────────────────────────────────────────────────────
+    zip4 = await usps_service.lookup_zip4(address, client)
+    if zip4:
+        base = radar_formatted if radar_formatted else address
+        return usps_service.substitute_zip4(base, zip4)
+
+    # No ZIP+4 found — return Radar-formatted address if we got one, else original
+    return radar_formatted if radar_formatted else address
 
 
 def _svc(db: AsyncSession, audit: AuditLogger) -> ClaimsService:

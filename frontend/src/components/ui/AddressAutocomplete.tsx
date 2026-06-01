@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { AddressSuggestion, geocodeAddress, suggestAddresses } from '@/lib/geo'
+import { AddressSuggestion, suggestAddresses } from '@/lib/geo'
+import { getAccessToken } from '@/lib/auth'
 
 interface Props {
   id?: string
@@ -72,13 +73,22 @@ export default function AddressAutocomplete({
     onSelect(s.label, s.lat, s.lng)
     setSuggestions([])
     setOpen(false)
-    // Enrich with ZIP+4 from Radar forward geocode (rooftop-level, async)
-    geocodeAddress(s.label).then((enriched) => {
-      if (enriched?.label && enriched.label !== s.label) {
-        onChange(enriched.label)
-        onSelect(enriched.label, enriched.lat, enriched.lng)
-      }
-    }).catch(() => {})
+    // Enrich with ZIP+4 via backend (tries Radar secret key + USPS fallback)
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? ''
+    const token = getAccessToken()
+    if (apiUrl && token) {
+      fetch(`${apiUrl}/api/v1/addresses/zip4?address=${encodeURIComponent(s.label)}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data: { address?: string } | null) => {
+          if (data?.address && data.address !== s.label) {
+            onChange(data.address)
+            onSelect(data.address, s.lat, s.lng)
+          }
+        })
+        .catch(() => {})
+    }
   }
 
   return (

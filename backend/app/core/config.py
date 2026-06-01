@@ -49,6 +49,10 @@ class Settings(BaseSettings):
     # Geocoding (server-side key for ZIP+4 enrichment at PDF generation)
     RADAR_API_KEY: str = ""
 
+    # USPS Web Tools — free ZIP+4 address verification
+    # Register at: https://www.usps.com/business/web-tools-apis/
+    USPS_USER_ID: str = ""
+
     # Resend email
     RESEND_API_KEY: str = ""
     EMAIL_FROM: str = "DoulaShield <noreply@doulashield.com>"
