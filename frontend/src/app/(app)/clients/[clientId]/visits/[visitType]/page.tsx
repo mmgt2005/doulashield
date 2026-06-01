@@ -1216,12 +1216,27 @@ export default function VisitFormPage() {
                         </div>
                       )}
                       {pdfPreviewUrl && !pdfLoading && (
-                        <iframe
-                          src={pdfPreviewUrl}
-                          className="w-full rounded border border-gray-200"
-                          style={{ height: '520px' }}
-                          title="CMS 1500 Preview"
-                        />
+                        <>
+                          {/* Desktop: inline iframe (blocked on iOS Safari) */}
+                          <iframe
+                            src={pdfPreviewUrl}
+                            className="hidden md:block w-full rounded border border-gray-200"
+                            style={{ height: '520px' }}
+                            title="CMS 1500 Preview"
+                          />
+                          {/* Mobile: open in new tab (iOS doesn't support PDF iframes) */}
+                          <div className="block md:hidden rounded border border-gray-200 bg-gray-50 p-4 text-center">
+                            <p className="mb-3 text-sm text-gray-600">PDF preview is not supported on mobile browsers.</p>
+                            <a
+                              href={pdfPreviewUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-block rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                            >
+                              Open PDF ↗
+                            </a>
+                          </div>
+                        </>
                       )}
                     </div>
 
