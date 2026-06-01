@@ -300,8 +300,8 @@ def generate_pdf(
         "ins_state": pt_state,
         "ins_zip": pt_zip,
 
-        # Box 11 — Insured's Policy/Group Number (Medicaid ID serves as policy number)
-        "ins_policy": medicaid_id,
+        # Box 11 — Insured's Policy/Group Number (use card's group number if available, else Medicaid ID)
+        "ins_policy": patient_data.get("policy_group") or medicaid_id,
 
         # Box 11a — Insured DOB (mirrors patient for self-pay)
         "ins_dob_mm": dob_mm,

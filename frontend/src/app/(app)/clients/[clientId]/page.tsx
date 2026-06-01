@@ -18,6 +18,7 @@ interface EditFormData {
   email: string
   mco: string
   date_of_birth: string
+  policy_group: string
   referring_provider_npi: string
   referring_provider_name: string
   has_other_insurance: boolean
@@ -62,6 +63,7 @@ export default function ClientDetailPage() {
     if (data.name) setValue('name', String(data.name))
     if (data.mco) setValue('mco', String(data.mco))
     if (data.date_of_birth) setValue('date_of_birth', String(data.date_of_birth))
+    if (data.policy_group) setValue('policy_group', String(data.policy_group))
     if (data.address) {
       setValue('address', String(data.address))
       setValue('latitude', undefined)
@@ -78,6 +80,7 @@ export default function ClientDetailPage() {
       email: patient.email ?? '',
       mco: patient.mco ?? '',
       date_of_birth: patient.date_of_birth ?? '',
+      policy_group: patient.policy_group ?? '',
       referring_provider_npi: patient.referring_provider_npi ?? '',
       referring_provider_name: patient.referring_provider_name ?? '',
       has_other_insurance: patient.has_other_insurance ?? false,
@@ -108,6 +111,7 @@ export default function ClientDetailPage() {
           email: data.email || null,
           mco: data.mco || null,
           date_of_birth: data.date_of_birth || null,
+          policy_group: data.policy_group || null,
           address: data.address || null,
           latitude: lat ?? null,
           longitude: lng ?? null,

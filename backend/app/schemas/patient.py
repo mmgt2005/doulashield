@@ -15,6 +15,7 @@ class PatientCreate(BaseModel):
     latitude: float | None = None
     longitude: float | None = None
     medicaid_card_image_path: str | None = None
+    policy_group: str | None = None
     referring_provider_npi: str | None = None
     referring_provider_name: str | None = None
     has_other_insurance: bool = False
@@ -30,6 +31,7 @@ class PatientUpdate(BaseModel):
     latitude: float | None = None
     longitude: float | None = None
     medicaid_card_image_path: str | None = None
+    policy_group: str | None = None
     referring_provider_npi: str | None = None
     referring_provider_name: str | None = None
     has_other_insurance: bool | None = None
@@ -48,6 +50,7 @@ class PatientRead(BaseModel):
     latitude: float | None
     longitude: float | None
     medicaid_card_image_path: str | None
+    policy_group: str | None
     referring_provider_npi: str | None
     referring_provider_name: str | None
     has_other_insurance: bool

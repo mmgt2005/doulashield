@@ -24,6 +24,7 @@ def _to_read(patient: Patient) -> PatientRead:
         latitude=patient.latitude,
         longitude=patient.longitude,
         medicaid_card_image_path=patient.medicaid_card_image_path,
+        policy_group=patient.policy_group,
         referring_provider_npi=patient.referring_provider_npi,
         referring_provider_name=patient.referring_provider_name,
         has_other_insurance=patient.has_other_insurance,
@@ -55,6 +56,7 @@ class PatientService:
             latitude=data.latitude,
             longitude=data.longitude,
             medicaid_card_image_path=data.medicaid_card_image_path,
+            policy_group=data.policy_group,
             referring_provider_npi=data.referring_provider_npi,
             referring_provider_name=data.referring_provider_name,
             has_other_insurance=data.has_other_insurance,
@@ -153,6 +155,8 @@ class PatientService:
             patient.longitude = data.longitude
         if data.medicaid_card_image_path is not None:
             patient.medicaid_card_image_path = data.medicaid_card_image_path
+        if data.policy_group is not None:
+            patient.policy_group = data.policy_group
         if data.referring_provider_npi is not None:
             patient.referring_provider_npi = data.referring_provider_npi
         if data.referring_provider_name is not None:

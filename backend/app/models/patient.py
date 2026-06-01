@@ -30,6 +30,7 @@ class Patient(Base):
     referring_provider_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
     has_other_insurance: Mapped[bool] = mapped_column(Boolean, server_default="false", nullable=False)
     medicaid_card_image_path: Mapped[str | None] = mapped_column(String, nullable=True)
+    policy_group: Mapped[str | None] = mapped_column(String, nullable=True)
     eligibility_status: Mapped[str | None] = mapped_column(String, nullable=True)
     eligibility_checked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)

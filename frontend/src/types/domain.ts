@@ -25,6 +25,7 @@ export interface Patient {
   latitude: number | null
   longitude: number | null
   medicaid_card_image_path: string | null
+  policy_group: string | null
   eligibility_status: string | null
   eligibility_checked_at: string | null
   is_active: boolean

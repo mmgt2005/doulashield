@@ -18,6 +18,7 @@ const schema = z.object({
   email: z.string().email('Invalid email address').optional().or(z.literal('')),
   mco: z.string().optional(),
   date_of_birth: z.string().optional(),
+  policy_group: z.string().optional(),
   referring_provider_name: z.string().optional(),
   has_other_insurance: z.boolean().default(false),
   address: z.string().optional(),
@@ -42,6 +43,7 @@ export default function NewClientPage() {
     if (data.medicaid_id) setValue('medicaid_id', String(data.medicaid_id))
     if (data.mco) setValue('mco', String(data.mco))
     if (data.date_of_birth) setValue('date_of_birth', String(data.date_of_birth))
+    if (data.policy_group) setValue('policy_group', String(data.policy_group))
     if (data.address) setValue('address', String(data.address))
     if (data.image_path) setValue('medicaid_card_image_path', String(data.image_path))
   }

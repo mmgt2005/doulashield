@@ -194,6 +194,7 @@ async def download_cms1500(
                 "gender": patient.gender,
                 "address": patient_address,
                 "mco": patient.mco or "",
+                "policy_group": patient.policy_group or "",
                 "referring_provider_npi": patient.referring_provider_npi or "",
                 "referring_provider_name": patient.referring_provider_name or "",
                 "has_other_insurance": patient.has_other_insurance,

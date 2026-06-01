@@ -19,6 +19,7 @@ _PROMPTS: dict[str, str] = {
         "Extract information from this Medicaid card image and return ONLY valid JSON with no commentary:\n"
         '{"name": "full patient name as printed", "medicaid_id": "member or beneficiary ID", '
         '"date_of_birth": "member date of birth in YYYY-MM-DD format or null", '
+        '"policy_group": "group number, plan group, or policy group printed on the card or null", '
         '"mco": "normalize to exactly one of these Pennsylvania MCO names: '
         "AmeriHealth Caritas, UPMC For You, Geisinger Health Plan, Health Partners Plans, "
         "Aetna Better Health, UnitedHealthcare Community Plan, Highmark Wholecare, FFS. "
