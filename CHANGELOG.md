@@ -10,6 +10,11 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ## [Unreleased]
 
+### Added
+- **USPS ZIP+4 lookup as authoritative fallback**: new `usps_service.py` wraps the free USPS Web Tools Address Verification API; `_enrich_zip4()` in `claims.py` now tries Radar first and, when Radar returns no ZIP+4 for an address, automatically calls USPS to obtain the authoritative 4-digit extension and substitutes it into the address string before PDF generation; requires `USPS_USER_ID` Railway variable (free registration at usps.com/business/web-tools-apis)
+- **`GET /api/v1/addresses/zip4` endpoint**: authenticated endpoint that accepts an `address` query parameter and returns `{"address": "<enriched>"}` with ZIP+4 appended when available; uses the same Radar → USPS pipeline as PDF generation; used by the address autocomplete for real-time enrichment after suggestion selection
+- **Address autocomplete enriches via backend ZIP+4 endpoint**: after the user selects a suggestion, `AddressAutocomplete.tsx` calls the new backend endpoint (server-side Radar secret key + USPS fallback) instead of the previous frontend-only Radar forward geocode; coordinates are unchanged, only the ZIP+4 suffix is added; requires no additional frontend environment variables
+
 ### Fixed
 - **CMS 1500 Box 24J NPI in wrong sub-row**: the rendering provider NPI was written to `local1a` (the upper shaded qualifier sub-row) instead of `local1` (the lower main data sub-row where the actual NPI number belongs); also added qualifier `"1"` (NPI type) to `local1a` per CMS 1500 instructions
 - **`_enrich_zip4` no-ZIP+4 case now logs INFO**: when Radar returns 200 but has no ZIP+4 for the address, an INFO log now explains the address must be updated manually with the full 9-digit ZIP; previously the fallback was silent
