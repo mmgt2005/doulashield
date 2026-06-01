@@ -228,7 +228,7 @@ def generate_pdf(
     first_name = " ".join(name_parts[:-1]) if len(name_parts) > 1 else ""
     patient_display = f"{last_name}, {first_name}".strip(", ")
 
-    gender = patient_data.get("gender", "F")
+    gender = patient_data.get("gender") or "F"  # None / "" → default Female
     medicaid_id = patient_data.get("medicaid_id", "")
     dob: date | None = patient_data.get("date_of_birth")
     dob_mm = dob.strftime("%m") if dob else ""
