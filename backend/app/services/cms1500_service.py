@@ -320,10 +320,10 @@ def generate_pdf(
         # Box 11c — Insurance plan / MCO name
         "insurance_name": patient_data.get("mco") or "",
 
-        # Box 12 — Patient signature + MA 91 date
-        # Provider signs here (same image as Box 31); clear text when image is available
+        # Box 12 — Patient signature + date
+        # Provider signs here (same image as Box 31); date matches service date
         "pt_signature": "" if provider_sig_bytes else provider_name,
-        "pt_date": ma91_date_str,
+        "pt_date": f"{svc_mm}/{svc_dd}/{svc_yy}" if svc_mm else "",
 
         # Box 13 — Client/patient MA 91 signature (authorization to assign benefits)
         # Clear text field when actual image is available so it shows through
