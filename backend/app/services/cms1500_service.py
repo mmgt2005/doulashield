@@ -366,8 +366,8 @@ def generate_pdf(
         # Box 24E — Diagnosis pointer
         "diag1": diag_ptr,
 
-        # Box 24F — Charges
-        "ch1": f"{billed:.2f}",
+        # Box 24F — Charges (no decimal; form has pre-printed decimal separator)
+        "ch1": str(int(billed)),
 
         # Box 24G — Days/units
         "day1": "1",
@@ -382,8 +382,8 @@ def generate_pdf(
         # Box 26 — Patient account number
         "pt_account": pt_account,
 
-        # Box 28 — Total charge
-        "t_charge": f"{billed:.2f}",
+        # Box 28 — Total charge (no decimal; same rule as Box 24F)
+        "t_charge": str(int(billed)),
 
         # Box 31 — Physician signature + date
         # Clear text field when actual image is available so it shows through
