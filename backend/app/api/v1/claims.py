@@ -1,3 +1,4 @@
+import logging
 import uuid
 from typing import Annotated
 
@@ -18,10 +19,15 @@ from app.services import cms1500_service
 from app.services.claims_service import ClaimsService
 
 router = APIRouter(tags=["claims"])
+log = logging.getLogger(__name__)
 
 
 async def _enrich_zip4(address: str, client: "httpx.AsyncClient") -> str:
-    """Return address with ZIP+4 from Radar forward geocode; original on any failure."""
+    """Return address with ZIP+4 from Radar forward geocode; original on any failure.
+
+    RADAR_API_KEY must be the Radar *secret* key (prj_live_sk_…).
+    The publishable key is domain-restricted and returns 403 from a server.
+    """
     if not settings.RADAR_API_KEY or not address:
         return address
     try:
@@ -31,10 +37,23 @@ async def _enrich_zip4(address: str, client: "httpx.AsyncClient") -> str:
             headers={"Authorization": settings.RADAR_API_KEY},
             timeout=3.0,
         )
+        if resp.status_code != 200:
+            log.warning(
+                "Radar ZIP+4 enrichment HTTP %s for %r — %s. "
+                "Set RADAR_API_KEY to the Radar secret key (prj_live_sk_…), not the publishable key.",
+                resp.status_code, address[:60], resp.text[:200],
+            )
+            return address
         data = resp.json()
         addr = (data.get("addresses") or [None])[0]
         if not addr:
             return address
+        # Prefer Radar's pre-formatted address which already contains ZIP+4
+        formatted = addr.get("formattedAddress", "")
+        if formatted:
+            log.debug("ZIP+4 enriched %r → %r", address, formatted)
+            return formatted
+        # Fallback: build from components
         parts: list[str] = []
         street = f"{addr.get('number', '')} {addr.get('street', '')}".strip()
         if street:
@@ -50,7 +69,8 @@ async def _enrich_zip4(address: str, client: "httpx.AsyncClient") -> str:
         elif postal:
             parts.append(postal)
         return ", ".join(parts) if parts else address
-    except Exception:
+    except Exception as exc:
+        log.warning("Radar ZIP+4 enrichment error for %r: %s", address[:60], exc)
         return address
 
 
