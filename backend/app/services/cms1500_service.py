@@ -93,17 +93,17 @@ def _parse_address(address: str) -> tuple[str, str, str, str]:
         if m2:
             city = city or m2.group(1).strip()
             state = state or m2.group(2)
-            zip_code = zip_code or m2.group(3)[:5]
+            zip_code = zip_code or m2.group(3)
             continue
         # "PA 19103" pattern
         m = re.match(r"([A-Z]{2})\s+(\d{5}(?:-\d{4})?)", part_s)
         if m:
             state = state or m.group(1)
-            zip_code = zip_code or m.group(2)[:5]
+            zip_code = zip_code or m.group(2)
             continue
         # Pure 5-digit ZIP
         if re.match(r"^\d{5}(?:-\d{4})?$", part_s):
-            zip_code = zip_code or part_s[:5]
+            zip_code = zip_code or part_s
             continue
         # 2-letter state abbreviation
         if re.match(r"^[A-Z]{2}$", part_s):
