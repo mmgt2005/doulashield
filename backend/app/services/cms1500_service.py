@@ -430,12 +430,13 @@ def generate_pdf(
     pdf_bytes = buf.read()
 
     # -----------------------------------------------------------------------
-    # Overlay signature images if provided
-    # max_w=200 pts (≈2.8"), max_h=30 pts (≈0.4") — fits the signature line
+    # Overlay signature images at AcroForm field positions (bottom-left origin)
+    # Box 12 pt_signature:       rect=[55.99, 412.79, 236.15, 424.79]
+    # Box 31 physician_signature: rect=[19.88,  53.88, 175.87,  65.88]
     # -----------------------------------------------------------------------
     if ma91_sig_bytes:
-        pdf_bytes = _overlay_signature(pdf_bytes, ma91_sig_bytes, 27, 257, 200, 30)
+        pdf_bytes = _overlay_signature(pdf_bytes, ma91_sig_bytes, 56, 410, 180, 25)
     if provider_sig_bytes:
-        pdf_bytes = _overlay_signature(pdf_bytes, provider_sig_bytes, 27, 182, 200, 30)
+        pdf_bytes = _overlay_signature(pdf_bytes, provider_sig_bytes, 20, 50, 156, 25)
 
     return pdf_bytes
