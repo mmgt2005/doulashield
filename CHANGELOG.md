@@ -11,6 +11,7 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 ## [Unreleased]
 
 ### Fixed
+- **CMS 1500 signature images placed outside Box 12 and Box 31**: `_overlay_signature()` was called with hardcoded coordinates (x=27, y=257 and x=27, y=182) that placed both images in the middle of the form body; corrected to the exact AcroForm field rect positions extracted from the blank PDF — Box 12 `pt_signature` at x=56, y=410 (w=180, h=25 pts) and Box 31 `physician_signature` at x=20, y=50 (w=156, h=25 pts)
 - **CMS 1500 signature images never appearing**: three bugs combined to prevent actual signatures from rendering — (1) `reportlab` was missing from `requirements.txt`, causing `_overlay_signature()` to silently catch the `ImportError` and return the unchanged PDF on every call; (2) AcroForm text fields (`pt_signature`, `physician_signature`) render as PDF annotations on top of the page content stream, hiding the image overlay beneath them — fixed by clearing those fields to `""` when real signature bytes are available so the widget renders blank and the underlying image shows through; (3) overlay height was 18 pts (≈¼ inch) — too small for a readable signature, increased to 30 pts with width widened to 200 pts; also added `log.warning()` to `_overlay_signature` so future failures are visible in Railway logs instead of swallowed silently
 
 ### Added
