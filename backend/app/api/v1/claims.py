@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
 from app.core.audit import AuditLogger
+from app.core.config import settings
 from app.core.encryption import decrypt_field
 from app.dependencies import CurrentUser, get_audit, get_client_ip, get_current_user, get_db, get_user_agent
 from app.models.patient import Patient
@@ -17,6 +18,40 @@ from app.services import cms1500_service
 from app.services.claims_service import ClaimsService
 
 router = APIRouter(tags=["claims"])
+
+
+async def _enrich_zip4(address: str, client: "httpx.AsyncClient") -> str:
+    """Return address with ZIP+4 from Radar forward geocode; original on any failure."""
+    if not settings.RADAR_API_KEY or not address:
+        return address
+    try:
+        resp = await client.get(
+            "https://api.radar.io/v1/geocode/forward",
+            params={"query": address, "country": "US", "limit": 1},
+            headers={"Authorization": settings.RADAR_API_KEY},
+            timeout=3.0,
+        )
+        data = resp.json()
+        addr = (data.get("addresses") or [None])[0]
+        if not addr:
+            return address
+        parts: list[str] = []
+        street = f"{addr.get('number', '')} {addr.get('street', '')}".strip()
+        if street:
+            parts.append(street)
+        if addr.get("city"):
+            parts.append(addr["city"])
+        state = addr.get("stateCode", "")
+        postal = addr.get("postalCode", "")
+        if state and postal:
+            parts.append(f"{state} {postal}")
+        elif state:
+            parts.append(state)
+        elif postal:
+            parts.append(postal)
+        return ", ".join(parts) if parts else address
+    except Exception:
+        return address
 
 
 def _svc(db: AsyncSession, audit: AuditLogger) -> ClaimsService:
@@ -87,22 +122,26 @@ async def download_cms1500(
 
     location_type = visit.location_type if visit else None
 
-    # Fetch signature image bytes for overlay (non-blocking on failure)
-    async def _fetch_bytes(path: str | None) -> bytes | None:
-        if not path:
-            return None
-        try:
-            url = await get_signed_url(path, expires_in=60)
-            async with _httpx.AsyncClient(timeout=10) as hc:
+    async with _httpx.AsyncClient(timeout=10) as hc:
+        # Fetch signature image bytes for overlay (non-blocking on failure)
+        async def _fetch_bytes(path: str | None) -> bytes | None:
+            if not path:
+                return None
+            try:
+                url = await get_signed_url(path, expires_in=60)
                 resp = await hc.get(url)
                 if resp.status_code == 200:
                     return resp.content
-        except Exception:
-            pass
-        return None
+            except Exception:
+                pass
+            return None
 
-    ma91_sig_bytes = await _fetch_bytes(visit.ma91_signature_path if visit else None)
-    provider_sig_bytes = await _fetch_bytes(user.provider_signature_path)
+        ma91_sig_bytes = await _fetch_bytes(visit.ma91_signature_path if visit else None)
+        provider_sig_bytes = await _fetch_bytes(user.provider_signature_path)
+
+        # Enrich both addresses with ZIP+4 from Radar forward geocode
+        patient_address = await _enrich_zip4(patient.address or "", hc)
+        provider_address = await _enrich_zip4(user.provider_address or "", hc)
 
     provider_ssn = ""
     if user.provider_ssn_encrypted:
@@ -118,7 +157,7 @@ async def download_cms1500(
                 "medicaid_id": decrypt_field(patient.medicaid_id_encrypted),
                 "date_of_birth": patient.date_of_birth,
                 "gender": patient.gender,
-                "address": patient.address or "",
+                "address": patient_address,
                 "mco": patient.mco or "",
                 "referring_provider_npi": patient.referring_provider_npi or "",
                 "referring_provider_name": patient.referring_provider_name or "",
@@ -136,7 +175,7 @@ async def download_cms1500(
             provider_data={
                 "npi": user.npi or "",
                 "full_name": user.full_name or "",
-                "provider_address": user.provider_address or "",
+                "provider_address": provider_address,
                 "provider_phone": user.provider_phone or "",
                 "provider_ssn": provider_ssn,
                 "provider_signature_bytes": provider_sig_bytes,

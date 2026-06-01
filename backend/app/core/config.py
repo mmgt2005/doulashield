@@ -46,6 +46,9 @@ class Settings(BaseSettings):
     STRIPE_PARTNER_ACCOUNT_ID: str = ""
     STRIPE_PARTNER_SHARE: float = 0.35
 
+    # Geocoding (server-side key for ZIP+4 enrichment at PDF generation)
+    RADAR_API_KEY: str = ""
+
     # Resend email
     RESEND_API_KEY: str = ""
     EMAIL_FROM: str = "DoulaShield <noreply@doulashield.com>"
