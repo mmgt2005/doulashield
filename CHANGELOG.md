@@ -11,7 +11,7 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 ## [Unreleased]
 
 ### Added
-- **USPS ZIP+4 lookup as authoritative fallback**: new `usps_service.py` wraps the free USPS Web Tools Address Verification API; `_enrich_zip4()` in `claims.py` now tries Radar first and, when Radar returns no ZIP+4 for an address, automatically calls USPS to obtain the authoritative 4-digit extension and substitutes it into the address string before PDF generation; requires `USPS_USER_ID` Railway variable (free registration at usps.com/business/web-tools-apis)
+- **USPS ZIP+4 lookup as authoritative fallback**: new `usps_service.py` calls the USPS v3 REST API (`apis.usps.com/addresses/v3/address`) using OAuth2 client credentials; `_enrich_zip4()` in `claims.py` tries Radar first and falls back to USPS when Radar has no ZIP+4 for an address; OAuth token is cached in-process for up to 8 hours; requires `USPS_CLIENT_ID` and `USPS_CLIENT_SECRET` Railway variables (Consumer Key / Secret from an app created at developers.usps.com)
 - **`GET /api/v1/addresses/zip4` endpoint**: authenticated endpoint that accepts an `address` query parameter and returns `{"address": "<enriched>"}` with ZIP+4 appended when available; uses the same Radar → USPS pipeline as PDF generation; used by the address autocomplete for real-time enrichment after suggestion selection
 - **Address autocomplete enriches via backend ZIP+4 endpoint**: after the user selects a suggestion, `AddressAutocomplete.tsx` calls the new backend endpoint (server-side Radar secret key + USPS fallback) instead of the previous frontend-only Radar forward geocode; coordinates are unchanged, only the ZIP+4 suffix is added; requires no additional frontend environment variables
 
