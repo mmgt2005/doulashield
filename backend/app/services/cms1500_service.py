@@ -150,6 +150,9 @@ def _overlay_signature(pdf_bytes: bytes, sig_bytes: bytes, x: float, y: float, m
     Overlay a PNG signature image onto a PDF page at the given coordinates.
     Returns merged PDF bytes, or original bytes unchanged if overlay fails.
     x, y = bottom-left corner in points (letter page 612×792 pts from bottom-left).
+
+    Uses writer.append(base_reader) so the full document catalog (AcroForm,
+    radio button states, etc.) is preserved — not just the page content stream.
     """
     try:
         from reportlab.pdfgen import canvas as rl_canvas
@@ -168,12 +171,13 @@ def _overlay_signature(pdf_bytes: bytes, sig_bytes: bytes, x: float, y: float, m
         c.save()
         overlay_buf.seek(0)
 
+        # Append the full document (preserves AcroForm + radio states in the
+        # document catalog) then merge only the overlay content stream onto page 0.
         base_reader = PdfReader(io.BytesIO(pdf_bytes))
         overlay_reader = PdfReader(overlay_buf)
         merge_writer = PdfWriter()
-        pg = base_reader.pages[0]
-        pg.merge_page(overlay_reader.pages[0])
-        merge_writer.add_page(pg)
+        merge_writer.append(base_reader)
+        merge_writer.pages[0].merge_page(overlay_reader.pages[0])
         out = io.BytesIO()
         merge_writer.write(out)
         out.seek(0)
