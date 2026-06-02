@@ -12,6 +12,13 @@ export default function DashboardPage() {
           <h2 className="text-lg font-semibold">Clients</h2>
           <p className="mt-1 text-sm text-gray-500">View and manage client records</p>
         </Link>
+        <Link
+          href="/reports"
+          className="block p-6 bg-white rounded-lg border border-gray-200 hover:border-blue-400 transition-colors"
+        >
+          <h2 className="text-lg font-semibold">Reports</h2>
+          <p className="mt-1 text-sm text-gray-500">Billing pipeline, revenue, and MCO breakdown</p>
+        </Link>
       </div>
     </div>
   )
