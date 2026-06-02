@@ -49,25 +49,26 @@ function billingForVisit(vt: string) {
   return VISIT_BILLING.crisis_loss
 }
 
-const MCO_CHANNEL: Record<string, 'availity' | 'uhc' | 'manual'> = {
+const MCO_CHANNEL: Record<string, 'availity' | 'manual'> = {
   'AmeriHealth Caritas': 'availity',
   'Keystone First': 'availity',
   'Geisinger Health Plan': 'availity',
-  'Highmark Wholecare': 'availity',
+  'Highmark Wholecare': 'manual',
   'Aetna Better Health': 'availity',
-  'UnitedHealthcare Community Plan': 'uhc',
+  'UnitedHealthcare Community Plan': 'availity',
   'UPMC For You': 'manual',
   'Health Partners Plans': 'manual',
   'FFS': 'manual',
 }
 
 const MCO_PORTAL: Record<string, { name: string; url: string }> = {
-  'UPMC For You': { name: 'UPMC Provider Portal', url: 'https://provider.upmc.com/' },
-  'Health Partners Plans': { name: 'HPPServe (Change Healthcare)', url: 'https://www.hppserve.com/' },
+  'UPMC For You': { name: 'UPMC Health Plan Provider OnLine', url: 'https://www.upmchealthplan.com/providers/online' },
+  'Health Partners Plans': { name: 'Health Partners Plans Provider Portal', url: 'https://www.healthpartnersplans.com/home/providers/claims-and-billing/claim-submissions/' },
+  'Highmark Wholecare': { name: 'Highmark Wholecare Provider Portal', url: 'https://www.highmarkwholecare.com/providers/' },
   'FFS': { name: 'PROMISe™ (PA DHS)', url: 'https://promise.dhs.pa.gov/portal/provider' },
 }
 
-function submissionChannel(mco: string | null | undefined): 'availity' | 'uhc' | 'manual' {
+function submissionChannel(mco: string | null | undefined): 'availity' | 'manual' {
   if (!mco) return 'manual'
   return MCO_CHANNEL[mco] ?? 'manual'
 }
@@ -144,7 +145,6 @@ export default function VisitFormPage() {
   const [claimStatusChecking, setClaimStatusChecking] = useState(false)
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null)
   const [pdfLoading, setPdfLoading] = useState(false)
-  const [uhcConnected, setUhcConnected] = useState(false)
   const [providerSsnConnected, setProviderSsnConnected] = useState(false)
   const [providerSignaturePath, setProviderSignaturePath] = useState<string | null>(null)
 
@@ -173,9 +173,8 @@ export default function VisitFormPage() {
       if (patientRes.data.email) setMa91PatientEmail(patientRes.data.email)
       if (settingsRes) {
         setTelehealthLink(settingsRes.data.telehealth_link ?? null)
-        const s = settingsRes.data as { zipzign_connected?: boolean; uhc_connected?: boolean }
+        const s = settingsRes.data as { zipzign_connected?: boolean }
         setZipzignConnected(s.zipzign_connected ?? false)
-        setUhcConnected(s.uhc_connected ?? false)
         setProviderSsnConnected(!!(s as { provider_ssn_connected?: boolean }).provider_ssn_connected)
         setProviderSignaturePath((s as { provider_signature_path?: string | null }).provider_signature_path ?? null)
       }
@@ -1057,7 +1056,7 @@ export default function VisitFormPage() {
         {(() => {
           const billing = billingForVisit(visitType)
           const channel = submissionChannel(patient?.mco)
-          const submitLabel = channel === 'uhc' ? 'Submit to UnitedHealthcare' : 'Submit to Availity'
+          const submitLabel = 'Submit to Availity'
           return (
             <div className="space-y-3 border-t pt-4">
               <h2 className="text-sm font-semibold text-gray-700">PA Medicaid Claim</h2>
@@ -1177,14 +1176,6 @@ export default function VisitFormPage() {
                         />
                       </div>
 
-                      {/* UHC credentials warning */}
-                      {channel === 'uhc' && !uhcConnected && (
-                        <p className="text-xs text-amber-600">
-                          ⚠ UHC API credentials not configured — add them in{' '}
-                          <a href="/settings" className="underline">Settings</a> to submit electronically.
-                        </p>
-                      )}
-
                       {claimError && <p className="text-xs text-red-600">{claimError}</p>}
                       <button
                         type="button"
@@ -1303,9 +1294,8 @@ export default function VisitFormPage() {
                         <button
                           type="button"
                           onClick={handleSubmitClaim}
-                          disabled={claimSubmitting || (channel === 'uhc' && !uhcConnected)}
+                          disabled={claimSubmitting}
                           className="rounded bg-blue-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-                          title={channel === 'uhc' && !uhcConnected ? 'Add UHC API credentials in Settings first' : undefined}
                         >
                           {claimSubmitting ? (
                             <span className="flex items-center gap-2">

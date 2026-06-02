@@ -21,7 +21,6 @@ from app.models.patient import Patient
 from app.models.user import User
 from app.schemas.claim import ClaimCreate, ClaimRead
 from app.services.availity_client import AvailityClient, MCO_PAYER_IDS
-from app.services.uhc_client import UHCClient
 
 logger = logging.getLogger(__name__)
 
@@ -37,17 +36,6 @@ class ClaimsService:
         return AvailityClient(
             decrypt_field(user.availity_client_id_encrypted),
             decrypt_field(user.availity_client_secret_encrypted),
-            str(user.id),
-        )
-
-    def _make_uhc_client(self, user: User) -> UHCClient:
-        if not user.uhc_client_id_encrypted or not user.uhc_client_secret_encrypted:
-            raise ValueError(
-                "UHC API credentials not configured — add UHC Client ID and Secret in Settings"
-            )
-        return UHCClient(
-            decrypt_field(user.uhc_client_id_encrypted),
-            decrypt_field(user.uhc_client_secret_encrypted),
             str(user.id),
         )
 
@@ -126,12 +114,8 @@ class ClaimsService:
         if data.claim_data:
             claim_body.update(data.claim_data)
 
-        if channel == "uhc":
-            client = self._make_uhc_client(user)
-            raw_response = await client.post("/claims", body=claim_body)
-        else:
-            client = self._make_client(user)
-            raw_response = await client.post("/claims", body=claim_body)
+        client = self._make_client(user)
+        raw_response = await client.post("/claims", body=claim_body)
 
         claim = Claim(
             patient_id=patient_id,
@@ -185,14 +169,8 @@ class ClaimsService:
             select(Patient).where(Patient.id == claim.patient_id)
         )
         patient = patient_result.scalar_one_or_none()
-        channel = MCO_SUBMISSION_CHANNEL.get(patient.mco or "" if patient else "", "availity")
-
-        if channel == "uhc":
-            client = self._make_uhc_client(user)
-            raw_response = await client.get(f"/claims/{claim.availity_claim_id}/status")
-        else:
-            availity = self._make_client(user)
-            raw_response = await availity.get(f"/claims/{claim.availity_claim_id}/status")
+        availity = self._make_client(user)
+        raw_response = await availity.get(f"/claims/{claim.availity_claim_id}/status")
 
         claim.status = raw_response.get("status", claim.status)
         claim.paid_amount = raw_response.get("paidAmount")

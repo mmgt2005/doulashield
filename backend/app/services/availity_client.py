@@ -12,13 +12,12 @@ AVAILITY_BASE = "https://api.availity.com/availity/v1"
 AVAILITY_TOKEN_URL = f"{AVAILITY_BASE}/token"
 
 MCO_PAYER_IDS: dict[str, str] = {
-    "AmeriHealth Caritas": "AMCRN",
-    "UPMC For You": "UPMCF",
-    "Geisinger Health Plan": "GEISP",
-    "Health Partners Plans": "HLTHP",
+    "AmeriHealth Caritas": "AMCRN",           # alphabetic Availity ID — verify against live payer directory before go-live
+    "Keystone First": "23284",                # southeast PA brand of AmeriHealth; distinct payer ID
+    "Geisinger Health Plan": "75273",
     "Aetna Better Health": "AETNB",
-    "UnitedHealthcare Community Plan": "87726",
-    "Highmark Wholecare": "HMKWC",
+    "UnitedHealthcare Community Plan": "04567",  # Medicaid Community Plan; 87726 is commercial UHC
+    "Highmark Wholecare": "25169",            # channel is manual but kept for eligibility checks
     "FFS": "77799",
 }
 

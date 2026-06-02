@@ -21,10 +21,10 @@ _PROMPTS: dict[str, str] = {
         '"date_of_birth": "member date of birth in YYYY-MM-DD format or null", '
         '"policy_group": "group number, plan group, or policy group printed on the card or null", '
         '"mco": "normalize to exactly one of these Pennsylvania MCO names: '
-        "AmeriHealth Caritas, UPMC For You, Geisinger Health Plan, Health Partners Plans, "
+        "AmeriHealth Caritas, Keystone First, UPMC For You, Geisinger Health Plan, Health Partners Plans, "
         "Aetna Better Health, UnitedHealthcare Community Plan, Highmark Wholecare, FFS. "
-        "Map common aliases: Keystone First → AmeriHealth Caritas; "
-        "Gateway Health → Highmark Wholecare; HPP → Health Partners Plans. "
+        "Map known aliases: Gateway Health → Highmark Wholecare; HPP → Health Partners Plans. "
+        "Keystone First is a separate MCO from AmeriHealth Caritas — do NOT merge them. "
         'Use FFS if the card shows fee-for-service or no MCO is identifiable.", '
         '"address": "beneficiary street address if printed or null"}\n'
         "Use null for any field you cannot read clearly."

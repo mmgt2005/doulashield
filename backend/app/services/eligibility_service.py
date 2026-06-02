@@ -45,7 +45,6 @@ class EligibilityService:
         return ProviderSettingsRead(
             npi=user.npi,
             availity_connected=bool(user.availity_client_id_encrypted and user.availity_client_secret_encrypted),
-            uhc_connected=bool(user.uhc_client_id_encrypted and user.uhc_client_secret_encrypted),
             telehealth_link=user.telehealth_link,
             contact_email=user.contact_email,
             zipzign_connected=zipzign_configured,
@@ -77,10 +76,6 @@ class EligibilityService:
             user.availity_client_id_encrypted = encrypt_field(data.availity_client_id)
         if data.availity_client_secret is not None:
             user.availity_client_secret_encrypted = encrypt_field(data.availity_client_secret)
-        if data.uhc_client_id is not None:
-            user.uhc_client_id_encrypted = encrypt_field(data.uhc_client_id)
-        if data.uhc_client_secret is not None:
-            user.uhc_client_secret_encrypted = encrypt_field(data.uhc_client_secret)
         if data.telehealth_link is not None:
             user.telehealth_link = data.telehealth_link
         if data.contact_email is not None:
@@ -126,7 +121,6 @@ class EligibilityService:
         return ProviderSettingsRead(
             npi=user.npi,
             availity_connected=bool(user.availity_client_id_encrypted and user.availity_client_secret_encrypted),
-            uhc_connected=bool(user.uhc_client_id_encrypted and user.uhc_client_secret_encrypted),
             telehealth_link=user.telehealth_link,
             contact_email=user.contact_email,
             zipzign_connected=zipzign_configured,

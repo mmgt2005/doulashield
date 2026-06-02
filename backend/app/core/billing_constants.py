@@ -4,14 +4,14 @@ DOULA_TAXONOMY = "374J00000X"
 PROVIDER_TYPE = "13"
 SPECIALTY_CODE = "130"
 
-# Submission channel for each MCO: 'availity' | 'uhc' | 'manual'
+# Submission channel for each MCO: 'availity' | 'manual'
 MCO_SUBMISSION_CHANNEL: dict[str, str] = {
     "AmeriHealth Caritas": "availity",
     "Keystone First": "availity",
     "Geisinger Health Plan": "availity",
-    "Highmark Wholecare": "availity",
+    "Highmark Wholecare": "manual",           # NaviNet portal only — no Availity API connection
     "Aetna Better Health": "availity",
-    "UnitedHealthcare Community Plan": "uhc",
+    "UnitedHealthcare Community Plan": "availity",  # Availity EDI payer 04567
     "UPMC For You": "manual",
     "Health Partners Plans": "manual",
     "FFS": "manual",
@@ -20,12 +20,16 @@ MCO_SUBMISSION_CHANNEL: dict[str, str] = {
 # Portal links for manual MCOs (shown when provider must submit outside the app)
 MCO_PORTAL_LINKS: dict[str, dict[str, str]] = {
     "UPMC For You": {
-        "name": "UPMC Provider Portal",
-        "url": "https://provider.upmc.com/",
+        "name": "UPMC Health Plan Provider OnLine",
+        "url": "https://www.upmchealthplan.com/providers/online",
     },
     "Health Partners Plans": {
-        "name": "HPPServe (Change Healthcare)",
-        "url": "https://www.hppserve.com/",
+        "name": "Health Partners Plans Provider Portal",
+        "url": "https://www.healthpartnersplans.com/home/providers/claims-and-billing/claim-submissions/",
+    },
+    "Highmark Wholecare": {
+        "name": "Highmark Wholecare Provider Portal",
+        "url": "https://www.highmarkwholecare.com/providers/",
     },
     "FFS": {
         "name": "PROMISe™ Provider Portal (PA DHS)",
