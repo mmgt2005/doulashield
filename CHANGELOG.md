@@ -12,6 +12,16 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.2.2] — 2026-06-02
+
+### Fixed
+- **CMS 1500 Box 11c blank for FFS patients**: FFS (Fee-for-Service) has no MCO plan name; field now left blank instead of showing "Medicaid"
+
+### Added
+- **Keystone First in MCO Contracts section**: providers can now record a Keystone First contract separately from AmeriHealth Caritas (they have different payer IDs: 23284 vs 22248)
+
+---
+
 ## [1.2.1] — 2026-06-02
 
 ### Fixed
