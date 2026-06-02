@@ -12,10 +12,20 @@ from app.core.audit import AuditLogger
 from app.core.encryption import decrypt_field, encrypt_field
 from app.models.patient import Patient
 from app.models.user import User
-from app.schemas.admin import ProviderSettingsRead, ProviderSettingsUpdate
+from app.schemas.admin import McoContract, ProviderSettingsRead, ProviderSettingsUpdate
 from app.services.availity_client import AvailityClient, MCO_PAYER_IDS
 
 logger = logging.getLogger(__name__)
+
+
+def _parse_mco_contracts(raw: str | None) -> list[McoContract] | None:
+    if not raw:
+        return None
+    try:
+        data = json.loads(raw)
+        return [McoContract(**item) for item in data] if isinstance(data, list) else None
+    except Exception:
+        return None
 
 
 class EligibilityService:
@@ -46,6 +56,7 @@ class EligibilityService:
             provider_ssn_connected=user.provider_ssn_encrypted is not None,
             provider_signature_path=user.provider_signature_path,
             billing_provider_name=user.billing_provider_name,
+            mco_contracts=_parse_mco_contracts(user.mco_contracts_json),
         )
 
     async def update_provider_settings(
@@ -90,6 +101,12 @@ class EligibilityService:
             user.provider_signature_path = data.provider_signature_path or None
         if data.billing_provider_name is not None:
             user.billing_provider_name = data.billing_provider_name or None
+        if data.mco_contracts is not None:
+            user.mco_contracts_json = (
+                json.dumps([c.model_dump(mode="json") for c in data.mco_contracts])
+                if data.mco_contracts
+                else None
+            )
 
         await self._db.commit()
         await self._db.refresh(user)
@@ -120,6 +137,7 @@ class EligibilityService:
             provider_ssn_connected=user.provider_ssn_encrypted is not None,
             provider_signature_path=user.provider_signature_path,
             billing_provider_name=user.billing_provider_name,
+            mco_contracts=_parse_mco_contracts(user.mco_contracts_json),
         )
 
     async def check_eligibility(

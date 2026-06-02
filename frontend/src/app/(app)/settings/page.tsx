@@ -8,6 +8,11 @@ import { useAuthStore } from '@/store/auth-store'
 import { BillingStatus } from '@/types/domain'
 import AddressAutocomplete from '@/components/ui/AddressAutocomplete'
 
+interface McoContractForm {
+  mco: string
+  contract_date: string  // "YYYY-MM-DD" or ""
+}
+
 interface SettingsFormData {
   npi: string
   billing_provider_name: string
@@ -23,7 +28,19 @@ interface SettingsFormData {
   zone: string
   counties: string[]
   provider_ssn: string
+  mco_contracts: McoContractForm[]
 }
+
+const ALL_MCOS = [
+  'AmeriHealth Caritas',
+  'UPMC For You',
+  'Geisinger Health Plan',
+  'Health Partners Plans',
+  'Aetna Better Health',
+  'UnitedHealthcare Community Plan',
+  'Highmark Wholecare',
+  'FFS',
+] as const
 
 type ZoneKey = 'SE' | 'SW' | 'LC' | 'NE' | 'NW'
 
@@ -107,7 +124,7 @@ export default function SettingsPage() {
     if (!isAuthenticated) return
     const headers = { Authorization: `Bearer ${getAccessToken()}` }
     axios
-      .get<{ npi: string | null; billing_provider_name: string | null; availity_connected: boolean; uhc_connected: boolean; telehealth_link: string | null; contact_email: string | null; zipzign_connected: boolean; zone: string | null; counties: string[] | null; provider_address: string | null; provider_phone: string | null; provider_ssn_connected: boolean; provider_signature_path: string | null }>(
+      .get<{ npi: string | null; billing_provider_name: string | null; availity_connected: boolean; uhc_connected: boolean; telehealth_link: string | null; contact_email: string | null; zipzign_connected: boolean; zone: string | null; counties: string[] | null; provider_address: string | null; provider_phone: string | null; provider_ssn_connected: boolean; provider_signature_path: string | null; mco_contracts: Array<{ mco: string; contract_date: string | null }> | null }>(
         `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/me/provider-settings`,
         { headers }
       )
@@ -128,6 +145,12 @@ export default function SettingsPage() {
         setZipzignConnected(r.data.zipzign_connected)
         setProviderSsnConnected(r.data.provider_ssn_connected ?? false)
         setProviderSignaturePath(r.data.provider_signature_path ?? null)
+        if (r.data.mco_contracts?.length) {
+          setValue('mco_contracts', r.data.mco_contracts.map(c => ({
+            mco: c.mco,
+            contract_date: c.contract_date ?? '',
+          })))
+        }
       })
     axios
       .get<BillingStatus>(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/billing/status`, { headers })
@@ -182,7 +205,7 @@ export default function SettingsPage() {
     setSaveError(null)
     setSaved(false)
     try {
-      const body: Record<string, string | string[]> = {}
+      const body: Record<string, unknown> = {}
       if (data.npi) body.npi = data.npi
       body.billing_provider_name = data.billing_provider_name || ''
       if (data.availity_client_id) body.availity_client_id = data.availity_client_id
@@ -197,6 +220,9 @@ export default function SettingsPage() {
       body.provider_address = data.provider_address || ''
       body.provider_phone = data.provider_phone || ''
       if (data.provider_ssn) body.provider_ssn = data.provider_ssn
+      body.mco_contracts = (data.mco_contracts ?? [])
+        .filter(c => c.mco)
+        .map(c => ({ mco: c.mco, contract_date: c.contract_date || null }))
 
       const res = await axios.patch<{ npi: string | null; availity_connected: boolean; uhc_connected: boolean; zipzign_connected: boolean; provider_ssn_connected: boolean; provider_signature_path: string | null }>(
         `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/me/provider-settings`,
@@ -486,6 +512,56 @@ export default function SettingsPage() {
               <p className="text-xs text-blue-800">{PA_ZONES[selectedZone as ZoneKey].mcos.join(' · ')}</p>
             </div>
           )}
+        </div>
+
+        <div className="border-t pt-4 space-y-3">
+          <div>
+            <h2 className="text-sm font-semibold text-gray-700">MCO Contracts</h2>
+            <p className="mt-0.5 text-xs text-gray-500">
+              Check each MCO you are contracted with. Add the contract effective date when available.
+            </p>
+          </div>
+          <div className="space-y-1.5">
+            {ALL_MCOS.map((mco) => {
+              const mcoContracts = watch('mco_contracts') ?? []
+              const idx = mcoContracts.findIndex(c => c.mco === mco)
+              const contracted = idx !== -1
+              return (
+                <div key={mco} className="flex flex-wrap items-center gap-3 py-0.5">
+                  <input
+                    type="checkbox"
+                    id={`mco-${mco}`}
+                    checked={contracted}
+                    onChange={(e) => {
+                      const current = watch('mco_contracts') ?? []
+                      if (e.target.checked) {
+                        setValue('mco_contracts', [...current, { mco, contract_date: '' }])
+                      } else {
+                        setValue('mco_contracts', current.filter(c => c.mco !== mco))
+                      }
+                    }}
+                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <label htmlFor={`mco-${mco}`} className="w-52 text-sm text-gray-700 cursor-pointer">
+                    {mco}
+                  </label>
+                  {contracted && (
+                    <input
+                      type="date"
+                      value={(watch('mco_contracts') ?? [])[idx]?.contract_date ?? ''}
+                      onChange={(e) => {
+                        const current = [...(watch('mco_contracts') ?? [])]
+                        current[idx] = { ...current[idx], contract_date: e.target.value }
+                        setValue('mco_contracts', current)
+                      }}
+                      className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      title="Contract effective date (optional)"
+                    />
+                  )}
+                </div>
+              )
+            })}
+          </div>
         </div>
 
         <div className="border-t pt-4">

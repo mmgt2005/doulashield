@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.2.0] — 2026-06-02
+
+### Added
+- **MCO Contracts section on Settings page**: providers can now check off each PA Medicaid MCO they are contracted with and optionally record the contract effective date; data stored as a JSON array in a new `mco_contracts_json` column on `users` (migration 0022); section appears in the Settings form between PA HealthChoices Zone and Availity Credentials
+
+---
+
 ## [1.1.0] — 2026-06-02
 
 ### Fixed

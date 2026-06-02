@@ -36,6 +36,7 @@ class User(Base):
     provider_ssn_encrypted: Mapped[str | None] = mapped_column(Text, nullable=True)
     provider_signature_path: Mapped[str | None] = mapped_column(Text, nullable=True)
     billing_provider_name: Mapped[str | None] = mapped_column(Text, nullable=True)  # exact name as registered in PROMISe
+    mco_contracts_json: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON array: [{mco, contract_date}]
 
     # Billing
     stripe_customer_id: Mapped[str | None] = mapped_column(Text, nullable=True)
