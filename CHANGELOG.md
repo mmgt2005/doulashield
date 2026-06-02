@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.5.1] — 2026-06-02
+
+### Fixed
+- **Manual claim billed amount**: when a provider logs a manual claim status (UPMC For You, Health Partners Plans, etc.), `billed_amount` is now automatically derived from the visit type's billing rate (`$100` prenatal/postnatal, `$1,000` labor, `$175` crisis/loss) instead of being left `null`; existing manual claims with a `null` billed amount are also backfilled on the next status update
+
+---
+
 ## [1.5.0] — 2026-06-02
 
 ### Added
