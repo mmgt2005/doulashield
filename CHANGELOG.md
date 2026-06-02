@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.5.2] — 2026-06-02
+
+### Added
+- **Reports card on dashboard**: dashboard now shows a "Reports" card alongside "Clients", linking to `/reports` with a short description
+
+---
+
 ## [1.5.1] — 2026-06-02
 
 ### Fixed
