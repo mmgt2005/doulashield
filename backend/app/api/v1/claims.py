@@ -14,7 +14,7 @@ from app.dependencies import CurrentUser, get_audit, get_client_ip, get_current_
 from app.models.patient import Patient
 from app.models.user import User
 from app.models.visit import Visit
-from app.schemas.claim import ClaimCreate, ClaimRead
+from app.schemas.claim import ClaimCreate, ClaimRead, ManualClaimUpsert
 from app.services import cms1500_service, usps_service
 from app.services.claims_service import ClaimsService
 
@@ -237,6 +237,25 @@ async def download_cms1500(
         media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="cms1500_{visit_type}.pdf"'},
     )
+
+
+@router.put("/patients/{patient_id}/visits/{visit_type}/claims/manual", response_model=ClaimRead)
+async def log_manual_claim(
+    request: Request,
+    patient_id: uuid.UUID,
+    visit_type: str,
+    body: ManualClaimUpsert,
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    audit: Annotated[AuditLogger, Depends(get_audit)],
+) -> ClaimRead:
+    try:
+        return await _svc(db, audit).log_manual_claim(
+            patient_id, current_user.id, visit_type, body,
+            get_client_ip(request), get_user_agent(request)
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.post("/claims/{claim_id}/status-check", response_model=ClaimRead)

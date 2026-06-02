@@ -2,7 +2,7 @@ import uuid
 from datetime import date, datetime
 from decimal import Decimal
 
-from sqlalchemy import Date, DateTime, ForeignKey, Numeric, String, Text, func
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Numeric, String, Text, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -17,6 +17,8 @@ class Claim(Base):
     patient_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("public.patients.id"), nullable=False)
     provider_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("public.users.id"), nullable=False)
     availity_claim_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    visit_type: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    is_manual: Mapped[bool] = mapped_column(Boolean, server_default="false", nullable=False)
     status: Mapped[str | None] = mapped_column(String(50), nullable=True)
     service_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     billed_amount: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), nullable=True)

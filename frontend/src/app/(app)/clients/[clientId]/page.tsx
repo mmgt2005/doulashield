@@ -9,7 +9,7 @@ import { getAccessToken } from '@/lib/auth'
 import { geocodeAddress } from '@/lib/geo'
 import AddressAutocomplete from '@/components/ui/AddressAutocomplete'
 import ImageUploadScanner from '@/components/ui/ImageUploadScanner'
-import { Patient, Visit, VisitType } from '@/types/domain'
+import { Claim, Patient, Visit, VisitType } from '@/types/domain'
 import { VISIT_SLOTS, VISIT_GROUPS, getPrevSlotInGroup, getSlotConfig } from '@/lib/visit-config'
 
 interface EditFormData {
@@ -32,6 +32,7 @@ export default function ClientDetailPage() {
   const { clientId } = useParams<{ clientId: string }>()
   const [patient, setPatient] = useState<Patient | null>(null)
   const [visitMap, setVisitMap] = useState<Map<VisitType, Visit>>(new Map())
+  const [claimMap, setClaimMap] = useState<Map<string, Claim>>(new Map())
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [editing, setEditing] = useState(false)
@@ -48,12 +49,16 @@ export default function ClientDetailPage() {
     Promise.all([
       axios.get<Patient>(`${base}/api/v1/patients/${clientId}`, { headers }),
       axios.get<Visit[]>(`${base}/api/v1/patients/${clientId}/visits`, { headers }),
+      axios.get<Claim[]>(`${base}/api/v1/patients/${clientId}/claims`, { headers }).catch(() => ({ data: [] as Claim[] })),
     ])
-      .then(([patientRes, visitsRes]) => {
+      .then(([patientRes, visitsRes, claimsRes]) => {
         setPatient(patientRes.data)
         const map = new Map<VisitType, Visit>()
         for (const v of visitsRes.data) map.set(v.visit_type, v)
         setVisitMap(map)
+        const cmap = new Map<string, Claim>()
+        for (const c of claimsRes.data) if (c.visit_type) cmap.set(c.visit_type, c)
+        setClaimMap(cmap)
       })
       .catch(() => setError('Could not load client.'))
       .finally(() => setLoading(false))
@@ -378,6 +383,15 @@ export default function ClientDetailPage() {
                   )
                 }
 
+                const claim = claimMap.get(slot.visitType)
+                const claimDot = claim ? (() => {
+                  const s = (claim.status ?? '').toLowerCase()
+                  if (s === 'paid') return { color: 'bg-green-500', title: 'Claim paid' }
+                  if (s === 'denied' || s === 'rejected') return { color: 'bg-red-500', title: 'Claim denied' }
+                  if (['processing', 'accepted', 'pended', 'received'].includes(s)) return { color: 'bg-blue-500', title: 'Claim processing' }
+                  return { color: 'bg-amber-500', title: 'Claim submitted' }
+                })() : null
+
                 return (
                   <Link
                     key={slot.visitType}
@@ -413,6 +427,12 @@ export default function ClientDetailPage() {
                         </svg>
                       )}
                       <span className="text-xs font-medium leading-tight">{slot.label}</span>
+                      {claimDot && (
+                        <span
+                          className={`ml-auto h-2 w-2 shrink-0 rounded-full ${claimDot.color}`}
+                          title={claimDot.title}
+                        />
+                      )}
                     </div>
                     {complete && visit?.visit_date && (
                       <p className="mt-0.5 text-xs text-gray-400">{visit.visit_date}</p>

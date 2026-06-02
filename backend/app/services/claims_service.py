@@ -19,7 +19,7 @@ from app.core.encryption import decrypt_field
 from app.models.claim import Claim
 from app.models.patient import Patient
 from app.models.user import User
-from app.schemas.claim import ClaimCreate, ClaimRead
+from app.schemas.claim import ClaimCreate, ClaimRead, ManualClaimUpsert
 from app.services.availity_client import AvailityClient, MCO_PAYER_IDS
 
 logger = logging.getLogger(__name__)
@@ -121,6 +121,7 @@ class ClaimsService:
             patient_id=patient_id,
             provider_id=requesting_user_id,
             availity_claim_id=raw_response.get("claimId"),
+            visit_type=data.visit_type,
             status=raw_response.get("status", "submitted"),
             service_date=data.service_date,
             billed_amount=billed_amount,
@@ -202,3 +203,60 @@ class ClaimsService:
             ).order_by(Claim.created_at.desc())
         )
         return [ClaimRead.model_validate(c) for c in result.scalars().all()]
+
+    async def log_manual_claim(
+        self,
+        patient_id: uuid.UUID,
+        requesting_user_id: uuid.UUID,
+        visit_type: str,
+        data: ManualClaimUpsert,
+        ip: str,
+        user_agent: str,
+    ) -> ClaimRead:
+        # Upsert: update existing manual claim for this patient+visit_type if one exists
+        existing_result = await self._db.execute(
+            select(Claim).where(
+                Claim.patient_id == patient_id,
+                Claim.provider_id == requesting_user_id,
+                Claim.visit_type == visit_type,
+                Claim.is_manual.is_(True),
+            )
+        )
+        claim = existing_result.scalar_one_or_none()
+
+        now = datetime.now(timezone.utc)
+        if claim:
+            claim.status = data.status
+            claim.service_date = data.service_date
+            if data.billed_amount is not None:
+                claim.billed_amount = data.billed_amount
+            if data.paid_amount is not None:
+                claim.paid_amount = data.paid_amount
+            claim.status_checked_at = now
+        else:
+            claim = Claim(
+                patient_id=patient_id,
+                provider_id=requesting_user_id,
+                visit_type=visit_type,
+                is_manual=True,
+                status=data.status,
+                service_date=data.service_date,
+                billed_amount=data.billed_amount,
+                paid_amount=data.paid_amount,
+                submitted_at=now,
+            )
+            self._db.add(claim)
+
+        await self._db.commit()
+        await self._db.refresh(claim)
+
+        await self._audit.log(
+            action="LOG_MANUAL_CLAIM",
+            resource_type="claim",
+            resource_id=claim.id,
+            ip_address=ip,
+            user_agent=user_agent,
+            user_id=requesting_user_id,
+            extra_context={"patient_id": str(patient_id), "visit_type": visit_type, "status": data.status},
+        )
+        return ClaimRead.model_validate(claim)

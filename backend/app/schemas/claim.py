@@ -19,6 +19,14 @@ class ClaimCreate(BaseModel):
     claim_data: dict | None = None       # additional raw claim fields
 
 
+class ManualClaimUpsert(BaseModel):
+    status: str            # 'submitted' | 'paid' | 'denied'
+    service_date: date
+    billed_amount: Decimal | None = None
+    paid_amount: Decimal | None = None
+    notes: str | None = None
+
+
 class ClaimRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -26,6 +34,8 @@ class ClaimRead(BaseModel):
     patient_id: uuid.UUID
     provider_id: uuid.UUID
     availity_claim_id: str | None
+    visit_type: str | None
+    is_manual: bool
     status: str | None
     service_date: date | None
     billed_amount: Decimal | None

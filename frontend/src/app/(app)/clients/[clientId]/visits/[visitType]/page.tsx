@@ -73,6 +73,14 @@ function submissionChannel(mco: string | null | undefined): 'availity' | 'manual
   return MCO_CHANNEL[mco] ?? 'manual'
 }
 
+function claimStatusDisplay(status: string | null): { label: string; colorClasses: string } {
+  const s = (status ?? '').toLowerCase()
+  if (s === 'paid') return { label: 'Paid', colorClasses: 'border-green-300 bg-green-50 text-green-800' }
+  if (s === 'denied' || s === 'rejected') return { label: 'Denied', colorClasses: 'border-red-300 bg-red-50 text-red-700' }
+  if (['processing', 'accepted', 'pended', 'received'].includes(s)) return { label: 'Processing', colorClasses: 'border-blue-300 bg-blue-50 text-blue-700' }
+  return { label: 'Submitted', colorClasses: 'border-amber-300 bg-amber-50 text-amber-700' }
+}
+
 const schema = z.object({
   visit_date: z.string().min(1, 'Visit date is required'),
   subjective: z.string().optional(),
@@ -143,6 +151,11 @@ export default function VisitFormPage() {
   const [claimError, setClaimError] = useState<string | null>(null)
   const [showCms1500, setShowCms1500] = useState(false)
   const [claimStatusChecking, setClaimStatusChecking] = useState(false)
+  const [manualStatus, setManualStatus] = useState<'submitted' | 'paid' | 'denied'>('submitted')
+  const [manualDate, setManualDate] = useState('')
+  const [manualPaidAmount, setManualPaidAmount] = useState('')
+  const [manualSaving, setManualSaving] = useState(false)
+  const [showManualForm, setShowManualForm] = useState(false)
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null)
   const [pdfLoading, setPdfLoading] = useState(false)
   const [providerSsnConnected, setProviderSsnConnected] = useState(false)
@@ -167,7 +180,10 @@ export default function VisitFormPage() {
       ).catch(() => null),
       axios.get<Claim[]>(`${base}/api/v1/patients/${clientId}/claims`, { headers }).catch(() => null),
     ]).then(async ([patientRes, visitRes, settingsRes, claimsRes]) => {
-      if (claimsRes?.data?.length) setExistingClaim(claimsRes.data[0])
+      if (claimsRes?.data?.length) {
+        const match = claimsRes.data.find((c: Claim) => c.visit_type === visitType)
+        if (match) setExistingClaim(match)
+      }
       setPatient(patientRes.data)
       if (patientRes.data.referring_provider_npi) setReferringNpi(patientRes.data.referring_provider_npi)
       if (patientRes.data.email) setMa91PatientEmail(patientRes.data.email)
@@ -495,6 +511,25 @@ export default function VisitFormPage() {
       setExistingClaim(res.data)
     } catch { /* non-blocking */ } finally {
       setClaimStatusChecking(false)
+    }
+  }
+
+  const handleSaveManualClaim = async () => {
+    setManualSaving(true)
+    try {
+      const res = await axios.put<Claim>(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/patients/${clientId}/visits/${visitType}/claims/manual`,
+        {
+          status: manualStatus,
+          service_date: manualDate || watch('visit_date'),
+          ...(manualStatus === 'paid' && manualPaidAmount ? { paid_amount: manualPaidAmount } : {}),
+        },
+        { headers: { Authorization: `Bearer ${getAccessToken()}` } }
+      )
+      setExistingClaim(res.data)
+      setShowManualForm(false)
+    } catch { /* non-blocking */ } finally {
+      setManualSaving(false)
     }
   }
 
@@ -1061,25 +1096,56 @@ export default function VisitFormPage() {
             <div className="space-y-3 border-t pt-4">
               <h2 className="text-sm font-semibold text-gray-700">PA Medicaid Claim</h2>
 
-              {existingClaim ? (
-                <div className="rounded-lg border border-green-200 bg-green-50 p-3 space-y-1">
-                  <p className="text-sm font-medium text-green-800">
-                    ✓ Claim {existingClaim.availity_claim_id ? `#${existingClaim.availity_claim_id}` : 'submitted'} · Status: {existingClaim.status ?? 'submitted'}
-                  </p>
-                  {existingClaim.submitted_at && (
-                    <p className="text-xs text-green-700">
-                      Submitted {new Date(existingClaim.submitted_at).toLocaleDateString()}
-                    </p>
-                  )}
-                  <button
-                    type="button"
-                    onClick={handleCheckClaimStatus}
-                    disabled={claimStatusChecking}
-                    className="text-xs text-blue-600 hover:text-blue-800 disabled:opacity-50"
-                  >
-                    {claimStatusChecking ? 'Checking…' : 'Refresh status'}
-                  </button>
-                </div>
+              {existingClaim && !(existingClaim.is_manual && showManualForm) ? (
+                (() => {
+                  const display = claimStatusDisplay(existingClaim.status)
+                  return (
+                    <div className={`rounded-lg border p-3 space-y-1.5 ${display.colorClasses}`}>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${display.colorClasses}`}>
+                          {display.label}
+                        </span>
+                        {existingClaim.availity_claim_id && (
+                          <span className="text-xs text-gray-500 font-mono">#{existingClaim.availity_claim_id}</span>
+                        )}
+                      </div>
+                      {existingClaim.paid_amount && (
+                        <p className="text-sm font-semibold">Paid: ${existingClaim.paid_amount}</p>
+                      )}
+                      <div className="flex flex-wrap items-center gap-x-2 text-xs text-gray-500">
+                        {existingClaim.submitted_at && (
+                          <span>Submitted {new Date(existingClaim.submitted_at).toLocaleDateString()}</span>
+                        )}
+                        {existingClaim.status_checked_at && (
+                          <span>· Last checked {new Date(existingClaim.status_checked_at).toLocaleDateString()}</span>
+                        )}
+                      </div>
+                      {existingClaim.is_manual ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setManualStatus((existingClaim.status as 'submitted' | 'paid' | 'denied') ?? 'submitted')
+                            setManualDate(existingClaim.service_date ?? watch('visit_date') ?? '')
+                            setManualPaidAmount(existingClaim.paid_amount ?? '')
+                            setShowManualForm(true)
+                          }}
+                          className="text-xs text-blue-600 hover:text-blue-800"
+                        >
+                          Update status
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={handleCheckClaimStatus}
+                          disabled={claimStatusChecking}
+                          className="text-xs text-blue-600 hover:text-blue-800 disabled:opacity-50"
+                        >
+                          {claimStatusChecking ? 'Checking…' : 'Refresh status'}
+                        </button>
+                      )}
+                    </div>
+                  )
+                })()
               ) : (
                 <div className="rounded border border-gray-200 bg-gray-50 p-3 space-y-3">
                   {/* Auto-determined billing summary */}
@@ -1105,7 +1171,7 @@ export default function VisitFormPage() {
                     </div>
                   )}
 
-                  {/* Manual MCOs: PDF download + portal link only */}
+                  {/* Manual MCOs: PDF download + portal link + status logging */}
                   {channel === 'manual' ? (
                     <div className="space-y-2">
                       <p className="text-xs text-gray-600">
@@ -1129,6 +1195,62 @@ export default function VisitFormPage() {
                             Open {MCO_PORTAL[patient.mco].name} →
                           </a>
                         )}
+                      </div>
+                      {/* Log claim status form */}
+                      <div className="mt-3 border-t pt-3 space-y-2">
+                        <p className="text-xs font-medium text-gray-700">Log claim status</p>
+                        <div className="flex flex-wrap gap-2 items-end">
+                          <div>
+                            <label className="block text-xs text-gray-500 mb-1">Status</label>
+                            <select
+                              value={manualStatus}
+                              onChange={(e) => setManualStatus(e.target.value as 'submitted' | 'paid' | 'denied')}
+                              className="rounded border border-gray-300 px-2 py-1.5 text-sm"
+                            >
+                              <option value="submitted">Submitted</option>
+                              <option value="paid">Paid</option>
+                              <option value="denied">Denied</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-xs text-gray-500 mb-1">Date</label>
+                            <input
+                              type="date"
+                              value={manualDate || watch('visit_date') || ''}
+                              onChange={(e) => setManualDate(e.target.value)}
+                              className="rounded border border-gray-300 px-2 py-1.5 text-sm"
+                            />
+                          </div>
+                          {manualStatus === 'paid' && (
+                            <div>
+                              <label className="block text-xs text-gray-500 mb-1">Paid amount</label>
+                              <input
+                                type="text"
+                                value={manualPaidAmount}
+                                onChange={(e) => setManualPaidAmount(e.target.value)}
+                                placeholder="0.00"
+                                className="rounded border border-gray-300 px-2 py-1.5 text-sm w-24"
+                              />
+                            </div>
+                          )}
+                          <button
+                            type="button"
+                            onClick={handleSaveManualClaim}
+                            disabled={manualSaving}
+                            className="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                          >
+                            {manualSaving ? 'Saving…' : 'Save status'}
+                          </button>
+                          {showManualForm && (
+                            <button
+                              type="button"
+                              onClick={() => setShowManualForm(false)}
+                              className="text-sm text-gray-500 hover:text-gray-700"
+                            >
+                              Cancel
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ) : (

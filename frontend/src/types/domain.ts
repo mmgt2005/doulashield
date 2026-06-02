@@ -113,6 +113,8 @@ export interface Claim {
   patient_id: string
   provider_id: string
   availity_claim_id: string | null
+  visit_type: string | null
+  is_manual: boolean
   status: string | null
   service_date: string | null
   billed_amount: string | null
