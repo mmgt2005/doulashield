@@ -12,6 +12,16 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.5.0] — 2026-06-02
+
+### Added
+- **Provider Stats & Reports dashboard** (`/reports`): new page showing total active clients, visits completed vs. documented, claim pipeline tiles (Submitted/Processing/Paid/Denied with counts and amounts), revenue summary with collection rate, and a per-MCO breakdown table
+- **`GET /api/v1/stats/summary`**: server-side aggregation endpoint — no PHI returned; counts are derived from `patients`, `visits`, and `claims` tables in a single set of SQL queries
+- **MCO breakdown table**: merges claim data with `mco_contracts` from provider settings; contracted MCOs always appear (even with zero claims) with a green ✓ badge and contract date; uncontracted MCOs that appear in claims data are also shown without the badge
+- **Reports nav link**: "Reports" added to the provider sidebar between Clients and Settings
+
+---
+
 ## [1.4.0] — 2026-06-02
 
 ### Added

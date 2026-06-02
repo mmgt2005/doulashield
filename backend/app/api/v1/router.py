@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from app.api.v1.addresses import router as addresses_router
+from app.api.v1.stats import router as stats_router
 from app.api.v1.auth import router as auth_router
 from app.api.v1.billing import router as billing_router
 from app.api.v1.birth_logs import router as birth_logs_router
@@ -37,3 +38,4 @@ api_router.include_router(documents_router)
 api_router.include_router(directory_router)
 api_router.include_router(admin_users_router)
 api_router.include_router(admin_audit_router)
+api_router.include_router(stats_router)
