@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.2.3] — 2026-06-02
+
+### Added
+- **Show/hide toggle on login password field**: eye icon button inside the password input reveals or masks the entered password
+
+---
+
 ## [1.2.2] — 2026-06-02
 
 ### Fixed
