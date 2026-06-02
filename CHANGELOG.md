@@ -10,6 +10,10 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ## [Unreleased]
 
+---
+
+## [1.1.0] — 2026-06-02
+
 ### Fixed
 - **CMS 1500 all radio buttons (Box 11a sex, Box 1 Medicaid, Box 3 sex, Box 27 assignment) blank when any signature overlay was applied**: `_overlay_signature()` was constructing a new `PdfWriter()` and adding only the page via `add_page()`, which discards the AcroForm document catalog stored in the PDF `/Root` object; radio buttons rely on `/AS` appearance state referencing `/AP/N/<state>` entries that require the AcroForm in the catalog — without it, all radio button widget appearances are absent; text fields were unaffected because `update_page_form_field_values` bakes their appearance directly into each widget's `/AP/N` stream; fixed by using `writer.append(base_reader)` (preserves the full document catalog) followed by `writer.pages[0].merge_page(overlay_page)` (merges only the overlay content stream) — identical final visual result, catalog intact
 - **CMS 1500 Box 33 billing provider name configurable in Settings**: added `billing_provider_name` field (migration 0021) so the exact name as registered in PROMISe can be stored separately from the account full name; Box 33 (`doc_name`) uses this field with a fallback to `full_name`; Settings page "Billing provider information" section has a new input with help text "Must match exactly as registered in the PROMISe provider portal"
