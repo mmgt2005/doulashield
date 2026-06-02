@@ -12,6 +12,19 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.3.0] — 2026-06-02
+
+### Added
+- **Claim status visibility — color-coded badges on visit form**: existing Availity claims now show a colored pill badge (amber=Submitted, blue=Processing, green=Paid, red=Denied) with claim ID, paid amount when present, and submission/last-checked dates; replaces the plain green box
+- **Manual claim status logging**: for manual MCOs (UPMC For You, Health Partners Plans, Highmark Wholecare, FFS), a "Log claim status" form on the visit page lets providers record Submitted / Paid / Denied with date and optional paid amount; saving is idempotent (update, not duplicate)
+- **Claim status dots on client overview cards**: visit cards in the client overview show a small colored dot when a claim exists for that visit slot (green=paid, amber=submitted, blue=processing, red=denied); no dot means no claim yet
+- **Migration 0023**: adds `visit_type VARCHAR(30)` and `is_manual BOOLEAN` columns to the `claims` table; `visit_type` links each claim back to its visit slot for accurate per-visit display
+
+### Fixed
+- **Claim matched by visit_type**: the visit form now filters claims by `visit_type` instead of taking the first claim returned; providers with multiple patients or visits no longer see the wrong claim status
+
+---
+
 ## [1.2.3] — 2026-06-02
 
 ### Added
