@@ -224,12 +224,15 @@ class ClaimsService:
         )
         claim = existing_result.scalar_one_or_none()
 
+        auto_billed = rate_dollars(visit_type)
         now = datetime.now(timezone.utc)
         if claim:
             claim.status = data.status
             claim.service_date = data.service_date
             if data.billed_amount is not None:
                 claim.billed_amount = data.billed_amount
+            elif claim.billed_amount is None:
+                claim.billed_amount = auto_billed
             if data.paid_amount is not None:
                 claim.paid_amount = data.paid_amount
             claim.status_checked_at = now
@@ -241,7 +244,7 @@ class ClaimsService:
                 is_manual=True,
                 status=data.status,
                 service_date=data.service_date,
-                billed_amount=data.billed_amount,
+                billed_amount=data.billed_amount if data.billed_amount is not None else auto_billed,
                 paid_amount=data.paid_amount,
                 submitted_at=now,
             )
