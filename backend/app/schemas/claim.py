@@ -24,6 +24,7 @@ class ManualClaimUpsert(BaseModel):
     service_date: date
     billed_amount: Decimal | None = None
     paid_amount: Decimal | None = None
+    denial_reason: str | None = None
     notes: str | None = None
 
 
@@ -43,5 +44,7 @@ class ClaimRead(BaseModel):
     payer_id: str | None
     submitted_at: datetime | None
     status_checked_at: datetime | None
+    denial_reason: str | None
+    remittance_id: uuid.UUID | None
     created_at: datetime
     updated_at: datetime
