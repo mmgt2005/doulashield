@@ -10,6 +10,11 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ## [Unreleased]
 
+### Added
+- **MANUAL.md**: provider-facing user manual covering all features through v1.8.0 — getting started, managing clients, documenting visits, MA 91 signatures, claims & billing, reports dashboard, settings, and reference tables for billing codes, MCO submission channels, and PA HealthChoices zones
+- **ADMIN_GUIDE.md**: admin-only guide covering account management, billing/escrow, admin-only settings (ZipZign API key), audit logs, and a full reference table of audit action types
+- **Auto-update hook**: PostToolUse reminder now includes instructions (3) to update MANUAL.md and ADMIN_GUIDE.md when new provider-facing or admin-facing features are shipped
+
 ---
 
 ## [1.8.0] — 2026-06-02
