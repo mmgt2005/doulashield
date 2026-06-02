@@ -32,6 +32,7 @@ type FormData = z.infer<typeof schema>
 export default function NewClientPage() {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
+  const [needsAccessScan, setNeedsAccessScan] = useState(false)
 
   const { register, handleSubmit, setValue, watch, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -46,6 +47,14 @@ export default function NewClientPage() {
     if (data.policy_group) setValue('policy_group', String(data.policy_group))
     if (data.address) setValue('address', String(data.address))
     if (data.image_path) setValue('medicaid_card_image_path', String(data.image_path))
+    setNeedsAccessScan(!data.medicaid_id)
+  }
+
+  const handleAccessCardScanned = (data: Record<string, unknown>) => {
+    if (data.medicaid_id) {
+      setValue('medicaid_id', String(data.medicaid_id))
+      setNeedsAccessScan(false)
+    }
   }
 
   const onSubmit = async (data: FormData) => {
@@ -79,6 +88,20 @@ export default function NewClientPage() {
         onExtracted={handleScanned}
         label="Scan Medicaid Card"
       />
+
+      {needsAccessScan && (
+        <div className="rounded border border-amber-300 bg-amber-50 p-3 space-y-2">
+          <p className="text-sm font-medium text-amber-800">
+            ⚠ The MCO card didn&apos;t include the Medicaid ID. Scan the client&apos;s ACCESS card to get it.
+          </p>
+          <ImageUploadScanner
+            endpoint="/api/v1/ocr/handbook"
+            extraFields={{ page_type: 'access_card' }}
+            onExtracted={handleAccessCardScanned}
+            label="Scan ACCESS card"
+          />
+        </div>
+      )}
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 bg-white p-6 rounded-lg border border-gray-200">
         <div>

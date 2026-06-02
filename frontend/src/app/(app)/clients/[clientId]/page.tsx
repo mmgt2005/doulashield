@@ -16,6 +16,7 @@ interface EditFormData {
   name: string
   gender: string
   email: string
+  medicaid_id?: string
   mco: string
   date_of_birth: string
   policy_group: string
@@ -37,6 +38,7 @@ export default function ClientDetailPage() {
   const [error, setError] = useState<string | null>(null)
   const [editing, setEditing] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
+  const [needsAccessScan, setNeedsAccessScan] = useState(false)
   const [checkingElig, setCheckingElig] = useState(false)
   const [eligError, setEligError] = useState<string | null>(null)
 
@@ -66,6 +68,7 @@ export default function ClientDetailPage() {
 
   const handleEditScanned = (data: Record<string, unknown>) => {
     if (data.name) setValue('name', String(data.name))
+    if (data.medicaid_id) setValue('medicaid_id', String(data.medicaid_id))
     if (data.mco) setValue('mco', String(data.mco))
     if (data.date_of_birth) setValue('date_of_birth', String(data.date_of_birth))
     if (data.policy_group) setValue('policy_group', String(data.policy_group))
@@ -75,6 +78,14 @@ export default function ClientDetailPage() {
       setValue('longitude', undefined)
     }
     if (data.image_path) setValue('medicaid_card_image_path', String(data.image_path))
+    setNeedsAccessScan(!data.medicaid_id)
+  }
+
+  const handleAccessCardScannedEdit = (data: Record<string, unknown>) => {
+    if (data.medicaid_id) {
+      setValue('medicaid_id', String(data.medicaid_id))
+      setNeedsAccessScan(false)
+    }
   }
 
   const startEdit = () => {
@@ -94,6 +105,7 @@ export default function ClientDetailPage() {
       longitude: patient.longitude ?? undefined,
     })
     setSaveError(null)
+    setNeedsAccessScan(false)
     setEditing(true)
   }
 
@@ -114,6 +126,7 @@ export default function ClientDetailPage() {
           name: data.name,
           gender: data.gender,
           email: data.email || null,
+          ...(data.medicaid_id ? { medicaid_id: data.medicaid_id } : {}),
           mco: data.mco || null,
           date_of_birth: data.date_of_birth || null,
           policy_group: data.policy_group || null,
@@ -180,6 +193,19 @@ export default function ClientDetailPage() {
               onExtracted={handleEditScanned}
               label="Scan updated Medicaid card"
             />
+            {needsAccessScan && (
+              <div className="rounded border border-amber-300 bg-amber-50 p-3 space-y-2">
+                <p className="text-xs font-medium text-amber-800">
+                  ⚠ The MCO card didn&apos;t include the Medicaid ID. Scan the client&apos;s ACCESS card to get it.
+                </p>
+                <ImageUploadScanner
+                  endpoint="/api/v1/ocr/handbook"
+                  extraFields={{ page_type: 'access_card' }}
+                  onExtracted={handleAccessCardScannedEdit}
+                  label="Scan ACCESS card"
+                />
+              </div>
+            )}
             <div>
               <label className="block text-xs font-medium text-gray-600">Full name</label>
               <input {...register('name')} className="mt-1 block w-full rounded border border-gray-300 px-3 py-1.5 text-sm" />

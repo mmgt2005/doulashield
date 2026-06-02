@@ -57,6 +57,13 @@ _PROMPTS: dict[str, str] = {
         '"referring_provider_npi": "10-digit NPI number or null"}\n'
         "Use null for any field you cannot read clearly."
     ),
+    "access_card": (
+        "This is a Pennsylvania ACCESS card (the EBT-style Medicaid benefits card issued by PA DHS).\n"
+        "Extract the cardholder information and return ONLY valid JSON with no commentary:\n"
+        '{"medicaid_id": "the recipient ID or card number printed on the card", '
+        '"name": "cardholder name as printed or null"}\n'
+        "Use null for any field you cannot read clearly."
+    ),
 }
 
 
