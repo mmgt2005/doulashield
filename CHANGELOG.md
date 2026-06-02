@@ -12,6 +12,23 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.6.0] — 2026-06-02
+
+### Added
+- **Daily Availity remittance sync**: APScheduler job runs at 07:00 UTC (≈ 02:00 ET) daily, fetches 30-day rolling remittances for all providers with Availity credentials, parses claim payment lines, and updates matched claim records with paid amount, normalized status, and denial reason codes
+- **Manual EOB scan**: providers can photograph paper remittances from manual MCOs (UPMC, HPP, FFS); Claude OCR extracts status, paid amount, and denial reason, auto-updating the manual claim record
+- **Denial reason visibility**: denial reason (e.g. "CO-45: Charge exceeds fee schedule") now displays in the claim status panel for both Availity and manual claims
+- **Internal trigger endpoint**: `POST /internal/trigger-remittance-sync` with `X-Internal-Secret` header for ops/testing
+- **`remittance_eob` OCR page type**: new OCR prompt for scanning insurance EOBs and remittance advice documents
+
+### Changed
+- `ManualClaimUpsert` accepts optional `denial_reason` field for paper EOB updates
+
+### Migration
+- **0024**: adds `denial_reason TEXT NULL` and `remittance_id UUID NULL FK` to `claims`
+
+---
+
 ## [1.5.2] — 2026-06-02
 
 ### Added
