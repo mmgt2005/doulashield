@@ -204,6 +204,17 @@ class ClaimsService:
         )
         return [ClaimRead.model_validate(c) for c in result.scalars().all()]
 
+    async def list_all_provider_claims(
+        self,
+        requesting_user_id: uuid.UUID,
+    ) -> list[ClaimRead]:
+        result = await self._db.execute(
+            select(Claim).where(
+                Claim.provider_id == requesting_user_id,
+            ).order_by(Claim.service_date.desc())
+        )
+        return [ClaimRead.model_validate(c) for c in result.scalars().all()]
+
     async def log_manual_claim(
         self,
         patient_id: uuid.UUID,

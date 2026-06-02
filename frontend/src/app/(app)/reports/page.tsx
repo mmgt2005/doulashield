@@ -1,8 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import axios from 'axios'
 import { getAccessToken } from '@/lib/auth'
+import ImageUploadScanner from '@/components/ui/ImageUploadScanner'
+import type { Patient, Claim } from '@/types/domain'
 
 interface ClaimBucket {
   count: number
@@ -38,6 +40,29 @@ interface McoContract {
   contract_date: string | null
 }
 
+interface EobClaimLine {
+  patient_name: string | null
+  service_date: string | null
+  procedure_code: string | null
+  billed_amount: string | null
+  paid_amount: string | null
+  status: string
+  denial_reason: string | null
+  _patientId: string | null
+  _visitType: string | null
+  _matched: boolean
+  _applied: boolean
+}
+
+function claimStatusDisplay(status: string | null): { label: string; color: 'amber' | 'blue' | 'green' | 'red' } {
+  const s = (status ?? '').toLowerCase()
+  if (s === 'paid') return { label: 'Paid', color: 'green' }
+  if (s === 'denied' || s === 'rejected') return { label: 'Denied', color: 'red' }
+  if (s === 'processing' || s === 'accepted' || s === 'pended' || s === 'received' || s === 'adjusted')
+    return { label: 'Processing', color: 'blue' }
+  return { label: 'Submitted', color: 'amber' }
+}
+
 function fmt(n: number): string {
   return n.toLocaleString('en-US', { style: 'currency', currency: 'USD' })
 }
@@ -54,6 +79,12 @@ export default function ReportsPage() {
   const [contracts, setContracts] = useState<McoContract[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [allPatients, setAllPatients] = useState<Patient[]>([])
+  const [allClaims, setAllClaims] = useState<Claim[]>([])
+  const [eobClaims, setEobClaims] = useState<EobClaimLine[] | null>(null)
+  const [eobMeta, setEobMeta] = useState<{ check_number: string | null; payment_date: string | null } | null>(null)
+  const [eobError, setEobError] = useState<string | null>(null)
+  const [eobApplying, setEobApplying] = useState<number | null>(null)
 
   useEffect(() => {
     const base = process.env.NEXT_PUBLIC_API_URL
@@ -62,13 +93,93 @@ export default function ReportsPage() {
     Promise.all([
       axios.get<Stats>(`${base}/api/v1/stats/summary`, { headers }),
       axios.get<{ mco_contracts: McoContract[] | null }>(`${base}/api/v1/auth/me/provider-settings`, { headers }),
+      axios.get<Patient[]>(`${base}/api/v1/patients`, { headers }).catch(() => ({ data: [] as Patient[] })),
+      axios.get<Claim[]>(`${base}/api/v1/claims`, { headers }).catch(() => ({ data: [] as Claim[] })),
     ])
-      .then(([statsRes, settingsRes]) => {
+      .then(([statsRes, settingsRes, patientsRes, claimsRes]) => {
         setStats(statsRes.data)
         setContracts(settingsRes.data.mco_contracts ?? [])
+        setAllPatients(patientsRes.data)
+        setAllClaims(claimsRes.data)
       })
       .catch(() => setError('Failed to load report data.'))
       .finally(() => setLoading(false))
+  }, [])
+
+  const handleEobScanned = useCallback((data: Record<string, unknown>) => {
+    setEobError(null)
+    const rawClaims = data.claims as Record<string, unknown>[] | undefined
+    if (!Array.isArray(rawClaims)) {
+      setEobError('Unexpected EOB format — could not extract claim lines.')
+      return
+    }
+
+    const lines: EobClaimLine[] = rawClaims.map(c => {
+      const eoName = String(c.patient_name ?? '').toLowerCase().trim()
+      const firstToken = eoName.split(/\s+/)[0]
+
+      const matchedPatient = firstToken.length >= 2
+        ? allPatients.find(p => p.name.toLowerCase().includes(firstToken))
+        : undefined
+
+      const svcDate = String(c.service_date ?? '')
+      let matchedClaim: Claim | undefined
+      if (matchedPatient) {
+        matchedClaim = allClaims.find(
+          cl => cl.patient_id === matchedPatient.id &&
+                (svcDate ? cl.service_date === svcDate : true)
+        )
+      }
+
+      return {
+        patient_name: (c.patient_name as string | null) ?? null,
+        service_date: (c.service_date as string | null) ?? null,
+        procedure_code: (c.procedure_code as string | null) ?? null,
+        billed_amount: (c.billed_amount as string | null) ?? null,
+        paid_amount: (c.paid_amount as string | null) ?? null,
+        status: String(c.status ?? 'submitted'),
+        denial_reason: (c.denial_reason as string | null) ?? null,
+        _patientId: matchedPatient?.id ?? null,
+        _visitType: matchedClaim?.visit_type ?? null,
+        _matched: !!matchedPatient,
+        _applied: false,
+      }
+    })
+
+    setEobClaims(lines)
+    setEobMeta({
+      check_number: (data.check_number as string) || null,
+      payment_date: (data.payment_date as string) || null,
+    })
+  }, [allPatients, allClaims])
+
+  const _applyEobLine = useCallback(async (line: EobClaimLine, idx: number) => {
+    if (!line._patientId || !line._visitType) return
+    const base = process.env.NEXT_PUBLIC_API_URL
+    const headers = { Authorization: `Bearer ${getAccessToken()}` }
+    const statusMap: Record<string, string> = {
+      paid: 'paid', adjusted: 'paid', denied: 'denied', pending: 'submitted',
+    }
+    const payload: Record<string, unknown> = {
+      status: statusMap[line.status] ?? 'submitted',
+      service_date: line.service_date ?? new Date().toISOString().split('T')[0],
+    }
+    if (line.paid_amount) payload.paid_amount = line.paid_amount
+    if (line.denial_reason) payload.denial_reason = line.denial_reason
+
+    setEobApplying(idx)
+    try {
+      await axios.put(
+        `${base}/api/v1/patients/${line._patientId}/visits/${line._visitType}/claims/manual`,
+        payload,
+        { headers }
+      )
+      setEobClaims(prev => prev?.map((c, j) => j === idx ? { ...c, _applied: true } : c) ?? null)
+    } catch {
+      setEobError('Failed to apply claim — please try again.')
+    } finally {
+      setEobApplying(null)
+    }
   }, [])
 
   if (loading) {
@@ -228,6 +339,114 @@ export default function ReportsPage() {
                 })}
               </tbody>
             </table>
+          </div>
+        )}
+      </div>
+
+      {/* Central EOB Scanner */}
+      <div>
+        <h2 className="mb-3 text-sm font-semibold text-gray-700">Remittance / EOB Scan</h2>
+        {eobClaims ? (
+          <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold text-blue-800">
+                {eobClaims.length} claim{eobClaims.length !== 1 ? 's' : ''} found
+                {eobMeta?.check_number ? ` · Check #${eobMeta.check_number}` : ''}
+                {eobMeta?.payment_date ? ` · ${eobMeta.payment_date}` : ''}
+              </p>
+              <button
+                type="button"
+                onClick={() => { setEobClaims(null); setEobMeta(null); setEobError(null) }}
+                className="text-xs text-blue-600 hover:underline"
+              >
+                Dismiss
+              </button>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="text-left text-blue-700 border-b border-blue-200">
+                    <th className="pb-1 pr-2">Patient on EOB</th>
+                    <th className="pb-1 pr-2">Matched Client</th>
+                    <th className="pb-1 pr-2">Date</th>
+                    <th className="pb-1 pr-2">Status</th>
+                    <th className="pb-1 pr-2">Paid</th>
+                    <th className="pb-1"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {eobClaims.map((line, i) => {
+                    const matchedPt = line._patientId ? allPatients.find(p => p.id === line._patientId) : undefined
+                    const { label, color } = claimStatusDisplay(line.status)
+                    const colorClasses = {
+                      amber: 'border-amber-300 bg-amber-50 text-amber-700',
+                      blue: 'border-blue-300 bg-blue-50 text-blue-700',
+                      green: 'border-green-300 bg-green-50 text-green-800',
+                      red: 'border-red-300 bg-red-50 text-red-700',
+                    }[color]
+                    return (
+                      <tr key={i} className={`border-t border-blue-100 ${line._matched ? 'bg-blue-100' : ''}`}>
+                        <td className="py-1.5 pr-2 text-gray-700">{line.patient_name ?? '—'}</td>
+                        <td className="py-1.5 pr-2 font-medium">
+                          {matchedPt ? (
+                            <a href={`/clients/${matchedPt.id}`} className="text-blue-700 hover:underline">
+                              {matchedPt.name}
+                            </a>
+                          ) : (
+                            <span className="text-gray-400">no match</span>
+                          )}
+                        </td>
+                        <td className="py-1.5 pr-2 tabular-nums text-gray-700">{line.service_date ?? '—'}</td>
+                        <td className="py-1.5 pr-2">
+                          <span className={`rounded px-1 py-0.5 border text-xs ${colorClasses}`}>{label}</span>
+                        </td>
+                        <td className="py-1.5 pr-2 tabular-nums text-gray-700">
+                          {line.paid_amount ? `$${line.paid_amount}` : '—'}
+                        </td>
+                        <td className="py-1.5 text-right whitespace-nowrap">
+                          {line._applied ? (
+                            <span className="text-green-600 font-medium">✓ Applied</span>
+                          ) : line._matched && line._visitType ? (
+                            <button
+                              type="button"
+                              disabled={eobApplying === i}
+                              onClick={() => _applyEobLine(line, i)}
+                              className="font-medium text-blue-600 hover:underline disabled:opacity-50"
+                            >
+                              {eobApplying === i ? '…' : 'Apply ↓'}
+                            </button>
+                          ) : line._matched ? (
+                            <span className="text-amber-600 text-xs" title="No existing claim — submit from the visit page first">
+                              no claim
+                            </span>
+                          ) : (
+                            <span className="text-gray-400 text-xs">no match</span>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <p className="text-xs text-blue-700">
+              Highlighted rows matched a client in your roster. &ldquo;Apply ↓&rdquo; updates that visit&apos;s claim status.
+              Rows showing &ldquo;no claim&rdquo; mean the claim was not yet submitted from the visit page.
+            </p>
+            {eobError && <p className="text-xs text-red-600">{eobError}</p>}
+          </div>
+        ) : (
+          <div className="rounded-lg border border-gray-200 bg-white p-4">
+            <p className="mb-3 text-xs text-gray-500">
+              Scan a full paper remittance here — all claim lines will be matched against your client roster automatically.
+            </p>
+            <ImageUploadScanner
+              endpoint="/api/v1/ocr/handbook"
+              extraFields={{ page_type: 'remittance_eob' }}
+              onExtracted={handleEobScanned}
+              label="Scan Remittance / EOB"
+            />
+            {eobError && <p className="mt-2 text-xs text-red-600">{eobError}</p>}
           </div>
         )}
       </div>

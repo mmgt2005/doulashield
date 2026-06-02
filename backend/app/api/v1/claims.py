@@ -239,6 +239,15 @@ async def download_cms1500(
     )
 
 
+@router.get("/claims", response_model=list[ClaimRead])
+async def list_all_claims(
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    audit: Annotated[AuditLogger, Depends(get_audit)],
+) -> list[ClaimRead]:
+    return await ClaimsService(db, audit).list_all_provider_claims(current_user.id)
+
+
 @router.put("/patients/{patient_id}/visits/{visit_type}/claims/manual", response_model=ClaimRead)
 async def log_manual_claim(
     request: Request,

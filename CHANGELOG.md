@@ -12,6 +12,14 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.8.0] — 2026-06-02
+
+### Added
+- **Central EOB scanner on Reports page**: providers can scan a full paper remittance once from `/reports` and see all extracted claim lines matched against their entire client roster; highlighted rows link to the matched client, with "Apply ↓" buttons to update claim status in bulk without visiting each client individually
+- **Provider-level claims endpoint**: `GET /api/v1/claims` returns all claims for the authenticated provider (no patient-id filter), used by the central EOB scanner to cross-reference service dates against existing claim records
+
+---
+
 ## [1.7.0] — 2026-06-02
 
 ### Changed
