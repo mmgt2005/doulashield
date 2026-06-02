@@ -64,6 +64,21 @@ _PROMPTS: dict[str, str] = {
         '"name": "cardholder name as printed or null"}\n'
         "Use null for any field you cannot read clearly."
     ),
+    "remittance_eob": (
+        "Extract claim payment information from this insurance Explanation of Benefits (EOB) "
+        "or remittance advice document and return ONLY valid JSON with no commentary:\n"
+        '{"status": "paid or denied or adjusted", '
+        '"paid_amount": "dollar amount paid as a number string (e.g. \\"95.00\\") or null", '
+        '"denial_reason": "denial codes and descriptions as a single string or null", '
+        '"check_number": "check or EFT number or null", '
+        '"payment_date": "YYYY-MM-DD or null"}\n'
+        "For status: use 'paid' if payment amount > 0 with no denial codes, "
+        "'denied' if fully denied with $0 payment, "
+        "'adjusted' if partially paid with denial/adjustment codes present. "
+        "For denial_reason: include adjustment reason codes and descriptions "
+        "(e.g. 'CO-45: Charge exceeds fee schedule; CO-97: Bundled service'). "
+        "Use null for any field you cannot read clearly."
+    ),
 }
 
 

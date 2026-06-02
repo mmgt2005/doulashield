@@ -122,6 +122,8 @@ export interface Claim {
   payer_id: string | null
   submitted_at: string | null
   status_checked_at: string | null
+  denial_reason: string | null
+  remittance_id: string | null
   created_at: string
   updated_at: string
 }

@@ -57,6 +57,9 @@ class Settings(BaseSettings):
     RESEND_API_KEY: str = ""
     EMAIL_FROM: str = "DoulaShield <noreply@doulashield.com>"
 
+    # Internal ops
+    INTERNAL_SECRET: str = ""  # required for POST /internal/trigger-remittance-sync
+
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
 
 

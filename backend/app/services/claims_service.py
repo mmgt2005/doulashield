@@ -235,6 +235,8 @@ class ClaimsService:
                 claim.billed_amount = auto_billed
             if data.paid_amount is not None:
                 claim.paid_amount = data.paid_amount
+            if data.denial_reason is not None:
+                claim.denial_reason = data.denial_reason
             claim.status_checked_at = now
         else:
             claim = Claim(
@@ -246,6 +248,7 @@ class ClaimsService:
                 service_date=data.service_date,
                 billed_amount=data.billed_amount if data.billed_amount is not None else auto_billed,
                 paid_amount=data.paid_amount,
+                denial_reason=data.denial_reason,
                 submitted_at=now,
             )
             self._db.add(claim)

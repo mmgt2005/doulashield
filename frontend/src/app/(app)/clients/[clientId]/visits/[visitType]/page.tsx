@@ -156,6 +156,8 @@ export default function VisitFormPage() {
   const [manualPaidAmount, setManualPaidAmount] = useState('')
   const [manualSaving, setManualSaving] = useState(false)
   const [showManualForm, setShowManualForm] = useState(false)
+  const [manualDenialReason, setManualDenialReason] = useState('')
+  const [eobError, setEobError] = useState<string | null>(null)
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null)
   const [pdfLoading, setPdfLoading] = useState(false)
   const [providerSsnConnected, setProviderSsnConnected] = useState(false)
@@ -523,6 +525,7 @@ export default function VisitFormPage() {
           status: manualStatus,
           service_date: manualDate || watch('visit_date'),
           ...(manualStatus === 'paid' && manualPaidAmount ? { paid_amount: manualPaidAmount } : {}),
+          ...(manualStatus === 'denied' && manualDenialReason ? { denial_reason: manualDenialReason } : {}),
         },
         { headers: { Authorization: `Bearer ${getAccessToken()}` } }
       )
@@ -530,6 +533,33 @@ export default function VisitFormPage() {
       setShowManualForm(false)
     } catch { /* non-blocking */ } finally {
       setManualSaving(false)
+    }
+  }
+
+  const handleEobScanned = async (data: Record<string, unknown>) => {
+    setEobError(null)
+    const statusMap: Record<string, string> = {
+      paid: 'paid', adjusted: 'paid', denied: 'denied', pending: 'submitted',
+    }
+    const rawStatus = String(data.status ?? '')
+    const status = statusMap[rawStatus] ?? 'submitted'
+
+    const payload: Record<string, unknown> = {
+      status,
+      service_date: existingClaim?.service_date ?? watch('visit_date'),
+    }
+    if (data.paid_amount) payload.paid_amount = data.paid_amount
+    if (data.denial_reason) payload.denial_reason = data.denial_reason
+
+    try {
+      const res = await axios.put<Claim>(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/patients/${clientId}/visits/${visitType}/claims/manual`,
+        payload,
+        { headers: { Authorization: `Bearer ${getAccessToken()}` } }
+      )
+      setExistingClaim(res.data)
+    } catch {
+      setEobError('Failed to update claim from EOB — please try again.')
     }
   }
 
@@ -1112,6 +1142,11 @@ export default function VisitFormPage() {
                       {existingClaim.paid_amount && (
                         <p className="text-sm font-semibold">Paid: ${existingClaim.paid_amount}</p>
                       )}
+                      {existingClaim.denial_reason && (
+                        <p className="mt-0.5 text-xs text-red-700">
+                          <span className="font-medium">Denial reason:</span> {existingClaim.denial_reason}
+                        </p>
+                      )}
                       <div className="flex flex-wrap items-center gap-x-2 text-xs text-gray-500">
                         {existingClaim.submitted_at && (
                           <span>Submitted {new Date(existingClaim.submitted_at).toLocaleDateString()}</span>
@@ -1121,18 +1156,32 @@ export default function VisitFormPage() {
                         )}
                       </div>
                       {existingClaim.is_manual ? (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setManualStatus((existingClaim.status as 'submitted' | 'paid' | 'denied') ?? 'submitted')
-                            setManualDate(existingClaim.service_date ?? watch('visit_date') ?? '')
-                            setManualPaidAmount(existingClaim.paid_amount ?? '')
-                            setShowManualForm(true)
-                          }}
-                          className="text-xs text-blue-600 hover:text-blue-800"
-                        >
-                          Update status
-                        </button>
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setManualStatus((existingClaim.status as 'submitted' | 'paid' | 'denied') ?? 'submitted')
+                              setManualDate(existingClaim.service_date ?? watch('visit_date') ?? '')
+                              setManualPaidAmount(existingClaim.paid_amount ?? '')
+                              setManualDenialReason(existingClaim.denial_reason ?? '')
+                              setShowManualForm(true)
+                            }}
+                            className="text-xs text-blue-600 hover:text-blue-800"
+                          >
+                            Update status
+                          </button>
+                          {/* EOB scan to auto-update from paper remittance */}
+                          <div className="mt-2 border-t pt-2">
+                            <p className="mb-1 text-xs text-gray-500">Received a paper remittance? Update from EOB:</p>
+                            <ImageUploadScanner
+                              endpoint="/api/v1/ocr/handbook"
+                              extraFields={{ page_type: 'remittance_eob', patient_id: clientId }}
+                              onExtracted={handleEobScanned}
+                              label="Scan Remittance / EOB"
+                            />
+                            {eobError && <p className="mt-1 text-xs text-red-600">{eobError}</p>}
+                          </div>
+                        </>
                       ) : (
                         <button
                           type="button"
@@ -1230,6 +1279,18 @@ export default function VisitFormPage() {
                                 onChange={(e) => setManualPaidAmount(e.target.value)}
                                 placeholder="0.00"
                                 className="rounded border border-gray-300 px-2 py-1.5 text-sm w-24"
+                              />
+                            </div>
+                          )}
+                          {manualStatus === 'denied' && (
+                            <div className="w-full sm:w-64">
+                              <label className="block text-xs text-gray-500 mb-1">Denial reason</label>
+                              <input
+                                type="text"
+                                value={manualDenialReason}
+                                onChange={(e) => setManualDenialReason(e.target.value)}
+                                placeholder="e.g., CO-45 Charge exceeds fee schedule"
+                                className="w-full rounded border border-gray-300 px-2 py-1.5 text-sm"
                               />
                             </div>
                           )}
