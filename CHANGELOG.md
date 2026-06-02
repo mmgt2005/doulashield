@@ -12,6 +12,24 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.2.1] — 2026-06-02
+
+### Fixed
+- **Highmark Wholecare claim channel corrected to `manual`**: was incorrectly routed through Availity REST API; Highmark Wholecare uses NaviNet for claims, not Availity
+- **UHC Community Plan channel corrected to `availity`**: dedicated `uhc_client.py` with PKCE OAuth2 removed; UHC Community Plan accepts Availity EDI clearinghouse (payer ID `04567`)
+- **Keystone First payer ID `23284` added**: was entirely absent from `MCO_PAYER_IDS`, breaking eligibility checks and claim submission for all Keystone First patients
+- **UHC Community Plan payer ID corrected to `04567`**: was `87726` (commercial UHC only); `04567` is the correct Medicaid Community Plan EDI payer ID
+- **Geisinger Health Plan payer ID corrected to `75273`**: was unverified alphabetic code `GEISP`
+- **Highmark Wholecare payer ID corrected to `25169`**: was unverified alphabetic code `HMKWC`
+- **UPMC For You and Health Partners Plans removed from `MCO_PAYER_IDS`**: these MCOs are `manual` channel — no Availity payer ID needed or valid
+- **UPMC For You portal URL corrected** to `https://www.upmchealthplan.com/providers/online`
+- **Health Partners Plans portal URL corrected** to `https://www.healthpartnersplans.com/home/providers/claims-and-billing/claim-submissions/` (old URL was a dead domain)
+- **Highmark Wholecare portal entry added** to `MCO_PORTAL_LINKS` (needed now that channel is `manual`)
+- **OCR Medicaid card scan**: Keystone First is now recognized as a separate MCO from AmeriHealth Caritas; removed the alias that incorrectly collapsed "Keystone First" → "AmeriHealth Caritas"
+- **Settings page UHC credentials section removed**: UHC no longer requires separate API credentials; section was presenting providers with unnecessary configuration
+
+---
+
 ## [1.2.0] — 2026-06-02
 
 ### Added
