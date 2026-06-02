@@ -65,17 +65,23 @@ _PROMPTS: dict[str, str] = {
         "Use null for any field you cannot read clearly."
     ),
     "remittance_eob": (
-        "Extract claim payment information from this insurance Explanation of Benefits (EOB) "
+        "Extract ALL claim payment lines from this insurance Explanation of Benefits (EOB) "
         "or remittance advice document and return ONLY valid JSON with no commentary:\n"
-        '{"status": "paid or denied or adjusted", '
-        '"paid_amount": "dollar amount paid as a number string (e.g. \\"95.00\\") or null", '
-        '"denial_reason": "denial codes and descriptions as a single string or null", '
-        '"check_number": "check or EFT number or null", '
-        '"payment_date": "YYYY-MM-DD or null"}\n'
-        "For status: use 'paid' if payment amount > 0 with no denial codes, "
-        "'denied' if fully denied with $0 payment, "
-        "'adjusted' if partially paid with denial/adjustment codes present. "
-        "For denial_reason: include adjustment reason codes and descriptions "
+        '{"check_number": "check or EFT number or null", '
+        '"payment_date": "YYYY-MM-DD or null", '
+        '"total_paid": "total payment amount as a number string or null", '
+        '"claims": ['
+        '{"patient_name": "patient full name as printed or null", '
+        '"service_date": "YYYY-MM-DD or null", '
+        '"procedure_code": "CPT or HCPCS code or null", '
+        '"billed_amount": "billed amount as a number string or null", '
+        '"paid_amount": "paid amount as a number string or null", '
+        '"status": "paid or denied or adjusted", '
+        '"denial_reason": "denial codes and descriptions or null"}]}\n'
+        "IMPORTANT: Extract EVERY claim line in the document — do not stop after the first. "
+        "For status: paid=payment >$0 with no denial codes; denied=$0 payment with denial codes; "
+        "adjusted=partial payment or adjustment codes present. "
+        "For denial_reason include codes and descriptions "
         "(e.g. 'CO-45: Charge exceeds fee schedule; CO-97: Bundled service'). "
         "Use null for any field you cannot read clearly."
     ),

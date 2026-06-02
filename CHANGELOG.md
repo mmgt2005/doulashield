@@ -12,6 +12,16 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.7.0] — 2026-06-02
+
+### Changed
+- **Multi-claim EOB scan**: the `remittance_eob` OCR prompt now extracts every claim line on a remittance page as an array (patient name, service date, procedure code, billed/paid amounts, status, denial reason, plus check number and payment date at the header level) — previously only one claim per scan
+- **EOB review panel**: instead of auto-applying the single extracted claim, the visit form now shows a review table listing all N extracted claims; rows matching the current patient are highlighted and can be applied individually; rows for other patients show an "other patient" label with a note to navigate to their visit page
+- **Auto-apply**: when exactly one EOB row matches the current patient by name, it is still applied automatically (preserving the fast path for single-patient EOBs)
+- **Backward compat**: if the OCR response is in the old single-claim format, it is applied directly with no review step
+
+---
+
 ## [1.6.0] — 2026-06-02
 
 ### Added
