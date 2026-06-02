@@ -12,6 +12,15 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.4.0] — 2026-06-02
+
+### Added
+- **ACCESS card fallback scan**: when scanning an MCO card that doesn't include the Medicaid recipient ID, an amber prompt appears directing the provider to scan the client's Pennsylvania ACCESS card; scanning the ACCESS card populates the Medicaid ID field and dismisses the prompt — applies to both the new-client form and the edit-profile form
+- **ACCESS card OCR prompt**: new `access_card` page type extracts `medicaid_id` and `name` from the PA DHS EBT-style ACCESS card; accepted by the `/ocr/handbook` endpoint
+- **Medicaid ID in edit-profile scan**: the edit-profile MCO card scan handler now also captures `medicaid_id` when present (previously ignored), and includes it in the PATCH body
+
+---
+
 ## [1.3.0] — 2026-06-02
 
 ### Added
