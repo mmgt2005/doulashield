@@ -280,8 +280,10 @@ def generate_pdf(
     else:
         fac_name = "Telehealth"
 
-    # Box 26 patient account number
-    pt_account = medicaid_id[-8:] if len(medicaid_id) >= 8 else medicaid_id
+    # Box 26 — internal claim identifier (first 8 hex chars of visit UUID, no dashes)
+    # Echoed back on 835 remittance — use to match payments to visits in the DB
+    raw_visit_id = visit_data.get("visit_id", "") or ""
+    pt_account = raw_visit_id[:8].upper() if raw_visit_id else (medicaid_id[-8:] if medicaid_id else "")
 
     # -----------------------------------------------------------------------
     # Build field value map

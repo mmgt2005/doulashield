@@ -204,6 +204,7 @@ async def download_cms1500(
             visit_data={
                 "visit_type": visit_type,
                 "visit_date": svc_date,
+                "visit_id": str(visit.id).replace("-", "") if visit else "",
                 "location_type": location_type,
                 "prior_auth_number": visit.prior_auth_number if visit else None,
                 "alternate_location": visit.alternate_location if visit else None,
