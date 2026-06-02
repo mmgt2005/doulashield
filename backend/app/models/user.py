@@ -35,6 +35,7 @@ class User(Base):
     provider_phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
     provider_ssn_encrypted: Mapped[str | None] = mapped_column(Text, nullable=True)
     provider_signature_path: Mapped[str | None] = mapped_column(Text, nullable=True)
+    billing_provider_name: Mapped[str | None] = mapped_column(Text, nullable=True)  # exact name as registered in PROMISe
 
     # Billing
     stripe_customer_id: Mapped[str | None] = mapped_column(Text, nullable=True)

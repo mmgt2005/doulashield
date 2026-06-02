@@ -244,7 +244,8 @@ def generate_pdf(
 
     # Provider info
     npi = provider_data.get("npi", "")
-    provider_name = provider_data.get("full_name", "")
+    # Box 33 uses the PROMISe-registered billing name; falls back to full_name if not set
+    provider_name = provider_data.get("billing_provider_name") or provider_data.get("full_name", "")
     prov_addr = provider_data.get("provider_address", "")
     prov_phone_raw = provider_data.get("provider_phone", "")
     prov_phone_digits = re.sub(r"\D", "", prov_phone_raw)

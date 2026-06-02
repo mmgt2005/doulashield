@@ -45,6 +45,7 @@ class ProviderSettingsUpdate(BaseModel):
     provider_phone: str | None = None
     provider_ssn: str | None = None          # plain text on write; encrypted on save; never returned
     provider_signature_path: str | None = None
+    billing_provider_name: str | None = None  # exact name as registered in PROMISe (used in CMS 1500 Box 33)
 
 
 class ProviderSettingsRead(BaseModel):
@@ -60,6 +61,7 @@ class ProviderSettingsRead(BaseModel):
     provider_phone: str | None
     provider_ssn_connected: bool
     provider_signature_path: str | None
+    billing_provider_name: str | None
 
 
 class AuditLogRead(BaseModel):

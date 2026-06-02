@@ -45,6 +45,7 @@ class EligibilityService:
             provider_phone=user.provider_phone,
             provider_ssn_connected=user.provider_ssn_encrypted is not None,
             provider_signature_path=user.provider_signature_path,
+            billing_provider_name=user.billing_provider_name,
         )
 
     async def update_provider_settings(
@@ -87,6 +88,8 @@ class EligibilityService:
             user.provider_ssn_encrypted = None if data.provider_ssn == "" else encrypt_field(data.provider_ssn)
         if data.provider_signature_path is not None:
             user.provider_signature_path = data.provider_signature_path or None
+        if data.billing_provider_name is not None:
+            user.billing_provider_name = data.billing_provider_name or None
 
         await self._db.commit()
         await self._db.refresh(user)
@@ -116,6 +119,7 @@ class EligibilityService:
             provider_phone=user.provider_phone,
             provider_ssn_connected=user.provider_ssn_encrypted is not None,
             provider_signature_path=user.provider_signature_path,
+            billing_provider_name=user.billing_provider_name,
         )
 
     async def check_eligibility(

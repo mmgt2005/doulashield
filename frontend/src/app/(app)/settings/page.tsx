@@ -10,6 +10,7 @@ import AddressAutocomplete from '@/components/ui/AddressAutocomplete'
 
 interface SettingsFormData {
   npi: string
+  billing_provider_name: string
   provider_address: string
   provider_phone: string
   availity_client_id: string
@@ -106,12 +107,13 @@ export default function SettingsPage() {
     if (!isAuthenticated) return
     const headers = { Authorization: `Bearer ${getAccessToken()}` }
     axios
-      .get<{ npi: string | null; availity_connected: boolean; uhc_connected: boolean; telehealth_link: string | null; contact_email: string | null; zipzign_connected: boolean; zone: string | null; counties: string[] | null; provider_address: string | null; provider_phone: string | null; provider_ssn_connected: boolean; provider_signature_path: string | null }>(
+      .get<{ npi: string | null; billing_provider_name: string | null; availity_connected: boolean; uhc_connected: boolean; telehealth_link: string | null; contact_email: string | null; zipzign_connected: boolean; zone: string | null; counties: string[] | null; provider_address: string | null; provider_phone: string | null; provider_ssn_connected: boolean; provider_signature_path: string | null }>(
         `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/me/provider-settings`,
         { headers }
       )
       .then((r) => {
         if (r.data.npi) setValue('npi', r.data.npi)
+        if (r.data.billing_provider_name) setValue('billing_provider_name', r.data.billing_provider_name)
         if (r.data.telehealth_link) setValue('telehealth_link', r.data.telehealth_link)
         if (r.data.contact_email) setValue('contact_email', r.data.contact_email)
         if (r.data.zone) setValue('zone', r.data.zone)
@@ -182,6 +184,7 @@ export default function SettingsPage() {
     try {
       const body: Record<string, string | string[]> = {}
       if (data.npi) body.npi = data.npi
+      body.billing_provider_name = data.billing_provider_name || ''
       if (data.availity_client_id) body.availity_client_id = data.availity_client_id
       if (data.availity_client_secret) body.availity_client_secret = data.availity_client_secret
       if (data.uhc_client_id) body.uhc_client_id = data.uhc_client_id
@@ -365,6 +368,19 @@ export default function SettingsPage() {
           <p className="text-xs text-gray-500">
             Used to populate Box 33 on the CMS 1500 claim form.
           </p>
+          <div>
+            <label htmlFor="billing_provider_name" className="block text-sm font-medium text-gray-700">
+              Billing provider name <span className="font-normal text-gray-500">(Box 33)</span>
+            </label>
+            <p className="text-xs text-gray-500 mb-1">Must match exactly as registered in the PROMISe provider portal.</p>
+            <input
+              {...register('billing_provider_name')}
+              id="billing_provider_name"
+              type="text"
+              placeholder="Name as it appears in PROMISe"
+              className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+          </div>
           <div>
             <label htmlFor="npi" className="block text-sm font-medium text-gray-700">
               National Provider Identifier (NPI)

@@ -212,6 +212,7 @@ async def download_cms1500(
             provider_data={
                 "npi": user.npi or "",
                 "full_name": user.full_name or "",
+                "billing_provider_name": user.billing_provider_name or user.full_name or "",
                 "provider_address": provider_address,
                 "provider_phone": user.provider_phone or "",
                 "provider_ssn": provider_ssn,
