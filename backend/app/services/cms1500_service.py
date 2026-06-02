@@ -325,8 +325,8 @@ def generate_pdf(
         "ins_dob_yy": dob_yy,
 
         # Box 11c — Insurance plan / MCO name (field is ins_plan_name, not insurance_name)
-        # FFS = Fee-for-Service (no MCO) → show "Medicaid"
-        "ins_plan_name": "Medicaid" if (patient_data.get("mco") or "").upper() == "FFS" else (patient_data.get("mco") or ""),
+        # FFS = Fee-for-Service (no MCO) → leave blank
+        "ins_plan_name": "" if (patient_data.get("mco") or "").upper() == "FFS" else (patient_data.get("mco") or ""),
 
         # Box 12 — Patient signature + date
         # Provider signs here (same image as Box 31); date matches service date
