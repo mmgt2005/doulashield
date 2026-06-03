@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.12.2] — 2026-06-03
+
+### Fixed
+- **"Error undefined" on Send Welcome Email**: when Resend reported a delivery failure the backend threw an unhandled exception that returned a non-JSON response, causing the frontend toast to show "Error: undefined". The email-send call in the `send-welcome-email` endpoint is now wrapped in a try/except that returns HTTP 502 with a readable detail message. The `welcome_email_sent_at` timestamp update is wrapped in its own try/except so a DB commit failure never breaks the endpoint. The frontend error handler now falls back to a static string when `detail` is absent from the response, preventing the "undefined" display.
+
+---
+
 ## [1.12.1] — 2026-06-03
 
 ### Added
