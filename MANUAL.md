@@ -314,6 +314,7 @@ Access Settings from the sidebar. Changes save when you click **Save settings**.
 
 | Section | Fields |
 |---|---|
+| **CAQH Attestation** | Last attested on (date); live expiry countdown; link to CAQH ProView |
 | **Provider Identity** | NPI, billing provider name, billing address, phone |
 | **Escrow & Billing** | Shows your escrow agreement status and deferred balance (collected from MCO remittances) |
 | **PA HealthChoices** | Zone (Southeast, Southwest, Lehigh/Capital, Northeast/Northwest) and counties served (checkbox list) |
@@ -324,6 +325,17 @@ Access Settings from the sidebar. Changes save when you click **Save settings**.
 | **Provider Signature** | Draw your signature on the canvas — embedded as Box 31 on CMS 1500 |
 | **SSN (Box 25)** | 9-digit SSN stored encrypted; used as Tax ID on CMS 1500 |
 | **Change Password** | Current password + new password (12+ chars, upper, lower, number, special character) |
+
+### CAQH ProView Attestation
+
+CAQH ProView is the credential database used by all PA MCOs to verify provider enrollment. You must re-attest your profile every 90 days. Missing the deadline risks removal from MCO directories, which blocks reimbursement.
+
+**Workflow:**
+1. Log in at [proview.caqh.org](https://proview.caqh.org) and complete re-attestation.
+2. Return to DoulaShield **Settings → CAQH Attestation** and update **Last attested on** to today's date.
+3. The expiry preview updates immediately — green means you have more than 14 days, amber means 14 days or fewer, red means overdue.
+
+**Reminders:** DoulaShield automatically emails you at 30, 14, 7, and 0 days before expiry, and daily for the first 7 days after expiry. If the dashboard shows an amber or red banner, act immediately to avoid billing disruption.
 
 ---
 

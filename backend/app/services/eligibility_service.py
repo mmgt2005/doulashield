@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import logging
 import uuid
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -42,6 +42,8 @@ class EligibilityService:
             select(User).where(User.role == "admin", User.zipzign_api_key_encrypted.isnot(None)).limit(1)
         )
         zipzign_configured = admin_q.scalar_one_or_none() is not None
+        caqh_expiry = user.caqh_last_attested_on + timedelta(days=90) if user.caqh_last_attested_on else None
+        caqh_days_remaining = (caqh_expiry - date.today()).days if caqh_expiry else None
         return ProviderSettingsRead(
             npi=user.npi,
             availity_connected=bool(user.availity_client_id_encrypted and user.availity_client_secret_encrypted),
@@ -56,6 +58,8 @@ class EligibilityService:
             provider_signature_path=user.provider_signature_path,
             billing_provider_name=user.billing_provider_name,
             mco_contracts=_parse_mco_contracts(user.mco_contracts_json),
+            caqh_last_attested_on=user.caqh_last_attested_on,
+            caqh_days_remaining=caqh_days_remaining,
         )
 
     async def update_provider_settings(
@@ -102,6 +106,8 @@ class EligibilityService:
                 if data.mco_contracts
                 else None
             )
+        if data.caqh_last_attested_on is not None:
+            user.caqh_last_attested_on = data.caqh_last_attested_on
 
         await self._db.commit()
         await self._db.refresh(user)
@@ -118,6 +124,8 @@ class EligibilityService:
             select(User).where(User.role == "admin", User.zipzign_api_key_encrypted.isnot(None)).limit(1)
         )
         zipzign_configured = admin_q2.scalar_one_or_none() is not None
+        caqh_expiry2 = user.caqh_last_attested_on + timedelta(days=90) if user.caqh_last_attested_on else None
+        caqh_days_remaining2 = (caqh_expiry2 - date.today()).days if caqh_expiry2 else None
         return ProviderSettingsRead(
             npi=user.npi,
             availity_connected=bool(user.availity_client_id_encrypted and user.availity_client_secret_encrypted),
@@ -132,6 +140,8 @@ class EligibilityService:
             provider_signature_path=user.provider_signature_path,
             billing_provider_name=user.billing_provider_name,
             mco_contracts=_parse_mco_contracts(user.mco_contracts_json),
+            caqh_last_attested_on=user.caqh_last_attested_on,
+            caqh_days_remaining=caqh_days_remaining2,
         )
 
     async def check_eligibility(

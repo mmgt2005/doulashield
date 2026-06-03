@@ -27,6 +27,7 @@ interface SettingsFormData {
   counties: string[]
   provider_ssn: string
   mco_contracts: McoContractForm[]
+  caqh_last_attested_on: string
 }
 
 const ALL_MCOS = [
@@ -122,7 +123,7 @@ export default function SettingsPage() {
     if (!isAuthenticated) return
     const headers = { Authorization: `Bearer ${getAccessToken()}` }
     axios
-      .get<{ npi: string | null; billing_provider_name: string | null; availity_connected: boolean; telehealth_link: string | null; contact_email: string | null; zipzign_connected: boolean; zone: string | null; counties: string[] | null; provider_address: string | null; provider_phone: string | null; provider_ssn_connected: boolean; provider_signature_path: string | null; mco_contracts: Array<{ mco: string; contract_date: string | null }> | null }>(
+      .get<{ npi: string | null; billing_provider_name: string | null; availity_connected: boolean; telehealth_link: string | null; contact_email: string | null; zipzign_connected: boolean; zone: string | null; counties: string[] | null; provider_address: string | null; provider_phone: string | null; provider_ssn_connected: boolean; provider_signature_path: string | null; mco_contracts: Array<{ mco: string; contract_date: string | null }> | null; caqh_last_attested_on: string | null; caqh_days_remaining: number | null }>(
         `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/me/provider-settings`,
         { headers }
       )
@@ -148,6 +149,7 @@ export default function SettingsPage() {
             contract_date: c.contract_date ?? '',
           })))
         }
+        setValue('caqh_last_attested_on', r.data.caqh_last_attested_on ?? '')
       })
     axios
       .get<BillingStatus>(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/billing/status`, { headers })
@@ -218,6 +220,7 @@ export default function SettingsPage() {
       body.mco_contracts = (data.mco_contracts ?? [])
         .filter(c => c.mco)
         .map(c => ({ mco: c.mco, contract_date: c.contract_date || null }))
+      if (data.caqh_last_attested_on) body.caqh_last_attested_on = data.caqh_last_attested_on
 
       const res = await axios.patch<{ npi: string | null; availity_connected: boolean; zipzign_connected: boolean; provider_ssn_connected: boolean; provider_signature_path: string | null }>(
         `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/me/provider-settings`,
@@ -383,7 +386,69 @@ export default function SettingsPage() {
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 bg-white p-6 rounded-lg border border-gray-200">
-        <div className="space-y-4">
+
+        {/* CAQH Attestation */}
+        <div className="space-y-3">
+          <div>
+            <h2 className="text-sm font-semibold text-gray-700">CAQH Attestation</h2>
+            <p className="mt-0.5 text-xs text-gray-500">
+              CAQH ProView requires re-attestation every 90 days to stay enrolled in MCO directories.
+            </p>
+          </div>
+          <div>
+            <label htmlFor="caqh_last_attested_on" className="block text-sm font-medium text-gray-700">
+              Last attested on
+            </label>
+            <input
+              {...register('caqh_last_attested_on')}
+              id="caqh_last_attested_on"
+              type="date"
+              className="mt-1 block rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+          </div>
+          {/* Live expiry display — computed from the watched date value */}
+          {(() => {
+            const val = watch('caqh_last_attested_on')
+            if (!val) return null
+            const attested = new Date(val + 'T00:00:00')
+            const expiry = new Date(attested)
+            expiry.setDate(expiry.getDate() + 90)
+            const today = new Date()
+            today.setHours(0, 0, 0, 0)
+            const diffMs = expiry.getTime() - today.getTime()
+            const diffDays = Math.round(diffMs / 86400000)
+            const expiryLabel = expiry.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+            if (diffDays > 14) {
+              return (
+                <p className="text-xs text-green-700">
+                  Next due {expiryLabel} ({diffDays} days)
+                </p>
+              )
+            } else if (diffDays > 0) {
+              return (
+                <p className="text-xs font-medium text-amber-700">
+                  ⚠ Due in {diffDays} day{diffDays !== 1 ? 's' : ''} — {expiryLabel}
+                </p>
+              )
+            } else {
+              return (
+                <p className="text-xs font-semibold text-red-700">
+                  ⚠ Overdue by {Math.abs(diffDays)} day{Math.abs(diffDays) !== 1 ? 's' : ''} — re-attest now
+                </p>
+              )
+            }
+          })()}
+          <a
+            href="https://proview.caqh.org"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center text-xs text-blue-600 hover:underline"
+          >
+            Open CAQH ProView →
+          </a>
+        </div>
+
+        <div className="border-t pt-4 space-y-4">
           <h2 className="text-sm font-semibold text-gray-700">Billing provider information</h2>
           <p className="text-xs text-gray-500">
             Used to populate Box 33 on the CMS 1500 claim form.

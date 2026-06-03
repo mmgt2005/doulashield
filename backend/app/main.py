@@ -23,6 +23,7 @@ logging.basicConfig(
 
 _VERSION = Path(__file__).parent.parent.joinpath("VERSION").read_text().strip()
 _sync_logger = logging.getLogger("doulashield.remittance_sync")
+_caqh_logger = logging.getLogger("doulashield.caqh_reminder")
 
 
 async def _run_daily_remittance_sync() -> None:
@@ -79,6 +80,61 @@ async def _run_daily_remittance_sync() -> None:
     _sync_logger.info("daily_remittance_sync: done")
 
 
+_CAQH_REMINDER_DAYS = {30, 14, 7, 0, -1, -2, -3, -4, -5, -6, -7}
+
+
+async def _run_caqh_reminder_check() -> None:
+    """
+    Send CAQH re-attestation reminder emails to providers whose 90-day window
+    is at 30, 14, 7, or 0 days remaining, and daily for the first 7 days overdue.
+    Each provider runs in its own DB session so one failure does not block others.
+    """
+    from app.dependencies import _AsyncSession
+    from app.models.user import User
+    from app.services.email_service import send_caqh_reminder_email
+
+    _caqh_logger.info("caqh_reminder_check: starting")
+
+    async with _AsyncSession() as db:
+        from sqlalchemy.future import select as _select
+        result = await db.execute(
+            _select(User).where(
+                User.is_active.is_(True),
+                User.caqh_last_attested_on.isnot(None),
+                User.role == "provider",
+            )
+        )
+        providers = result.scalars().all()
+
+    _caqh_logger.info("caqh_reminder_check: found %d providers with CAQH date", len(providers))
+
+    today = date.today()
+    sent = 0
+    for provider in providers:
+        try:
+            expiry = provider.caqh_last_attested_on + timedelta(days=90)
+            days_remaining = (expiry - today).days
+            if days_remaining not in _CAQH_REMINDER_DAYS:
+                continue
+            name = provider.full_name or provider.email
+            await send_caqh_reminder_email(provider.email, name, days_remaining)
+            sent += 1
+            _caqh_logger.info(
+                "caqh_reminder_check: sent reminder to provider=%s days_remaining=%d",
+                provider.id,
+                days_remaining,
+            )
+        except Exception as exc:
+            _caqh_logger.error(
+                "caqh_reminder_check: provider=%s FAILED: %s",
+                provider.id,
+                exc,
+                exc_info=True,
+            )
+
+    _caqh_logger.info("caqh_reminder_check: done sent=%d", sent)
+
+
 @asynccontextmanager
 async def _lifespan(app: FastAPI):
     # hour=7 UTC ≈ 02:00 ET; avoids pytz dependency for named timezone strings
@@ -92,8 +148,17 @@ async def _lifespan(app: FastAPI):
         replace_existing=True,
         misfire_grace_time=3600,  # tolerate up to 1h late start on Railway cold boot
     )
+    scheduler.add_job(
+        _run_caqh_reminder_check,
+        trigger="cron",
+        hour=7,
+        minute=30,
+        id="caqh_reminder_check",
+        replace_existing=True,
+        misfire_grace_time=3600,
+    )
     scheduler.start()
-    _sync_logger.info("APScheduler started — daily remittance sync at 07:00 UTC (≈ 02:00 ET)")
+    _sync_logger.info("APScheduler started — remittance sync 07:00 UTC, CAQH check 07:30 UTC")
     try:
         yield
     finally:

@@ -117,6 +117,71 @@ async def send_password_reset_email(email: str, name: str, reset_url: str) -> No
     )
 
 
+async def send_caqh_reminder_email(
+    provider_email: str,
+    provider_name: str,
+    days_remaining: int,
+) -> None:
+    """Sends a CAQH re-attestation reminder. days_remaining <= 0 means overdue."""
+    if not _configured():
+        return
+    resend.api_key = settings.RESEND_API_KEY
+
+    abs_days = abs(days_remaining)
+    day_word = "day" if abs_days == 1 else "days"
+
+    if days_remaining <= 0:
+        subject = "CAQH attestation overdue — action required"
+        urgency_text = (
+            f"Your CAQH ProView attestation expired <strong>{abs_days} {day_word} ago</strong>. "
+            "MCOs may begin removing you from their provider directories, which will block claim reimbursement."
+        )
+        cta_color = "#dc2626"
+    else:
+        subject = f"CAQH attestation due in {days_remaining} {day_word}"
+        urgency_text = (
+            f"Your CAQH ProView attestation expires in <strong>{days_remaining} {day_word}</strong>. "
+            "Re-attesting on time keeps you enrolled in MCO directories and ensures uninterrupted billing."
+        )
+        cta_color = "#d97706" if days_remaining <= 7 else "#2563eb"
+
+    await asyncio.to_thread(
+        resend.Emails.send,
+        {
+            "from": settings.EMAIL_FROM,
+            "to": [provider_email],
+            "subject": subject,
+            "html": f"""
+<!DOCTYPE html>
+<html>
+<body style="font-family: sans-serif; color: #1a1a1a; max-width: 480px; margin: 0 auto; padding: 24px;">
+  <p style="font-size: 16px;">Hi {provider_name},</p>
+  <p>{urgency_text}</p>
+  <p style="margin: 28px 0; display: flex; gap: 12px; flex-wrap: wrap;">
+    <a href="https://proview.caqh.org"
+       style="background:{cta_color};color:#fff;padding:12px 24px;border-radius:6px;
+              text-decoration:none;font-weight:600;font-size:15px;display:inline-block;">
+      Re-attest on CAQH ProView &rarr;
+    </a>
+    <a href="{settings.FRONTEND_ORIGIN}/settings"
+       style="background:#f3f4f6;color:#374151;padding:12px 24px;border-radius:6px;
+              text-decoration:none;font-weight:600;font-size:15px;display:inline-block;border:1px solid #d1d5db;">
+      Update in DoulaShield
+    </a>
+  </p>
+  <p style="color:#6b7280;font-size:13px;">
+    After re-attesting on CAQH ProView, update your "Last attested on" date in DoulaShield Settings
+    so your 90-day clock resets.
+  </p>
+  <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
+  <p style="color:#9ca3af;font-size:12px;">The DoulaShield Team</p>
+</body>
+</html>
+""",
+        },
+    )
+
+
 async def send_deposit_link(provider_email: str, provider_name: str, checkout_url: str) -> None:
     if not _configured():
         raise RuntimeError("Email not configured — set RESEND_API_KEY")

@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.10.0] — 2026-06-03
+
+### Added
+- **CAQH 90-day attestation reminder**: providers can record their last CAQH ProView attestation date in Settings. A live expiry preview shows the next due date in green (>14 days), amber (1–14 days), or red (overdue). The dashboard shows an amber or red banner when attestation is due within 14 days or overdue. A daily APScheduler job (07:30 UTC) sends automated email reminders at 30, 14, 7, and 0 days before expiry and daily for the first 7 days overdue. New DB column `users.caqh_last_attested_on` (migration 0026); `GET` and `PATCH /api/v1/auth/me/provider-settings` now include `caqh_last_attested_on` and `caqh_days_remaining`.
+
+---
+
 ## [1.9.0] — 2026-06-03
 
 ### Added
