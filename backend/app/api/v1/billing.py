@@ -353,17 +353,26 @@ async def send_welcome_email(
         except Exception:
             checkout_url = None
 
-    await email_service.send_welcome_and_deposit(
-        provider_email=provider.email,
-        provider_name=provider.full_name or provider.email,
-        temp_password=temp_password,
-        checkout_url=checkout_url,
-        frontend_origin=settings.FRONTEND_ORIGIN,
-        role=provider.role,
-    )
+    try:
+        await email_service.send_welcome_and_deposit(
+            provider_email=provider.email,
+            provider_name=provider.full_name or provider.email,
+            temp_password=temp_password,
+            checkout_url=checkout_url,
+            frontend_origin=settings.FRONTEND_ORIGIN,
+            role=provider.role,
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Password reset succeeded but email delivery failed: {exc}",
+        )
 
-    provider.welcome_email_sent_at = datetime.now(timezone.utc)
-    await db.commit()
+    try:
+        provider.welcome_email_sent_at = datetime.now(timezone.utc)
+        await db.commit()
+    except Exception:
+        pass
 
     await audit.log(
         action="SEND_WELCOME_EMAIL",

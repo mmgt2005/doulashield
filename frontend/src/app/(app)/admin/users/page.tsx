@@ -72,7 +72,9 @@ export default function AdminUsersPage() {
       showToast(`Welcome email sent to ${email}`)
       await reload()
     } catch (e: unknown) {
-      const msg = axios.isAxiosError(e) ? e.response?.data?.detail : 'Failed to send welcome email'
+      const msg = (axios.isAxiosError(e) && e.response?.data?.detail)
+        ? e.response.data.detail
+        : 'Failed to send welcome email'
       showToast(`Error: ${msg}`)
     } finally {
       setActionLoading(null)
