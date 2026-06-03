@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.15.1] — 2026-06-03
+
+### Fixed
+- **TOC anchor links in User Manual and Admin Guide**: clicking a table-of-contents entry did nothing because `marked` v10+ no longer emits `id` attributes on headings by default. The rendered HTML is now post-processed to inject GitHub-style slug IDs (e.g. "Billing & Escrow" → `id="billing--escrow"`), so every TOC bookmark scrolls to the correct heading.
+
+---
+
 ## [1.15.0] — 2026-06-03
 
 ### Added
