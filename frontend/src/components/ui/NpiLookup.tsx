@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { getAccessToken } from '@/lib/auth'
 
 export interface NpiVerifiedResult {
   name: string
@@ -34,30 +35,20 @@ export default function NpiLookup({ npi, onVerified, size = 'sm' }: Props) {
     setError(null)
     try {
       const res = await fetch(
-        `https://npiregistry.cms.hhs.gov/api/?version=2.1&number=${npi}&limit=1`
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/npi/lookup?number=${npi}`,
+        { headers: { Authorization: `Bearer ${getAccessToken()}` } }
       )
-      const data = await res.json()
-      if (!data.results || data.results.length === 0) {
-        setError('Not found in NPPES registry')
+      if (res.status === 404) {
+        setError('NPI not found in NPPES registry')
         return
       }
-      const r = data.results[0]
-      const basic = r.basic ?? {}
-      let name = ''
-      if (basic.organization_name) {
-        name = basic.organization_name
-      } else {
-        name = [basic.first_name, basic.middle_name, basic.last_name]
-          .filter(Boolean)
-          .join(' ')
-        if (basic.credential) name += `, ${basic.credential}`
+      if (!res.ok) {
+        setError('Lookup failed — please try again')
+        return
       }
-      const primaryTaxonomy =
-        (r.taxonomies as Array<{ primary?: boolean; desc?: string }> | undefined)
-          ?.find((t) => t.primary)?.desc ?? null
-      const found: NpiVerifiedResult = { name, taxonomy: primaryTaxonomy }
-      setResult(found)
-      onVerified?.(found)
+      const data: NpiVerifiedResult = await res.json()
+      setResult(data)
+      onVerified?.(data)
     } catch {
       setError('Lookup failed — check your connection')
     } finally {
