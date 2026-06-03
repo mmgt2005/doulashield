@@ -52,14 +52,14 @@ If the provider loses their credentials before logging in, use **Send Welcome Em
 
 ### Sending or Resending the Welcome Email
 
-For any provider row where the deposit has not yet been paid, an actions button **Send Welcome Email** is available. Clicking it:
+A **Send Welcome Email** button appears on any row — provider or admin — where the user has **never signed in** (their account was created but they have not yet logged in for the first time). Clicking it:
 
 1. Generates a new temporary password (the old one stops working)
-2. Creates a fresh Stripe Checkout link for the $99 deposit
-3. Sends the combined welcome + deposit email to the provider
+2. For providers: creates a fresh Stripe Checkout link for the $99 deposit
+3. Sends the welcome email to the user; admins receive role-appropriate copy without a deposit button
 4. Shows a toast: "Welcome email sent to {email}"
 
-This covers both providers created via **Create Account Only** who haven't been contacted yet, and providers who lost their credentials before logging in.
+Once a user signs in for the first time the button disappears automatically. This covers accounts created via **Create Account Only** who haven't been contacted yet, and any user who lost their credentials before their first login.
 
 ### Role Toggle (Provider ↔ Admin)
 

@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.12.0] — 2026-06-03
+
+### Added
+- **Send Welcome Email for any first-time user**: the **Send Welcome Email** button in the admin Users table now appears for any user — provider or admin — whose `last_sign_in_at` is null (i.e. they have never logged in). Previously it only appeared for providers without a paid deposit. Admin welcome emails continue to use role-appropriate copy (no "provider account" language). New DB column `users.last_sign_in_at` (migration 0028) is set automatically on every successful login.
+
+---
+
 ## [1.11.1] — 2026-06-03
 
 ### Fixed
