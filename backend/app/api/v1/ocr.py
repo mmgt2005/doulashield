@@ -82,7 +82,7 @@ async def scan_handbook(
     file: UploadFile,
     current_user: Annotated[CurrentUser, Depends(get_current_user)],
     audit: Annotated[AuditLogger, Depends(get_audit)],
-    page_type: Annotated[Literal["soap_note", "prenatal", "birth", "ma_89", "access_card", "remittance_eob"], Form()],
+    page_type: Annotated[Literal["soap_note", "prenatal", "birth", "ma_589", "access_card", "remittance_eob"], Form()],
     patient_id: Annotated[str, Form()],
 ) -> dict:
     """Scan a handwritten handbook page and extract structured visit data."""

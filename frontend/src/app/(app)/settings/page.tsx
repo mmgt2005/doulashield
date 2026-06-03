@@ -30,6 +30,8 @@ interface SettingsFormData {
   mco_contracts: McoContractForm[]
   caqh_last_attested_on: string
   promise_last_enrolled_on: string
+  pcb_last_certified_on: string
+  liability_insurance_expires_on: string
 }
 
 const ALL_MCOS = [
@@ -125,7 +127,7 @@ export default function SettingsPage() {
     if (!isAuthenticated) return
     const headers = { Authorization: `Bearer ${getAccessToken()}` }
     axios
-      .get<{ npi: string | null; billing_provider_name: string | null; availity_connected: boolean; telehealth_link: string | null; contact_email: string | null; zipzign_connected: boolean; zone: string | null; counties: string[] | null; provider_address: string | null; provider_phone: string | null; provider_ssn_connected: boolean; provider_signature_path: string | null; mco_contracts: Array<{ mco: string; contract_date: string | null }> | null; caqh_last_attested_on: string | null; caqh_days_remaining: number | null; promise_last_enrolled_on: string | null; promise_days_remaining: number | null }>(
+      .get<{ npi: string | null; billing_provider_name: string | null; availity_connected: boolean; telehealth_link: string | null; contact_email: string | null; zipzign_connected: boolean; zone: string | null; counties: string[] | null; provider_address: string | null; provider_phone: string | null; provider_ssn_connected: boolean; provider_signature_path: string | null; mco_contracts: Array<{ mco: string; contract_date: string | null }> | null; caqh_last_attested_on: string | null; caqh_days_remaining: number | null; promise_last_enrolled_on: string | null; promise_days_remaining: number | null; pcb_last_certified_on: string | null; pcb_days_remaining: number | null; liability_insurance_expires_on: string | null; liability_days_remaining: number | null }>(
         `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/me/provider-settings`,
         { headers }
       )
@@ -153,6 +155,8 @@ export default function SettingsPage() {
         }
         setValue('caqh_last_attested_on', r.data.caqh_last_attested_on ?? '')
         setValue('promise_last_enrolled_on', r.data.promise_last_enrolled_on ?? '')
+        setValue('pcb_last_certified_on', r.data.pcb_last_certified_on ?? '')
+        setValue('liability_insurance_expires_on', r.data.liability_insurance_expires_on ?? '')
       })
     axios
       .get<BillingStatus>(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/billing/status`, { headers })
@@ -225,6 +229,8 @@ export default function SettingsPage() {
         .map(c => ({ mco: c.mco, contract_date: c.contract_date || null }))
       if (data.caqh_last_attested_on) body.caqh_last_attested_on = data.caqh_last_attested_on
       if (data.promise_last_enrolled_on) body.promise_last_enrolled_on = data.promise_last_enrolled_on
+      if (data.pcb_last_certified_on) body.pcb_last_certified_on = data.pcb_last_certified_on
+      if (data.liability_insurance_expires_on) body.liability_insurance_expires_on = data.liability_insurance_expires_on
 
       const res = await axios.patch<{ npi: string | null; availity_connected: boolean; zipzign_connected: boolean; provider_ssn_connected: boolean; provider_signature_path: string | null }>(
         `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/me/provider-settings`,
@@ -511,6 +517,116 @@ export default function SettingsPage() {
           >
             Open PROMISe™ Portal →
           </a>
+        </div>
+
+        {/* PCB Perinatal Certification */}
+        <div className="border-t pt-4 space-y-3">
+          <div>
+            <h2 className="text-sm font-semibold text-gray-700">PCB Perinatal Certification</h2>
+            <p className="mt-0.5 text-xs text-gray-500">
+              Perinatal Certification Board (PCB) certification renews every 2 years. Maintaining active certification is required for PA Medicaid Type 13 doula billing.
+            </p>
+          </div>
+          <div>
+            <label htmlFor="pcb_last_certified_on" className="block text-sm font-medium text-gray-700">
+              Last certified on
+            </label>
+            <input
+              {...register('pcb_last_certified_on')}
+              id="pcb_last_certified_on"
+              type="date"
+              className="mt-1 block rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+          </div>
+          {(() => {
+            const val = watch('pcb_last_certified_on')
+            if (!val) return null
+            const certified = new Date(val + 'T00:00:00')
+            const expiry = new Date(certified)
+            expiry.setDate(expiry.getDate() + 730)
+            const today = new Date()
+            today.setHours(0, 0, 0, 0)
+            const diffMs = expiry.getTime() - today.getTime()
+            const diffDays = Math.round(diffMs / 86400000)
+            const expiryLabel = expiry.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+            if (diffDays > 60) {
+              return (
+                <p className="text-xs text-green-700">
+                  Next due {expiryLabel} ({diffDays} days)
+                </p>
+              )
+            } else if (diffDays > 0) {
+              return (
+                <p className="text-xs font-medium text-amber-700">
+                  ⚠ Due in {diffDays} day{diffDays !== 1 ? 's' : ''} — {expiryLabel}
+                </p>
+              )
+            } else {
+              return (
+                <p className="text-xs font-semibold text-red-700">
+                  ⚠ Overdue by {Math.abs(diffDays)} day{Math.abs(diffDays) !== 1 ? 's' : ''} — renew now
+                </p>
+              )
+            }
+          })()}
+          <a
+            href="https://www.pacertboard.org"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center text-xs text-blue-600 hover:underline"
+          >
+            Open PCB Portal →
+          </a>
+        </div>
+
+        {/* Liability Insurance */}
+        <div className="border-t pt-4 space-y-3">
+          <div>
+            <h2 className="text-sm font-semibold text-gray-700">Liability Insurance</h2>
+            <p className="mt-0.5 text-xs text-gray-500">
+              Active liability insurance is required to bill PA Medicaid as a Type 13 doula. Enter the date your current policy expires.
+            </p>
+          </div>
+          <div>
+            <label htmlFor="liability_insurance_expires_on" className="block text-sm font-medium text-gray-700">
+              Policy expires on
+            </label>
+            <input
+              {...register('liability_insurance_expires_on')}
+              id="liability_insurance_expires_on"
+              type="date"
+              className="mt-1 block rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+          </div>
+          {(() => {
+            const val = watch('liability_insurance_expires_on')
+            if (!val) return null
+            const expires = new Date(val + 'T00:00:00')
+            const today = new Date()
+            today.setHours(0, 0, 0, 0)
+            const diffMs = expires.getTime() - today.getTime()
+            const diffDays = Math.round(diffMs / 86400000)
+            const expiryLabel = expires.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+            if (diffDays > 30) {
+              return (
+                <p className="text-xs text-green-700">
+                  Valid until {expiryLabel} ({diffDays} days remaining)
+                </p>
+              )
+            } else if (diffDays > 0) {
+              return (
+                <p className="text-xs font-medium text-amber-700">
+                  ⚠ Expires in {diffDays} day{diffDays !== 1 ? 's' : ''} — {expiryLabel} — renew soon
+                </p>
+              )
+            } else {
+              return (
+                <p className="text-xs font-semibold text-red-700">
+                  ⚠ Expired {Math.abs(diffDays)} day{Math.abs(diffDays) !== 1 ? 's' : ''} ago — update your policy
+                </p>
+              )
+            }
+          })()}
         </div>
 
         <div className="border-t pt-4 space-y-4">

@@ -33,6 +33,7 @@ class Patient(Base):
     policy_group: Mapped[str | None] = mapped_column(String, nullable=True)
     eligibility_status: Mapped[str | None] = mapped_column(String, nullable=True)
     eligibility_checked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    ma589_signed_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False

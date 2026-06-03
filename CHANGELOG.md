@@ -12,6 +12,18 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.16.0] — 2026-06-03
+
+### Added
+- **PCB Perinatal Certification alert**: providers can record their last PCB certification date in Settings (2-year/730-day cycle). Dashboard shows amber banner when ≤60 days remain, red when overdue. Automated email reminders at 60, 30, 14, 7, 0, and daily for 7 days overdue (scheduler job at 07:55 UTC). Alembic migration 0030 adds `pcb_last_certified_on` to `users`.
+- **Liability Insurance expiry alert**: providers record their insurance expiry date directly in Settings. Dashboard shows amber banner when ≤30 days remain, red when expired. Automated email reminders at 30, 14, 7, 0, and daily for 7 days after expiry (scheduler job at 08:00 UTC). Alembic migration 0031 adds `liability_insurance_expires_on` to `users`.
+- **MA 589 in-app flag and email reminder**: per-patient `ma589_signed_date` field (migration 0032, `patients` table). When a patient has a Prenatal 1 visit started but no MA 589 signed date, an amber "MA 589 not signed" badge appears on the client overview page. The scheduler (08:05 UTC) emails the provider for each patient in this state daily.
+
+### Changed
+- **MA 89 → MA 589**: renamed throughout — OCR prompt key (`ma_89` → `ma_589`), visit form section label, scan button label, and all documentation references updated to the correct Pennsylvania form number.
+
+---
+
 ## [1.15.1] — 2026-06-03
 
 ### Fixed

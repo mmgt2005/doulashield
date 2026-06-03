@@ -941,16 +941,16 @@ export default function VisitFormPage() {
 
       {visitType === 'prenatal_1' && (
         <div className="rounded-lg border border-indigo-100 bg-indigo-50 p-3">
-          <p className="mb-2 text-xs font-medium text-indigo-700">MA 89 — Physician Certification Form</p>
-          <p className="mb-2 text-xs text-indigo-600">Scan the MA 89 to auto-fill the referring doctor name and NPI (Box 17 &amp; 17b on CMS 1500).</p>
+          <p className="mb-2 text-xs font-medium text-indigo-700">MA 589 — Physician Certification Form</p>
+          <p className="mb-2 text-xs text-indigo-600">Scan the MA 589 to auto-fill the referring doctor name and NPI (Box 17 &amp; 17b on CMS 1500).</p>
           {patient?.referring_provider_name && (
             <p className="mb-2 text-xs text-green-700">✓ Referring doctor: {patient.referring_provider_name}{patient.referring_provider_npi ? ` · NPI ${patient.referring_provider_npi}` : ''}</p>
           )}
           <ImageUploadScanner
             endpoint="/api/v1/ocr/handbook"
-            extraFields={{ page_type: 'ma_89', patient_id: clientId }}
+            extraFields={{ page_type: 'ma_589', patient_id: clientId }}
             onExtracted={handleMa89Scanned}
-            label="Scan MA 89 Form"
+            label="Scan MA 589 Form"
           />
         </div>
       )}

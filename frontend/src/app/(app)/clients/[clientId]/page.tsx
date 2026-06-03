@@ -28,6 +28,7 @@ interface EditFormData {
   latitude?: number
   longitude?: number
   medicaid_card_image_path?: string
+  ma589_signed_date: string
 }
 
 export default function ClientDetailPage() {
@@ -104,6 +105,7 @@ export default function ClientDetailPage() {
       address: patient.address ?? '',
       latitude: patient.latitude ?? undefined,
       longitude: patient.longitude ?? undefined,
+      ma589_signed_date: patient.ma589_signed_date ?? '',
     })
     setSaveError(null)
     setNeedsAccessScan(false)
@@ -137,6 +139,7 @@ export default function ClientDetailPage() {
           referring_provider_npi: data.referring_provider_npi || null,
           referring_provider_name: data.referring_provider_name || null,
           has_other_insurance: data.has_other_insurance ?? false,
+          ma589_signed_date: data.ma589_signed_date || null,
           ...(data.medicaid_card_image_path ? { medicaid_card_image_path: data.medicaid_card_image_path } : {}),
         },
         { headers: { Authorization: `Bearer ${getAccessToken()}` } }
@@ -304,6 +307,17 @@ export default function ClientDetailPage() {
               <input type="hidden" {...register('longitude', { valueAsNumber: true })} />
               <input type="hidden" {...register('medicaid_card_image_path')} />
             </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600">
+                MA 589 signed date
+                <span className="ml-1 font-normal text-gray-400">(leave blank if not yet signed)</span>
+              </label>
+              <input
+                {...register('ma589_signed_date')}
+                type="date"
+                className="mt-1 block rounded border border-gray-300 px-3 py-1.5 text-sm"
+              />
+            </div>
             {saveError && <p className="text-xs text-red-600">{saveError}</p>}
             <div className="flex gap-2">
               <button type="submit" disabled={isSubmitting} className="rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50">
@@ -377,6 +391,17 @@ export default function ClientDetailPage() {
                   )}
                   {eligError && <p className="w-full text-xs text-red-600">{eligError}</p>}
                 </div>
+
+                {/* MA 589 flag — show when prenatal care started but form not yet signed */}
+                {!patient.ma589_signed_date &&
+                  Array.from(visitMap.keys()).some((k) => k.startsWith('prenatal')) && (
+                  <div className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800">
+                    <svg className="h-3.5 w-3.5 shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    MA 589 not signed
+                  </div>
+                )}
               </div>
               <button onClick={startEdit} className="text-xs text-blue-600 hover:text-blue-800 mt-1">Edit profile</button>
             </div>

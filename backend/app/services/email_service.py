@@ -247,6 +247,176 @@ async def send_promise_reminder_email(
     )
 
 
+async def send_pcb_reminder_email(
+    provider_email: str,
+    provider_name: str,
+    days_remaining: int,
+) -> None:
+    """Sends a PCB Perinatal Certification renewal reminder. days_remaining <= 0 means overdue."""
+    if not _configured():
+        return
+    resend.api_key = settings.RESEND_API_KEY
+
+    abs_days = abs(days_remaining)
+    day_word = "day" if abs_days == 1 else "days"
+
+    if days_remaining <= 0:
+        subject = "PCB Perinatal Certification expired — renewal required"
+        urgency_text = (
+            f"Your PA Certification Board (PCB) Perinatal Certification expired "
+            f"<strong>{abs_days} {day_word} ago</strong>. "
+            "Renew immediately to maintain your certified doula credentials."
+        )
+        cta_color = "#dc2626"
+    else:
+        subject = f"PCB Perinatal Certification renewal due in {days_remaining} {day_word}"
+        urgency_text = (
+            f"Your PA Certification Board (PCB) Perinatal Certification expires in "
+            f"<strong>{days_remaining} {day_word}</strong>. "
+            "Renewing on time ensures your certification remains current."
+        )
+        cta_color = "#d97706" if days_remaining <= 14 else "#2563eb"
+
+    await asyncio.to_thread(
+        resend.Emails.send,
+        {
+            "from": settings.EMAIL_FROM,
+            "to": [provider_email],
+            "subject": subject,
+            "html": f"""
+<!DOCTYPE html>
+<html>
+<body style="font-family: sans-serif; color: #1a1a1a; max-width: 480px; margin: 0 auto; padding: 24px;">
+  <p style="font-size: 16px;">Hi {provider_name},</p>
+  <p>{urgency_text}</p>
+  <p style="margin: 28px 0; display: flex; gap: 12px; flex-wrap: wrap;">
+    <a href="https://www.pacertboard.org"
+       style="background:{cta_color};color:#fff;padding:12px 24px;border-radius:6px;
+              text-decoration:none;font-weight:600;font-size:15px;display:inline-block;">
+      Renew on PA Cert Board &rarr;
+    </a>
+    <a href="{settings.FRONTEND_ORIGIN}/settings"
+       style="background:#f3f4f6;color:#374151;padding:12px 24px;border-radius:6px;
+              text-decoration:none;font-weight:600;font-size:15px;display:inline-block;border:1px solid #d1d5db;">
+      Update in DoulaShield
+    </a>
+  </p>
+  <p style="color:#6b7280;font-size:13px;">
+    After renewing, update your "Last certified on" date in DoulaShield Settings so your 2-year clock resets.
+  </p>
+  <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
+  <p style="color:#9ca3af;font-size:12px;">The DoulaShield Team</p>
+</body>
+</html>
+""",
+        },
+    )
+
+
+async def send_liability_reminder_email(
+    provider_email: str,
+    provider_name: str,
+    days_remaining: int,
+) -> None:
+    """Sends a liability insurance expiry reminder. days_remaining <= 0 means expired."""
+    if not _configured():
+        return
+    resend.api_key = settings.RESEND_API_KEY
+
+    abs_days = abs(days_remaining)
+    day_word = "day" if abs_days == 1 else "days"
+
+    if days_remaining <= 0:
+        subject = "Liability insurance expired — renew immediately"
+        urgency_text = (
+            f"Your professional liability insurance expired <strong>{abs_days} {day_word} ago</strong>. "
+            "You may not be covered for client visits until you renew your policy."
+        )
+        cta_color = "#dc2626"
+    else:
+        subject = f"Liability insurance expires in {days_remaining} {day_word}"
+        urgency_text = (
+            f"Your professional liability insurance expires in <strong>{days_remaining} {day_word}</strong>. "
+            "Renew your policy before the expiration date to maintain continuous coverage for client visits."
+        )
+        cta_color = "#d97706" if days_remaining <= 7 else "#2563eb"
+
+    await asyncio.to_thread(
+        resend.Emails.send,
+        {
+            "from": settings.EMAIL_FROM,
+            "to": [provider_email],
+            "subject": subject,
+            "html": f"""
+<!DOCTYPE html>
+<html>
+<body style="font-family: sans-serif; color: #1a1a1a; max-width: 480px; margin: 0 auto; padding: 24px;">
+  <p style="font-size: 16px;">Hi {provider_name},</p>
+  <p>{urgency_text}</p>
+  <p style="margin: 28px 0;">
+    <a href="{settings.FRONTEND_ORIGIN}/settings"
+       style="background:{cta_color};color:#fff;padding:12px 24px;border-radius:6px;
+              text-decoration:none;font-weight:600;font-size:15px;display:inline-block;">
+      Update Expiry Date in DoulaShield &rarr;
+    </a>
+  </p>
+  <p style="color:#6b7280;font-size:13px;">
+    After renewing your policy, update the expiration date in DoulaShield Settings and upload your
+    new Declarations Page for your records.
+  </p>
+  <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
+  <p style="color:#9ca3af;font-size:12px;">The DoulaShield Team</p>
+</body>
+</html>
+""",
+        },
+    )
+
+
+async def send_ma589_reminder_email(
+    provider_email: str,
+    provider_name: str,
+    patient_name: str,
+) -> None:
+    """Notifies a provider that a patient is missing a signed MA 589 form."""
+    if not _configured():
+        return
+    resend.api_key = settings.RESEND_API_KEY
+
+    await asyncio.to_thread(
+        resend.Emails.send,
+        {
+            "from": settings.EMAIL_FROM,
+            "to": [provider_email],
+            "subject": f"MA 589 required for {patient_name}",
+            "html": f"""
+<!DOCTYPE html>
+<html>
+<body style="font-family: sans-serif; color: #1a1a1a; max-width: 480px; margin: 0 auto; padding: 24px;">
+  <p style="font-size: 16px;">Hi {provider_name},</p>
+  <p>A prenatal visit has been documented for <strong>{patient_name}</strong>, but no signed
+  <strong>MA 589 Medical Assistance Physician Certification</strong> has been recorded for this patient.</p>
+  <p>Pennsylvania Medicaid requires a completed MA 589 before doula services can be billed. Please
+  obtain and scan the signed form as soon as possible to avoid claim denial.</p>
+  <p style="margin: 28px 0;">
+    <a href="{settings.FRONTEND_ORIGIN}/clients"
+       style="background:#2563eb;color:#fff;padding:12px 24px;border-radius:6px;
+              text-decoration:none;font-weight:600;font-size:15px;display:inline-block;">
+      View Client in DoulaShield &rarr;
+    </a>
+  </p>
+  <p style="color:#6b7280;font-size:13px;">
+    Once you have the signed form, open the Prenatal 1 visit and scan the MA 589 to record the date.
+  </p>
+  <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
+  <p style="color:#9ca3af;font-size:12px;">The DoulaShield Team</p>
+</body>
+</html>
+""",
+        },
+    )
+
+
 async def send_deposit_link(provider_email: str, provider_name: str, checkout_url: str) -> None:
     if not _configured():
         raise RuntimeError("Email not configured — set RESEND_API_KEY")

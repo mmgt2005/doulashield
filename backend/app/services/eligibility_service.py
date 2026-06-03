@@ -42,10 +42,17 @@ class EligibilityService:
             select(User).where(User.role == "admin", User.zipzign_api_key_encrypted.isnot(None)).limit(1)
         )
         zipzign_configured = admin_q.scalar_one_or_none() is not None
+        today = date.today()
         caqh_expiry = user.caqh_last_attested_on + timedelta(days=90) if user.caqh_last_attested_on else None
-        caqh_days_remaining = (caqh_expiry - date.today()).days if caqh_expiry else None
+        caqh_days_remaining = (caqh_expiry - today).days if caqh_expiry else None
         promise_expiry = user.promise_last_enrolled_on + timedelta(days=1825) if user.promise_last_enrolled_on else None
-        promise_days_remaining = (promise_expiry - date.today()).days if promise_expiry else None
+        promise_days_remaining = (promise_expiry - today).days if promise_expiry else None
+        pcb_expiry = user.pcb_last_certified_on + timedelta(days=730) if user.pcb_last_certified_on else None
+        pcb_days_remaining = (pcb_expiry - today).days if pcb_expiry else None
+        liability_days_remaining = (
+            (user.liability_insurance_expires_on - today).days
+            if user.liability_insurance_expires_on else None
+        )
         return ProviderSettingsRead(
             npi=user.npi,
             availity_connected=bool(user.availity_client_id_encrypted and user.availity_client_secret_encrypted),
@@ -64,6 +71,10 @@ class EligibilityService:
             caqh_days_remaining=caqh_days_remaining,
             promise_last_enrolled_on=user.promise_last_enrolled_on,
             promise_days_remaining=promise_days_remaining,
+            pcb_last_certified_on=user.pcb_last_certified_on,
+            pcb_days_remaining=pcb_days_remaining,
+            liability_insurance_expires_on=user.liability_insurance_expires_on,
+            liability_days_remaining=liability_days_remaining,
         )
 
     async def update_provider_settings(
@@ -114,6 +125,10 @@ class EligibilityService:
             user.caqh_last_attested_on = data.caqh_last_attested_on
         if data.promise_last_enrolled_on is not None:
             user.promise_last_enrolled_on = data.promise_last_enrolled_on
+        if data.pcb_last_certified_on is not None:
+            user.pcb_last_certified_on = data.pcb_last_certified_on
+        if data.liability_insurance_expires_on is not None:
+            user.liability_insurance_expires_on = data.liability_insurance_expires_on
 
         await self._db.commit()
         await self._db.refresh(user)
@@ -130,10 +145,17 @@ class EligibilityService:
             select(User).where(User.role == "admin", User.zipzign_api_key_encrypted.isnot(None)).limit(1)
         )
         zipzign_configured = admin_q2.scalar_one_or_none() is not None
+        today2 = date.today()
         caqh_expiry2 = user.caqh_last_attested_on + timedelta(days=90) if user.caqh_last_attested_on else None
-        caqh_days_remaining2 = (caqh_expiry2 - date.today()).days if caqh_expiry2 else None
+        caqh_days_remaining2 = (caqh_expiry2 - today2).days if caqh_expiry2 else None
         promise_expiry2 = user.promise_last_enrolled_on + timedelta(days=1825) if user.promise_last_enrolled_on else None
-        promise_days_remaining2 = (promise_expiry2 - date.today()).days if promise_expiry2 else None
+        promise_days_remaining2 = (promise_expiry2 - today2).days if promise_expiry2 else None
+        pcb_expiry2 = user.pcb_last_certified_on + timedelta(days=730) if user.pcb_last_certified_on else None
+        pcb_days_remaining2 = (pcb_expiry2 - today2).days if pcb_expiry2 else None
+        liability_days_remaining2 = (
+            (user.liability_insurance_expires_on - today2).days
+            if user.liability_insurance_expires_on else None
+        )
         return ProviderSettingsRead(
             npi=user.npi,
             availity_connected=bool(user.availity_client_id_encrypted and user.availity_client_secret_encrypted),
@@ -152,6 +174,10 @@ class EligibilityService:
             caqh_days_remaining=caqh_days_remaining2,
             promise_last_enrolled_on=user.promise_last_enrolled_on,
             promise_days_remaining=promise_days_remaining2,
+            pcb_last_certified_on=user.pcb_last_certified_on,
+            pcb_days_remaining=pcb_days_remaining2,
+            liability_insurance_expires_on=user.liability_insurance_expires_on,
+            liability_days_remaining=liability_days_remaining2,
         )
 
     async def check_eligibility(

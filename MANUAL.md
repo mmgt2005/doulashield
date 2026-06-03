@@ -112,10 +112,10 @@ The referring physician's NPI (Box 17b) and name (Box 17) are required on every 
 
 After typing the 10-digit NPI in the client profile edit form, click **Verify NPI** to look it up in the NPPES registry. If found, the referring doctor's name is automatically filled into the **Referring Provider Name** field (CMS 1500 Box 17) — no manual name entry needed.
 
-On a **Prenatal 1** visit, you can scan the MA 89 physician certification form to auto-fill both fields:
+On a **Prenatal 1** visit, you can scan the MA 589 physician certification form to auto-fill both fields:
 
 1. Open the Prenatal 1 visit form.
-2. In the **Scan MA 89** section, photograph the form.
+2. In the **Scan MA 589** section, photograph the form.
 3. DoulaShield extracts the referring physician's name and NPI and saves them to the client profile.
 
 ### Understanding the Client Overview
@@ -322,6 +322,8 @@ Access Settings from the sidebar. Changes save when you click **Save settings**.
 |---|---|
 | **CAQH Attestation** | Last attested on (date); live 90-day expiry countdown; link to CAQH ProView |
 | **PROMISe™ Re-enrollment** | Last enrolled on (date); live 5-year expiry countdown; link to PROMISe™ Portal |
+| **PCB Perinatal Certification** | Last certified on (date); live 2-year expiry countdown; link to PA Certification Board |
+| **Liability Insurance** | Policy expiry date; live countdown; amber ≤30 days, red when expired |
 | **Provider Identity** | NPI, billing provider name, billing address, phone. After entering your NPI, click **Verify NPI** to confirm it against the NPPES registry — your registered name and taxonomy are shown as confirmation. |
 | **Escrow & Billing** | Shows your escrow agreement status and deferred balance (collected from MCO remittances) |
 | **PA HealthChoices** | Zone (Southeast, Southwest, Lehigh/Capital, Northeast/Northwest) and counties served (checkbox list) |
@@ -354,6 +356,38 @@ PA DHS requires every enrolled provider to re-enroll in PROMISe™ every **5 yea
 3. The expiry preview updates immediately — green means more than 90 days remaining, amber means 90 days or fewer, red means overdue.
 
 **Reminders:** DoulaShield automatically emails you at 365, 180, 90, 30, 14, 7, and 0 days before expiry, and daily for the first 7 days after expiry. The 1-year and 6-month reminders give you lead time to gather documentation, since the PA DHS review process can take several weeks. If the dashboard shows an amber or red PROMISe™ banner, begin the re-enrollment process immediately to avoid FFS billing disruption.
+
+### PCB Perinatal Certification
+
+The Pennsylvania Certification Board (PCB) requires doulas to renew their perinatal certification every **2 years** (730 days). An expired certification can affect your ability to document and bill for doula services.
+
+**Workflow:**
+1. Complete renewal through the [PCB portal](https://www.pacertboard.org).
+2. Return to DoulaShield **Settings → PCB Perinatal Certification** and update **Last certified on** to your renewal date.
+3. The expiry preview updates immediately — green means more than 60 days remaining, amber means 60 days or fewer, red means overdue.
+
+**Reminders:** DoulaShield automatically emails you at 60, 30, 14, 7, and 0 days before expiry, and daily for the first 7 days after expiry.
+
+### Liability Insurance
+
+Keep your malpractice/liability insurance policy details current. DoulaShield tracks the **policy expiry date** directly — enter the date printed on your policy declarations page.
+
+**Workflow:**
+1. In **Settings → Liability Insurance**, enter your policy's expiry date.
+2. The status updates immediately — green means more than 30 days remaining, amber means 30 days or fewer, red means expired.
+3. When you renew, update the expiry date to your new policy end date.
+
+**Reminders:** DoulaShield automatically emails you at 30, 14, 7, and 0 days before expiry, and daily for the first 7 days after expiry.
+
+### MA 589 Patient Certification
+
+The MA 589 Physician Certification form must be completed for each patient before services can be billed. When a client has a Prenatal 1 visit started but no MA 589 on file, an amber **"MA 589 not signed"** badge appears on the client overview page. DoulaShield also sends a daily email reminder until the form is recorded.
+
+**Workflow:**
+1. Have the referring physician sign the MA 589 form.
+2. Open the client's profile.
+3. Click **Edit profile** and enter the date the form was signed in the **MA 589 signed date** field.
+4. The badge disappears once the date is recorded.
 
 ---
 

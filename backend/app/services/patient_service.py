@@ -28,6 +28,7 @@ def _to_read(patient: Patient) -> PatientRead:
         referring_provider_npi=patient.referring_provider_npi,
         referring_provider_name=patient.referring_provider_name,
         has_other_insurance=patient.has_other_insurance,
+        ma589_signed_date=patient.ma589_signed_date,
         eligibility_status=patient.eligibility_status,
         eligibility_checked_at=patient.eligibility_checked_at,
         is_active=patient.is_active,
@@ -60,6 +61,7 @@ class PatientService:
             referring_provider_npi=data.referring_provider_npi,
             referring_provider_name=data.referring_provider_name,
             has_other_insurance=data.has_other_insurance,
+            ma589_signed_date=data.ma589_signed_date,
         )
         self._db.add(patient)
         await self._db.commit()
@@ -163,6 +165,8 @@ class PatientService:
             patient.referring_provider_name = data.referring_provider_name
         if data.has_other_insurance is not None:
             patient.has_other_insurance = data.has_other_insurance
+        if data.ma589_signed_date is not None:
+            patient.ma589_signed_date = data.ma589_signed_date
 
         await self._db.commit()
         await self._db.refresh(patient)

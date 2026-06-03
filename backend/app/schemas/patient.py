@@ -19,6 +19,7 @@ class PatientCreate(BaseModel):
     referring_provider_npi: str | None = None
     referring_provider_name: str | None = None
     has_other_insurance: bool = False
+    ma589_signed_date: date | None = None
 
 
 class PatientUpdate(BaseModel):
@@ -35,6 +36,7 @@ class PatientUpdate(BaseModel):
     referring_provider_npi: str | None = None
     referring_provider_name: str | None = None
     has_other_insurance: bool | None = None
+    ma589_signed_date: date | None = None
     # medicaid_id updates go through a separate admin-only flow
 
 
@@ -54,6 +56,7 @@ class PatientRead(BaseModel):
     referring_provider_npi: str | None
     referring_provider_name: str | None
     has_other_insurance: bool
+    ma589_signed_date: date | None
     eligibility_status: str | None
     eligibility_checked_at: datetime | None
     is_active: bool

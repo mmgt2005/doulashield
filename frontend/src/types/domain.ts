@@ -30,6 +30,7 @@ export interface Patient {
   policy_group: string | null
   eligibility_status: string | null
   eligibility_checked_at: string | null
+  ma589_signed_date: string | null
   is_active: boolean
   created_at: string
   updated_at: string

@@ -10,27 +10,35 @@ export default function DashboardPage() {
   const { isAuthenticated } = useAuthStore()
   const [caqhDaysRemaining, setCaqhDaysRemaining] = useState<number | null | undefined>(undefined)
   const [promiseDaysRemaining, setPromiseDaysRemaining] = useState<number | null | undefined>(undefined)
+  const [pcbDaysRemaining, setPcbDaysRemaining] = useState<number | null | undefined>(undefined)
+  const [liabilityDaysRemaining, setLiabilityDaysRemaining] = useState<number | null | undefined>(undefined)
 
   useEffect(() => {
     if (!isAuthenticated) return
     const headers = { Authorization: `Bearer ${getAccessToken()}` }
     axios
-      .get<{ caqh_days_remaining: number | null; promise_days_remaining: number | null }>(
+      .get<{ caqh_days_remaining: number | null; promise_days_remaining: number | null; pcb_days_remaining: number | null; liability_days_remaining: number | null }>(
         `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/me/provider-settings`,
         { headers }
       )
       .then((r) => {
         setCaqhDaysRemaining(r.data.caqh_days_remaining)
         setPromiseDaysRemaining(r.data.promise_days_remaining)
+        setPcbDaysRemaining(r.data.pcb_days_remaining)
+        setLiabilityDaysRemaining(r.data.liability_days_remaining)
       })
       .catch(() => {
         setCaqhDaysRemaining(null)
         setPromiseDaysRemaining(null)
+        setPcbDaysRemaining(null)
+        setLiabilityDaysRemaining(null)
       })
   }, [isAuthenticated])
 
   const showCaqhBanner = caqhDaysRemaining !== undefined && caqhDaysRemaining !== null && caqhDaysRemaining <= 14
   const showPromiseBanner = promiseDaysRemaining !== undefined && promiseDaysRemaining !== null && promiseDaysRemaining <= 90
+  const showPcbBanner = pcbDaysRemaining !== undefined && pcbDaysRemaining !== null && pcbDaysRemaining <= 60
+  const showLiabilityBanner = liabilityDaysRemaining !== undefined && liabilityDaysRemaining !== null && liabilityDaysRemaining <= 30
 
   return (
     <div className="space-y-6">
@@ -83,6 +91,50 @@ export default function DashboardPage() {
               className={`text-xs font-medium underline ${promiseDaysRemaining <= 0 ? 'text-red-700' : 'text-amber-700'}`}
             >
               Update date in Settings →
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {showPcbBanner && (
+        <div className={`rounded-lg border p-4 ${pcbDaysRemaining <= 0 ? 'border-red-300 bg-red-50' : 'border-amber-300 bg-amber-50'}`}>
+          <p className={`text-sm font-medium ${pcbDaysRemaining <= 0 ? 'text-red-800' : 'text-amber-800'}`}>
+            {pcbDaysRemaining <= 0
+              ? `⚠ PCB Perinatal Certification overdue by ${Math.abs(pcbDaysRemaining)} day${Math.abs(pcbDaysRemaining) !== 1 ? 's' : ''} — renew to maintain billing eligibility`
+              : `⏰ PCB Perinatal Certification due in ${pcbDaysRemaining} day${pcbDaysRemaining !== 1 ? 's' : ''}`}
+          </p>
+          <div className="mt-2 flex items-center gap-4">
+            <a
+              href="https://www.pacertboard.org"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`text-xs font-medium underline ${pcbDaysRemaining <= 0 ? 'text-red-700' : 'text-amber-700'}`}
+            >
+              Renew on PCB Portal →
+            </a>
+            <Link
+              href="/settings"
+              className={`text-xs font-medium underline ${pcbDaysRemaining <= 0 ? 'text-red-700' : 'text-amber-700'}`}
+            >
+              Update date in Settings →
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {showLiabilityBanner && (
+        <div className={`rounded-lg border p-4 ${liabilityDaysRemaining <= 0 ? 'border-red-300 bg-red-50' : 'border-amber-300 bg-amber-50'}`}>
+          <p className={`text-sm font-medium ${liabilityDaysRemaining <= 0 ? 'text-red-800' : 'text-amber-800'}`}>
+            {liabilityDaysRemaining <= 0
+              ? `⚠ Liability insurance expired ${Math.abs(liabilityDaysRemaining)} day${Math.abs(liabilityDaysRemaining) !== 1 ? 's' : ''} ago — update your policy immediately`
+              : `⏰ Liability insurance expires in ${liabilityDaysRemaining} day${liabilityDaysRemaining !== 1 ? 's' : ''} — renew soon`}
+          </p>
+          <div className="mt-2">
+            <Link
+              href="/settings"
+              className={`text-xs font-medium underline ${liabilityDaysRemaining <= 0 ? 'text-red-700' : 'text-amber-700'}`}
+            >
+              Update expiry date in Settings →
             </Link>
           </div>
         </div>

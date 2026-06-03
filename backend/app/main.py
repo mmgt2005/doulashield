@@ -25,6 +25,9 @@ _VERSION = Path(__file__).parent.parent.joinpath("VERSION").read_text().strip()
 _sync_logger = logging.getLogger("doulashield.remittance_sync")
 _caqh_logger = logging.getLogger("doulashield.caqh_reminder")
 _promise_logger = logging.getLogger("doulashield.promise_reminder")
+_pcb_logger = logging.getLogger("doulashield.pcb_reminder")
+_liability_logger = logging.getLogger("doulashield.liability_reminder")
+_ma589_logger = logging.getLogger("doulashield.ma589_reminder")
 
 
 async def _run_daily_remittance_sync() -> None:
@@ -137,6 +140,8 @@ async def _run_caqh_reminder_check() -> None:
 
 
 _PROMISE_REMINDER_DAYS = {365, 180, 90, 30, 14, 7, 0, -1, -2, -3, -4, -5, -6, -7}
+_PCB_REMINDER_DAYS = {60, 30, 14, 7, 0, -1, -2, -3, -4, -5, -6, -7}
+_LIABILITY_REMINDER_DAYS = {30, 14, 7, 0, -1, -2, -3, -4, -5, -6, -7}
 
 
 async def _run_promise_reminder_check() -> None:
@@ -191,6 +196,174 @@ async def _run_promise_reminder_check() -> None:
     _promise_logger.info("promise_reminder_check: done sent=%d", sent)
 
 
+async def _run_pcb_reminder_check() -> None:
+    """
+    Send PCB Perinatal Certification renewal reminders at 60, 30, 14, 7, 0 days before expiry
+    and daily for the first 7 days overdue (2-year cycle = 730 days).
+    """
+    from app.dependencies import _AsyncSession
+    from app.models.user import User
+    from app.services.email_service import send_pcb_reminder_email
+
+    _pcb_logger.info("pcb_reminder_check: starting")
+
+    async with _AsyncSession() as db:
+        from sqlalchemy.future import select as _select
+        result = await db.execute(
+            _select(User).where(
+                User.is_active.is_(True),
+                User.pcb_last_certified_on.isnot(None),
+                User.role == "provider",
+            )
+        )
+        providers = result.scalars().all()
+
+    _pcb_logger.info("pcb_reminder_check: found %d providers with PCB date", len(providers))
+
+    today = date.today()
+    sent = 0
+    for provider in providers:
+        try:
+            expiry = provider.pcb_last_certified_on + timedelta(days=730)
+            days_remaining = (expiry - today).days
+            if days_remaining not in _PCB_REMINDER_DAYS:
+                continue
+            name = provider.full_name or provider.email
+            await send_pcb_reminder_email(provider.email, name, days_remaining)
+            sent += 1
+            _pcb_logger.info(
+                "pcb_reminder_check: sent reminder to provider=%s days_remaining=%d",
+                provider.id,
+                days_remaining,
+            )
+        except Exception as exc:
+            _pcb_logger.error(
+                "pcb_reminder_check: provider=%s FAILED: %s",
+                provider.id,
+                exc,
+                exc_info=True,
+            )
+
+    _pcb_logger.info("pcb_reminder_check: done sent=%d", sent)
+
+
+async def _run_liability_reminder_check() -> None:
+    """
+    Send liability insurance expiry reminders at 30, 14, 7, 0 days before expiry
+    and daily for the first 7 days after expiry.
+    """
+    from app.dependencies import _AsyncSession
+    from app.models.user import User
+    from app.services.email_service import send_liability_reminder_email
+
+    _liability_logger.info("liability_reminder_check: starting")
+
+    async with _AsyncSession() as db:
+        from sqlalchemy.future import select as _select
+        result = await db.execute(
+            _select(User).where(
+                User.is_active.is_(True),
+                User.liability_insurance_expires_on.isnot(None),
+                User.role == "provider",
+            )
+        )
+        providers = result.scalars().all()
+
+    _liability_logger.info("liability_reminder_check: found %d providers with liability date", len(providers))
+
+    today = date.today()
+    sent = 0
+    for provider in providers:
+        try:
+            days_remaining = (provider.liability_insurance_expires_on - today).days
+            if days_remaining not in _LIABILITY_REMINDER_DAYS:
+                continue
+            name = provider.full_name or provider.email
+            await send_liability_reminder_email(provider.email, name, days_remaining)
+            sent += 1
+            _liability_logger.info(
+                "liability_reminder_check: sent reminder to provider=%s days_remaining=%d",
+                provider.id,
+                days_remaining,
+            )
+        except Exception as exc:
+            _liability_logger.error(
+                "liability_reminder_check: provider=%s FAILED: %s",
+                provider.id,
+                exc,
+                exc_info=True,
+            )
+
+    _liability_logger.info("liability_reminder_check: done sent=%d", sent)
+
+
+async def _run_ma589_reminder_check() -> None:
+    """
+    Send MA 589 reminders to providers who have patients with prenatal visits started
+    but no ma589_signed_date recorded. Fires once per day; each patient is only
+    notified once (not repeatedly) — tracked by checking if a prenatal visit exists
+    and the signed date is still null.
+    """
+    from app.core.encryption import decrypt_field
+    from app.dependencies import _AsyncSession
+    from app.models.patient import Patient
+    from app.models.user import User
+    from app.models.visit import Visit
+    from app.services.email_service import send_ma589_reminder_email
+
+    _ma589_logger.info("ma589_reminder_check: starting")
+
+    async with _AsyncSession() as db:
+        from sqlalchemy import and_
+        from sqlalchemy.future import select as _select
+
+        # Find patients with a prenatal_1 visit started but no MA 589 signed date
+        result = await db.execute(
+            _select(Patient, User)
+            .join(User, User.id == Patient.provider_id)
+            .join(
+                Visit,
+                and_(
+                    Visit.patient_id == Patient.id,
+                    Visit.visit_type == "prenatal_1",
+                    Visit.visit_started_at.isnot(None),
+                ),
+            )
+            .where(
+                Patient.is_active.is_(True),
+                Patient.ma589_signed_date.is_(None),
+                User.is_active.is_(True),
+                User.role == "provider",
+            )
+        )
+        rows = result.all()
+
+    _ma589_logger.info("ma589_reminder_check: found %d patients missing MA 589", len(rows))
+
+    sent = 0
+    for patient, provider in rows:
+        try:
+            patient_name = decrypt_field(patient.name_encrypted)
+            provider_name = provider.full_name or provider.email
+            await send_ma589_reminder_email(provider.email, provider_name, patient_name)
+            sent += 1
+            _ma589_logger.info(
+                "ma589_reminder_check: sent reminder to provider=%s for patient=%s",
+                provider.id,
+                patient.id,
+            )
+        except Exception as exc:
+            _ma589_logger.error(
+                "ma589_reminder_check: provider=%s patient=%s FAILED: %s",
+                provider.id,
+                patient.id,
+                exc,
+                exc_info=True,
+            )
+
+    _ma589_logger.info("ma589_reminder_check: done sent=%d", sent)
+
+
 @asynccontextmanager
 async def _lifespan(app: FastAPI):
     # hour=7 UTC ≈ 02:00 ET; avoids pytz dependency for named timezone strings
@@ -222,9 +395,37 @@ async def _lifespan(app: FastAPI):
         replace_existing=True,
         misfire_grace_time=3600,
     )
+    scheduler.add_job(
+        _run_pcb_reminder_check,
+        trigger="cron",
+        hour=7,
+        minute=55,
+        id="pcb_reminder_check",
+        replace_existing=True,
+        misfire_grace_time=3600,
+    )
+    scheduler.add_job(
+        _run_liability_reminder_check,
+        trigger="cron",
+        hour=8,
+        minute=0,
+        id="liability_reminder_check",
+        replace_existing=True,
+        misfire_grace_time=3600,
+    )
+    scheduler.add_job(
+        _run_ma589_reminder_check,
+        trigger="cron",
+        hour=8,
+        minute=5,
+        id="ma589_reminder_check",
+        replace_existing=True,
+        misfire_grace_time=3600,
+    )
     scheduler.start()
     _sync_logger.info(
-        "APScheduler started — remittance sync 07:00 UTC, CAQH check 07:30 UTC, PROMISe check 07:45 UTC"
+        "APScheduler started — remittance sync 07:00, CAQH 07:30, PROMISe 07:45, "
+        "PCB 07:55, Liability 08:00, MA589 08:05 UTC"
     )
     try:
         yield

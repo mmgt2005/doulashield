@@ -54,6 +54,8 @@ class ProviderSettingsUpdate(BaseModel):
     mco_contracts: list[McoContract] | None = None
     caqh_last_attested_on: date | None = None
     promise_last_enrolled_on: date | None = None
+    pcb_last_certified_on: date | None = None
+    liability_insurance_expires_on: date | None = None
 
 
 class ProviderSettingsRead(BaseModel):
@@ -74,6 +76,10 @@ class ProviderSettingsRead(BaseModel):
     caqh_days_remaining: int | None  # None = no date set; negative = overdue
     promise_last_enrolled_on: date | None
     promise_days_remaining: int | None  # None = no date set; negative = overdue
+    pcb_last_certified_on: date | None
+    pcb_days_remaining: int | None  # None = no date set; negative = overdue
+    liability_insurance_expires_on: date | None
+    liability_days_remaining: int | None  # None = no date set; negative = overdue
 
 
 class AuditLogRead(BaseModel):

@@ -37,6 +37,8 @@ class User(Base):
     mco_contracts_json: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON array: [{mco, contract_date}]
     caqh_last_attested_on: Mapped[date | None] = mapped_column(Date, nullable=True)
     promise_last_enrolled_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+    pcb_last_certified_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+    liability_insurance_expires_on: Mapped[date | None] = mapped_column(Date, nullable=True)
     last_sign_in_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     welcome_email_sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
