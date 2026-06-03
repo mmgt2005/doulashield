@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { marked } from 'marked'
 import { useAuthStore } from '@/store/auth-store'
+import { parseMarkdown } from '@/lib/markdown'
 
 export default function AdminGuidePage() {
   const router = useRouter()
@@ -17,7 +17,7 @@ export default function AdminGuidePage() {
     }
     fetch('/docs/admin-guide.md')
       .then((r) => r.text())
-      .then((md) => setHtml(marked.parse(md) as string))
+      .then((md) => setHtml(parseMarkdown(md)))
       .catch(() => setHtml('<p>Could not load guide.</p>'))
   }, [user, router])
 

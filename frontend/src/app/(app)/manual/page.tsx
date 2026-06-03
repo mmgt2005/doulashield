@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { marked } from 'marked'
+import { parseMarkdown } from '@/lib/markdown'
 
 export default function ManualPage() {
   const [html, setHtml] = useState<string | null>(null)
@@ -9,7 +9,7 @@ export default function ManualPage() {
   useEffect(() => {
     fetch('/docs/manual.md')
       .then((r) => r.text())
-      .then((md) => setHtml(marked.parse(md) as string))
+      .then((md) => setHtml(parseMarkdown(md)))
       .catch(() => setHtml('<p>Could not load manual.</p>'))
   }, [])
 
