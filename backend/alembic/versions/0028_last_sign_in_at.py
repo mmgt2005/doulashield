@@ -4,8 +4,8 @@ Revision ID: 0028
 Revises: 0027
 Create Date: 2026-06-03
 """
+
 from alembic import op
-import sqlalchemy as sa
 
 revision = "0028"
 down_revision = "0027"
@@ -14,12 +14,12 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.add_column(
-        "users",
-        sa.Column("last_sign_in_at", sa.DateTime(timezone=True), nullable=True),
-        schema="public",
+    op.execute(
+        "ALTER TABLE public.users ADD COLUMN IF NOT EXISTS last_sign_in_at TIMESTAMPTZ NULL"
     )
 
 
 def downgrade() -> None:
-    op.drop_column("users", "last_sign_in_at", schema="public")
+    op.execute(
+        "ALTER TABLE public.users DROP COLUMN IF EXISTS last_sign_in_at"
+    )
