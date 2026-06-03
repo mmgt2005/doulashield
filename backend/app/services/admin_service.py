@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import uuid
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -59,6 +60,10 @@ class AdminService:
         self,
         resource_type: str | None = None,
         user_id: uuid.UUID | None = None,
+        action: str | None = None,
+        user_email: str | None = None,
+        start_date: date | None = None,
+        end_date: date | None = None,
         limit: int = 100,
         offset: int = 0,
     ) -> list[AuditLogRead]:
@@ -67,6 +72,26 @@ class AdminService:
             query = query.where(AuditLog.resource_type == resource_type)
         if user_id:
             query = query.where(AuditLog.user_id == user_id)
+        if action:
+            query = query.where(AuditLog.action == action)
+        if start_date:
+            query = query.where(
+                AuditLog.timestamp >= datetime(start_date.year, start_date.month, start_date.day, tzinfo=timezone.utc)
+            )
+        if end_date:
+            day_after = end_date + timedelta(days=1)
+            query = query.where(
+                AuditLog.timestamp < datetime(day_after.year, day_after.month, day_after.day, tzinfo=timezone.utc)
+            )
+        if user_email:
+            # Resolve email → user_id via subquery
+            user_result = await self._db.execute(
+                select(User.id).where(User.email.ilike(f"%{user_email}%"))
+            )
+            matched_ids = [row[0] for row in user_result.all()]
+            if not matched_ids:
+                return []
+            query = query.where(AuditLog.user_id.in_(matched_ids))
 
         result = await self._db.execute(query)
         return [AuditLogRead.model_validate(r) for r in result.scalars().all()]

@@ -1,4 +1,5 @@
 import uuid
+from datetime import date
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query
@@ -17,7 +18,20 @@ async def list_audit_logs(
     db: Annotated[AsyncSession, Depends(get_db)],
     resource_type: str | None = Query(default=None),
     user_id: uuid.UUID | None = Query(default=None),
+    action: str | None = Query(default=None),
+    user_email: str | None = Query(default=None),
+    start_date: date | None = Query(default=None),
+    end_date: date | None = Query(default=None),
     limit: int = Query(default=100, le=500),
     offset: int = Query(default=0, ge=0),
 ) -> list[AuditLogRead]:
-    return await AdminService(db).list_audit_logs(resource_type, user_id, limit, offset)
+    return await AdminService(db).list_audit_logs(
+        resource_type=resource_type,
+        user_id=user_id,
+        action=action,
+        user_email=user_email,
+        start_date=start_date,
+        end_date=end_date,
+        limit=limit,
+        offset=offset,
+    )
