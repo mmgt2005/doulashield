@@ -68,7 +68,8 @@ class AuthService:
         access_token = create_access_token(str(user.id), user.role)
         raw_refresh = create_refresh_token(str(user.id))
 
-        expires_at = datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+        now = datetime.now(timezone.utc)
+        expires_at = now + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
         self._db.add(
             RefreshToken(
                 user_id=user.id,
@@ -76,6 +77,7 @@ class AuthService:
                 expires_at=expires_at,
             )
         )
+        user.last_sign_in_at = now
         await self._db.commit()
 
         await self._audit.log(

@@ -307,7 +307,7 @@ export default function AdminUsersPage() {
                   {/* Actions */}
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2 flex-wrap">
-                      {isProvider && !depositPaid && (
+                      {!u.last_sign_in_at && u.id !== currentUser?.id && (
                         <button
                           onClick={() => sendWelcomeEmail(u.id, u.email)}
                           disabled={actionLoading === `welcome-${u.id}`}

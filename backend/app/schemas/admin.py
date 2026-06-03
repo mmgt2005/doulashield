@@ -31,6 +31,7 @@ class UserRead(BaseModel):
     mfa_enabled: bool
     is_active: bool
     created_at: datetime
+    last_sign_in_at: datetime | None = None
 
     model_config = {"from_attributes": True}
 

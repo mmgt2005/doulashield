@@ -8,6 +8,7 @@ export interface User {
   mfa_enabled: boolean
   is_active: boolean
   created_at: string
+  last_sign_in_at: string | null
 }
 
 export interface Patient {

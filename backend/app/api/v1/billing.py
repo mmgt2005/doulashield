@@ -356,6 +356,7 @@ async def send_welcome_email(
         temp_password=temp_password,
         checkout_url=checkout_url,
         frontend_origin=settings.FRONTEND_ORIGIN,
+        role=provider.role,
     )
 
     await audit.log(
