@@ -36,6 +36,7 @@ class User(Base):
     billing_provider_name: Mapped[str | None] = mapped_column(Text, nullable=True)  # exact name as registered in PROMISe
     mco_contracts_json: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON array: [{mco, contract_date}]
     caqh_last_attested_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+    promise_last_enrolled_on: Mapped[date | None] = mapped_column(Date, nullable=True)
 
     # Billing
     stripe_customer_id: Mapped[str | None] = mapped_column(Text, nullable=True)

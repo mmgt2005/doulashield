@@ -24,6 +24,7 @@ logging.basicConfig(
 _VERSION = Path(__file__).parent.parent.joinpath("VERSION").read_text().strip()
 _sync_logger = logging.getLogger("doulashield.remittance_sync")
 _caqh_logger = logging.getLogger("doulashield.caqh_reminder")
+_promise_logger = logging.getLogger("doulashield.promise_reminder")
 
 
 async def _run_daily_remittance_sync() -> None:
@@ -135,6 +136,61 @@ async def _run_caqh_reminder_check() -> None:
     _caqh_logger.info("caqh_reminder_check: done sent=%d", sent)
 
 
+_PROMISE_REMINDER_DAYS = {365, 180, 90, 30, 14, 7, 0, -1, -2, -3, -4, -5, -6, -7}
+
+
+async def _run_promise_reminder_check() -> None:
+    """
+    Send PROMISe™ re-enrollment reminder emails to providers whose 5-year window
+    is at 365, 180, 90, 30, 14, 7, or 0 days remaining, and daily for the first 7 days overdue.
+    Each provider runs in its own DB session so one failure does not block others.
+    """
+    from app.dependencies import _AsyncSession
+    from app.models.user import User
+    from app.services.email_service import send_promise_reminder_email
+
+    _promise_logger.info("promise_reminder_check: starting")
+
+    async with _AsyncSession() as db:
+        from sqlalchemy.future import select as _select
+        result = await db.execute(
+            _select(User).where(
+                User.is_active.is_(True),
+                User.promise_last_enrolled_on.isnot(None),
+                User.role == "provider",
+            )
+        )
+        providers = result.scalars().all()
+
+    _promise_logger.info("promise_reminder_check: found %d providers with PROMISe date", len(providers))
+
+    today = date.today()
+    sent = 0
+    for provider in providers:
+        try:
+            expiry = provider.promise_last_enrolled_on + timedelta(days=1825)
+            days_remaining = (expiry - today).days
+            if days_remaining not in _PROMISE_REMINDER_DAYS:
+                continue
+            name = provider.full_name or provider.email
+            await send_promise_reminder_email(provider.email, name, days_remaining)
+            sent += 1
+            _promise_logger.info(
+                "promise_reminder_check: sent reminder to provider=%s days_remaining=%d",
+                provider.id,
+                days_remaining,
+            )
+        except Exception as exc:
+            _promise_logger.error(
+                "promise_reminder_check: provider=%s FAILED: %s",
+                provider.id,
+                exc,
+                exc_info=True,
+            )
+
+    _promise_logger.info("promise_reminder_check: done sent=%d", sent)
+
+
 @asynccontextmanager
 async def _lifespan(app: FastAPI):
     # hour=7 UTC ≈ 02:00 ET; avoids pytz dependency for named timezone strings
@@ -157,8 +213,19 @@ async def _lifespan(app: FastAPI):
         replace_existing=True,
         misfire_grace_time=3600,
     )
+    scheduler.add_job(
+        _run_promise_reminder_check,
+        trigger="cron",
+        hour=7,
+        minute=45,
+        id="promise_reminder_check",
+        replace_existing=True,
+        misfire_grace_time=3600,
+    )
     scheduler.start()
-    _sync_logger.info("APScheduler started — remittance sync 07:00 UTC, CAQH check 07:30 UTC")
+    _sync_logger.info(
+        "APScheduler started — remittance sync 07:00 UTC, CAQH check 07:30 UTC, PROMISe check 07:45 UTC"
+    )
     try:
         yield
     finally:

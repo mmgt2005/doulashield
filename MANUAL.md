@@ -314,7 +314,8 @@ Access Settings from the sidebar. Changes save when you click **Save settings**.
 
 | Section | Fields |
 |---|---|
-| **CAQH Attestation** | Last attested on (date); live expiry countdown; link to CAQH ProView |
+| **CAQH Attestation** | Last attested on (date); live 90-day expiry countdown; link to CAQH ProView |
+| **PROMISe™ Re-enrollment** | Last enrolled on (date); live 5-year expiry countdown; link to PROMISe™ Portal |
 | **Provider Identity** | NPI, billing provider name, billing address, phone |
 | **Escrow & Billing** | Shows your escrow agreement status and deferred balance (collected from MCO remittances) |
 | **PA HealthChoices** | Zone (Southeast, Southwest, Lehigh/Capital, Northeast/Northwest) and counties served (checkbox list) |
@@ -336,6 +337,17 @@ CAQH ProView is the credential database used by all PA MCOs to verify provider e
 3. The expiry preview updates immediately — green means you have more than 14 days, amber means 14 days or fewer, red means overdue.
 
 **Reminders:** DoulaShield automatically emails you at 30, 14, 7, and 0 days before expiry, and daily for the first 7 days after expiry. If the dashboard shows an amber or red banner, act immediately to avoid billing disruption.
+
+### PROMISe™ Re-enrollment
+
+PA DHS requires every enrolled provider to re-enroll in PROMISe™ every **5 years** (1,825 days). Missing the deadline can suspend your fee-for-service (FFS) billing privileges until re-enrollment is processed.
+
+**Workflow:**
+1. Log in at [promise.dpw.state.pa.us](https://promise.dpw.state.pa.us) and complete the re-enrollment application.
+2. Return to DoulaShield **Settings → PROMISe™ Re-enrollment** and update **Last enrolled on** to the date you submitted your re-enrollment.
+3. The expiry preview updates immediately — green means more than 90 days remaining, amber means 90 days or fewer, red means overdue.
+
+**Reminders:** DoulaShield automatically emails you at 365, 180, 90, 30, 14, 7, and 0 days before expiry, and daily for the first 7 days after expiry. The 1-year and 6-month reminders give you lead time to gather documentation, since the PA DHS review process can take several weeks. If the dashboard shows an amber or red PROMISe™ banner, begin the re-enrollment process immediately to avoid FFS billing disruption.
 
 ---
 

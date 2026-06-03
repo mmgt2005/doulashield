@@ -51,6 +51,7 @@ class ProviderSettingsUpdate(BaseModel):
     billing_provider_name: str | None = None  # exact name as registered in PROMISe (used in CMS 1500 Box 33)
     mco_contracts: list[McoContract] | None = None
     caqh_last_attested_on: date | None = None
+    promise_last_enrolled_on: date | None = None
 
 
 class ProviderSettingsRead(BaseModel):
@@ -69,6 +70,8 @@ class ProviderSettingsRead(BaseModel):
     mco_contracts: list[McoContract] | None
     caqh_last_attested_on: date | None
     caqh_days_remaining: int | None  # None = no date set; negative = overdue
+    promise_last_enrolled_on: date | None
+    promise_days_remaining: int | None  # None = no date set; negative = overdue
 
 
 class AuditLogRead(BaseModel):

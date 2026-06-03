@@ -44,6 +44,8 @@ class EligibilityService:
         zipzign_configured = admin_q.scalar_one_or_none() is not None
         caqh_expiry = user.caqh_last_attested_on + timedelta(days=90) if user.caqh_last_attested_on else None
         caqh_days_remaining = (caqh_expiry - date.today()).days if caqh_expiry else None
+        promise_expiry = user.promise_last_enrolled_on + timedelta(days=1825) if user.promise_last_enrolled_on else None
+        promise_days_remaining = (promise_expiry - date.today()).days if promise_expiry else None
         return ProviderSettingsRead(
             npi=user.npi,
             availity_connected=bool(user.availity_client_id_encrypted and user.availity_client_secret_encrypted),
@@ -60,6 +62,8 @@ class EligibilityService:
             mco_contracts=_parse_mco_contracts(user.mco_contracts_json),
             caqh_last_attested_on=user.caqh_last_attested_on,
             caqh_days_remaining=caqh_days_remaining,
+            promise_last_enrolled_on=user.promise_last_enrolled_on,
+            promise_days_remaining=promise_days_remaining,
         )
 
     async def update_provider_settings(
@@ -108,6 +112,8 @@ class EligibilityService:
             )
         if data.caqh_last_attested_on is not None:
             user.caqh_last_attested_on = data.caqh_last_attested_on
+        if data.promise_last_enrolled_on is not None:
+            user.promise_last_enrolled_on = data.promise_last_enrolled_on
 
         await self._db.commit()
         await self._db.refresh(user)
@@ -126,6 +132,8 @@ class EligibilityService:
         zipzign_configured = admin_q2.scalar_one_or_none() is not None
         caqh_expiry2 = user.caqh_last_attested_on + timedelta(days=90) if user.caqh_last_attested_on else None
         caqh_days_remaining2 = (caqh_expiry2 - date.today()).days if caqh_expiry2 else None
+        promise_expiry2 = user.promise_last_enrolled_on + timedelta(days=1825) if user.promise_last_enrolled_on else None
+        promise_days_remaining2 = (promise_expiry2 - date.today()).days if promise_expiry2 else None
         return ProviderSettingsRead(
             npi=user.npi,
             availity_connected=bool(user.availity_client_id_encrypted and user.availity_client_secret_encrypted),
@@ -142,6 +150,8 @@ class EligibilityService:
             mco_contracts=_parse_mco_contracts(user.mco_contracts_json),
             caqh_last_attested_on=user.caqh_last_attested_on,
             caqh_days_remaining=caqh_days_remaining2,
+            promise_last_enrolled_on=user.promise_last_enrolled_on,
+            promise_days_remaining=promise_days_remaining2,
         )
 
     async def check_eligibility(

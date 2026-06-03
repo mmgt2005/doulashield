@@ -182,6 +182,71 @@ async def send_caqh_reminder_email(
     )
 
 
+async def send_promise_reminder_email(
+    provider_email: str,
+    provider_name: str,
+    days_remaining: int,
+) -> None:
+    """Sends a PROMISe™ re-enrollment reminder. days_remaining <= 0 means overdue."""
+    if not _configured():
+        return
+    resend.api_key = settings.RESEND_API_KEY
+
+    abs_days = abs(days_remaining)
+    day_word = "day" if abs_days == 1 else "days"
+
+    if days_remaining <= 0:
+        subject = "PROMISe™ re-enrollment overdue — action required"
+        urgency_text = (
+            f"Your PA DHS PROMISe™ provider enrollment expired <strong>{abs_days} {day_word} ago</strong>. "
+            "You may lose FFS billing privileges until re-enrollment is completed."
+        )
+        cta_color = "#dc2626"
+    else:
+        subject = f"PROMISe™ re-enrollment due in {days_remaining} {day_word}"
+        urgency_text = (
+            f"Your PA DHS PROMISe™ provider enrollment expires in <strong>{days_remaining} {day_word}</strong>. "
+            "Re-enrolling on time preserves your FFS billing privileges and avoids a lapse in reimbursement."
+        )
+        cta_color = "#d97706" if days_remaining <= 30 else "#2563eb"
+
+    await asyncio.to_thread(
+        resend.Emails.send,
+        {
+            "from": settings.EMAIL_FROM,
+            "to": [provider_email],
+            "subject": subject,
+            "html": f"""
+<!DOCTYPE html>
+<html>
+<body style="font-family: sans-serif; color: #1a1a1a; max-width: 480px; margin: 0 auto; padding: 24px;">
+  <p style="font-size: 16px;">Hi {provider_name},</p>
+  <p>{urgency_text}</p>
+  <p style="margin: 28px 0; display: flex; gap: 12px; flex-wrap: wrap;">
+    <a href="https://promise.dpw.state.pa.us"
+       style="background:{cta_color};color:#fff;padding:12px 24px;border-radius:6px;
+              text-decoration:none;font-weight:600;font-size:15px;display:inline-block;">
+      Re-enroll on PROMISe&trade; &rarr;
+    </a>
+    <a href="{settings.FRONTEND_ORIGIN}/settings"
+       style="background:#f3f4f6;color:#374151;padding:12px 24px;border-radius:6px;
+              text-decoration:none;font-weight:600;font-size:15px;display:inline-block;border:1px solid #d1d5db;">
+      Update in DoulaShield
+    </a>
+  </p>
+  <p style="color:#6b7280;font-size:13px;">
+    After completing re-enrollment on PROMISe&trade;, update your "Last enrolled on" date in
+    DoulaShield Settings so your 5-year clock resets.
+  </p>
+  <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
+  <p style="color:#9ca3af;font-size:12px;">The DoulaShield Team</p>
+</body>
+</html>
+""",
+        },
+    )
+
+
 async def send_deposit_link(provider_email: str, provider_name: str, checkout_url: str) -> None:
     if not _configured():
         raise RuntimeError("Email not configured — set RESEND_API_KEY")

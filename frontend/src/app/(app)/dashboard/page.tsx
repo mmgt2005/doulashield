@@ -9,20 +9,28 @@ import { useAuthStore } from '@/store/auth-store'
 export default function DashboardPage() {
   const { isAuthenticated } = useAuthStore()
   const [caqhDaysRemaining, setCaqhDaysRemaining] = useState<number | null | undefined>(undefined)
+  const [promiseDaysRemaining, setPromiseDaysRemaining] = useState<number | null | undefined>(undefined)
 
   useEffect(() => {
     if (!isAuthenticated) return
     const headers = { Authorization: `Bearer ${getAccessToken()}` }
     axios
-      .get<{ caqh_days_remaining: number | null }>(
+      .get<{ caqh_days_remaining: number | null; promise_days_remaining: number | null }>(
         `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/me/provider-settings`,
         { headers }
       )
-      .then((r) => setCaqhDaysRemaining(r.data.caqh_days_remaining))
-      .catch(() => setCaqhDaysRemaining(null))
+      .then((r) => {
+        setCaqhDaysRemaining(r.data.caqh_days_remaining)
+        setPromiseDaysRemaining(r.data.promise_days_remaining)
+      })
+      .catch(() => {
+        setCaqhDaysRemaining(null)
+        setPromiseDaysRemaining(null)
+      })
   }, [isAuthenticated])
 
   const showCaqhBanner = caqhDaysRemaining !== undefined && caqhDaysRemaining !== null && caqhDaysRemaining <= 14
+  const showPromiseBanner = promiseDaysRemaining !== undefined && promiseDaysRemaining !== null && promiseDaysRemaining <= 90
 
   return (
     <div className="space-y-6">
@@ -47,6 +55,32 @@ export default function DashboardPage() {
             <Link
               href="/settings"
               className={`text-xs font-medium underline ${caqhDaysRemaining <= 0 ? 'text-red-700' : 'text-amber-700'}`}
+            >
+              Update date in Settings →
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {showPromiseBanner && (
+        <div className={`rounded-lg border p-4 ${promiseDaysRemaining <= 0 ? 'border-red-300 bg-red-50' : 'border-amber-300 bg-amber-50'}`}>
+          <p className={`text-sm font-medium ${promiseDaysRemaining <= 0 ? 'text-red-800' : 'text-amber-800'}`}>
+            {promiseDaysRemaining <= 0
+              ? `⚠ PROMISe™ re-enrollment overdue by ${Math.abs(promiseDaysRemaining)} day${Math.abs(promiseDaysRemaining) !== 1 ? 's' : ''} — re-enroll now to maintain FFS billing`
+              : `⏰ PROMISe™ re-enrollment due in ${promiseDaysRemaining} day${promiseDaysRemaining !== 1 ? 's' : ''}`}
+          </p>
+          <div className="mt-2 flex items-center gap-4">
+            <a
+              href="https://promise.dpw.state.pa.us"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`text-xs font-medium underline ${promiseDaysRemaining <= 0 ? 'text-red-700' : 'text-amber-700'}`}
+            >
+              Re-enroll on PROMISe™ →
+            </a>
+            <Link
+              href="/settings"
+              className={`text-xs font-medium underline ${promiseDaysRemaining <= 0 ? 'text-red-700' : 'text-amber-700'}`}
             >
               Update date in Settings →
             </Link>

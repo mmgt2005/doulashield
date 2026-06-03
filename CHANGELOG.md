@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.11.0] — 2026-06-03
+
+### Added
+- **PROMISe™ 5-year re-enrollment reminder**: providers can record their last PA DHS PROMISe™ enrollment date in Settings. A live expiry preview shows the next due date in green (>90 days), amber (1–90 days), or red (overdue). The dashboard shows an amber or red banner when re-enrollment is due within 90 days or overdue. A daily APScheduler job (07:45 UTC) sends automated email reminders at 365, 180, 90, 30, 14, 7, and 0 days before expiry and daily for the first 7 days overdue. New DB column `users.promise_last_enrolled_on` (migration 0027); `GET` and `PATCH /api/v1/auth/me/provider-settings` now include `promise_last_enrolled_on` and `promise_days_remaining`.
+
+---
+
 ## [1.10.0] — 2026-06-03
 
 ### Added
