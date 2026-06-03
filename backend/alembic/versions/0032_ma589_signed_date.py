@@ -15,10 +15,8 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.add_column(
-        "patients",
-        sa.Column("ma589_signed_date", sa.Date(), nullable=True),
-        schema="public",
+    op.execute(
+        "ALTER TABLE public.patients ADD COLUMN IF NOT EXISTS ma589_signed_date DATE NULL"
     )
 
 

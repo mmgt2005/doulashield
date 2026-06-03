@@ -15,10 +15,8 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.add_column(
-        "users",
-        sa.Column("liability_insurance_expires_on", sa.Date(), nullable=True),
-        schema="public",
+    op.execute(
+        "ALTER TABLE public.users ADD COLUMN IF NOT EXISTS liability_insurance_expires_on DATE NULL"
     )
 
 
