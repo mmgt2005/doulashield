@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.13.1] — 2026-06-03
+
+### Fixed
+- **"Failed to load clients" on page load**: eliminated a race condition where page-level `useEffect` hooks fired before the auth refresh completed, causing `getAccessToken()` to return `null` and all API calls to 401. The app layout now waits for the auth store's `isLoading` flag to clear before rendering child pages, ensuring every page receives a valid token on first render.
+
+---
+
 ## [1.13.0] — 2026-06-03
 
 ### Added
