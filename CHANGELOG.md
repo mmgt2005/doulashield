@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.16.1] — 2026-06-03
+
+### Fixed
+- **Deployment startup failure**: Alembic migrations 0030, 0031, and 0032 used `op.add_column` which raises an error if the column already exists (e.g. after a manual Supabase SQL run). Replaced with `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` so migrations are idempotent and the service starts correctly regardless of prior schema state.
+
+---
+
 ## [1.16.0] — 2026-06-03
 
 ### Added
