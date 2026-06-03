@@ -46,21 +46,46 @@ export default function Sidebar({ onClose }: SidebarProps) {
       <div className="px-4 py-5 border-b border-gray-200">
         <span className="text-lg font-bold text-blue-700">DoulaShield</span>
       </div>
-      <nav className="flex-1 px-2 py-4 space-y-1">
-        {links.map(({ href, label }) => (
+      <nav className="flex-1 px-2 py-4 space-y-1 flex flex-col">
+        <div className="space-y-1">
+          {links.map(({ href, label }) => (
+            <Link
+              key={href}
+              href={href}
+              onClick={onClose}
+              className={`block px-3 py-2 rounded text-sm font-medium transition-colors ${
+                pathname.startsWith(href)
+                  ? 'bg-blue-50 text-blue-700'
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              {label}
+            </Link>
+          ))}
+        </div>
+        <div className="mt-auto pt-3 border-t border-gray-100 space-y-0.5">
+          <p className="px-3 pb-1 text-xs font-medium text-gray-400 uppercase tracking-wide">Help</p>
           <Link
-            key={href}
-            href={href}
+            href="/manual"
             onClick={onClose}
-            className={`block px-3 py-2 rounded text-sm font-medium transition-colors ${
-              pathname.startsWith(href)
-                ? 'bg-blue-50 text-blue-700'
-                : 'text-gray-700 hover:bg-gray-100'
+            className={`block px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+              pathname === '/manual' ? 'bg-blue-50 text-blue-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
             }`}
           >
-            {label}
+            User Manual
           </Link>
-        ))}
+          {user?.role === 'admin' && (
+            <Link
+              href="/admin-guide"
+              onClick={onClose}
+              className={`block px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+                pathname === '/admin-guide' ? 'bg-blue-50 text-blue-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
+              }`}
+            >
+              Admin Guide
+            </Link>
+          )}
+        </div>
       </nav>
       <div className="px-4 py-4 border-t border-gray-200">
         <p className="text-xs text-gray-500 truncate">{user?.email}</p>
