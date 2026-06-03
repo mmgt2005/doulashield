@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.9.0] — 2026-06-03
+
+### Added
+- **Audit log filters**: four filter controls on the Audit Logs page — action type (exact match), user email (partial match), from date, and to date. Logs are no longer auto-loaded on mount; the admin applies filters first. Shows entry count and a "limit reached" notice at 200 entries. Backend adds `action`, `user_email`, `start_date`, `end_date` query params to `GET /admin/audit-logs`; email filter uses case-insensitive partial match via `ilike`; date range is inclusive on both ends.
+
+---
+
 ## [1.8.1] — 2026-06-03
 
 ### Added
