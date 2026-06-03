@@ -71,7 +71,7 @@ export default function DashboardPage() {
           </p>
           <div className="mt-2 flex items-center gap-4">
             <a
-              href="https://promise.dpw.state.pa.us"
+              href="https://promise.dhs.pa.gov"
               target="_blank"
               rel="noopener noreferrer"
               className={`text-xs font-medium underline ${promiseDaysRemaining <= 0 ? 'text-red-700' : 'text-amber-700'}`}

@@ -343,7 +343,7 @@ CAQH ProView is the credential database used by all PA MCOs to verify provider e
 PA DHS requires every enrolled provider to re-enroll in PROMISe™ every **5 years** (1,825 days). Missing the deadline can suspend your fee-for-service (FFS) billing privileges until re-enrollment is processed.
 
 **Workflow:**
-1. Log in at [promise.dpw.state.pa.us](https://promise.dpw.state.pa.us) and complete the re-enrollment application.
+1. Log in at [promise.dhs.pa.gov](https://promise.dhs.pa.gov) and complete the re-enrollment application.
 2. Return to DoulaShield **Settings → PROMISe™ Re-enrollment** and update **Last enrolled on** to the date you submitted your re-enrollment.
 3. The expiry preview updates immediately — green means more than 90 days remaining, amber means 90 days or fewer, red means overdue.
 

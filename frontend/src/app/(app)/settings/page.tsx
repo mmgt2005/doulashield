@@ -503,7 +503,7 @@ export default function SettingsPage() {
             }
           })()}
           <a
-            href="https://promise.dpw.state.pa.us"
+            href="https://promise.dhs.pa.gov"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center text-xs text-blue-600 hover:underline"

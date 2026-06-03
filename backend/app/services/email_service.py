@@ -223,7 +223,7 @@ async def send_promise_reminder_email(
   <p style="font-size: 16px;">Hi {provider_name},</p>
   <p>{urgency_text}</p>
   <p style="margin: 28px 0; display: flex; gap: 12px; flex-wrap: wrap;">
-    <a href="https://promise.dpw.state.pa.us"
+    <a href="https://promise.dhs.pa.gov"
        style="background:{cta_color};color:#fff;padding:12px 24px;border-radius:6px;
               text-decoration:none;font-weight:600;font-size:15px;display:inline-block;">
       Re-enroll on PROMISe&trade; &rarr;
