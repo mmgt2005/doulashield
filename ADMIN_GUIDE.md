@@ -61,6 +61,8 @@ A **Send Welcome Email** button appears on any row — provider or admin — whe
 
 Once a user signs in for the first time the button disappears automatically. This covers accounts created via **Create Account Only** who haven't been contacted yet, and any user who lost their credentials before their first login.
 
+The **Last Emailed** column in the Users table shows the date the most recent welcome email was sent, so you can tell at a glance whether an account has been contacted and how recently. Accounts created via **Create Account Only** show "—" until a welcome email is sent.
+
 ### Role Toggle (Provider ↔ Admin)
 
 Each row (except your own) has a **Make Admin** or **Make Provider** button. Clicking it immediately changes the user's role. The affected user sees the change on their next page load — admin nav links appear or disappear accordingly.

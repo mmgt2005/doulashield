@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.12.1] — 2026-06-03
+
+### Added
+- **Last Emailed column in admin Users table**: a new **Last Emailed** column shows the date a welcome email was most recently sent to each user, or "—" if no email has ever been sent (e.g. accounts created via **Create Account Only**). The timestamp is set automatically when **Create & Send Email** or **Send Welcome Email** is used. New DB column `users.welcome_email_sent_at` (added via migration 0029 SQL).
+
+---
+
 ## [1.12.0] — 2026-06-03
 
 ### Added
