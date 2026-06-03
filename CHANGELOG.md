@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.12.3] — 2026-06-03
+
+### Fixed
+- **Railway healthcheck failure (idempotent migrations)**: migrations 0026–0028 used `op.add_column()` which raises "column already exists" when those columns were pre-created via manual Supabase SQL, causing `alembic upgrade head` to exit non-zero and uvicorn to never start. All three migrations now use raw `ALTER TABLE … ADD COLUMN IF NOT EXISTS` so they succeed regardless of current DB state. Added migration 0029 to formalise the `welcome_email_sent_at` column in the Alembic chain (column already exists in DB from prior manual SQL).
+
+---
+
 ## [1.12.2] — 2026-06-03
 
 ### Fixed
