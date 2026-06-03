@@ -284,6 +284,9 @@ async def create_and_invite(
         frontend_origin=settings.FRONTEND_ORIGIN,
     )
 
+    new_user.welcome_email_sent_at = datetime.now(timezone.utc)
+    await db.commit()
+
     await audit.log(
         action="CREATE_AND_INVITE_PROVIDER",
         resource_type="user",
@@ -358,6 +361,9 @@ async def send_welcome_email(
         frontend_origin=settings.FRONTEND_ORIGIN,
         role=provider.role,
     )
+
+    provider.welcome_email_sent_at = datetime.now(timezone.utc)
+    await db.commit()
 
     await audit.log(
         action="SEND_WELCOME_EMAIL",

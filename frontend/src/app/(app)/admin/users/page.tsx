@@ -250,7 +250,7 @@ export default function AdminUsersPage() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50">
             <tr>
-              {['Email', 'Role', 'MFA', 'Active', 'Joined', 'Deposit', 'Balance', 'Subscription', 'Actions'].map((h) => (
+              {['Email', 'Role', 'MFA', 'Active', 'Joined', 'Last Emailed', 'Deposit', 'Balance', 'Subscription', 'Actions'].map((h) => (
                 <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">{h}</th>
               ))}
             </tr>
@@ -270,6 +270,11 @@ export default function AdminUsersPage() {
                   <td className="px-4 py-3">{u.mfa_enabled ? 'Yes' : 'No'}</td>
                   <td className="px-4 py-3">{u.is_active ? 'Yes' : 'No'}</td>
                   <td className="px-4 py-3 text-gray-400">{new Date(u.created_at).toLocaleDateString()}</td>
+                  <td className="px-4 py-3 text-sm whitespace-nowrap">
+                    {u.welcome_email_sent_at
+                      ? new Date(u.welcome_email_sent_at).toLocaleDateString()
+                      : <span className="text-gray-400">—</span>}
+                  </td>
 
                   {/* Deposit */}
                   <td className="px-4 py-3">

@@ -32,6 +32,7 @@ class UserRead(BaseModel):
     is_active: bool
     created_at: datetime
     last_sign_in_at: datetime | None = None
+    welcome_email_sent_at: datetime | None = None
 
     model_config = {"from_attributes": True}
 

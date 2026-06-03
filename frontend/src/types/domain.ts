@@ -9,6 +9,7 @@ export interface User {
   is_active: boolean
   created_at: string
   last_sign_in_at: string | null
+  welcome_email_sent_at: string | null
 }
 
 export interface Patient {
