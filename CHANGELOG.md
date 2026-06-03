@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.14.1] — 2026-06-03
+
+### Fixed
+- **NPI lookup CORS error**: direct browser requests to `npiregistry.cms.hhs.gov` were blocked by CORS. Moved the lookup to a backend proxy (`GET /api/v1/npi/lookup?number=`) that calls NPPES server-side via httpx and returns the parsed name and taxonomy.
+
+---
+
 ## [1.14.0] — 2026-06-03
 
 ### Added
