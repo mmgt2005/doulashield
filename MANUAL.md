@@ -1,6 +1,6 @@
 # DoulaShield User Manual
 
-**v1.13.0 · Last updated 2026-06-03**
+**v1.15.0 · Last updated 2026-06-03**
 
 This manual covers every provider-facing feature in DoulaShield. Read it start to finish once, then use the headings as a reference when you need a quick reminder.
 
@@ -109,6 +109,8 @@ Requirements: Availity credentials connected in Settings, client has an MCO and 
 ### Adding a Referring Provider
 
 The referring physician's NPI (Box 17b) and name (Box 17) are required on every claim. Enter them in the client profile under **Referring Provider NPI** and **Referring Provider Name**. These fields are shared across all visits for that client — enter them once and they auto-fill every CMS 1500.
+
+After typing the 10-digit NPI in the client profile edit form, click **Verify NPI** to look it up in the NPPES registry. If found, the referring doctor's name is automatically filled into the **Referring Provider Name** field (CMS 1500 Box 17) — no manual name entry needed.
 
 On a **Prenatal 1** visit, you can scan the MA 89 physician certification form to auto-fill both fields:
 

@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.15.0] — 2026-06-03
+
+### Added
+- **NPPES NPI lookup on client profile**: a "Verify NPI" button now appears below the Referring Provider NPI field in the client edit form. A successful lookup auto-fills the Referring Provider Name field (CMS 1500 Box 17) from NPPES — no manual name entry needed.
+
+---
+
 ## [1.14.1] — 2026-06-03
 
 ### Fixed
