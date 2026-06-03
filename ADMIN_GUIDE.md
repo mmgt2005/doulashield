@@ -1,6 +1,6 @@
 # DoulaShield Admin Guide
 
-**v1.8.0 · Last updated 2026-06-02**
+**v1.13.0 · Last updated 2026-06-03**
 
 This guide covers everything admins can do that providers cannot. For day-to-day provider features (documenting visits, submitting claims, etc.) refer to `MANUAL.md`.
 
@@ -20,6 +20,8 @@ This guide covers everything admins can do that providers cannot. For day-to-day
 ## Introduction
 
 Admin users share the provider interface (Clients, Visits, Claims) and have two additional sections in the sidebar: **Users** and **Audit Logs**. Admins are exempt from the $99 enrollment deposit, the $400 deferred balance, and the monthly subscription — their billing status is pre-cleared on account creation.
+
+At the bottom of the sidebar, under the **Help** heading, admins see two documentation links: **User Manual** (provider-facing features) and **Admin Guide** (this document). Providers only see the User Manual link. The Admin Guide page is restricted to admin accounts and redirects anyone else to the dashboard.
 
 ---
 

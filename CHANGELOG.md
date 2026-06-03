@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.13.0] — 2026-06-03
+
+### Added
+- **In-app User Manual and Admin Guide**: a **Help** section now appears at the bottom of the sidebar for all users. Providers see a **User Manual** link; admins also see an **Admin Guide** link. Both open as styled, scrollable pages inside the app. The admin-guide page redirects non-admin users to the dashboard. Markdown files are served from `public/docs/` and rendered with `marked` + Tailwind Typography.
+
+---
+
 ## [1.12.4] — 2026-06-03
 
 ### Fixed

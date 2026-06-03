@@ -1,6 +1,6 @@
 # DoulaShield User Manual
 
-**v1.8.0 · Last updated 2026-06-02**
+**v1.13.0 · Last updated 2026-06-03**
 
 This manual covers every provider-facing feature in DoulaShield. Read it start to finish once, then use the headings as a reference when you need a quick reminder.
 
@@ -22,6 +22,10 @@ This manual covers every provider-facing feature in DoulaShield. Read it start t
 ---
 
 ## Getting Started
+
+### Finding This Manual Inside the App
+
+This manual is always one click away inside DoulaShield. At the bottom of the left sidebar, under the **Help** heading, click **User Manual** to open it as a styled page without leaving the app.
 
 ### First Login & MFA Setup
 
