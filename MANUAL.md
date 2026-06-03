@@ -233,7 +233,7 @@ The **PA Medicaid Claim** section appears at the bottom of each visit form (belo
 | **Manual portal** | UPMC For You, Health Partners Plans, Highmark Wholecare, FFS |
 
 **Before submitting:**
-- Enter the **Referring Provider NPI** (Box 17b) — required; the claim will be rejected without it.
+- Enter the **Referring Provider NPI** (Box 17b) — required; the claim will be rejected without it. After typing the 10-digit NPI, click **Verify NPI** to look it up in the NPPES registry. If found, the referring doctor's name is displayed for confirmation and automatically saved to the client's profile (populating CMS 1500 Box 17).
 - Geisinger Health Plan may require a **Prior Authorization Number** (Box 23). If Geisinger is your patient's MCO, an amber-bordered field appears; enter the auth number if you have one.
 
 **Availity MCOs:**
@@ -320,7 +320,7 @@ Access Settings from the sidebar. Changes save when you click **Save settings**.
 |---|---|
 | **CAQH Attestation** | Last attested on (date); live 90-day expiry countdown; link to CAQH ProView |
 | **PROMISe™ Re-enrollment** | Last enrolled on (date); live 5-year expiry countdown; link to PROMISe™ Portal |
-| **Provider Identity** | NPI, billing provider name, billing address, phone |
+| **Provider Identity** | NPI, billing provider name, billing address, phone. After entering your NPI, click **Verify NPI** to confirm it against the NPPES registry — your registered name and taxonomy are shown as confirmation. |
 | **Escrow & Billing** | Shows your escrow agreement status and deferred balance (collected from MCO remittances) |
 | **PA HealthChoices** | Zone (Southeast, Southwest, Lehigh/Capital, Northeast/Northwest) and counties served (checkbox list) |
 | **MCO Contracts** | Checkboxes for all 8 MCOs + FFS; optional contract effective date for each |

@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.14.0] — 2026-06-03
+
+### Added
+- **NPPES NPI lookup**: a "Verify NPI" button now appears below the NPI field on the Settings page and below the Referring Provider NPI field on the visit claim form. Clicking it queries the public NPPES Read API and displays the provider's registered name and primary taxonomy as confirmation. On the visit form, a successful lookup also auto-saves the referring doctor's name to the patient record, populating CMS 1500 Box 17 without manual entry.
+
+---
+
 ## [1.13.1] — 2026-06-03
 
 ### Fixed
