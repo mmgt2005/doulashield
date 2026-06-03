@@ -7,6 +7,7 @@ import { getAccessToken } from '@/lib/auth'
 import { useAuthStore } from '@/store/auth-store'
 import { BillingStatus } from '@/types/domain'
 import AddressAutocomplete from '@/components/ui/AddressAutocomplete'
+import NpiLookup from '@/components/ui/NpiLookup'
 
 interface McoContractForm {
   mco: string
@@ -543,6 +544,7 @@ export default function SettingsPage() {
               placeholder="10-digit NPI"
               className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:w-48"
             />
+            <NpiLookup npi={watch('npi') ?? ''} />
           </div>
           <div>
             <label htmlFor="provider_address" className="block text-sm font-medium text-gray-700">

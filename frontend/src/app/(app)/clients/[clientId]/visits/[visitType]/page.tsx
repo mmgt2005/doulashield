@@ -11,6 +11,7 @@ import { geocodeAddress, haversineFeet } from '@/lib/geo'
 import { Claim, Patient, Visit, VisitType } from '@/types/domain'
 import { getSlotConfig, getPrevSlotInGroup } from '@/lib/visit-config'
 import ImageUploadScanner from '@/components/ui/ImageUploadScanner'
+import NpiLookup, { NpiVerifiedResult } from '@/components/ui/NpiLookup'
 import dynamic from 'next/dynamic'
 
 const SignaturePad = dynamic(() => import('@/components/ui/SignaturePad'), { ssr: false })
@@ -633,6 +634,18 @@ export default function VisitFormPage() {
         { headers: { Authorization: `Bearer ${getAccessToken()}` } }
       )
       setPatient(p => p ? { ...p, referring_provider_npi: npi } : p)
+    } catch { /* non-blocking */ }
+  }
+
+  const handleReferringNpiVerified = async (result: NpiVerifiedResult) => {
+    if (!result.name) return
+    try {
+      await axios.patch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/patients/${clientId}`,
+        { referring_provider_npi: referringNpi, referring_provider_name: result.name },
+        { headers: { Authorization: `Bearer ${getAccessToken()}` } }
+      )
+      setPatient(p => p ? { ...p, referring_provider_npi: referringNpi, referring_provider_name: result.name } : p)
     } catch { /* non-blocking */ }
   }
 
@@ -1461,6 +1474,11 @@ export default function VisitFormPage() {
                           onChange={(e) => setReferringNpi(e.target.value)}
                           onBlur={(e) => handleSaveReferringNpi(e.target.value)}
                           className="w-full rounded border border-gray-300 px-2 py-1 text-sm focus:border-blue-400 focus:outline-none"
+                        />
+                        <NpiLookup
+                          npi={referringNpi}
+                          onVerified={handleReferringNpiVerified}
+                          size="xs"
                         />
                         {!referringNpi ? (
                           <p className="text-xs text-amber-600">⚠ Enter the referring doctor&apos;s NPI — saved to this client&apos;s profile for all visits</p>
