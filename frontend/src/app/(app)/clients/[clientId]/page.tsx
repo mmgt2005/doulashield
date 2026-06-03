@@ -9,6 +9,7 @@ import { getAccessToken } from '@/lib/auth'
 import { geocodeAddress } from '@/lib/geo'
 import AddressAutocomplete from '@/components/ui/AddressAutocomplete'
 import ImageUploadScanner from '@/components/ui/ImageUploadScanner'
+import NpiLookup from '@/components/ui/NpiLookup'
 import { Claim, Patient, Visit, VisitType } from '@/types/domain'
 import { VISIT_SLOTS, VISIT_GROUPS, getPrevSlotInGroup, getSlotConfig } from '@/lib/visit-config'
 
@@ -245,6 +246,13 @@ export default function ClientDetailPage() {
                 maxLength={10}
                 placeholder="10-digit NPI"
                 className="mt-1 block w-full rounded border border-gray-300 px-3 py-1.5 text-sm sm:w-40"
+              />
+              <NpiLookup
+                npi={watch('referring_provider_npi') ?? ''}
+                size="xs"
+                onVerified={(r) => {
+                  if (r.name) setValue('referring_provider_name', r.name)
+                }}
               />
             </div>
             <div>
