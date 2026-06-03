@@ -16,7 +16,7 @@ class AuditLogger:
     async def log(
         self,
         action: str,
-        ip_address: str,
+        ip_address: str | None,
         user_agent: str,
         user_id: uuid.UUID | None = None,
         resource_type: str | None = None,

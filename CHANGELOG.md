@@ -15,6 +15,10 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 - **ADMIN_GUIDE.md**: admin-only guide covering account management, billing/escrow, admin-only settings (ZipZign API key), audit logs, and a full reference table of audit action types
 - **Auto-update hook**: PostToolUse reminder now includes instructions (3) to update MANUAL.md and ADMIN_GUIDE.md when new provider-facing or admin-facing features are shipped
 
+### Fixed
+- **Audit log blank page**: the audit log page now shows an error message if the API call fails (previously failed silently, showing an empty table with no explanation) and a "No entries yet" message when the log is genuinely empty
+- **INET column rejecting non-IP strings**: `audit_logs.ip_address` changed from PostgreSQL INET to TEXT (migration 0025); the `get_client_ip` fallback no longer returns the string `"unknown"` (returns NULL instead), and the daily remittance sync no longer passes `"scheduler"` as an IP address — both would have caused silent insert failures on any request where the real client IP was unavailable
+
 ---
 
 ## [1.8.0] — 2026-06-02

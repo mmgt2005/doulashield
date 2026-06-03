@@ -60,7 +60,7 @@ async def _run_daily_remittance_sync() -> None:
                 saved = await svc.fetch_remittances(
                     requesting_user_id=provider.id,
                     data=fetch_req,
-                    ip="scheduler",
+                    ip=None,
                     user_agent="daily-remittance-sync/1.0",
                 )
             _sync_logger.info(
