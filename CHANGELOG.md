@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.11.1] — 2026-06-03
+
+### Fixed
+- **PROMISe™ portal URL**: corrected link from `promise.dpw.state.pa.us` (old domain) to `promise.dhs.pa.gov` in the Settings page, dashboard banner, reminder email CTA button, and MANUAL.md.
+
+---
+
 ## [1.11.0] — 2026-06-03
 
 ### Added
