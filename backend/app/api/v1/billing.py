@@ -347,7 +347,7 @@ async def send_welcome_email(
     await db.commit()
 
     checkout_url: str | None = None
-    if stripe_service._configured() and settings.STRIPE_DEPOSIT_PRICE_ID:
+    if provider.role == "provider" and stripe_service._configured() and settings.STRIPE_DEPOSIT_PRICE_ID:
         try:
             checkout_url = await stripe_service.create_deposit_checkout_link(provider, db)
         except Exception:

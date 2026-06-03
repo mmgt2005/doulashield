@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.12.4] — 2026-06-03
+
+### Fixed
+- **Admin welcome email incorrectly included $99 deposit link**: the `send-welcome-email` endpoint created a Stripe Checkout link for all users regardless of role. Added a `provider.role == "provider"` guard so admin accounts never receive a deposit link when their welcome email is resent.
+
+---
+
 ## [1.12.3] — 2026-06-03
 
 ### Fixed
