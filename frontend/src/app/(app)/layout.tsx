@@ -12,7 +12,7 @@ import { clearAccessToken } from '@/lib/auth'
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
-  const { logout } = useAuthStore()
+  const { logout, isLoading: authLoading } = useAuthStore()
   // Hydrates user + role into the auth store for all pages under (app).
   useAuth()
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -73,7 +73,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </header>
 
         <main className="flex-1 overflow-auto p-4 lg:p-6">
-          {children}
+          {authLoading ? (
+            <p className="text-sm text-gray-400">Loading…</p>
+          ) : (
+            children
+          )}
         </main>
       </div>
 
