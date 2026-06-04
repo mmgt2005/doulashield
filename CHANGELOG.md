@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.17.1] — 2026-06-04
+
+### Fixed
+- **Audit Packet button placement**: The "📋 Download Audit Packet" button was inside the CMS 1500 preview modal, which is not shown once a claim has been submitted. Moved it to the claim status panel (alongside "Refresh status" / "Update status") so it is always accessible whenever a claim record exists.
+
+---
+
 ## [1.17.0] — 2026-06-04
 
 ### Added
