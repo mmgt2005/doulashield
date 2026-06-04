@@ -12,6 +12,16 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.18.1] — 2026-06-04
+
+### Fixed
+- **CMS 1500 — Radio buttons (Box 1 Medicaid, Box 3 Sex, Box 11a Insured Sex) not rendering in PDF viewers**: Added `NeedAppearances=True` to the AcroForm after all field writes. Without this flag, viewers like Chrome's built-in PDF renderer use pre-built appearance streams (which are blank in the form template) rather than regenerating visuals from the stored `/V` and `/AS` values. This is the root cause of radio buttons writing correctly at the byte level (confirmed) but not displaying visually.
+- **CMS 1500 — Box 24A "To" date year blank**: Root cause was also `NeedAppearances` — the field value was being written correctly but not rendered. Resolved by the same fix above.
+- **CMS 1500 — Box 29 (Amount Paid) never populated**: Added `amt_paid` to `generate_pdf`'s `text_fields` dict, sourced from a new `claim_data` parameter. The `download_cms1500` endpoint now fetches the claim record for the visit and passes the paid amount; when a claim is paid the amount appears in Box 29.
+- **Audit Packet — ZipZign signed MA 91 PDF not included**: Status comparison is now case-insensitive (`ma91_status.lower() == "signed"`) to handle both `"signed"` and `"Signed"` from the webhook. The `%PDF` header check now scans the first 10 bytes (`b"%PDF" in resp.content[:10]`) to tolerate any leading BOM or whitespace.
+
+---
+
 ## [1.18.0] — 2026-06-04
 
 ### Added

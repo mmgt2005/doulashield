@@ -11,6 +11,7 @@ from app.core.audit import AuditLogger
 from app.core.config import settings
 from app.core.encryption import decrypt_field
 from app.dependencies import CurrentUser, get_audit, get_client_ip, get_current_user, get_db, get_user_agent
+from app.models.claim import Claim
 from app.models.patient import Patient
 from app.models.user import User
 from app.models.visit import Visit
@@ -144,6 +145,15 @@ async def download_cms1500(
     )
     visit = visit_result.scalar_one_or_none()
 
+    # Fetch claim for this visit (Box 29 paid amount)
+    claim_result = await db.execute(
+        select(Claim).where(
+            Claim.patient_id == patient_id,
+            Claim.visit_type == visit_type,
+        ).order_by(Claim.submitted_at.desc()).limit(1)
+    )
+    claim = claim_result.scalar_one_or_none()
+
     from datetime import date as date_type
     from app.core.encryption import decrypt_field as _decrypt
     from app.services.ocr_service import get_signed_url
@@ -217,6 +227,9 @@ async def download_cms1500(
                 "provider_phone": user.provider_phone or "",
                 "provider_ssn": provider_ssn,
                 "provider_signature_bytes": provider_sig_bytes,
+            },
+            claim_data={
+                "paid_amount": claim.paid_amount if claim else None,
             },
         )
     except Exception as exc:
@@ -298,7 +311,11 @@ async def download_audit_packet(
 
         # Fetch ZipZign-signed MA 91 PDF for telehealth visits
         zipzign_signed_pdf_bytes: bytes | None = None
-        if visit and visit.ma91_zipzign_request_id and visit.ma91_status == "signed":
+        if (
+            visit
+            and visit.ma91_zipzign_request_id
+            and (visit.ma91_status or "").lower() == "signed"
+        ):
             try:
                 from app.models.user import User as _User
                 from sqlalchemy import select as _select
@@ -314,7 +331,8 @@ async def download_audit_packet(
                     from app.core.config import settings as _settings
                     zz_url = f"{_settings.ZIPZIGN_BASE_URL}/api/documents/{visit.ma91_zipzign_request_id}/download"
                     resp = await hc.get(zz_url, headers={"Authorization": f"Bearer {api_key}"})
-                    if resp.status_code == 200 and resp.content[:4] == b"%PDF":
+                    # Accept any PDF regardless of leading whitespace or BOM
+                    if resp.status_code == 200 and b"%PDF" in resp.content[:10]:
                         zipzign_signed_pdf_bytes = resp.content
             except Exception:
                 pass

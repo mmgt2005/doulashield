@@ -13,7 +13,7 @@ from decimal import Decimal
 from pathlib import Path
 
 from pypdf import PdfReader, PdfWriter
-from pypdf.generic import NameObject
+from pypdf.generic import BooleanObject, NameObject
 
 import logging
 
@@ -209,6 +209,23 @@ def _overlay_signature(pdf_bytes: bytes, sig_bytes: bytes, x: float, y: float, m
 
 
 # ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def _format_paid(claim_data: dict | None) -> str:
+    """Return paid amount string for Box 29, or empty string if not applicable."""
+    if not claim_data:
+        return ""
+    paid = claim_data.get("paid_amount")
+    if paid is None:
+        return ""
+    try:
+        return f"{Decimal(str(paid)):.2f}"
+    except Exception:
+        return str(paid)
+
+
+# ---------------------------------------------------------------------------
 # Main public function
 # ---------------------------------------------------------------------------
 
@@ -216,6 +233,7 @@ def generate_pdf(
     patient_data: dict,
     visit_data: dict,
     provider_data: dict,
+    claim_data: dict | None = None,
 ) -> bytes:
     """
     Fills the official CMS 1500 blank form with claim data and returns PDF bytes.
@@ -410,6 +428,9 @@ def generate_pdf(
         # Box 28 — Total charge in cents (same rule as Box 24F)
         "t_charge": str(rate_cents),
 
+        # Box 29 — Amount paid by insurer (filled when claim status is paid)
+        "amt_paid": _format_paid(claim_data),
+
         # Box 31 — Physician signature + date
         # Clear text field when actual image is available so it shows through
         "physician_signature": "" if provider_sig_bytes else provider_name,
@@ -451,6 +472,18 @@ def generate_pdf(
     _set_radio(writer, "assignment", "/YES")
     _set_radio(writer, "ssn", "/SSN")         # Box 25 — SSN not EIN
     _set_radio(writer, "ins_benefit_plan", "/YES" if patient_data.get("has_other_insurance") else "/NO")
+
+    # Tell every PDF viewer to regenerate visual appearances from /V (text) and /AS (radio)
+    # values rather than relying on pre-built /AP appearance streams in the blank form.
+    # Without this, Chrome's built-in viewer and some other viewers show blank fields.
+    try:
+        root = writer._root_object
+        acroform_ref = root.get("/AcroForm", {})
+        acroform_obj = acroform_ref.get_object() if hasattr(acroform_ref, "get_object") else acroform_ref
+        if hasattr(acroform_obj, "update"):
+            acroform_obj.update({NameObject("/NeedAppearances"): BooleanObject(True)})
+    except Exception:
+        pass
 
     writer.compress_identical_objects(remove_identicals=True, remove_orphans=True)
 
