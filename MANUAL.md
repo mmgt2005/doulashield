@@ -244,6 +244,20 @@ Click **Preview CMS 1500 & Submit**. A preview modal shows all claim boxes fille
 **Manual MCOs:**
 Click **Preview & Download CMS 1500** to download the completed PDF. Then click the portal link next to the button to open the MCO's submission portal in a new tab. Upload the PDF through their portal.
 
+### Downloading a Medicaid Audit Packet
+
+Once a claim exists for a visit, a **📋 Audit Packet ↓** button appears in the CMS 1500 modal footer alongside "Download PDF". Click it to download a single PDF that assembles every document a PA Medicaid auditor expects:
+
+1. **Cover / Claim Summary** — patient initials, Medicaid ID (last 4), MCO, service date, procedure code, billed and paid amounts.
+2. **Member Information & Eligibility** — full patient demographics, eligibility status and last verified date, embedded Medicaid card image (if scanned).
+3. **Service Documentation** — visit type, dates/times, duration, location, full SOAP note, visit entry notes, referring provider, prior authorization number.
+4. **MA 91 Certification** — the full legal MA 91 text, patient name, signed timestamp, and embedded signature image (in-person) or ZipZign request ID (telehealth).
+5. **Provider Credentials** — NPI, CAQH attestation date and days until expiry, PROMISe™ re-enrollment date and days until expiry, PCB certification, liability insurance expiry, MCO contracts.
+6. **Billing Record** — claim ID, submission date, current status, billed/paid amounts, denial reason, remittance linkage.
+7. **CMS 1500** — the completed form appended as the final pages.
+
+The audit packet is for your records and any auditor requests — no patient signature is required to generate it.
+
 ### Tracking Claim Status
 
 The claim status badge uses four colors:
