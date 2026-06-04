@@ -1355,6 +1355,13 @@ export default function VisitFormPage() {
                           {claimStatusChecking ? 'Checking…' : 'Refresh status'}
                         </button>
                       )}
+                      <button
+                        type="button"
+                        onClick={handleDownloadAuditPacket}
+                        className="text-xs text-gray-600 hover:text-gray-800"
+                      >
+                        📋 Download Audit Packet
+                      </button>
                     </div>
                   )
                 })()
@@ -1641,15 +1648,6 @@ export default function VisitFormPage() {
                       >
                         Download PDF
                       </button>
-                      {existingClaim && (
-                        <button
-                          type="button"
-                          onClick={handleDownloadAuditPacket}
-                          className="rounded border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                        >
-                          📋 Audit Packet ↓
-                        </button>
-                      )}
                       {channel !== 'manual' && (
                         <button
                           type="button"
