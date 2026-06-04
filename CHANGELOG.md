@@ -12,6 +12,15 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.18.2] — 2026-06-04
+
+### Fixed
+- **CMS 1500 — Radio buttons (Box 1, 3, 11a) not visually rendering in browser PDF viewer**: Switched from relying solely on AcroForm `/AS` + `NeedAppearances` (which Chrome's PDFium renderer does not always honour) to drawing explicit filled dots at the exact widget center coordinates using a reportlab overlay. The overlay is applied after all AcroForm writes and signature overlays, so radio selections are painted as real PDF graphics that render in every viewer unconditionally.
+- **CMS 1500 — Text fields (Box 24A and others) not rendering without NeedAppearances support**: Changed `auto_regenerate=False` → `auto_regenerate=True` in the pypdf field-fill call so proper `/AP /N` appearance streams are generated for every text field. Fields are now visible in viewers that ignore `NeedAppearances`.
+- **Audit Packet — ZipZign-signed MA 91 PDF missing even when patient has signed**: Removed the `ma91_status == "signed"` guard from the ZipZign download in the audit packet endpoint. The download is now attempted whenever `ma91_zipzign_request_id` is set, because the webhook that flips the status to "signed" may not have fired if `BACKEND_URL` was misconfigured at the time of signing. The PDF is included only if the API returns valid PDF bytes. Structured `log.info`/`log.warning` messages are emitted so failures are diagnosable in Railway logs.
+
+---
+
 ## [1.18.1] — 2026-06-04
 
 ### Fixed
