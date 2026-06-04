@@ -309,13 +309,11 @@ async def download_audit_packet(
         ma91_sig_bytes = await _fetch_bytes(visit.ma91_signature_path if visit else None)
         provider_sig_bytes = await _fetch_bytes(user.provider_signature_path)
 
-        # Fetch ZipZign-signed MA 91 PDF for telehealth visits
+        # Fetch ZipZign-signed MA 91 PDF for telehealth visits.
+        # Attempt download whenever a request ID exists — the webhook may not have fired
+        # even if the patient already signed (e.g. BACKEND_URL misconfigured).
         zipzign_signed_pdf_bytes: bytes | None = None
-        if (
-            visit
-            and visit.ma91_zipzign_request_id
-            and (visit.ma91_status or "").lower() == "signed"
-        ):
+        if visit and visit.ma91_zipzign_request_id:
             try:
                 from app.models.user import User as _User
                 from sqlalchemy import select as _select
@@ -330,12 +328,23 @@ async def download_audit_packet(
                     api_key = _decrypt(admin.zipzign_api_key_encrypted)
                     from app.core.config import settings as _settings
                     zz_url = f"{_settings.ZIPZIGN_BASE_URL}/api/documents/{visit.ma91_zipzign_request_id}/download"
+                    log.info(
+                        "Fetching ZipZign MA 91 PDF for visit %s (status=%s request_id=%s)",
+                        visit.id, visit.ma91_status, visit.ma91_zipzign_request_id,
+                    )
                     resp = await hc.get(zz_url, headers={"Authorization": f"Bearer {api_key}"})
-                    # Accept any PDF regardless of leading whitespace or BOM
                     if resp.status_code == 200 and b"%PDF" in resp.content[:10]:
                         zipzign_signed_pdf_bytes = resp.content
-            except Exception:
-                pass
+                        log.info("ZipZign MA 91 PDF fetched successfully (%d bytes)", len(resp.content))
+                    else:
+                        log.warning(
+                            "ZipZign MA 91 fetch returned HTTP %s; content[:30]=%r",
+                            resp.status_code, resp.content[:30],
+                        )
+                else:
+                    log.warning("ZipZign MA 91 fetch skipped — no admin API key configured")
+            except Exception as exc:
+                log.warning("ZipZign MA 91 fetch error for visit %s: %s", visit.id if visit else "?", exc)
 
         patient_address = await _enrich_zip4(patient.address or "", hc)
         provider_address = await _enrich_zip4(user.provider_address or "", hc)

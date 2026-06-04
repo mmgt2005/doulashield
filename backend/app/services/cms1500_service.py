@@ -226,6 +226,86 @@ def _format_paid(claim_data: dict | None) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Radio button overlay — browser-independent rendering via reportlab dots
+# ---------------------------------------------------------------------------
+
+# Center coordinates (x, y) in PDF points (bottom-left origin) for each radio option.
+# Derived from the AcroForm widget /Rect values in the blank form.
+_RADIO_DOT_POSITIONS: dict[str, dict[str, tuple[float, float]]] = {
+    "insurance_type": {
+        "/Medicare": (25.944, 678.819),
+        "/Medicaid": (74.312, 678.900),
+        "/Tricare":  (124.996, 678.614),
+        "/Champva":  (189.885, 678.900),
+        "/Group":    (240.385, 678.900),
+        "/Feca":     (297.740, 678.900),
+        "/Other":    (341.083, 678.616),
+    },
+    "sex": {
+        "/M": (319.493, 655.076),
+        "/F": (355.343, 655.076),
+    },
+    "ins_sex": {
+        "/MALE":   (506.961, 534.657),
+        "/FEMALE": (558.178, 534.135),
+    },
+    "rel_to_ins": {
+        "/S": (254.966, 630.440),
+        "/M": (291.081, 630.405),
+        "/C": (319.553, 630.242),
+        "/O": (355.758, 630.856),
+    },
+    "assignment": {
+        "/YES": (292.157, 102.519),
+        "/NO":  (327.866, 102.419),
+    },
+    "ssn": {
+        "/SSN": (141.282, 102.944),
+        "/EIN": (155.223, 102.671),
+    },
+    "ins_benefit_plan": {
+        "/YES": (391.213, 462.612),
+        "/NO":  (427.540, 462.366),
+    },
+}
+
+
+def _draw_radio_dots(pdf_bytes: bytes, radio_selections: dict[str, str]) -> bytes:
+    """Overlay filled dots at radio button centers so they render in all PDF viewers."""
+    try:
+        from reportlab.pdfgen import canvas as rl_canvas
+        from reportlab.lib.pagesizes import letter
+
+        overlay_buf = io.BytesIO()
+        c = rl_canvas.Canvas(overlay_buf, pagesize=letter)
+        c.setFillColorRGB(0, 0, 0)
+        c.setStrokeColorRGB(0, 0, 0)
+
+        for field_name, state in radio_selections.items():
+            pos = _RADIO_DOT_POSITIONS.get(field_name, {}).get(state)
+            if pos:
+                x, y = pos
+                c.circle(x, y, 3.0, fill=1, stroke=0)
+
+        c.save()
+        overlay_buf.seek(0)
+
+        base_reader = PdfReader(io.BytesIO(pdf_bytes))
+        overlay_reader = PdfReader(overlay_buf)
+        merge_writer = PdfWriter()
+        merge_writer.append(base_reader)
+        merge_writer.pages[0].merge_page(overlay_reader.pages[0])
+
+        out = io.BytesIO()
+        merge_writer.write(out)
+        out.seek(0)
+        return out.read()
+    except Exception as exc:
+        log.warning("Radio dot overlay failed: %s", exc)
+        return pdf_bytes
+
+
+# ---------------------------------------------------------------------------
 # Main public function
 # ---------------------------------------------------------------------------
 
@@ -462,7 +542,7 @@ def generate_pdf(
     writer = PdfWriter()
     writer.append(reader)
 
-    writer.update_page_form_field_values(writer.pages[0], text_fields, auto_regenerate=False)
+    writer.update_page_form_field_values(writer.pages[0], text_fields, auto_regenerate=True)
 
     # Radio buttons
     _set_radio(writer, "insurance_type", "/Medicaid")
@@ -504,5 +584,18 @@ def generate_pdf(
         pdf_bytes = _overlay_signature(pdf_bytes, ma91_sig_bytes, 412, 410, 173, 25)
     if provider_sig_bytes:
         pdf_bytes = _overlay_signature(pdf_bytes, provider_sig_bytes, 20, 50, 156, 25)
+
+    # Draw physical filled dots at radio button positions so Chrome/PDFium renders them
+    # regardless of NeedAppearances support.
+    radio_selections = {
+        "insurance_type": "/Medicaid",
+        "sex":            "/F" if gender == "F" else "/M",
+        "ins_sex":        "/FEMALE" if gender == "F" else "/MALE",
+        "rel_to_ins":     "/S",
+        "assignment":     "/YES",
+        "ssn":            "/SSN",
+        "ins_benefit_plan": "/YES" if patient_data.get("has_other_insurance") else "/NO",
+    }
+    pdf_bytes = _draw_radio_dots(pdf_bytes, radio_selections)
 
     return pdf_bytes
