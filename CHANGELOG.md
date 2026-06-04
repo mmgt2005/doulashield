@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.16.2] — 2026-06-04
+
+### Fixed
+- **App crash at startup**: `npi.py` imported `CurrentUser` from `app.schemas.auth` where it is not defined (correct source is `app.dependencies`). This `ImportError` prevented uvicorn from starting, causing every Railway health check to fail since the 1.16.0 deployment.
+
+---
+
 ## [1.16.1] — 2026-06-03
 
 ### Fixed
