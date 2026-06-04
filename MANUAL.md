@@ -100,6 +100,8 @@ Click **Create Client** to save.
 
 Open any client from the **Clients** list and click **Edit profile**. You can update all fields including re-scanning a new Medicaid card. Changes to the address re-geocode coordinates automatically.
 
+When a Medicaid card has been scanned for a client, a small **"Card scanned"** badge with a camera icon appears next to the MCO line in the client header. This lets you confirm at a glance that a card image is on file (which also enables the embedded card image in the audit packet).
+
 ### Checking Medicaid Eligibility
 
 On any client's overview page, the eligibility row shows the last checked status (**Active** or **Inactive**) and date. Click **Check eligibility** to query the MCO in real time through Availity.
@@ -251,7 +253,7 @@ Once a claim exists for a visit, a **📋 Audit Packet ↓** button appears in t
 1. **Cover / Claim Summary** — patient initials, Medicaid ID (last 4), MCO, service date, procedure code, billed and paid amounts.
 2. **Member Information & Eligibility** — full patient demographics, eligibility status and last verified date, embedded Medicaid card image (if scanned).
 3. **Service Documentation** — visit type, dates/times, duration, location, full SOAP note, visit entry notes, referring provider, prior authorization number.
-4. **MA 91 Certification** — the full legal MA 91 text, patient name, signed timestamp, and embedded signature image (in-person) or ZipZign request ID (telehealth).
+4. **MA 91 Certification** — the full legal MA 91 text, patient name, signed timestamp, and embedded signature image (in-person). For telehealth visits where the patient signed via ZipZign, the actual signed PDF document is appended immediately after this section so auditors have the fully executed document with the ZipZign request ID on record.
 5. **Provider Credentials** — NPI, CAQH attestation date and days until expiry, PROMISe™ re-enrollment date and days until expiry, PCB certification, liability insurance expiry, MCO contracts.
 6. **Billing Record** — claim ID, submission date, current status, billed/paid amounts, denial reason, remittance linkage.
 7. **CMS 1500** — the completed form appended as the final pages.

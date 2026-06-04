@@ -12,6 +12,15 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.18.0] — 2026-06-04
+
+### Added
+- **CMS 1500 — Box 3 & Box 11a sex radio buttons now render correctly**: Rewrote `_set_radio` to walk `writer.pages[0]/Annots` directly instead of the AcroForm `/Fields` tree. After `writer.append()`, the AcroForm field-tree objects are copies that are disconnected from the widget annotations the PDF viewer actually renders. Walking the page annotations directly sets `/AS` on the objects that matter. The AcroForm `/V` is still updated for form-aware readers. Fixes persistent "sex not selected" issue on both Box 3 and Box 11a.
+- **Audit Packet — ZipZign signed MA 91 PDF appended**: When a telehealth visit has a ZipZign e-signature with status `signed`, the actual signed PDF is fetched from the ZipZign API and inserted into the audit packet after the MA 91 certification section. Auditors receive the full executed document, not just the request ID.
+- **Client profile — Medicaid card scan indicator**: When a patient's Medicaid card has been previously scanned, a small "Card scanned" badge with a camera icon now appears next to the MCO line in the client profile header, so providers can confirm at a glance that the card is on file.
+
+---
+
 ## [1.17.3] — 2026-06-04
 
 ### Fixed
