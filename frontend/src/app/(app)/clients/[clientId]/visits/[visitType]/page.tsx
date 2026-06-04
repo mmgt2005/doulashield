@@ -684,6 +684,25 @@ export default function VisitFormPage() {
     }
   }
 
+  const handleDownloadAuditPacket = async () => {
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/patients/${clientId}/visits/${visitType}/audit-packet.pdf`,
+        { headers: { Authorization: `Bearer ${getAccessToken()}` } }
+      )
+      if (!res.ok) { setClaimError('Failed to generate audit packet.'); return }
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `audit-packet-${visitType}.pdf`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      setClaimError('Failed to generate audit packet.')
+    }
+  }
+
   const onSubmit = async (data: FormData) => {
     setSubmitError(null)
     try {
@@ -1622,6 +1641,15 @@ export default function VisitFormPage() {
                       >
                         Download PDF
                       </button>
+                      {existingClaim && (
+                        <button
+                          type="button"
+                          onClick={handleDownloadAuditPacket}
+                          className="rounded border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                        >
+                          📋 Audit Packet ↓
+                        </button>
+                      )}
                       {channel !== 'manual' && (
                         <button
                           type="button"

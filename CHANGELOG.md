@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.17.0] — 2026-06-04
+
+### Added
+- **Medicaid Audit Packet PDF**: A new "📋 Audit Packet ↓" button appears in the CMS 1500 modal when a claim exists. Clicking it downloads a comprehensive PDF audit packet containing: Cover/Claim Summary, Member Information & Eligibility Verification (with Medicaid card image), Service Documentation (SOAP notes, visit times, location), MA 91 Patient Certification (with signature image), Provider Credentials (CAQH/PROMISe™/PCB/liability/MCO contracts with expiry calculations), and Billing Record — with the CMS 1500 appended as final pages. Audit log action `GENERATE_AUDIT_PACKET` recorded on every generation.
+
+---
+
 ## [1.16.2] — 2026-06-04
 
 ### Fixed

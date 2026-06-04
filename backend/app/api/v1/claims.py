@@ -239,6 +239,169 @@ async def download_cms1500(
     )
 
 
+@router.get("/patients/{patient_id}/visits/{visit_type}/audit-packet.pdf")
+async def download_audit_packet(
+    request: Request,
+    patient_id: uuid.UUID,
+    visit_type: str,
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    audit: Annotated[AuditLogger, Depends(get_audit)],
+) -> Response:
+    patient_result = await db.execute(select(Patient).where(Patient.id == patient_id))
+    patient = patient_result.scalar_one_or_none()
+    if not patient or not patient.is_active:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found")
+
+    user_result = await db.execute(select(User).where(User.id == current_user.id))
+    user = user_result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    visit_result = await db.execute(
+        select(Visit).where(Visit.patient_id == patient_id, Visit.visit_type == visit_type)
+    )
+    visit = visit_result.scalar_one_or_none()
+
+    # Fetch the claim record for this visit
+    claims_list = await _svc(db, audit).list_claims(current_user.id, patient_id)
+    claim = next((c for c in claims_list if c.visit_type == visit_type), None)
+
+    from datetime import date as date_type
+    from app.core.encryption import decrypt_field as _decrypt
+    from app.services.ocr_service import get_signed_url
+    import httpx as _httpx
+
+    svc_date: date_type | None = None
+    if visit and visit.visit_date:
+        svc_date = visit.visit_date
+    elif visit and visit.visit_started_at:
+        svc_date = visit.visit_started_at.date()
+
+    async with _httpx.AsyncClient(timeout=10) as hc:
+        async def _fetch_bytes(path: str | None) -> bytes | None:
+            if not path:
+                return None
+            try:
+                url = await get_signed_url(path, expires_in=60)
+                resp = await hc.get(url)
+                if resp.status_code == 200:
+                    return resp.content
+            except Exception:
+                pass
+            return None
+
+        medicaid_card_bytes = await _fetch_bytes(patient.medicaid_card_image_path)
+        ma91_sig_bytes = await _fetch_bytes(visit.ma91_signature_path if visit else None)
+        provider_sig_bytes = await _fetch_bytes(user.provider_signature_path)
+
+        patient_address = await _enrich_zip4(patient.address or "", hc)
+        provider_address = await _enrich_zip4(user.provider_address or "", hc)
+
+    provider_ssn = ""
+    if user.provider_ssn_encrypted:
+        try:
+            provider_ssn = _decrypt(user.provider_ssn_encrypted)
+        except Exception:
+            pass
+
+    import json as _json
+    mco_contracts = []
+    if user.mco_contracts_json:
+        try:
+            mco_contracts = _json.loads(user.mco_contracts_json)
+        except Exception:
+            pass
+
+    from app.services import audit_packet_service
+
+    try:
+        pdf_bytes = audit_packet_service.generate_audit_packet(
+            patient_data={
+                "name": decrypt_field(patient.name_encrypted),
+                "medicaid_id": decrypt_field(patient.medicaid_id_encrypted),
+                "date_of_birth": patient.date_of_birth,
+                "gender": patient.gender,
+                "address": patient_address,
+                "mco": patient.mco or "",
+                "policy_group": patient.policy_group or "",
+                "referring_provider_npi": patient.referring_provider_npi or "",
+                "referring_provider_name": patient.referring_provider_name or "",
+                "has_other_insurance": patient.has_other_insurance,
+                "eligibility_status": patient.eligibility_status,
+                "eligibility_checked_at": patient.eligibility_checked_at,
+                "medicaid_card_image_bytes": medicaid_card_bytes,
+                "ma91_signed_at": visit.ma91_signed_at if visit else None,
+                "ma91_signature_bytes": ma91_sig_bytes,
+            },
+            visit_data={
+                "visit_type": visit_type,
+                "visit_date": svc_date,
+                "visit_id": str(visit.id).replace("-", "") if visit else "",
+                "location_type": visit.location_type if visit else None,
+                "alternate_location": visit.alternate_location if visit else None,
+                "prior_auth_number": visit.prior_auth_number if visit else None,
+                "visit_started_at": visit.visit_started_at if visit else None,
+                "visit_ended_at": visit.visit_ended_at if visit else None,
+                "subjective": visit.subjective if visit else None,
+                "objective": visit.objective if visit else None,
+                "assessment": visit.assessment if visit else None,
+                "plan": visit.plan if visit else None,
+                "entry": visit.entry if visit else None,
+                "birth_time": visit.birth_time if visit else None,
+                "birth_location": visit.birth_location if visit else None,
+                "birth_notes": visit.birth_notes if visit else None,
+                "ma91_signed_by_name": visit.ma91_signed_by_name if visit else None,
+                "ma91_zipzign_request_id": visit.ma91_zipzign_request_id if visit else None,
+                "ma91_status": visit.ma91_status if visit else None,
+            },
+            provider_data={
+                "npi": user.npi or "",
+                "full_name": user.full_name or "",
+                "billing_provider_name": user.billing_provider_name or user.full_name or "",
+                "provider_address": provider_address,
+                "provider_phone": user.provider_phone or "",
+                "provider_ssn": provider_ssn,
+                "provider_signature_bytes": provider_sig_bytes,
+                "caqh_last_attested_on": user.caqh_last_attested_on,
+                "promise_last_enrolled_on": user.promise_last_enrolled_on,
+                "pcb_last_certified_on": user.pcb_last_certified_on,
+                "liability_insurance_expires_on": user.liability_insurance_expires_on,
+                "mco_contracts": mco_contracts,
+            },
+            claim_data={
+                "claim_id": str(claim.id) if claim else None,
+                "availity_claim_id": claim.availity_claim_id if claim else None,
+                "is_manual": claim.is_manual if claim else False,
+                "status": claim.status if claim else None,
+                "service_date": claim.service_date if claim else svc_date,
+                "billed_amount": claim.billed_amount if claim else None,
+                "paid_amount": claim.paid_amount if claim else None,
+                "denial_reason": claim.denial_reason if claim else None,
+                "submitted_at": claim.submitted_at if claim else None,
+                "remittance_id": str(claim.remittance_id) if claim and claim.remittance_id else None,
+            },
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc))
+
+    await audit.log(
+        action="GENERATE_AUDIT_PACKET",
+        resource_type="patient",
+        resource_id=patient_id,
+        ip_address=get_client_ip(request),
+        user_agent=get_user_agent(request),
+        user_id=current_user.id,
+        extra_context={"visit_type": visit_type},
+    )
+
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="audit-packet-{visit_type}.pdf"'},
+    )
+
+
 @router.get("/claims", response_model=list[ClaimRead])
 async def list_all_claims(
     current_user: Annotated[CurrentUser, Depends(get_current_user)],
