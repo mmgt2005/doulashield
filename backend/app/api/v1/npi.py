@@ -4,8 +4,7 @@ from typing import Annotated
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from app.api.v1.auth import get_current_user
-from app.schemas.auth import CurrentUser
+from app.dependencies import CurrentUser, get_current_user
 
 router = APIRouter(tags=["npi"])
 
