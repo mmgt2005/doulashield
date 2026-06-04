@@ -12,6 +12,14 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.17.3] — 2026-06-04
+
+### Fixed
+- **Audit Packet — Provider Legal Name still shows "Admin"**: Changed `audit_packet_service` to prefer `billing_provider_name` over `full_name` when populating the provider name in the packet. The `billing_provider_name` field (set in provider Settings) is the formal legal name; `full_name` is a login display name and may be "Admin" for admin accounts.
+- **CMS 1500 — Box 11a (Insured Sex) still not selected**: Corrected the `ins_sex` AcroForm radio on-state values. A prior fix incorrectly changed them from `/FEMALE`/`/MALE` to `/F`/`/M`. Inspection of the actual PDF AcroForm confirmed: `sex` (Box 3) uses `/F`/`/M`, but `ins_sex` (Box 11a) uses `/FEMALE`/`/MALE`. Reverted to the correct values.
+
+---
+
 ## [1.17.2] — 2026-06-04
 
 ### Fixed

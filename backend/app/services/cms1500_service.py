@@ -425,7 +425,7 @@ def generate_pdf(
     # Radio buttons
     _set_radio(writer, "insurance_type", "/Medicaid")
     _set_radio(writer, "sex", "/F" if gender == "F" else "/M")
-    _set_radio(writer, "ins_sex", "/F" if gender == "F" else "/M")
+    _set_radio(writer, "ins_sex", "/FEMALE" if gender == "F" else "/MALE")
     _set_radio(writer, "rel_to_ins", "/S")    # Self
     _set_radio(writer, "assignment", "/YES")
     _set_radio(writer, "ssn", "/SSN")         # Box 25 — SSN not EIN

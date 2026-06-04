@@ -213,7 +213,7 @@ def generate_audit_packet(
     visit_type = visit_data.get("visit_type") or ""
     svc_date = _fmt_date(visit_data.get("visit_date") or claim_data.get("service_date"))
     provider_npi = provider_data.get("npi") or "—"
-    provider_name = provider_data.get("full_name") or "—"
+    provider_name = provider_data.get("billing_provider_name") or provider_data.get("full_name") or "—"
 
     # ── Cover ─────────────────────────────────────────────────────────────────
     story.append(Spacer(1, 0.5 * inch))
