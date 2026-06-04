@@ -176,6 +176,7 @@ def generate_audit_packet(
     visit_data: dict,
     provider_data: dict,
     claim_data: dict,
+    zipzign_signed_pdf_bytes: bytes | None = None,
 ) -> bytes:
     """
     Build a Medicaid audit packet PDF and return raw bytes.
@@ -194,6 +195,8 @@ def generate_audit_packet(
       claim_data:    claim_id (str), availity_claim_id, is_manual (bool), status,
                      service_date, billed_amount, paid_amount, denial_reason,
                      submitted_at (datetime), remittance_id
+      zipzign_signed_pdf_bytes: raw bytes of the ZipZign-signed MA 91 PDF,
+                     inserted after the MA 91 section if provided
     """
     buf = io.BytesIO()
     doc = SimpleDocTemplate(
@@ -483,15 +486,29 @@ def generate_audit_packet(
     except Exception:
         cms_bytes = None
 
-    if not cms_bytes:
-        return narrative_bytes
-
     writer = PdfWriter()
-    for page in PdfReader(io.BytesIO(narrative_bytes)).pages:
+
+    # The narrative has 6 sections; the MA 91 section is section 3 (0-indexed page ~3).
+    # We insert the ZipZign-signed PDF pages immediately after the narrative so they
+    # follow the MA 91 certification section, then append the CMS 1500.
+    narrative_reader = PdfReader(io.BytesIO(narrative_bytes))
+    for page in narrative_reader.pages:
         writer.add_page(page)
-    # Only include the front of the CMS 1500 form (page 0); page 1 is the back/instructions
-    cms_reader = PdfReader(io.BytesIO(cms_bytes))
-    writer.add_page(cms_reader.pages[0])
+
+    # Insert ZipZign signed PDF pages (telehealth e-signature document)
+    if zipzign_signed_pdf_bytes:
+        try:
+            zz_reader = PdfReader(io.BytesIO(zipzign_signed_pdf_bytes))
+            for page in zz_reader.pages:
+                writer.add_page(page)
+        except Exception:
+            pass  # if ZipZign PDF is malformed, skip it silently
+
+    if cms_bytes:
+        # Only include the front of the CMS 1500 form (page 0); page 1 is the back/instructions
+        cms_reader = PdfReader(io.BytesIO(cms_bytes))
+        writer.add_page(cms_reader.pages[0])
+
     out = io.BytesIO()
     writer.write(out)
     return out.getvalue()

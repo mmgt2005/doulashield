@@ -279,7 +279,7 @@ async def download_audit_packet(
     elif visit and visit.visit_started_at:
         svc_date = visit.visit_started_at.date()
 
-    async with _httpx.AsyncClient(timeout=10) as hc:
+    async with _httpx.AsyncClient(timeout=30) as hc:
         async def _fetch_bytes(path: str | None) -> bytes | None:
             if not path:
                 return None
@@ -295,6 +295,29 @@ async def download_audit_packet(
         medicaid_card_bytes = await _fetch_bytes(patient.medicaid_card_image_path)
         ma91_sig_bytes = await _fetch_bytes(visit.ma91_signature_path if visit else None)
         provider_sig_bytes = await _fetch_bytes(user.provider_signature_path)
+
+        # Fetch ZipZign-signed MA 91 PDF for telehealth visits
+        zipzign_signed_pdf_bytes: bytes | None = None
+        if visit and visit.ma91_zipzign_request_id and visit.ma91_status == "signed":
+            try:
+                from app.models.user import User as _User
+                from sqlalchemy import select as _select
+                admin_q = await db.execute(
+                    _select(_User).where(
+                        _User.role == "admin",
+                        _User.zipzign_api_key_encrypted.isnot(None),
+                    ).limit(1)
+                )
+                admin = admin_q.scalar_one_or_none()
+                if admin and admin.zipzign_api_key_encrypted:
+                    api_key = _decrypt(admin.zipzign_api_key_encrypted)
+                    from app.core.config import settings as _settings
+                    zz_url = f"{_settings.ZIPZIGN_BASE_URL}/api/documents/{visit.ma91_zipzign_request_id}/download"
+                    resp = await hc.get(zz_url, headers={"Authorization": f"Bearer {api_key}"})
+                    if resp.status_code == 200 and resp.content[:4] == b"%PDF":
+                        zipzign_signed_pdf_bytes = resp.content
+            except Exception:
+                pass
 
         patient_address = await _enrich_zip4(patient.address or "", hc)
         provider_address = await _enrich_zip4(user.provider_address or "", hc)
@@ -318,6 +341,7 @@ async def download_audit_packet(
 
     try:
         pdf_bytes = audit_packet_service.generate_audit_packet(
+            zipzign_signed_pdf_bytes=zipzign_signed_pdf_bytes,
             patient_data={
                 "name": decrypt_field(patient.name_encrypted),
                 "medicaid_id": decrypt_field(patient.medicaid_id_encrypted),

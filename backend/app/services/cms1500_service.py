@@ -29,30 +29,51 @@ _BLANK_FORM = Path(__file__).parent.parent / "static" / "cms1500_blank.pdf"
 # ---------------------------------------------------------------------------
 
 def _set_radio(writer: PdfWriter, field_name: str, on_state: str) -> None:
-    """Set a radio button group by name, walking the AcroForm /Fields tree."""
-    root = writer._root_object
-    acroform = root.get("/AcroForm", {})
-    acroform_obj = acroform.get_object() if hasattr(acroform, "get_object") else acroform
-    fields_ref = acroform_obj.get("/Fields", [])
-    fields_arr = fields_ref.get_object() if hasattr(fields_ref, "get_object") else fields_ref
-    for field_ref in fields_arr:
-        field = field_ref.get_object() if hasattr(field_ref, "get_object") else field_ref
-        if str(field.get("/T", "")) != field_name or str(field.get("/FT", "")) != "/Btn":
-            continue
-        field.update({NameObject("/V"): NameObject(on_state)})
-        kids_ref = field.get("/Kids", None)
-        if kids_ref is None:
-            return
-        kids = kids_ref.get_object() if hasattr(kids_ref, "get_object") else kids_ref
-        for kid_ref in kids:
-            kid = kid_ref.get_object() if hasattr(kid_ref, "get_object") else kid_ref
-            ap = kid.get("/AP", {})
+    """Set a radio button group by walking the page /Annots array directly.
+
+    After writer.append(reader) the AcroForm /Fields tree objects may be
+    copies disconnected from the objects that the PDF viewer actually renders
+    (the widget annotations on the page).  Walking writer.pages[0]/Annots
+    reaches the real rendered objects, so /AS changes take effect visually.
+    We still update /V in the AcroForm for form-aware PDF readers.
+    """
+    # ── Step 1: set /AS on every widget annotation that belongs to this field ──
+    page = writer.pages[0]
+    annots_ref = page.get("/Annots")
+    if annots_ref is not None:
+        annots = annots_ref.get_object() if hasattr(annots_ref, "get_object") else annots_ref
+        for annot_ref in annots:
+            annot = annot_ref.get_object() if hasattr(annot_ref, "get_object") else annot_ref
+            if str(annot.get("/Subtype", "")) != "/Widget":
+                continue
+            # Field name lives on the parent for radio groups
+            parent_ref = annot.get("/Parent")
+            if parent_ref is not None:
+                parent = parent_ref.get_object() if hasattr(parent_ref, "get_object") else parent_ref
+                t_val = str(parent.get("/T", ""))
+            else:
+                t_val = str(annot.get("/T", ""))
+            if t_val != field_name:
+                continue
+            ap = annot.get("/AP", {})
             ap_obj = ap.get_object() if hasattr(ap, "get_object") else ap
-            n = ap_obj.get("/N", {}) if ap_obj else {}
-            n_obj = n.get_object() if hasattr(n, "get_object") else n
+            n_ref = ap_obj.get("/N", {}) if ap_obj else {}
+            n_obj = n_ref.get_object() if hasattr(n_ref, "get_object") else n_ref
             states = list(n_obj.keys()) if hasattr(n_obj, "keys") else []
-            kid.update({NameObject("/AS"): NameObject(on_state if on_state in states else "/Off")})
-        return
+            new_as = on_state if on_state in states else "/Off"
+            annot.update({NameObject("/AS"): NameObject(new_as)})
+
+    # ── Step 2: also update /V in the AcroForm for form-aware PDF readers ──
+    root = writer._root_object
+    acroform_ref = root.get("/AcroForm", {})
+    acroform = acroform_ref.get_object() if hasattr(acroform_ref, "get_object") else acroform_ref
+    fields_ref = acroform.get("/Fields", [])
+    fields = fields_ref.get_object() if hasattr(fields_ref, "get_object") else fields_ref
+    for f_ref in fields:
+        f = f_ref.get_object() if hasattr(f_ref, "get_object") else f_ref
+        if str(f.get("/T", "")) == field_name:
+            f.update({NameObject("/V"): NameObject(on_state)})
+            return
 
 
 _STATE_NAMES: dict[str, str] = {
