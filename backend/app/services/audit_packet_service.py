@@ -261,14 +261,16 @@ def generate_audit_packet(
     ]))
 
     mc_bytes: bytes | None = patient_data.get("medicaid_card_image_bytes")
+    story.append(Spacer(1, 0.1 * inch))
+    story.append(Paragraph("<b>Medicaid Card (scanned copy)</b>", _SMALL))
     if mc_bytes:
-        story.append(Spacer(1, 0.1 * inch))
-        story.append(Paragraph("<b>Medicaid Card (scanned copy)</b>", _SMALL))
         try:
             img = Image(io.BytesIO(mc_bytes), width=3.0 * inch, height=1.9 * inch, kind="proportional")
             story.append(img)
         except Exception:
-            story.append(Paragraph("(Medicaid card image unavailable)", _SMALL))
+            story.append(Paragraph("(Medicaid card image could not be rendered)", _SMALL))
+    else:
+        story.append(Paragraph("No Medicaid card scan on file for this patient.", _SMALL))
 
     story.append(PageBreak())
 
@@ -365,14 +367,14 @@ def generate_audit_packet(
     ma91_rows: list[tuple[str, str]] = [
         ("Signature Status", ma91_status.capitalize()),
         ("Patient Name (at signing)", visit_data.get("ma91_signed_by_name") or "—"),
-        ("Signed At", _fmt_dt(visit_data.get("ma91_signed_at"))),
+        ("Signed At", _fmt_dt(patient_data.get("ma91_signed_at"))),
     ]
     if visit_data.get("ma91_zipzign_request_id"):
         ma91_rows.append(("ZipZign Request ID (e-signature)", visit_data["ma91_zipzign_request_id"]))
 
     story.append(_kv_table(ma91_rows))
 
-    ma91_sig: bytes | None = visit_data.get("ma91_signature_bytes")
+    ma91_sig: bytes | None = patient_data.get("ma91_signature_bytes")
     if ma91_sig:
         story.append(Spacer(1, 0.1 * inch))
         story.append(Paragraph("<b>Patient Signature Image:</b>", _SMALL))
@@ -487,8 +489,9 @@ def generate_audit_packet(
     writer = PdfWriter()
     for page in PdfReader(io.BytesIO(narrative_bytes)).pages:
         writer.add_page(page)
-    for page in PdfReader(io.BytesIO(cms_bytes)).pages:
-        writer.add_page(page)
+    # Only include the front of the CMS 1500 form (page 0); page 1 is the back/instructions
+    cms_reader = PdfReader(io.BytesIO(cms_bytes))
+    writer.add_page(cms_reader.pages[0])
     out = io.BytesIO()
     writer.write(out)
     return out.getvalue()

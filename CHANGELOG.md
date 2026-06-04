@@ -12,6 +12,17 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.17.2] — 2026-06-04
+
+### Fixed
+- **Audit Packet — "Signed At" blank in Section 3**: `ma91_signed_at` was placed in `patient_data` by the endpoint but `audit_packet_service` was reading it from `visit_data`. Fixed by reading from the correct dict (`patient_data`). Same fix applied to `ma91_signature_bytes`.
+- **Audit Packet — Provider Legal Name shows "Admin"**: The `download_audit_packet` endpoint was fetching provider credentials using `current_user.id` (the requesting user). When an admin downloads the packet, "Admin" appeared as the provider name. Fixed to use `patient.provider_id` so the patient's actual assigned provider is always shown.
+- **CMS 1500 — Box 11a (Insured Sex) not selected**: `_set_radio` was called with `/FEMALE`/`/MALE` for the `ins_sex` field, but the AcroForm states use `/F`/`/M` (same as Box 3's `sex` field). Fixed to use `/F`/`/M`.
+- **Audit Packet — CMS 1500 page 2 appearing merged**: `audit_packet_service` was appending all pages of the CMS 1500 PDF (front + back/instructions). Only the front (page 0) is now appended.
+- **Audit Packet — No Medicaid card note when none scanned**: When a patient has no Medicaid card image on file, Section 1 showed nothing. Now shows "No Medicaid card scan on file for this patient."
+
+---
+
 ## [1.17.1] — 2026-06-04
 
 ### Fixed

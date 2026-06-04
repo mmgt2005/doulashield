@@ -253,7 +253,8 @@ async def download_audit_packet(
     if not patient or not patient.is_active:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found")
 
-    user_result = await db.execute(select(User).where(User.id == current_user.id))
+    # Use the patient's assigned provider (not the requesting user, who may be an admin)
+    user_result = await db.execute(select(User).where(User.id == patient.provider_id))
     user = user_result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
@@ -263,8 +264,8 @@ async def download_audit_packet(
     )
     visit = visit_result.scalar_one_or_none()
 
-    # Fetch the claim record for this visit
-    claims_list = await _svc(db, audit).list_claims(current_user.id, patient_id)
+    # Fetch the claim record for this visit (list_claims scopes by provider_id)
+    claims_list = await _svc(db, audit).list_claims(patient.provider_id, patient_id)
     claim = next((c for c in claims_list if c.visit_type == visit_type), None)
 
     from datetime import date as date_type
