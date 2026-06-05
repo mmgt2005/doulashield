@@ -12,10 +12,18 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.19.1] — 2026-06-05
+
+### Fixed
+- **EOB PDF scanning — switched from Anthropic PDF beta API to pypdf text extraction**: The Anthropic PDF document beta (`betas=["pdfs-2024-09-25"]`) is not supported by `claude-haiku-4-5-20251001`, causing a 422 error on every PDF upload. Replaced with pypdf text extraction: `PdfReader` pulls text from all pages and sends it as a standard text prompt — cheaper, model-agnostic, and no beta flags required. Works for all digitally-generated EOBs from MCO portals. Scanned-image PDFs (which produce no extractable text) now surface a clear user-facing message instead of a generic error.
+- **EOB scan error messages**: Frontend now shows the specific detail from the backend (e.g. "This PDF appears to be a scanned image — please photograph the paper remittance instead") rather than a generic "Could not read" fallback.
+
+---
+
 ## [1.19.0] — 2026-06-05
 
 ### Added
-- **EOB / Remittance scan — PDF upload support**: Providers can now upload a digital EOB PDF directly instead of photographing a paper remittance. The backend routes PDF files through Anthropic's beta PDF document API (`betas=["pdfs-2024-09-25"]`), which reads both text-based and scanned PDFs without any additional conversion libraries. The `ImageUploadScanner` component gains an `acceptPdf` prop; when enabled it shows two buttons: "Take photo" (camera, mobile-optimised) and "Upload PDF / image" (file picker, accepts JPEG, PNG, PDF). Both EOB scan entry points — the central scanner on the Reports page and the per-visit scanner on manual-MCO claim sections — now accept PDFs. Maximum upload size increased to 20 MB.
+- **EOB / Remittance scan — PDF upload support**: Providers can now upload a digital EOB PDF directly instead of photographing a paper remittance. The `ImageUploadScanner` component gains an `acceptPdf` prop; when enabled it shows two buttons: "Take photo" (camera, mobile-optimised) and "Upload PDF / image" (file picker, accepts JPEG, PNG, PDF). Both EOB scan entry points — the central scanner on the Reports page and the per-visit scanner on manual-MCO claim sections — now accept PDFs. Maximum upload size increased to 20 MB.
 
 ---
 
