@@ -11,7 +11,7 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 ## [Unreleased]
 
 ### Added
-- **Sample EOB PDF and generator script** (`sample_eob.pdf`, `generate_sample_eob.py`): Test remittance advice matching the DB patient names — `DOE, JOHN` ($100 T1032-U7, FFS, paid) and `SAMPLE MEMBER` ($100 T1032-U8, UPMC For You, paid). Scan with the EOB scanner on the Reports page to verify client fuzzy-matching and claim status updates.
+- **Sample EOB PDFs and generator script** (`sample_eob.pdf`, `sample_eob_denial.pdf`, `generate_sample_eob.py`): Test remittance files matching DB patient names. `sample_eob.pdf` — two paid claims: `DOE, JOHN` (T1032-U7, FFS, 2026-05-28) and `SAMPLE MEMBER` (T1032-U8, UPMC For You, 2026-05-29). `sample_eob_denial.pdf` — single denied claim: `SAMPLE MEMBER` (T1032-U8, UPMC For You, 2026-05-30, CO-197/N30). Use both files to test the EOB scanner on the Reports page — the paid EOB verifies fuzzy-match and claim status update; the denial EOB verifies denial reason code population and the resubmission flow.
 
 ---
 
