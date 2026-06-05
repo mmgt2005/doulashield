@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.18.3] — 2026-06-05
+
+### Fixed
+- **CMS 1500 — Box 24A service date year shown as 4 digits**: Changed `svc_yy` formatting from `%Y` (2026) to `%y` (26) so both the "From" and "To" year fields in Box 24A render as 2-digit years, matching the CMS 1500 standard. Both the `date` and string-split code paths are corrected. DOB fields (Box 3, Box 11a) remain 4-digit.
+
+---
+
 ## [1.18.2] — 2026-06-04
 
 ### Fixed

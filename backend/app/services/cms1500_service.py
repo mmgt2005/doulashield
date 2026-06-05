@@ -339,10 +339,11 @@ def generate_pdf(
     if isinstance(svc_date_raw, date):
         svc_mm = svc_date_raw.strftime("%m")
         svc_dd = svc_date_raw.strftime("%d")
-        svc_yy = svc_date_raw.strftime("%Y")
+        svc_yy = svc_date_raw.strftime("%y")   # 2-digit year for Box 24A
     else:
         parts = str(svc_date_raw or "").split("-")
-        svc_yy, svc_mm, svc_dd = (parts + ["", "", ""])[:3]
+        full_yy, svc_mm, svc_dd = (parts + ["", "", ""])[:3]
+        svc_yy = full_yy[-2:] if len(full_yy) >= 2 else full_yy  # 2-digit year
 
     # Patient info
     name = patient_data.get("name", "")
