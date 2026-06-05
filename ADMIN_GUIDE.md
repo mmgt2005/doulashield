@@ -1,6 +1,6 @@
 # DoulaShield Admin Guide
 
-**v1.13.0 · Last updated 2026-06-03**
+**v1.21.0 · Last updated 2026-06-05**
 
 This guide covers everything admins can do that providers cannot. For day-to-day provider features (documenting visits, submitting claims, etc.) refer to `MANUAL.md`.
 
@@ -139,7 +139,11 @@ Go to **Audit Logs** in the sidebar. Every action that touches PHI, credentials,
 
 Every audit entry records: timestamp, user ID, action type, resource type, resource ID, IP address, and user agent. PHI never appears in the log body — only resource IDs (UUIDs).
 
-Significant events include: login, MFA setup, patient record access, Medicaid ID reads, visit saves, signature collection, claim submission, status checks, remittance fetches, password changes, escrow deductions, admin user management actions, and Stripe billing events.
+Significant events include: login, MFA enrollment, patient record access, Medicaid ID reads, visit saves, signature collection, claim submission, claim resubmission, status checks, audit packet downloads, remittance fetches, password changes, escrow deductions, admin user management actions, and Stripe billing events.
+
+### Medicaid Audit Packets
+
+Each visit with a filed claim has a **📋 Download Audit Packet** button (visible to all users with access to the visit form). Clicking it downloads a single PDF assembling the cover/claim summary, member eligibility, full SOAP note, MA 91 signature, provider credentials, and the completed CMS 1500. Every download is logged as `GENERATE_AUDIT_PACKET`. When preparing for a PA Medicaid audit, you can pull the audit packet for any specific visit directly from the claim section of that visit's form.
 
 ### Filtering
 
@@ -159,7 +163,7 @@ HIPAA requires an immutable audit trail. The database has a rule that blocks UPD
 | Action | What triggered it | Resource type |
 |---|---|---|
 | `LOGIN` | Successful login | user |
-| `MFA_SETUP` | TOTP MFA enrolled | user |
+| `MFA_ENROLL` | TOTP MFA enrolled | user |
 | `REQUEST_PASSWORD_RESET` | Forgot-password flow initiated | user |
 | `RESET_PASSWORD` | Password reset via email link | user |
 | `UPDATE_PASSWORD` | Change-password form in Settings | user |
@@ -182,10 +186,12 @@ HIPAA requires an immutable audit trail. The database has a rule that blocks UPD
 | `CHECK_ELIGIBILITY` | Medicaid eligibility check via Availity | patient |
 | `UPDATE_PROVIDER_SETTINGS` | Settings page saved | user |
 | `DOWNLOAD_DOCUMENT_IMAGE` | Signed URL issued for stored image | patient |
-| `CREATE_PROVIDER_ACCOUNT` | Admin created provider via modal | user |
+| `CREATE_AND_INVITE_PROVIDER` | Admin created provider account and sent welcome email | user |
 | `CREATE_PROVIDER_ACCOUNT_ONLY` | Admin created account without email | user |
 | `SEND_WELCOME_EMAIL` | Admin resent welcome email | user |
 | `START_SUBSCRIPTION` | Monthly subscription started | user |
 | `DEPOSIT_PAID` | Stripe deposit webhook confirmed | user |
 | `MANUAL_CUSTOMER_LINK` | Admin linked Stripe customer ID manually | user |
 | `ESCROW_DEDUCTION` | Automatic escrow charge from remittance | user |
+| `GENERATE_AUDIT_PACKET` | Medicaid audit packet PDF downloaded | claim |
+| `RESUBMIT_CLAIM` | Denied claim resubmitted to Availity or status reset | claim |

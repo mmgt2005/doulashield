@@ -13,8 +13,19 @@ This manual covers every provider-facing feature in DoulaShield. Read it start t
 3. [Documenting Visits](#documenting-visits)
 4. [MA 91 Patient Signatures](#ma-91-patient-signatures)
 5. [Claims & Billing](#claims--billing)
+   - [Submitting a Claim](#submitting-a-claim)
+   - [Tracking Claim Status](#tracking-claim-status)
+   - [Denial Error Codes and Resubmission](#denial-error-codes-and-resubmission)
+   - [Downloading a Medicaid Audit Packet](#downloading-a-medicaid-audit-packet)
+   - [Scanning Paper Remittances (EOBs)](#scanning-paper-remittances-eobs)
+   - [Claim Filing Deadlines](#claim-filing-deadlines)
 6. [Reports Dashboard](#reports-dashboard)
 7. [Settings](#settings)
+   - [CAQH ProView Attestation](#caqh-proview-attestation)
+   - [PROMISe™ Re-enrollment](#promise-re-enrollment)
+   - [PCB Perinatal Certification](#pcb-perinatal-certification)
+   - [Liability Insurance](#liability-insurance)
+   - [MA 589 Patient Certification](#ma-589-patient-certification)
 8. [Reference: Billing Codes](#reference-billing-codes)
 9. [Reference: MCO Submission Channels](#reference-mco-submission-channels)
 10. [Reference: PA HealthChoices Zones](#reference-pa-healthchoices-zones)
@@ -68,6 +79,23 @@ Without Availity credentials, you can still download CMS 1500 PDFs and submit ma
 In **Settings → Telehealth**, paste your personal meeting room URL. DoulaShield works with any HIPAA-compliant platform. Recommended free option: [Doxy.me](https://doxy.me) — create a free account, navigate to your room, and copy the URL.
 
 Once saved, the **Start Telehealth** button on every visit form will open your room and send the link to the client automatically (if the client has an email on file).
+
+### Understanding the Dashboard
+
+The main Dashboard (first page after login) shows alert banners at the top whenever a credential is expiring or a claim deadline is approaching. Banners are **amber** for upcoming deadlines and **red** when a deadline has already passed or is imminent (≤7 days).
+
+| Banner | Appears when | What to do |
+|---|---|---|
+| CAQH attestation | ≤14 days to 90-day re-attestation deadline | Re-attest at proview.caqh.org, then update **Settings → CAQH Attestation** |
+| PROMISe™ re-enrollment | ≤90 days to 5-year re-enrollment deadline | Re-enroll at promise.dhs.pa.gov, then update **Settings → PROMISe™ Re-enrollment** |
+| PCB Perinatal Certification | ≤60 days to 2-year renewal deadline | Renew at pacertboard.org, then update **Settings → PCB Perinatal Certification** |
+| Liability insurance | ≤30 days to policy expiry | Renew your policy, then update **Settings → Liability Insurance** |
+| Claim deadline — overdue | Any unfiled claim is past the 180-day PA Medicaid deadline | Open the client record and file or correct the claim immediately |
+| Claim deadline — urgent | Any unfiled claim is within 30 days of the 180-day deadline | Open the client record and file the claim |
+
+Banners clear automatically once the date is updated in Settings (for credential banners) or the claim is filed/paid (for deadline banners). There is no dismiss button — the only resolution is completing the underlying action.
+
+The **Reports Dashboard** (sidebar → Reports) is a separate page showing billing pipeline statistics, revenue, and MCO breakdown. It is not the same as the main Dashboard.
 
 ---
 
@@ -246,20 +274,6 @@ Click **Preview CMS 1500 & Submit**. A preview modal shows all claim boxes fille
 **Manual MCOs:**
 Click **Preview & Download CMS 1500** to download the completed PDF. Then click the portal link next to the button to open the MCO's submission portal in a new tab. Upload the PDF through their portal.
 
-### Downloading a Medicaid Audit Packet
-
-Once a claim exists for a visit, a **📋 Download Audit Packet** button appears in the **PA Medicaid Claim** section of the visit form, directly below the claim status panel. Click it to download a single PDF that assembles every document a PA Medicaid auditor expects:
-
-1. **Cover / Claim Summary** — patient initials, Medicaid ID (last 4), MCO, service date, procedure code, billed and paid amounts.
-2. **Member Information & Eligibility** — full patient demographics, eligibility status and last verified date, embedded Medicaid card image (if scanned).
-3. **Service Documentation** — visit type, dates/times, duration, location, full SOAP note, visit entry notes, referring provider, prior authorization number.
-4. **MA 91 Certification** — the full legal MA 91 text, patient name, signed timestamp, and embedded signature image (in-person). For telehealth visits where the patient signed via ZipZign, the actual signed PDF document is appended immediately after this section so auditors have the fully executed document with the ZipZign request ID on record.
-5. **Provider Credentials** — NPI, CAQH attestation date and days until expiry, PROMISe™ re-enrollment date and days until expiry, PCB certification, liability insurance expiry, MCO contracts.
-6. **Billing Record** — claim ID, submission date, current status, billed/paid amounts, denial reason, remittance linkage.
-7. **CMS 1500** — the completed form appended as the final pages.
-
-The audit packet is for your records and any auditor requests — no patient signature is required to generate it.
-
 ### Tracking Claim Status
 
 The claim status badge uses four colors:
@@ -296,6 +310,22 @@ The four built-in codes are:
 If the payer returns a standard X12 adjustment code (e.g. CO-45) that isn't in the list above, DoulaShield captures it automatically and stores it for future reference.
 
 **To resubmit:** After correcting the underlying issue, click **↺ Resubmit Claim** in the claim section. For Availity claims the original claim is re-posted using the stored data. For manual MCO claims the status resets to Submitted so you can track the new outcome. The resubmission count is shown next to the button so you always know how many attempts have been made.
+
+**CMS 1500 Box 22 on resubmissions:** DoulaShield automatically sets Box 22 (Resubmission Code / Original Ref. No.) to code **7** (replacement claim) with the original Availity claim ID as the reference number. Original claims use code **1**. This tells Availity and the MCO that the claim is a correction of a prior submission rather than a duplicate, and is required for the resubmission to be processed correctly.
+
+### Downloading a Medicaid Audit Packet
+
+Once a claim exists for a visit, a **📋 Download Audit Packet** button appears in the **PA Medicaid Claim** section of the visit form, directly below the claim status panel. Click it to download a single PDF that assembles every document a PA Medicaid auditor expects:
+
+1. **Cover / Claim Summary** — patient initials, Medicaid ID (last 4), MCO, service date, procedure code, billed and paid amounts.
+2. **Member Information & Eligibility** — full patient demographics, eligibility status and last verified date, embedded Medicaid card image (if scanned).
+3. **Service Documentation** — visit type, dates/times, duration, location, full SOAP note, visit entry notes, referring provider, prior authorization number.
+4. **MA 91 Certification** — the full legal MA 91 text, patient name, signed timestamp, and embedded signature image (in-person). For telehealth visits where the patient signed via ZipZign, the actual signed PDF document is appended immediately after this section so auditors have the fully executed document with the ZipZign request ID on record.
+5. **Provider Credentials** — NPI, CAQH attestation date and days until expiry, PROMISe™ re-enrollment date and days until expiry, PCB certification, liability insurance expiry, MCO contracts.
+6. **Billing Record** — claim ID, submission date, current status, billed/paid amounts, denial reason, remittance linkage.
+7. **CMS 1500** — the completed form appended as the final pages.
+
+The audit packet is for your records and any auditor requests — no patient signature is required to generate it.
 
 ### Scanning Paper Remittances (EOBs)
 
