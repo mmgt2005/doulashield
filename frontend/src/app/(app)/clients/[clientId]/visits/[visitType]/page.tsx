@@ -822,59 +822,63 @@ export default function VisitFormPage() {
               </button>
               {locationError && <p className="mt-2 text-xs text-red-600">{locationError}</p>}
             </div>
-          ) : distanceFt !== null && distanceFt > 500 ? (
-            <div className="rounded-lg border border-amber-300 bg-amber-50 p-4">
-              <p className="text-sm font-medium text-amber-800">
-                ⚠ Started at {formatTime(visitStarted)}
-              </p>
-              <p className="text-xs text-amber-700 mt-0.5">
-                You are {formatDist(distanceFt)} from the client's address — confirm you are at the correct location.
-              </p>
-              <p className="mt-2 text-xs font-medium text-amber-800">Are you meeting at a different location?</p>
-              <input
-                type="text"
-                value={watch('alternate_location') ?? ''}
-                onChange={(e) => setValue('alternate_location', e.target.value)}
-                placeholder="Describe the location (e.g., clinic, hospital)"
-                className="mt-1 w-full rounded border border-amber-300 bg-white px-3 py-1.5 text-sm focus:outline-none focus:border-amber-500"
-              />
-            </div>
           ) : (
-            <div className="rounded-lg border border-green-200 bg-green-50 p-4">
-              <p className="text-sm font-medium text-green-800">
-                ✓ Started at {formatTime(visitStarted)}
-                {distanceFt !== null
-                  ? ` · ${formatDist(distanceFt)} from client`
-                  : patient?.address
-                    ? ' · Location not verified (address could not be geocoded)'
-                    : ' · Location not verified (no address on file)'}
-              </p>
-              {visitEnded ? (
-                <>
-                  <p className={`mt-1 text-sm font-medium ${durationMins !== null && durationMins < 30 ? 'text-amber-700' : 'text-green-700'}`}>
-                    ✓ Ended at {formatTime(visitEnded)} · Duration: {formatDuration(visitStarted, visitEnded)}
-                    {durationMins !== null && durationMins < 30 && ' ⚠'}
+            <>
+              {/* Amber distance warning — shown when >500 ft, alongside the timer below */}
+              {distanceFt !== null && distanceFt > 500 && (
+                <div className="rounded-lg border border-amber-300 bg-amber-50 p-4">
+                  <p className="text-sm font-medium text-amber-800">
+                    ⚠ You are {formatDist(distanceFt)} from the client's address — confirm you are at the correct location.
                   </p>
-                  {durationMins !== null && durationMins < 30 && (
-                    <p className="mt-0.5 text-xs text-amber-600">Under 30 minutes — see billing warning below.</p>
-                  )}
-                </>
-              ) : (
-                <div className="mt-2 flex items-center gap-3">
-                  <span className={`font-mono text-sm font-semibold tabular-nums ${elapsedMins < 30 ? 'text-amber-700' : 'text-green-700'}`}>
-                    {formatElapsed(elapsedSecs)}
-                    {elapsedMins < 30 && ` (${30 - elapsedMins} min to 30)`}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={handleEndVisit}
-                    className="rounded border border-red-300 bg-red-50 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-100"
-                  >
-                    End Visit
-                  </button>
+                  <p className="mt-2 text-xs font-medium text-amber-800">Are you meeting at a different location?</p>
+                  <input
+                    type="text"
+                    value={watch('alternate_location') ?? ''}
+                    onChange={(e) => setValue('alternate_location', e.target.value)}
+                    placeholder="Describe the location (e.g., clinic, hospital)"
+                    className="mt-1 w-full rounded border border-amber-300 bg-white px-3 py-1.5 text-sm focus:outline-none focus:border-amber-500"
+                  />
                 </div>
               )}
-            </div>
+              {/* Green panel — always shown once started; includes timer and End Visit */}
+              <div className="rounded-lg border border-green-200 bg-green-50 p-4">
+                <p className="text-sm font-medium text-green-800">
+                  ✓ Started at {formatTime(visitStarted)}
+                  {distanceFt !== null && distanceFt <= 500
+                    ? ` · ${formatDist(distanceFt)} from client`
+                    : !distanceFt
+                      ? patient?.address
+                        ? ' · Location not verified (address could not be geocoded)'
+                        : ' · Location not verified (no address on file)'
+                      : ''}
+                </p>
+                {visitEnded ? (
+                  <>
+                    <p className={`mt-1 text-sm font-medium ${durationMins !== null && durationMins < 30 ? 'text-amber-700' : 'text-green-700'}`}>
+                      ✓ Ended at {formatTime(visitEnded)} · Duration: {formatDuration(visitStarted, visitEnded)}
+                      {durationMins !== null && durationMins < 30 && ' ⚠'}
+                    </p>
+                    {durationMins !== null && durationMins < 30 && (
+                      <p className="mt-0.5 text-xs text-amber-600">Under 30 minutes — see billing warning below.</p>
+                    )}
+                  </>
+                ) : (
+                  <div className="mt-2 flex items-center gap-3">
+                    <span className={`font-mono text-sm font-semibold tabular-nums ${elapsedMins < 30 ? 'text-amber-700' : 'text-green-700'}`}>
+                      {formatElapsed(elapsedSecs)}
+                      {elapsedMins < 30 && ` (${30 - elapsedMins} min to 30)`}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleEndVisit}
+                      className="rounded border border-red-300 bg-red-50 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-100"
+                    >
+                      End Visit
+                    </button>
+                  </div>
+                )}
+              </div>
+            </>
           )}
         </>
       )}

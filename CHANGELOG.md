@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.19.3] — 2026-06-05
+
+### Fixed
+- **Timer and End Visit button hidden behind amber location warning**: When a provider started a visit more than 500 ft from the client's address, the amber distance-warning panel was shown as a mutually exclusive branch of a ternary, completely hiding the elapsed-time timer and End Visit button. Restructured the in-person panel so the amber warning and the green timer/End Visit panel are both rendered when the visit is started — the amber block now appears above the green panel rather than replacing it.
+
+---
+
 ## [1.19.2] — 2026-06-05
 
 ### Fixed
