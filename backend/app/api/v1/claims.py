@@ -230,6 +230,8 @@ async def download_cms1500(
             },
             claim_data={
                 "paid_amount": claim.paid_amount if claim else None,
+                "resubmit_count": claim.resubmit_count if claim else 0,
+                "availity_claim_id": claim.availity_claim_id if claim else None,
             },
         )
     except Exception as exc:

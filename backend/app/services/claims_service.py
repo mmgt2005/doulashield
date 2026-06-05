@@ -253,12 +253,20 @@ class ClaimsService:
             )
             return ClaimRead.model_validate(claim)
 
-        # Availity resubmission: re-post the stored claim body
+        # Availity resubmission: re-post the stored claim body with 837P replacement indicators
         if not claim.claim_data:
             raise ValueError("Original claim data not found — cannot resubmit automatically")
 
+        # Clone payload and inject claim frequency code 7 (replacement) + original claim ID.
+        # 837P Loop 2300: CLM05-3 = "7", REF*F8 = original payer claim control number.
+        # Availity maps these via claimFrequencyTypeCode and originalClaimId.
+        resubmit_body = dict(claim.claim_data)
+        resubmit_body["claimFrequencyTypeCode"] = "7"
+        if claim.availity_claim_id:
+            resubmit_body["originalClaimId"] = claim.availity_claim_id
+
         client = self._make_client(user)
-        raw_response = await client.post("/claims", body=claim.claim_data)
+        raw_response = await client.post("/claims", body=resubmit_body)
 
         claim.availity_claim_id = raw_response.get("claimId", claim.availity_claim_id)
         claim.status = raw_response.get("status", "submitted")

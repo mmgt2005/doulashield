@@ -12,6 +12,14 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.20.1] — 2026-06-05
+
+### Fixed
+- **Resubmitted Availity claims were landing as duplicates**: `resubmit_claim()` was re-posting the original claim body verbatim, so Availity treated it as a new claim and triggered DUP-CLAIM on the second attempt. The payload now injects `claimFrequencyTypeCode: "7"` (837P replacement indicator) and `originalClaimId` (the prior Availity claim control number) so Availity correctly processes it as a corrected resubmission rather than a duplicate.
+- **CMS 1500 Box 22 not populated on resubmissions**: Box 22 (Resubmission Code + Original Ref. No.) was always blank. It now fills with code `7` and the original Availity claim ID when `resubmit_count > 0`; original claims get code `1`.
+
+---
+
 ## [1.20.0] — 2026-06-05
 
 ### Added
