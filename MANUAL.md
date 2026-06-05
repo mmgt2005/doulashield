@@ -248,7 +248,7 @@ Click **Preview & Download CMS 1500** to download the completed PDF. Then click 
 
 ### Downloading a Medicaid Audit Packet
 
-Once a claim exists for a visit, a **📋 Audit Packet ↓** button appears in the CMS 1500 modal footer alongside "Download PDF". Click it to download a single PDF that assembles every document a PA Medicaid auditor expects:
+Once a claim exists for a visit, a **📋 Download Audit Packet** button appears in the **PA Medicaid Claim** section of the visit form, directly below the claim status panel. Click it to download a single PDF that assembles every document a PA Medicaid auditor expects:
 
 1. **Cover / Claim Summary** — patient initials, Medicaid ID (last 4), MCO, service date, procedure code, billed and paid amounts.
 2. **Member Information & Eligibility** — full patient demographics, eligibility status and last verified date, embedded Medicaid card image (if scanned).
