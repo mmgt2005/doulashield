@@ -438,13 +438,14 @@ export default function ReportsPage() {
         ) : (
           <div className="rounded-lg border border-gray-200 bg-white p-4">
             <p className="mb-3 text-xs text-gray-500">
-              Scan a full paper remittance here — all claim lines will be matched against your client roster automatically.
+              Scan a full paper remittance or upload a digital EOB PDF — all claim lines will be matched against your client roster automatically.
             </p>
             <ImageUploadScanner
               endpoint="/api/v1/ocr/handbook"
               extraFields={{ page_type: 'remittance_eob' }}
               onExtracted={handleEobScanned}
               label="Scan Remittance / EOB"
+              acceptPdf
             />
             {eobError && <p className="mt-2 text-xs text-red-600">{eobError}</p>}
           </div>

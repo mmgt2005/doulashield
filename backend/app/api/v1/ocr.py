@@ -16,17 +16,25 @@ from app.services import ocr_service
 
 router = APIRouter(prefix="/ocr", tags=["ocr"])
 
-_MAX_BYTES = 10 * 1024 * 1024  # 10 MB
-_ALLOWED_TYPES = {"image/jpeg", "image/png"}
+_MAX_BYTES = 20 * 1024 * 1024  # 20 MB (PDFs can be larger than photos)
+_ALLOWED_TYPES = {"image/jpeg", "image/png", "application/pdf"}
+# page_types that accept PDF in addition to images (EOBs are commonly digital PDFs)
+_PDF_ALLOWED_PAGE_TYPES = {"remittance_eob"}
 
 
-async def _read_upload(file: UploadFile) -> tuple[bytes, str]:
+async def _read_upload(file: UploadFile, allow_pdf: bool = False) -> tuple[bytes, str]:
     content_type = file.content_type or ""
-    if content_type not in _ALLOWED_TYPES:
-        raise HTTPException(status_code=400, detail="Only JPEG and PNG images are accepted.")
+    allowed = _ALLOWED_TYPES if allow_pdf else {"image/jpeg", "image/png"}
+    if content_type not in allowed:
+        detail = (
+            "Only JPEG, PNG, or PDF files are accepted."
+            if allow_pdf
+            else "Only JPEG and PNG images are accepted."
+        )
+        raise HTTPException(status_code=400, detail=detail)
     data = await file.read()
     if len(data) > _MAX_BYTES:
-        raise HTTPException(status_code=413, detail="Image must be under 10 MB.")
+        raise HTTPException(status_code=413, detail="File must be under 20 MB.")
     return data, content_type
 
 
@@ -86,7 +94,7 @@ async def scan_handbook(
     patient_id: Annotated[str, Form()],
 ) -> dict:
     """Scan a handwritten handbook page and extract structured visit data."""
-    image_bytes, content_type = await _read_upload(file)
+    image_bytes, content_type = await _read_upload(file, allow_pdf=page_type in _PDF_ALLOWED_PAGE_TYPES)
 
     try:
         pid = uuid.UUID(patient_id)
@@ -106,7 +114,7 @@ async def scan_handbook(
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Could not read image — please try a clearer photo.",
+            detail="Could not read the file — please try a clearer photo or a different PDF.",
         )
 
     await audit.log(

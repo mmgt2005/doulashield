@@ -9,6 +9,8 @@ interface ImageUploadScannerProps {
   extraFields?: Record<string, string>
   onExtracted: (data: Record<string, unknown>) => void
   label?: string
+  /** When true, also accepts PDF uploads (removes camera capture, shows upload icon) */
+  acceptPdf?: boolean
 }
 
 export default function ImageUploadScanner({
@@ -16,6 +18,7 @@ export default function ImageUploadScanner({
   extraFields,
   onExtracted,
   label = 'Scan image',
+  acceptPdf = false,
 }: ImageUploadScannerProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [scanning, setScanning] = useState(false)
@@ -38,10 +41,12 @@ export default function ImageUploadScanner({
       )
       onExtracted(res.data)
     } catch (err: unknown) {
-      const status = axios.isAxiosError(err) ? err.response?.status : null
+      const httpStatus = axios.isAxiosError(err) ? err.response?.status : null
       setError(
-        status === 422
-          ? 'Could not read image — please try a clearer photo.'
+        httpStatus === 422
+          ? acceptPdf
+            ? 'Could not read the file — please try a clearer photo or a different PDF.'
+            : 'Could not read image — please try a clearer photo.'
           : 'Scan failed. Please try again.'
       )
     } finally {
@@ -54,39 +59,100 @@ export default function ImageUploadScanner({
     <div className="rounded-lg border border-dashed border-blue-300 bg-blue-50 p-4">
       <p className="mb-2 text-sm font-medium text-blue-700">{label}</p>
       <p className="mb-3 text-xs text-blue-500">
-        Take a photo — fields will be pre-filled for you to review.
+        {acceptPdf
+          ? 'Take a photo or upload a PDF — fields will be pre-filled for you to review.'
+          : 'Take a photo — fields will be pre-filled for you to review.'}
       </p>
 
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/jpeg,image/png"
-        capture="environment"
-        className="hidden"
-        onChange={(e) => {
-          const file = e.target.files?.[0]
-          if (file) handleFile(file)
-        }}
-      />
-
-      <button
-        type="button"
-        onClick={() => inputRef.current?.click()}
-        disabled={scanning}
-        className="w-full rounded border border-blue-400 bg-white px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100 disabled:opacity-50 sm:w-auto"
-      >
-        {scanning ? (
-          <span className="flex items-center gap-2">
-            <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-            </svg>
-            Scanning…
-          </span>
-        ) : (
-          'Take photo'
-        )}
-      </button>
+      {/* PDF mode: two separate inputs side by side */}
+      {acceptPdf ? (
+        <>
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/jpeg,image/png,application/pdf"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (file) handleFile(file)
+            }}
+          />
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                if (inputRef.current) {
+                  // Temporarily set accept to images only + camera capture
+                  inputRef.current.accept = 'image/jpeg,image/png'
+                  inputRef.current.setAttribute('capture', 'environment')
+                  inputRef.current.click()
+                  // Restore after click
+                  setTimeout(() => {
+                    if (inputRef.current) {
+                      inputRef.current.accept = 'image/jpeg,image/png,application/pdf'
+                      inputRef.current.removeAttribute('capture')
+                    }
+                  }, 500)
+                }
+              }}
+              disabled={scanning}
+              className="rounded border border-blue-400 bg-white px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100 disabled:opacity-50"
+            >
+              {scanning ? (
+                <span className="flex items-center gap-2">
+                  <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                  </svg>
+                  Scanning…
+                </span>
+              ) : (
+                '📷 Take photo'
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => inputRef.current?.click()}
+              disabled={scanning}
+              className="rounded border border-blue-400 bg-white px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100 disabled:opacity-50"
+            >
+              {scanning ? '…' : '📄 Upload PDF / image'}
+            </button>
+          </div>
+        </>
+      ) : (
+        <>
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/jpeg,image/png"
+            capture="environment"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (file) handleFile(file)
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            disabled={scanning}
+            className="w-full rounded border border-blue-400 bg-white px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100 disabled:opacity-50 sm:w-auto"
+          >
+            {scanning ? (
+              <span className="flex items-center gap-2">
+                <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                </svg>
+                Scanning…
+              </span>
+            ) : (
+              'Take photo'
+            )}
+          </button>
+        </>
+      )}
 
       {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
     </div>

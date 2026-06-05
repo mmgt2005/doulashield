@@ -152,37 +152,71 @@ async def translate_soap(inputs: dict) -> dict:
 
 def _run_claude(image_bytes: bytes, content_type: str, page_type: str) -> dict:
     if not image_bytes:
-        raise ValueError("Empty image data received — file may not have uploaded correctly")
+        raise ValueError("Empty file data received — file may not have uploaded correctly")
 
     logger.info("OCR request: size=%d bytes, content_type=%s, page_type=%s",
                 len(image_bytes), content_type, page_type)
 
     client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
     b64 = base64.standard_b64encode(image_bytes).decode()
-    try:
-        msg = client.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=1024,
-            messages=[
+
+    is_pdf = content_type == "application/pdf"
+
+    if is_pdf:
+        # Use Anthropic's PDF document block (beta) — works for both digital and scanned PDFs
+        content_block: dict = {
+            "type": "document",
+            "source": {
+                "type": "base64",
+                "media_type": "application/pdf",
+                "data": b64,
+            },
+        }
+        create_kwargs: dict = {
+            "model": "claude-haiku-4-5-20251001",
+            "max_tokens": 2048,
+            "messages": [
                 {
                     "role": "user",
                     "content": [
-                        {
-                            "type": "image",
-                            "source": {
-                                "type": "base64",
-                                "media_type": content_type,
-                                "data": b64,
-                            },
-                        },
+                        content_block,
                         {"type": "text", "text": _PROMPTS[page_type]},
                     ],
                 }
             ],
-        )
-    except anthropic.BadRequestError as exc:
-        logger.error("Anthropic 400: %s", exc)
-        raise ValueError("Anthropic rejected the image request") from exc
+            "betas": ["pdfs-2024-09-25"],
+        }
+        try:
+            msg = client.beta.messages.create(**create_kwargs)
+        except anthropic.BadRequestError as exc:
+            logger.error("Anthropic 400 (PDF): %s", exc)
+            raise ValueError("Anthropic rejected the PDF request") from exc
+    else:
+        content_block = {
+            "type": "image",
+            "source": {
+                "type": "base64",
+                "media_type": content_type,
+                "data": b64,
+            },
+        }
+        try:
+            msg = client.messages.create(
+                model="claude-haiku-4-5-20251001",
+                max_tokens=1024,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            content_block,
+                            {"type": "text", "text": _PROMPTS[page_type]},
+                        ],
+                    }
+                ],
+            )
+        except anthropic.BadRequestError as exc:
+            logger.error("Anthropic 400: %s", exc)
+            raise ValueError("Anthropic rejected the image request") from exc
 
     raw = msg.content[0].text.strip()
     # Strip markdown code fences if Claude wraps the JSON
@@ -214,7 +248,12 @@ async def store_image(
 ) -> str:
     """Upload image to Supabase Storage and return the storage object path."""
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
-    ext = "jpg" if "jpeg" in content_type else "png"
+    if "jpeg" in content_type:
+        ext = "jpg"
+    elif "pdf" in content_type:
+        ext = "pdf"
+    else:
+        ext = "png"
 
     if patient_id:
         path = f"clients/{patient_id}/{label}-{timestamp}.{ext}"

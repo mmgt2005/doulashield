@@ -1333,12 +1333,13 @@ export default function VisitFormPage() {
                               </div>
                             ) : (
                               <>
-                                <p className="mb-1 text-xs text-gray-500">Received a paper remittance? Update from EOB:</p>
+                                <p className="mb-1 text-xs text-gray-500">Received a paper remittance or digital EOB PDF? Update from remittance:</p>
                                 <ImageUploadScanner
                                   endpoint="/api/v1/ocr/handbook"
                                   extraFields={{ page_type: 'remittance_eob', patient_id: clientId }}
                                   onExtracted={handleEobScanned}
                                   label="Scan Remittance / EOB"
+                                  acceptPdf
                                 />
                                 {eobError && <p className="mt-1 text-xs text-red-600">{eobError}</p>}
                               </>
