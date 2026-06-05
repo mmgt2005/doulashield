@@ -277,11 +277,13 @@ The claim status badge uses four colors:
 
 ### Scanning Paper Remittances (EOBs)
 
+Both EOB scan entry points accept **photos (JPEG/PNG)** and **digital PDF files** (up to 20 MB). Use **Take photo** to photograph a paper remittance with your phone camera, or **Upload PDF / image** to upload an EOB PDF you received by email or downloaded from an MCO portal.
+
 **From a single visit page (one patient):**
-Open the visit, scroll to the claim section, and click **Scan Remittance / EOB**. Photograph the paper EOB. DoulaShield extracts the status, paid amount, and denial reason for this visit's claim line and updates the record automatically.
+Open the visit, scroll to the claim section, and click **Scan Remittance / EOB**. Photograph the paper EOB or upload the PDF. DoulaShield extracts the status, paid amount, and denial reason for this visit's claim line and updates the record automatically.
 
 **From the Reports page (full remittance, all patients at once):**
-Go to **Reports → Remittance / EOB Scan** at the bottom of the page. Photograph the full multi-patient EOB. DoulaShield extracts every claim line and matches each one to a client in your roster by patient name. A review table appears showing:
+Go to **Reports → Remittance / EOB Scan** at the bottom of the page. Photograph or upload the full multi-patient EOB. DoulaShield extracts every claim line and matches each one to a client in your roster by patient name. A review table appears showing:
 
 - Each claim line from the EOB
 - The matched client (linked to their profile), or "no match" in gray

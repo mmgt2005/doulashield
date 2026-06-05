@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.19.0] — 2026-06-05
+
+### Added
+- **EOB / Remittance scan — PDF upload support**: Providers can now upload a digital EOB PDF directly instead of photographing a paper remittance. The backend routes PDF files through Anthropic's beta PDF document API (`betas=["pdfs-2024-09-25"]`), which reads both text-based and scanned PDFs without any additional conversion libraries. The `ImageUploadScanner` component gains an `acceptPdf` prop; when enabled it shows two buttons: "Take photo" (camera, mobile-optimised) and "Upload PDF / image" (file picker, accepts JPEG, PNG, PDF). Both EOB scan entry points — the central scanner on the Reports page and the per-visit scanner on manual-MCO claim sections — now accept PDFs. Maximum upload size increased to 20 MB.
+
+---
+
 ## [1.18.5] — 2026-06-05
 
 ### Fixed
