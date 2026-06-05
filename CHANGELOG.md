@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.19.2] — 2026-06-05
+
+### Fixed
+- **EOB PDF upload — "This page couldn't load" crash**: The Reports page EOB scanner does not supply a `patient_id` (not applicable for a provider-level remittance scan). The `scan_handbook` endpoint had `patient_id` as a required form field, so FastAPI returned a 422 whose `detail` is an array of validation-error objects. `ImageUploadScanner` passed that array to `setError`, React threw "Objects are not valid as a React child", and Next.js replaced the page with its error screen. Fixed by making `patient_id` optional (`= None`) in `scan_handbook` and updating `ImageUploadScanner` to only use `detail` as the error string when it is actually a plain string — FastAPI validation arrays are silently ignored and fall back to the generic user-facing message.
+
+---
+
 ## [1.19.1] — 2026-06-05
 
 ### Fixed
