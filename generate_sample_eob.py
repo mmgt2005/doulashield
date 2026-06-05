@@ -373,6 +373,59 @@ def build_eob(out_path: str) -> None:
     print(f"EOB generated → {out_path}")
 
 
+def build_denial_eob(out_path: str) -> None:
+    """Generate a single-claim denied EOB for SAMPLE MEMBER (2026-05-30)."""
+    import sys
+    # Temporarily override module-level globals used by build_eob
+    _orig_rem   = globals()["REMITTANCE"]
+    _orig_claims = globals()["CLAIMS"]
+
+    globals()["REMITTANCE"] = {
+        "eft_number":    "EFT202606050025",
+        "payment_date":  "2026-06-05",
+        "check_date":    "June 5, 2026",
+        "total_paid":    "0.00",
+        "provider_name": "Sarah J. Mitchell, CD",
+        "provider_npi":  "1234567890",
+        "provider_addr": "428 Chestnut St, Philadelphia, PA 19106",
+        "payer_name":    "UPMC Health Plan — UPMC For You",
+        "payer_id":      "UPMCF",
+        "payer_addr":    "P.O. Box 2650, Pittsburgh, PA 15230",
+    }
+
+    globals()["CLAIMS"] = [
+        {
+            "patient_name": "SAMPLE MEMBER",
+            "medicaid_id":  "MA-0002-0001",
+            "dob":          "1995-06-01",
+            "service_date": "2026-05-30",
+            "procedure_code": "T1032",
+            "modifier":     "U8",
+            "diagnosis":    "Z39.1",
+            "pos":          "02",
+            "billed_amount": "100.00",
+            "allowed_amount": "0.00",
+            "paid_amount":   "0.00",
+            "patient_resp":  "0.00",
+            "status":       "denied",
+            "claim_id":     "UPMC-20260530-001",
+            "payer":        "UPMC For You",
+            "adjustments":  [
+                {"group": "CO", "code": "197", "amount": "100.00",
+                 "description": "Precertification/authorization not obtained"},
+                {"group": "N",  "code": "30",  "amount": "0.00",
+                 "description": "Patient ineligible for the date of service"},
+            ],
+        },
+    ]
+
+    build_eob(out_path)
+
+    globals()["REMITTANCE"] = _orig_rem
+    globals()["CLAIMS"]     = _orig_claims
+
+
 if __name__ == "__main__":
-    out = Path(__file__).parent / "sample_eob.pdf"
-    build_eob(str(out))
+    root = Path(__file__).parent
+    build_eob(str(root / "sample_eob.pdf"))
+    build_denial_eob(str(root / "sample_eob_denial.pdf"))
