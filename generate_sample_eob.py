@@ -39,24 +39,24 @@ MID_GRAY   = colors.HexColor("#cccccc")
 
 # ── Sample data ────────────────────────────────────────────────────────────────
 REMITTANCE = {
-    "eft_number":    "EFT202606050012",
+    "eft_number":    "EFT202606050018",
     "payment_date":  "2026-06-05",
     "check_date":    "June 5, 2026",
-    "total_paid":    "275.00",
+    "total_paid":    "200.00",
     "provider_name": "Sarah J. Mitchell, CD",
     "provider_npi":  "1234567890",
     "provider_addr": "428 Chestnut St, Philadelphia, PA 19106",
-    "payer_name":    "AmeriHealth Caritas Pennsylvania",
-    "payer_id":      "AMCRN",
-    "payer_addr":    "200 Stevens Drive, Philadelphia, PA 19113",
+    "payer_name":    "PA Medicaid Combined Remittance",
+    "payer_id":      "MULTI",
+    "payer_addr":    "P.O. Box 8045, Harrisburg, PA 17105",
 }
 
 CLAIMS = [
     {
-        "patient_name": "Maria L. Reyes",
-        "medicaid_id":  "MA-8847-2291",
-        "dob":          "1994-03-12",
-        "service_date": "2026-05-14",
+        "patient_name": "DOE, JOHN",
+        "medicaid_id":  "MA-0001-0001",
+        "dob":          "1990-01-01",
+        "service_date": "2026-05-15",
         "procedure_code": "T1032",
         "modifier":     "U7",
         "diagnosis":    "Z32.2",
@@ -66,50 +66,27 @@ CLAIMS = [
         "paid_amount":   "100.00",
         "patient_resp":  "0.00",
         "status":       "paid",
-        "claim_id":     "AVL-20260514-001",
+        "claim_id":     "FFS-20260515-001",
+        "payer":        "FFS (PROMISe™)",
         "adjustments":  [],
     },
     {
-        "patient_name": "Destiny M. Johnson",
-        "medicaid_id":  "MA-5523-7714",
-        "dob":          "1998-08-27",
-        "service_date": "2026-05-19",
-        "procedure_code": "T1033",
-        "modifier":     "",
-        "diagnosis":    "Z33.1",
-        "pos":          "12",
-        "billed_amount": "1000.00",
-        "allowed_amount": "1000.00",
-        "paid_amount":   "175.00",
-        "patient_resp":  "0.00",
-        "status":       "paid",
-        "claim_id":     "AVL-20260519-002",
-        "adjustments":  [
-            {"group": "CO", "code": "45", "amount": "825.00",
-             "description": "Charge exceeds fee schedule/maximum allowable"},
-        ],
-    },
-    {
-        "patient_name": "Aaliyah T. Brown",
-        "medicaid_id":  "MA-3301-8842",
-        "dob":          "2002-01-05",
-        "service_date": "2026-05-22",
+        "patient_name": "SAMPLE MEMBER",
+        "medicaid_id":  "MA-0002-0001",
+        "dob":          "1995-06-01",
+        "service_date": "2026-05-20",
         "procedure_code": "T1032",
         "modifier":     "U8",
         "diagnosis":    "Z39.1",
-        "pos":          "02",
+        "pos":          "12",
         "billed_amount": "100.00",
-        "allowed_amount": "0.00",
-        "paid_amount":   "0.00",
+        "allowed_amount": "100.00",
+        "paid_amount":   "100.00",
         "patient_resp":  "0.00",
-        "status":       "denied",
-        "claim_id":     "AVL-20260522-003",
-        "adjustments":  [
-            {"group": "CO", "code": "197", "amount": "100.00",
-             "description": "Precertification/authorization not obtained"},
-            {"group": "N",  "code": "30",  "amount": "0.00",
-             "description": "Patient ineligible for the date of service"},
-        ],
+        "status":       "paid",
+        "claim_id":     "UPMC-20260520-001",
+        "payer":        "UPMC For You",
+        "adjustments":  [],
     },
 ]
 
@@ -151,7 +128,7 @@ def build_eob(out_path: str) -> None:
 
     # ── PAGE HEADER BAND ───────────────────────────────────────────────────────
     header_data = [[
-        _bold("AmeriHealth Caritas Pennsylvania", size=14, color=MCO_BLUE),
+        _bold("PA Medicaid Combined Remittance Advice", size=13, color=MCO_BLUE),
         _normal("REMITTANCE ADVICE / EXPLANATION OF BENEFITS (EOB)\n835 Electronic Remittance",
                 size=8, color=MCO_BLUE, align=TA_RIGHT),
     ]]
@@ -208,13 +185,12 @@ def build_eob(out_path: str) -> None:
 
     # ── CLAIMS ────────────────────────────────────────────────────────────────
     col_labels = [
-        "Claim ID", "Patient Name", "Medicaid ID", "DOS",
-        "Proc/Mod", "DX", "POS", "Billed", "Allowed", "Paid", "Pt Resp", "Status",
+        "Claim ID", "Patient Name", "Medicaid ID", "Payer", "DOS",
+        "Proc/Mod", "Billed", "Allowed", "Paid", "Status",
     ]
     col_w = [
-        W * 0.14, W * 0.13, W * 0.10, W * 0.07,
-        W * 0.07, W * 0.05, W * 0.04, W * 0.06,
-        W * 0.07, W * 0.06, W * 0.06, W * 0.07,
+        W * 0.16, W * 0.13, W * 0.10, W * 0.13, W * 0.08,
+        W * 0.08, W * 0.08, W * 0.08, W * 0.08, W * 0.08,
     ]
 
     tbl_data = [[_bold(c, size=7, color=colors.white) for c in col_labels]]
@@ -224,16 +200,14 @@ def build_eob(out_path: str) -> None:
         stat_color = PAID_GREEN if cl["status"] == "paid" else DENY_RED
         row = [
             _normal(cl["claim_id"], size=7),
-            _normal(cl["patient_name"], size=7),
+            _bold(cl["patient_name"], size=7),
             _normal(cl["medicaid_id"], size=7),
+            _normal(cl.get("payer", ""), size=7),
             _normal(cl["service_date"], size=7),
             _normal(proc, size=7),
-            _normal(cl["diagnosis"], size=7),
-            _normal(cl["pos"], size=7),
             _normal(f"${cl['billed_amount']}", size=7, align=TA_RIGHT),
             _normal(f"${cl['allowed_amount']}", size=7, align=TA_RIGHT),
             _bold(f"${cl['paid_amount']}", size=7, color=stat_color),
-            _normal(f"${cl['patient_resp']}", size=7, align=TA_RIGHT),
             _bold(cl["status"].upper(), size=7, color=stat_color),
         ]
         tbl_data.append(row)
@@ -316,7 +290,7 @@ def build_eob(out_path: str) -> None:
     total_adj     = total_billed - total_allowed
 
     totals_data = [
-        [_bold("Total Claims Processed", size=8), _bold("3", size=8, color=MCO_BLUE)],
+        [_bold("Total Claims Processed", size=8), _bold(str(len(CLAIMS)), size=8, color=MCO_BLUE)],
         [_bold("Total Billed Amount",     size=8), _bold(f"${total_billed:,.2f}", size=8)],
         [_bold("Total Allowed Amount",    size=8), _bold(f"${total_allowed:,.2f}", size=8)],
         [_bold("Total Adjustments",       size=8), _bold(f"${total_adj:,.2f}", size=8, color=DENY_RED)],
@@ -346,18 +320,16 @@ def build_eob(out_path: str) -> None:
     notices = [
         ("Reconsideration Deadline",
          "Providers have 90 days from the payment date to file a reconsideration request "
-         "for denied or adjusted claims. Submit via the AmeriHealth Caritas Provider Portal."),
-        ("Appeals Process",
-         "If the reconsideration decision is unfavorable, you have 30 days to file a formal "
-         "appeal. Appeals must be submitted in writing to: AmeriHealth Caritas PA, Attn: "
-         "Provider Appeals, 200 Stevens Drive, Philadelphia, PA 19113."),
-        ("Adjustment Reason Code CO-197",
-         "Precertification/authorization not obtained. The service rendered requires prior "
-         "authorization under the AmeriHealth Caritas PA HealthChoices contract. Obtain "
-         "authorization and resubmit with authorization number in Box 23 of the CMS 1500."),
-        ("Provider Portal",
-         "View complete claim history, submit appeals, and download ERA files at "
-         "amerihealthcaritaspa.com/providers. Questions: 1-800-521-6867 (Mon–Fri 8am–6pm ET)."),
+         "for denied or adjusted claims. Contact the relevant MCO or PROMISe™ Provider Portal."),
+        ("FFS / PROMISe™ Claims",
+         "Fee-for-service claims are processed through PROMISe™ (PA DHS). "
+         "View claim status at promise.dpw.state.pa.us. Questions: 1-800-537-8862."),
+        ("UPMC For You Claims",
+         "UPMC For You claims are managed via UPMC Health Plan Provider OnLine. "
+         "Visit upmchealthplan.com/providers. Questions: 1-888-876-2756."),
+        ("ERA / Paper EOB",
+         "Electronic Remittance Advice (835) files are available via the respective payer "
+         "portal. This document serves as your paper EOB for provider records."),
     ]
 
     for title, body in notices:
@@ -381,7 +353,7 @@ def build_eob(out_path: str) -> None:
     story.append(_hr(color=MCO_BLUE, thickness=1.5))
     footer_tbl = Table(
         [[
-            _normal("AmeriHealth Caritas Pennsylvania  |  200 Stevens Drive, Philadelphia PA 19113",
+            _normal("PA Medicaid Combined Remittance  |  P.O. Box 8045, Harrisburg PA 17105",
                     size=7, color=colors.HexColor("#666666")),
             _normal(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')}  |  "
                     f"EFT: {REMITTANCE['eft_number']}",
