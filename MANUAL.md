@@ -302,7 +302,7 @@ The four built-in codes are:
 
 | Code | Problem |
 |---|---|
-| **MOD-U8** | Wrong or missing modifier for the visit type |
+| **MOD-U8** | Missing or incorrect modifier — U8 required on T1032 postnatal visits; T1033 Labor requires no modifier |
 | **SIG-MISS** | Provider or client signature not detected |
 | **DT-RANGE** | Service date is in the future or beyond the 365-day filing limit |
 | **DUP-CLAIM** | Same client ID and service date already exist in the system |
@@ -359,9 +359,9 @@ The 30-day best-practice window is not a hard deadline, but MCOs process claims 
 
 **Inline warning on the visit form:**
 When a visit has been ended but no claim has been filed, the PA Medicaid Claim section shows a color-coded banner once 30 days have passed since service:
-- **Blue** — more than 30 days since service; PA Medicaid recommends filing within 30 days
+- **Blue** — 30 or more days since service; PA Medicaid recommends filing within 30 days
 - **Amber** — within 30 days of the 180-day deadline; file now
-- **Red** — deadline has passed or is 7 days away; claim may not be reimbursable
+- **Red** — within 7 days of the deadline or already overdue; claim may not be reimbursable
 
 **Dashboard banners:**
 The main Dashboard shows an amber banner when any unfiled claim is within 30 days of the 180-day cutoff, and a red banner when any claim has already passed it. Click the link in the banner to go directly to your clients list.
@@ -444,7 +444,7 @@ CAQH ProView is the credential database used by all PA MCOs to verify provider e
 2. Return to DoulaShield **Settings → CAQH Attestation** and update **Last attested on** to today's date.
 3. The expiry preview updates immediately — green means you have more than 14 days, amber means 14 days or fewer, red means overdue.
 
-**Reminders:** DoulaShield automatically emails you at 30, 14, 7, and 0 days before expiry, and daily for the first 7 days after expiry. If the dashboard shows an amber or red banner, act immediately to avoid billing disruption.
+**Reminders:** DoulaShield automatically emails you at 30, 14, 7, and 0 days before expiry, and daily for the first 7 days after expiry. The 30-day email is an early warning — the dashboard banner does not appear until 14 or fewer days remain. Do not wait for the dashboard banner to act; start re-attestation when you receive the 30-day email.
 
 ### PROMISe™ Re-enrollment
 

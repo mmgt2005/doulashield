@@ -12,6 +12,15 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.21.2] — 2026-06-05
+
+### Fixed
+- **MOD-U8 error code description wrong** (migration 0034): The seeded description incorrectly said "Labor & Delivery (T1033) did not include the U8 modifier" — T1033 has no modifier; U8 belongs to T1032 postnatal claims. Following the old fix instructions would have caused providers to add an incorrect modifier to a Labor claim, generating a second denial. Description and fix instructions corrected.
+- **MANUAL.md inline deadline warning thresholds**: Blue banner description said "more than 30 days since service" but code fires at exactly 30 days (`daysToDeadline <= 150`); corrected to "30 or more days." Red banner said "is 7 days away" implying a single point; corrected to "within 7 days of the deadline or already overdue" to reflect the full `daysToDeadline <= 7` range.
+- **MANUAL.md CAQH dashboard vs. email threshold**: The reminder section implied the dashboard amber banner appears in sync with email reminders. Email reminders start at 30 days remaining; the dashboard banner does not appear until 14 or fewer days remain. Added explicit callout so providers know to act on the 30-day email without waiting for a dashboard banner.
+
+---
+
 ## [1.21.1] — 2026-06-05
 
 ### Fixed
