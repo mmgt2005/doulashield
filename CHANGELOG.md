@@ -12,6 +12,19 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.21.1] — 2026-06-05
+
+### Fixed
+- **ADMIN_GUIDE.md audit action type errors**: Two action strings in the Reference table were incorrect — `MFA_SETUP` (never emitted; real action is `MFA_ENROLL` in `auth_service.py`) and `CREATE_PROVIDER_ACCOUNT` (never emitted; real action is `CREATE_AND_INVITE_PROVIDER` in `billing.py`). Any admin or SIEM filter built on the documented strings would have returned zero results.
+- **ADMIN_GUIDE.md missing audit actions**: `GENERATE_AUDIT_PACKET` (v1.17.0) and `RESUBMIT_CLAIM` (v1.20.0) were absent from the reference table. Both are logged by the backend on every audit packet download and claim resubmission respectively.
+- **ADMIN_GUIDE.md version header stale**: Was `v1.13.0`; updated to `v1.21.0` with a Medicaid Audit Packets section added to the Audit Logs chapter.
+- **MANUAL.md missing Dashboard section**: The main dashboard's six alert banners (CAQH, PROMISe™, PCB, Liability, Claim overdue, Claim urgent) were only mentioned in passing inside individual Settings sub-sections. A new "Understanding the Dashboard" subsection under Getting Started now lists all banners with trigger thresholds and required actions.
+- **MANUAL.md missing Box 22 documentation**: The Denial Error Codes and Resubmission section now explains that resubmitted claims automatically set CMS 1500 Box 22 to code 7 (replacement) with the original Availity claim ID — required for Availity to route the correction rather than reject it as a duplicate.
+- **MANUAL.md Claims & Billing section order**: Subsections were ordered Submit → Audit Packet → Track Status → Denial/Resubmit → EOB Scan, which reversed the actual workflow. Reordered to Submit → Track Status → Denial/Resubmit → Audit Packet → EOB Scan → Deadlines.
+- **MANUAL.md TOC missing sub-entries**: Added indented sub-section links under Claims & Billing and Settings so providers can navigate directly to specific topics (e.g., PCB Certification, Claim Filing Deadlines) without scrolling.
+
+---
+
 ## [1.21.0] — 2026-06-05
 
 ### Added
