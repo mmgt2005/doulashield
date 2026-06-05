@@ -275,6 +275,28 @@ The claim status badge uses four colors:
 
 **For manual MCO claims:** Use the **Log claim status** form in the claim section to record what the portal or paper EOB shows. Select the status (Submitted / Paid / Denied), date, and paid amount. Click **Save status** — the badge updates immediately.
 
+### Denial Error Codes and Resubmission
+
+When a claim is denied, DoulaShield automatically reads the denial reason and matches it to a known error code. A color-coded detail card appears below the denied badge showing:
+
+- **Code** — a short identifier (e.g. MOD-U8, SIG-MISS)
+- **Description** — what went wrong
+- **Risk** — the compliance or payment consequence
+- **Fix instructions** — exactly what to correct before resubmitting
+
+The four built-in codes are:
+
+| Code | Problem |
+|---|---|
+| **MOD-U8** | Wrong or missing modifier for the visit type |
+| **SIG-MISS** | Provider or client signature not detected |
+| **DT-RANGE** | Service date is in the future or beyond the 365-day filing limit |
+| **DUP-CLAIM** | Same client ID and service date already exist in the system |
+
+If the payer returns a standard X12 adjustment code (e.g. CO-45) that isn't in the list above, DoulaShield captures it automatically and stores it for future reference.
+
+**To resubmit:** After correcting the underlying issue, click **↺ Resubmit Claim** in the claim section. For Availity claims the original claim is re-posted using the stored data. For manual MCO claims the status resets to Submitted so you can track the new outcome. The resubmission count is shown next to the button so you always know how many attempts have been made.
+
 ### Scanning Paper Remittances (EOBs)
 
 Both EOB scan entry points accept **photos (JPEG/PNG)** and **digital PDF files** (up to 20 MB). Use **Take photo** to photograph a paper remittance with your phone camera, or **Upload PDF / image** to upload an EOB PDF you received by email or downloaded from an MCO portal.
