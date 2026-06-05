@@ -111,11 +111,15 @@ async def scan_handbook(
 
     try:
         extracted = await ocr_service.extract_image(image_bytes, content_type, page_type)
-    except ValueError:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Could not read the file — please try a clearer photo or a different PDF.",
-        )
+    except ValueError as exc:
+        msg = str(exc)
+        if "scanned image" in msg or "no extractable text" in msg.lower():
+            detail = "This PDF appears to be a scanned image — please photograph the paper remittance instead, or use a digital EOB PDF."
+        elif "corrupted" in msg or "password" in msg:
+            detail = "Could not open the PDF — it may be password-protected or corrupted."
+        else:
+            detail = "Could not read the file — please try a clearer photo or a digital EOB PDF."
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=detail)
 
     await audit.log(
         action="SCAN_HANDBOOK_PAGE",

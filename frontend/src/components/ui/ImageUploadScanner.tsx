@@ -42,11 +42,12 @@ export default function ImageUploadScanner({
       onExtracted(res.data)
     } catch (err: unknown) {
       const httpStatus = axios.isAxiosError(err) ? err.response?.status : null
+      const serverDetail = axios.isAxiosError(err) ? err.response?.data?.detail : null
       setError(
         httpStatus === 422
-          ? acceptPdf
-            ? 'Could not read the file — please try a clearer photo or a different PDF.'
-            : 'Could not read image — please try a clearer photo.'
+          ? (serverDetail as string | null) ?? (acceptPdf
+              ? 'Could not read the file — please try a clearer photo or a digital EOB PDF.'
+              : 'Could not read image — please try a clearer photo.')
           : 'Scan failed. Please try again.'
       )
     } finally {

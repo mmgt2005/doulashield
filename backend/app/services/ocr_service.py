@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import io
 import json
 import logging
 import uuid
@@ -163,43 +164,33 @@ def _run_claude(image_bytes: bytes, content_type: str, page_type: str) -> dict:
     is_pdf = content_type == "application/pdf"
 
     if is_pdf:
-        # Use Anthropic's PDF document block (beta) — works for both digital and scanned PDFs
-        content_block: dict = {
-            "type": "document",
-            "source": {
-                "type": "base64",
-                "media_type": "application/pdf",
-                "data": b64,
-            },
-        }
-        create_kwargs: dict = {
-            "model": "claude-haiku-4-5-20251001",
-            "max_tokens": 2048,
-            "messages": [
-                {
-                    "role": "user",
-                    "content": [
-                        content_block,
-                        {"type": "text", "text": _PROMPTS[page_type]},
-                    ],
-                }
-            ],
-            "betas": ["pdfs-2024-09-25"],
-        }
+        # Extract text from the PDF with pypdf (digital EOBs are always text-based).
+        # This is cheaper, model-agnostic, and avoids the Anthropic PDF beta API.
+        from pypdf import PdfReader
         try:
-            msg = client.beta.messages.create(**create_kwargs)
+            reader = PdfReader(io.BytesIO(image_bytes))
+            page_texts = [p.extract_text() or "" for p in reader.pages]
+            pdf_text = "\n\n".join(t for t in page_texts if t.strip())
+        except Exception as exc:
+            logger.error("pypdf extraction failed: %s", exc)
+            raise ValueError("Could not read PDF — file may be corrupted or password-protected") from exc
+
+        if not pdf_text.strip():
+            raise ValueError("PDF contains no extractable text — scanned image PDFs are not supported for EOB scanning")
+
+        logger.info("PDF text extracted: %d chars from %d pages", len(pdf_text), len(reader.pages))
+
+        prompt = _PROMPTS[page_type] + "\n\nDocument text:\n" + pdf_text
+        try:
+            msg = client.messages.create(
+                model="claude-haiku-4-5-20251001",
+                max_tokens=2048,
+                messages=[{"role": "user", "content": prompt}],
+            )
         except anthropic.BadRequestError as exc:
-            logger.error("Anthropic 400 (PDF): %s", exc)
-            raise ValueError("Anthropic rejected the PDF request") from exc
+            logger.error("Anthropic 400 (PDF text): %s", exc)
+            raise ValueError("Anthropic rejected the PDF text request") from exc
     else:
-        content_block = {
-            "type": "image",
-            "source": {
-                "type": "base64",
-                "media_type": content_type,
-                "data": b64,
-            },
-        }
         try:
             msg = client.messages.create(
                 model="claude-haiku-4-5-20251001",
@@ -208,7 +199,14 @@ def _run_claude(image_bytes: bytes, content_type: str, page_type: str) -> dict:
                     {
                         "role": "user",
                         "content": [
-                            content_block,
+                            {
+                                "type": "image",
+                                "source": {
+                                    "type": "base64",
+                                    "media_type": content_type,
+                                    "data": b64,
+                                },
+                            },
                             {"type": "text", "text": _PROMPTS[page_type]},
                         ],
                     }
