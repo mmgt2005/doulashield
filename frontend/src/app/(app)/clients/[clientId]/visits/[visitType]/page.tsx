@@ -8,7 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import axios from 'axios'
 import { getAccessToken } from '@/lib/auth'
 import { geocodeAddress, haversineFeet } from '@/lib/geo'
-import { Claim, Patient, Visit, VisitType } from '@/types/domain'
+import { Claim, ClaimErrorCode, Patient, Visit, VisitType } from '@/types/domain'
 import { getSlotConfig, getPrevSlotInGroup } from '@/lib/visit-config'
 import ImageUploadScanner from '@/components/ui/ImageUploadScanner'
 import NpiLookup, { NpiVerifiedResult } from '@/components/ui/NpiLookup'
@@ -173,6 +173,8 @@ export default function VisitFormPage() {
   const [eobError, setEobError] = useState<string | null>(null)
   const [eobClaims, setEobClaims] = useState<EobClaimLine[] | null>(null)
   const [eobMeta, setEobMeta] = useState<{ check_number: string | null; payment_date: string | null } | null>(null)
+  const [claimResubmitting, setClaimResubmitting] = useState(false)
+  const [errorCodes, setErrorCodes] = useState<ClaimErrorCode[]>([])
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null)
   const [pdfLoading, setPdfLoading] = useState(false)
   const [providerSsnConnected, setProviderSsnConnected] = useState(false)
@@ -196,7 +198,9 @@ export default function VisitFormPage() {
         { headers }
       ).catch(() => null),
       axios.get<Claim[]>(`${base}/api/v1/patients/${clientId}/claims`, { headers }).catch(() => null),
-    ]).then(async ([patientRes, visitRes, settingsRes, claimsRes]) => {
+      axios.get<ClaimErrorCode[]>(`${base}/api/v1/claim-error-codes`, { headers }).catch(() => null),
+    ]).then(async ([patientRes, visitRes, settingsRes, claimsRes, errorCodesRes]) => {
+      if (errorCodesRes?.data) setErrorCodes(errorCodesRes.data)
       if (claimsRes?.data?.length) {
         const match = claimsRes.data.find((c: Claim) => c.visit_type === visitType)
         if (match) setExistingClaim(match)
@@ -528,6 +532,24 @@ export default function VisitFormPage() {
       setExistingClaim(res.data)
     } catch { /* non-blocking */ } finally {
       setClaimStatusChecking(false)
+    }
+  }
+
+  const handleResubmitClaim = async () => {
+    setClaimResubmitting(true)
+    setClaimError(null)
+    try {
+      const res = await axios.post<Claim>(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/patients/${clientId}/visits/${visitType}/claims/resubmit`,
+        {},
+        { headers: { Authorization: `Bearer ${getAccessToken()}` } }
+      )
+      setExistingClaim(res.data)
+    } catch (e: unknown) {
+      const msg = axios.isAxiosError(e) ? (e.response?.data?.detail ?? 'Resubmission failed') : 'Resubmission failed'
+      setClaimError(typeof msg === 'string' ? msg : 'Resubmission failed')
+    } finally {
+      setClaimResubmitting(false)
     }
   }
 
@@ -1234,6 +1256,25 @@ export default function VisitFormPage() {
                           <span className="font-medium">Denial reason:</span> {existingClaim.denial_reason}
                         </p>
                       )}
+                      {/* Error code detail card */}
+                      {existingClaim.error_code && (() => {
+                        const ec = errorCodes.find(c => c.code === existingClaim.error_code)
+                        if (!ec) return null
+                        return (
+                          <div className="mt-1 rounded border border-red-200 bg-red-50 p-2.5 space-y-1 text-xs">
+                            <div className="flex items-center gap-2">
+                              <span className="rounded bg-red-700 px-1.5 py-0.5 font-mono font-bold text-white text-xs">{ec.code}</span>
+                              <span className="font-semibold text-red-800">{ec.title}</span>
+                            </div>
+                            <p className="text-red-700">{ec.description}</p>
+                            <p className="text-red-600"><span className="font-medium">Risk:</span> {ec.risk}</p>
+                            <p className="text-green-800"><span className="font-medium">Fix:</span> {ec.fix_instructions}</p>
+                          </div>
+                        )
+                      })()}
+                      {existingClaim.resubmit_count > 0 && (
+                        <p className="text-xs text-gray-500">Resubmitted {existingClaim.resubmit_count} time{existingClaim.resubmit_count !== 1 ? 's' : ''}</p>
+                      )}
                       <div className="flex flex-wrap items-center gap-x-2 text-xs text-gray-500">
                         {existingClaim.submitted_at && (
                           <span>Submitted {new Date(existingClaim.submitted_at).toLocaleDateString()}</span>
@@ -1244,19 +1285,31 @@ export default function VisitFormPage() {
                       </div>
                       {existingClaim.is_manual ? (
                         <>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setManualStatus((existingClaim.status as 'submitted' | 'paid' | 'denied') ?? 'submitted')
-                              setManualDate(existingClaim.service_date ?? watch('visit_date') ?? '')
-                              setManualPaidAmount(existingClaim.paid_amount ?? '')
-                              setManualDenialReason(existingClaim.denial_reason ?? '')
-                              setShowManualForm(true)
-                            }}
-                            className="text-xs text-blue-600 hover:text-blue-800"
-                          >
-                            Update status
-                          </button>
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setManualStatus((existingClaim.status as 'submitted' | 'paid' | 'denied') ?? 'submitted')
+                                setManualDate(existingClaim.service_date ?? watch('visit_date') ?? '')
+                                setManualPaidAmount(existingClaim.paid_amount ?? '')
+                                setManualDenialReason(existingClaim.denial_reason ?? '')
+                                setShowManualForm(true)
+                              }}
+                              className="text-xs text-blue-600 hover:text-blue-800"
+                            >
+                              Update status
+                            </button>
+                            {(existingClaim.status === 'denied' || existingClaim.status === 'rejected') && (
+                              <button
+                                type="button"
+                                onClick={handleResubmitClaim}
+                                disabled={claimResubmitting}
+                                className="rounded border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800 hover:bg-amber-100 disabled:opacity-50"
+                              >
+                                {claimResubmitting ? 'Resubmitting…' : '↺ Resubmit Claim'}
+                              </button>
+                            )}
+                          </div>
                           {/* EOB scan — multi-claim review panel */}
                           <div className="mt-2 border-t pt-2">
                             {eobClaims ? (
@@ -1351,14 +1404,26 @@ export default function VisitFormPage() {
                           </div>
                         </>
                       ) : (
-                        <button
-                          type="button"
-                          onClick={handleCheckClaimStatus}
-                          disabled={claimStatusChecking}
-                          className="text-xs text-blue-600 hover:text-blue-800 disabled:opacity-50"
-                        >
-                          {claimStatusChecking ? 'Checking…' : 'Refresh status'}
-                        </button>
+                        <div className="flex flex-wrap gap-2 items-center">
+                          <button
+                            type="button"
+                            onClick={handleCheckClaimStatus}
+                            disabled={claimStatusChecking}
+                            className="text-xs text-blue-600 hover:text-blue-800 disabled:opacity-50"
+                          >
+                            {claimStatusChecking ? 'Checking…' : 'Refresh status'}
+                          </button>
+                          {(existingClaim.status === 'denied' || existingClaim.status === 'rejected') && (
+                            <button
+                              type="button"
+                              onClick={handleResubmitClaim}
+                              disabled={claimResubmitting}
+                              className="rounded border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800 hover:bg-amber-100 disabled:opacity-50"
+                            >
+                              {claimResubmitting ? 'Resubmitting…' : '↺ Resubmit Claim'}
+                            </button>
+                          )}
+                        </div>
                       )}
                       <button
                         type="button"

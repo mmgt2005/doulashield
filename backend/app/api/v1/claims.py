@@ -15,7 +15,7 @@ from app.models.claim import Claim
 from app.models.patient import Patient
 from app.models.user import User
 from app.models.visit import Visit
-from app.schemas.claim import ClaimCreate, ClaimRead, ManualClaimUpsert
+from app.schemas.claim import ClaimCreate, ClaimErrorCodeRead, ClaimRead, ManualClaimUpsert
 from app.services import cms1500_service, usps_service
 from app.services.claims_service import ClaimsService
 
@@ -476,6 +476,33 @@ async def log_manual_claim(
     try:
         return await _svc(db, audit).log_manual_claim(
             patient_id, current_user.id, visit_type, body,
+            get_client_ip(request), get_user_agent(request)
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.get("/claim-error-codes", response_model=list[ClaimErrorCodeRead])
+async def list_claim_error_codes(
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    audit: Annotated[AuditLogger, Depends(get_audit)],
+) -> list[ClaimErrorCodeRead]:
+    return await _svc(db, audit).list_error_codes()
+
+
+@router.post("/patients/{patient_id}/visits/{visit_type}/claims/resubmit", response_model=ClaimRead)
+async def resubmit_claim(
+    request: Request,
+    patient_id: uuid.UUID,
+    visit_type: str,
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    audit: Annotated[AuditLogger, Depends(get_audit)],
+) -> ClaimRead:
+    try:
+        return await _svc(db, audit).resubmit_claim(
+            patient_id, visit_type, current_user.id,
             get_client_ip(request), get_user_agent(request)
         )
     except ValueError as e:

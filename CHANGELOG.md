@@ -12,6 +12,21 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.20.0] — 2026-06-05
+
+### Added
+- **Claim error codes with auto-detection**: New `claim_error_codes` table seeds four predefined PA Medicaid error codes — MOD-U8 (Modifier Conflict), SIG-MISS (Missing Signature), DT-RANGE (Date Invalid), DUP-CLAIM (Potential Duplicate). When a claim is denied, the denial reason text is automatically scanned using keyword matching to assign the appropriate code. Unknown X12 adjustment codes (e.g. CO-45) are extracted via regex and auto-created in the DB as custom entries (`is_custom=true`) for future reference.
+- **Claim resubmission**: Denied claims now show a "↺ Resubmit Claim" button. For Availity claims, the original claim payload stored in `claim_data` is re-posted to Availity and the same record is updated with the new submission ID. For manual MCO claims, the status is reset to `submitted` so the provider can track the new outcome. Each resubmission increments `resubmit_count` for audit visibility.
+- **Error code detail card in denied claim UI**: When a matched error code exists, the visit form claim panel shows a colour-coded detail card with the code title, description, clinical risk level, and step-by-step fix instructions — giving providers immediate actionable guidance without leaving the page.
+- **`GET /api/v1/claim-error-codes`**: New endpoint returns all error codes (predefined and auto-discovered custom codes) for reference.
+- **`POST /api/v1/patients/{patient_id}/visits/{visit_type}/claims/resubmit`**: New resubmit endpoint; returns the updated `ClaimRead` after resubmission.
+
+### Changed
+- `ClaimRead` schema now includes `error_code: str | null`, `resubmit_count: int`, `denial_reason: str | null`, and `remittance_id: uuid | null`.
+- `ManualClaimUpsert` accepts an optional `denial_reason` field so providers logging a denied paper EOB can record the reason.
+
+---
+
 ## [1.19.3] — 2026-06-05
 
 ### Fixed

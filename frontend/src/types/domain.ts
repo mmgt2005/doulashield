@@ -126,9 +126,20 @@ export interface Claim {
   submitted_at: string | null
   status_checked_at: string | null
   denial_reason: string | null
+  error_code: string | null
+  resubmit_count: number
   remittance_id: string | null
   created_at: string
   updated_at: string
+}
+
+export interface ClaimErrorCode {
+  code: string
+  title: string
+  description: string
+  risk: string
+  fix_instructions: string
+  is_custom: boolean
 }
 
 export interface BillingStatus {

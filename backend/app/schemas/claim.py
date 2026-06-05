@@ -7,6 +7,17 @@ from decimal import Decimal
 from pydantic import BaseModel, ConfigDict
 
 
+class ClaimErrorCodeRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    code: str
+    title: str
+    description: str
+    risk: str
+    fix_instructions: str
+    is_custom: bool
+
+
 class ClaimCreate(BaseModel):
     visit_type: str  # determines procedure_code, modifier, rate, and diag_codes automatically
     service_date: date
@@ -45,6 +56,8 @@ class ClaimRead(BaseModel):
     submitted_at: datetime | None
     status_checked_at: datetime | None
     denial_reason: str | None
+    error_code: str | None
+    resubmit_count: int
     remittance_id: uuid.UUID | None
     created_at: datetime
     updated_at: datetime
