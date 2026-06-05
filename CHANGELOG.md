@@ -11,7 +11,7 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 ## [Unreleased]
 
 ### Added
-- **Sample EOB PDF and generator script** (`sample_eob.pdf`, `generate_sample_eob.py`): Realistic AmeriHealth Caritas PA HealthChoices remittance advice with 3 claim lines (2 paid including a CO-45 fee-schedule adjustment, 1 denied with CO-197 prior-auth and N30 ineligibility codes). Use this file to test the EOB scanner on the Reports page.
+- **Sample EOB PDF and generator script** (`sample_eob.pdf`, `generate_sample_eob.py`): Test remittance advice matching the DB patient names — `DOE, JOHN` ($100 T1032-U7, FFS, paid) and `SAMPLE MEMBER` ($100 T1032-U8, UPMC For You, paid). Scan with the EOB scanner on the Reports page to verify client fuzzy-matching and claim status updates.
 
 ---
 
