@@ -42,10 +42,12 @@ export default function ImageUploadScanner({
       onExtracted(res.data)
     } catch (err: unknown) {
       const httpStatus = axios.isAxiosError(err) ? err.response?.status : null
-      const serverDetail = axios.isAxiosError(err) ? err.response?.data?.detail : null
+      const rawDetail = axios.isAxiosError(err) ? err.response?.data?.detail : null
+      // FastAPI validation errors return detail as an array; only use it when it's a plain string
+      const serverDetail = typeof rawDetail === 'string' ? rawDetail : null
       setError(
         httpStatus === 422
-          ? (serverDetail as string | null) ?? (acceptPdf
+          ? serverDetail ?? (acceptPdf
               ? 'Could not read the file — please try a clearer photo or a digital EOB PDF.'
               : 'Could not read image — please try a clearer photo.')
           : 'Scan failed. Please try again.'

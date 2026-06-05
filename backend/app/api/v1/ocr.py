@@ -91,15 +91,17 @@ async def scan_handbook(
     current_user: Annotated[CurrentUser, Depends(get_current_user)],
     audit: Annotated[AuditLogger, Depends(get_audit)],
     page_type: Annotated[Literal["soap_note", "prenatal", "birth", "ma_589", "access_card", "remittance_eob"], Form()],
-    patient_id: Annotated[str, Form()],
+    patient_id: Annotated[str | None, Form()] = None,
 ) -> dict:
     """Scan a handwritten handbook page and extract structured visit data."""
     image_bytes, content_type = await _read_upload(file, allow_pdf=page_type in _PDF_ALLOWED_PAGE_TYPES)
 
-    try:
-        pid = uuid.UUID(patient_id)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid patient_id.")
+    pid: uuid.UUID | None = None
+    if patient_id:
+        try:
+            pid = uuid.UUID(patient_id)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid patient_id.")
 
     image_path: str | None = None
     try:
@@ -123,7 +125,7 @@ async def scan_handbook(
 
     await audit.log(
         action="SCAN_HANDBOOK_PAGE",
-        resource_type="patient",
+        resource_type="patient" if pid else None,
         resource_id=pid,
         ip_address=get_client_ip(request),
         user_agent=get_user_agent(request),
