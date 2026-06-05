@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.18.5] — 2026-06-05
+
+### Fixed
+- **Audit Packet — ZipZign signed MA 91 PDF inserted at page 7 instead of page 5**: The ZipZign pages were appended after all six narrative sections. Fixed the assembly order to split the narrative at the MA 91 section boundary (page index 3) and insert the ZipZign pages immediately after, so the executed signature document follows directly after the MA 91 Certification section before Provider Credentials and Billing Record.
+
+---
+
 ## [1.18.4] — 2026-06-05
 
 ### Fixed

@@ -488,14 +488,22 @@ def generate_audit_packet(
 
     writer = PdfWriter()
 
-    # The narrative has 6 sections; the MA 91 section is section 3 (0-indexed page ~3).
-    # We insert the ZipZign-signed PDF pages immediately after the narrative so they
-    # follow the MA 91 certification section, then append the CMS 1500.
     narrative_reader = PdfReader(io.BytesIO(narrative_bytes))
-    for page in narrative_reader.pages:
+    narrative_pages = list(narrative_reader.pages)
+
+    # Page order:
+    #   0 — Cover
+    #   1 — Member Information
+    #   2 — Service Documentation
+    #   3 — MA 91 Certification  ← insert ZipZign immediately after this
+    #   4 — Provider Credentials
+    #   5 — Billing Record
+    MA91_PAGE_INDEX = 3
+
+    for page in narrative_pages[: MA91_PAGE_INDEX + 1]:
         writer.add_page(page)
 
-    # Insert ZipZign signed PDF pages (telehealth e-signature document)
+    # Insert ZipZign signed PDF immediately after the MA 91 section (page 4 in 1-based numbering)
     if zipzign_signed_pdf_bytes:
         try:
             zz_reader = PdfReader(io.BytesIO(zipzign_signed_pdf_bytes))
@@ -503,6 +511,9 @@ def generate_audit_packet(
                 writer.add_page(page)
         except Exception:
             pass  # if ZipZign PDF is malformed, skip it silently
+
+    for page in narrative_pages[MA91_PAGE_INDEX + 1 :]:
+        writer.add_page(page)
 
     if cms_bytes:
         # Only include the front of the CMS 1500 form (page 0); page 1 is the back/instructions
