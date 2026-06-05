@@ -1,6 +1,6 @@
 # DoulaShield User Manual
 
-**v1.15.0 · Last updated 2026-06-03**
+**v1.21.0 · Last updated 2026-06-05**
 
 This manual covers every provider-facing feature in DoulaShield. Read it start to finish once, then use the headings as a reference when you need a quick reminder.
 
@@ -313,6 +313,36 @@ Go to **Reports → Remittance / EOB Scan** at the bottom of the page. Photograp
 - An **Apply ↓** button for each matched line
 
 Click **Apply ↓** on a row to update that visit's claim status. Rows showing "no claim" mean the visit exists in your roster but no claim has been submitted yet — go to that visit page to submit first. Click **Dismiss** to close the review table.
+
+### Claim Filing Deadlines
+
+Pennsylvania Medicaid imposes strict timely-filing deadlines. A claim received after the deadline is automatically rejected and cannot be recovered.
+
+| Claim type | Deadline | Clock starts |
+|---|---|---|
+| **Initial claim** | 180 days | Service date |
+| **Corrected / resubmitted claim** | 365 days | Original service date |
+| **Secondary claim** (patient has other insurance) | 60 days | EOB payment date |
+| **Best practice** | 30 days | Service date |
+
+The 30-day best-practice window is not a hard deadline, but MCOs process claims faster and with fewer denials when they are submitted within 30 days of service.
+
+**Inline warning on the visit form:**
+When a visit has been ended but no claim has been filed, the PA Medicaid Claim section shows a color-coded banner once 30 days have passed since service:
+- **Blue** — more than 30 days since service; PA Medicaid recommends filing within 30 days
+- **Amber** — within 30 days of the 180-day deadline; file now
+- **Red** — deadline has passed or is 7 days away; claim may not be reimbursable
+
+**Dashboard banners:**
+The main Dashboard shows an amber banner when any unfiled claim is within 30 days of the 180-day cutoff, and a red banner when any claim has already passed it. Click the link in the banner to go directly to your clients list.
+
+**Automated email reminders:**
+DoulaShield sends email reminders as filing deadlines approach:
+- *Initial claims* — reminders at 150 days remaining (30-day best-practice nudge), then 90, 60, 30, 14, 7, and 0 days, then daily for the first 7 days overdue
+- *Corrected/resubmitted claims* — reminders at 335 days remaining, then 180, 90, 30, 14, 7, and 0 days, then daily for 7 days overdue
+- *Secondary claims* — reminders at 30, 14, 7, and 0 days remaining, then daily for 7 days overdue
+
+Reminder emails show the patient's initials (e.g., J.D.) rather than their full name for privacy.
 
 ---
 
