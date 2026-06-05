@@ -28,6 +28,7 @@ _promise_logger = logging.getLogger("doulashield.promise_reminder")
 _pcb_logger = logging.getLogger("doulashield.pcb_reminder")
 _liability_logger = logging.getLogger("doulashield.liability_reminder")
 _ma589_logger = logging.getLogger("doulashield.ma589_reminder")
+_claim_deadline_logger = logging.getLogger("doulashield.claim_deadline")
 
 
 async def _run_daily_remittance_sync() -> None:
@@ -364,6 +365,175 @@ async def _run_ma589_reminder_check() -> None:
     _ma589_logger.info("ma589_reminder_check: done sent=%d", sent)
 
 
+# 150 days remaining = 30 days since service = best-practice nudge
+_CLAIM_INITIAL_REMINDER_DAYS = {150, 90, 60, 30, 14, 7, 0, -1, -2, -3, -4, -5, -6, -7}
+# 335 days remaining = 30 days since service = best-practice nudge for corrected claims
+_CLAIM_CORRECTED_REMINDER_DAYS = {335, 180, 90, 30, 14, 7, 0, -1, -2, -3, -4, -5, -6, -7}
+_CLAIM_SECONDARY_REMINDER_DAYS = {30, 14, 7, 0, -1, -2, -3, -4, -5, -6, -7}
+
+
+async def _run_claim_deadline_check() -> None:
+    """
+    Send PA Medicaid claim filing deadline reminders for three deadline types:
+    A) Initial unfiled claims — 180-day deadline from service_date
+    B) Corrected/resubmitted claims — 365-day deadline from service_date
+    C) Secondary claims (other insurance) — 60-day deadline from EOB payment_date
+    """
+    from app.core.encryption import decrypt_field
+    from app.dependencies import _AsyncSession
+    from app.models.claim import Claim
+    from app.models.patient import Patient
+    from app.models.remittance import Remittance
+    from app.models.user import User
+    from app.services.email_service import send_claim_deadline_email
+    from sqlalchemy import and_
+    from sqlalchemy.future import select as _select
+
+    _claim_deadline_logger.info("claim_deadline_check: starting")
+
+    today = date.today()
+
+    def _initials(full_name: str) -> str:
+        parts = full_name.strip().split()
+        if len(parts) >= 2:
+            return f"{parts[0][0].upper()}. {parts[-1][0].upper()}."
+        return f"{full_name[0].upper()}." if full_name else "?"
+
+    # ── Loop A: initial unfiled claims ───────────────────────────────────────
+    async with _AsyncSession() as db:
+        result = await db.execute(
+            _select(Claim, Patient, User)
+            .join(Patient, Patient.id == Claim.patient_id)
+            .join(User, User.id == Claim.provider_id)
+            .where(
+                Claim.submitted_at.is_(None),
+                Claim.status.notin_(["paid"]),
+                Claim.service_date.isnot(None),
+                User.is_active.is_(True),
+                User.role == "provider",
+            )
+        )
+        initial_rows = result.all()
+
+    sent_a = 0
+    for claim, patient, provider in initial_rows:
+        try:
+            days_remaining = 180 - (today - claim.service_date).days
+            if days_remaining not in _CLAIM_INITIAL_REMINDER_DAYS:
+                continue
+            patient_name = decrypt_field(patient.name_encrypted)
+            initials = _initials(patient_name)
+            provider_name = provider.full_name or provider.email
+            await send_claim_deadline_email(
+                provider.email, provider_name, initials,
+                claim.visit_type or "unknown", str(claim.service_date),
+                days_remaining, "initial",
+            )
+            sent_a += 1
+            _claim_deadline_logger.info(
+                "claim_deadline_check: initial claim=%s provider=%s days_remaining=%d",
+                claim.id, provider.id, days_remaining,
+            )
+        except Exception as exc:
+            _claim_deadline_logger.error(
+                "claim_deadline_check: initial claim=%s FAILED: %s",
+                claim.id, exc, exc_info=True,
+            )
+
+    _claim_deadline_logger.info("claim_deadline_check: initial loop done sent=%d", sent_a)
+
+    # ── Loop B: corrected / resubmitted claims ────────────────────────────────
+    async with _AsyncSession() as db:
+        result = await db.execute(
+            _select(Claim, Patient, User)
+            .join(Patient, Patient.id == Claim.patient_id)
+            .join(User, User.id == Claim.provider_id)
+            .where(
+                Claim.resubmit_count > 0,
+                Claim.status.notin_(["paid"]),
+                Claim.service_date.isnot(None),
+                User.is_active.is_(True),
+                User.role == "provider",
+            )
+        )
+        corrected_rows = result.all()
+
+    sent_b = 0
+    for claim, patient, provider in corrected_rows:
+        try:
+            days_remaining = 365 - (today - claim.service_date).days
+            if days_remaining not in _CLAIM_CORRECTED_REMINDER_DAYS:
+                continue
+            patient_name = decrypt_field(patient.name_encrypted)
+            initials = _initials(patient_name)
+            provider_name = provider.full_name or provider.email
+            await send_claim_deadline_email(
+                provider.email, provider_name, initials,
+                claim.visit_type or "unknown", str(claim.service_date),
+                days_remaining, "corrected",
+            )
+            sent_b += 1
+            _claim_deadline_logger.info(
+                "claim_deadline_check: corrected claim=%s provider=%s days_remaining=%d",
+                claim.id, provider.id, days_remaining,
+            )
+        except Exception as exc:
+            _claim_deadline_logger.error(
+                "claim_deadline_check: corrected claim=%s FAILED: %s",
+                claim.id, exc, exc_info=True,
+            )
+
+    _claim_deadline_logger.info("claim_deadline_check: corrected loop done sent=%d", sent_b)
+
+    # ── Loop C: secondary claims (other insurance, 60 days from EOB) ──────────
+    async with _AsyncSession() as db:
+        result = await db.execute(
+            _select(Claim, Patient, User, Remittance)
+            .join(Patient, Patient.id == Claim.patient_id)
+            .join(User, User.id == Claim.provider_id)
+            .join(Remittance, Remittance.id == Claim.remittance_id)
+            .where(
+                Patient.has_other_insurance.is_(True),
+                Claim.remittance_id.isnot(None),
+                Claim.status.notin_(["paid"]),
+                Remittance.payment_date.isnot(None),
+                User.is_active.is_(True),
+                User.role == "provider",
+            )
+        )
+        secondary_rows = result.all()
+
+    sent_c = 0
+    for claim, patient, provider, remittance in secondary_rows:
+        try:
+            days_remaining = 60 - (today - remittance.payment_date).days
+            if days_remaining not in _CLAIM_SECONDARY_REMINDER_DAYS:
+                continue
+            patient_name = decrypt_field(patient.name_encrypted)
+            initials = _initials(patient_name)
+            provider_name = provider.full_name or provider.email
+            await send_claim_deadline_email(
+                provider.email, provider_name, initials,
+                claim.visit_type or "unknown", str(claim.service_date or remittance.payment_date),
+                days_remaining, "secondary",
+            )
+            sent_c += 1
+            _claim_deadline_logger.info(
+                "claim_deadline_check: secondary claim=%s provider=%s days_remaining=%d",
+                claim.id, provider.id, days_remaining,
+            )
+        except Exception as exc:
+            _claim_deadline_logger.error(
+                "claim_deadline_check: secondary claim=%s FAILED: %s",
+                claim.id, exc, exc_info=True,
+            )
+
+    _claim_deadline_logger.info(
+        "claim_deadline_check: done initial=%d corrected=%d secondary=%d",
+        sent_a, sent_b, sent_c,
+    )
+
+
 @asynccontextmanager
 async def _lifespan(app: FastAPI):
     # hour=7 UTC ≈ 02:00 ET; avoids pytz dependency for named timezone strings
@@ -422,10 +592,19 @@ async def _lifespan(app: FastAPI):
         replace_existing=True,
         misfire_grace_time=3600,
     )
+    scheduler.add_job(
+        _run_claim_deadline_check,
+        trigger="cron",
+        hour=8,
+        minute=15,
+        id="claim_deadline_check",
+        replace_existing=True,
+        misfire_grace_time=3600,
+    )
     scheduler.start()
     _sync_logger.info(
         "APScheduler started — remittance sync 07:00, CAQH 07:30, PROMISe 07:45, "
-        "PCB 07:55, Liability 08:00, MA589 08:05 UTC"
+        "PCB 07:55, Liability 08:00, MA589 08:05, Claim deadlines 08:15 UTC"
     )
     try:
         yield

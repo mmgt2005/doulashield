@@ -120,6 +120,41 @@ async def get_stats_summary(
         for row in mco_rows.fetchall()
     ]
 
+    deadline_rows = await db.execute(
+        text(
+            """
+            SELECT
+              COUNT(*) FILTER (
+                WHERE submitted_at IS NULL
+                  AND (status IS NULL OR status NOT IN ('paid'))
+                  AND service_date IS NOT NULL
+                  AND service_date + INTERVAL '180 days' < CURRENT_DATE
+              ) AS overdue_count,
+              COUNT(*) FILTER (
+                WHERE submitted_at IS NULL
+                  AND (status IS NULL OR status NOT IN ('paid'))
+                  AND service_date IS NOT NULL
+                  AND service_date + INTERVAL '150 days' < CURRENT_DATE
+                  AND service_date + INTERVAL '180 days' >= CURRENT_DATE
+              ) AS urgent_count,
+              COUNT(*) FILTER (
+                WHERE submitted_at IS NULL
+                  AND (status IS NULL OR status NOT IN ('paid'))
+                  AND service_date IS NOT NULL
+                  AND service_date + INTERVAL '30 days' < CURRENT_DATE
+              ) AS unfiled_past_30_days
+            FROM public.claims WHERE provider_id = :uid
+            """
+        ),
+        {"uid": uid},
+    )
+    drow = deadline_rows.fetchone()
+    claim_deadline_summary = {
+        "overdue_count": int(drow.overdue_count) if drow else 0,
+        "urgent_count": int(drow.urgent_count) if drow else 0,
+        "unfiled_past_30_days": int(drow.unfiled_past_30_days) if drow else 0,
+    }
+
     return {
         "total_patients": int(total_patients),
         "visits_completed": visits_completed,
@@ -130,4 +165,5 @@ async def get_stats_summary(
             "total_paid": total_paid,
         },
         "mco_breakdown": mco_breakdown,
+        "claim_deadline_summary": claim_deadline_summary,
     }

@@ -10,6 +10,20 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ## [Unreleased]
 
+---
+
+## [1.21.0] — 2026-06-05
+
+### Added
+- **Claim filing deadline reminders** (PA Medicaid timely-filing rules): Automated daily email reminders for three deadline types — initial claim (180 days from service date), corrected/resubmitted claim (365 days from service date), and secondary claim after other insurance EOB (60 days from remittance payment date). Reminder schedules escalate as deadlines approach: initial claims get nudges at 150/90/60/30/14/7 days remaining, then daily once overdue; corrected claims at 335/180/90/30/14/7 days; secondary claims at 30/14/7 days. The 150-day initial reminder doubles as a best-practice nudge ("file within 30 days of service"). Patient names in emails are reduced to initials (e.g., `J.D.`) for HIPAA safety.
+- **Visit form inline deadline warning**: When a visit is complete (has `visit_ended_at`) but no claim has been filed, the claim section now shows a color-coded deadline warning once 30+ days have elapsed — blue nudge at 30 days, amber when ≤30 days to the 180-day deadline, red when ≤7 days or overdue.
+- **Dashboard claim deadline banners**: `GET /api/v1/stats/summary` now returns `claim_deadline_summary` (`overdue_count`, `urgent_count`, `unfiled_past_30_days`). The dashboard shows a red banner for overdue claims and an amber banner for claims approaching the deadline, matching the existing CAQH/PROMISe banner pattern.
+- **Scheduler job at 08:15 UTC** (`claim_deadline_check`): Follows the existing APScheduler pattern used for CAQH, PROMISe, PCB, and MA 589 reminders. Guarded by `_configured()` — silent no-op when `RESEND_API_KEY` is not set.
+
+---
+
+## [Unreleased — pre-1.21.0]
+
 ### Added
 - **Sample EOB PDFs and generator script** (`sample_eob.pdf`, `sample_eob_denial.pdf`, `generate_sample_eob.py`): Test remittance files matching DB patient names. `sample_eob.pdf` — two paid claims: `DOE, JOHN` (T1032-U7, FFS, 2026-05-28) and `SAMPLE MEMBER` (T1032-U8, UPMC For You, 2026-05-29). `sample_eob_denial.pdf` — single denied claim: `SAMPLE MEMBER` (T1032-U8, UPMC For You, 2026-05-30, CO-197/N30). Use both files to test the EOB scanner on the Reports page — the paid EOB verifies fuzzy-match and claim status update; the denial EOB verifies denial reason code population and the resubmission flow.
 

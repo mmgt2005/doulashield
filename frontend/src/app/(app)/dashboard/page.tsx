@@ -12,6 +12,19 @@ export default function DashboardPage() {
   const [promiseDaysRemaining, setPromiseDaysRemaining] = useState<number | null | undefined>(undefined)
   const [pcbDaysRemaining, setPcbDaysRemaining] = useState<number | null | undefined>(undefined)
   const [liabilityDaysRemaining, setLiabilityDaysRemaining] = useState<number | null | undefined>(undefined)
+  const [claimDeadlineSummary, setClaimDeadlineSummary] = useState<{ overdue_count: number; urgent_count: number; unfiled_past_30_days: number } | null>(null)
+
+  useEffect(() => {
+    if (!isAuthenticated) return
+    const headers = { Authorization: `Bearer ${getAccessToken()}` }
+    axios
+      .get<{ claim_deadline_summary: { overdue_count: number; urgent_count: number; unfiled_past_30_days: number } }>(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/stats/summary`,
+        { headers }
+      )
+      .then((r) => setClaimDeadlineSummary(r.data.claim_deadline_summary))
+      .catch(() => {})
+  }, [isAuthenticated])
 
   useEffect(() => {
     if (!isAuthenticated) return
@@ -135,6 +148,32 @@ export default function DashboardPage() {
               className={`text-xs font-medium underline ${liabilityDaysRemaining <= 0 ? 'text-red-700' : 'text-amber-700'}`}
             >
               Update expiry date in Settings →
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {claimDeadlineSummary?.overdue_count != null && claimDeadlineSummary.overdue_count > 0 && (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-3">
+          <p className="text-sm font-medium text-red-800">
+            ⚠ {claimDeadlineSummary.overdue_count} claim{claimDeadlineSummary.overdue_count !== 1 ? 's' : ''} past the 180-day PA Medicaid filing deadline
+          </p>
+          <div className="mt-1.5">
+            <Link href="/clients" className="text-xs font-medium underline text-red-700">
+              View clients to file or correct →
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {claimDeadlineSummary?.urgent_count != null && claimDeadlineSummary.urgent_count > 0 && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+          <p className="text-sm font-medium text-amber-800">
+            ⏰ {claimDeadlineSummary.urgent_count} claim{claimDeadlineSummary.urgent_count !== 1 ? 's' : ''} within 30 days of the PA Medicaid 180-day filing deadline
+          </p>
+          <div className="mt-1.5">
+            <Link href="/clients" className="text-xs font-medium underline text-amber-700">
+              File now →
             </Link>
           </div>
         </div>

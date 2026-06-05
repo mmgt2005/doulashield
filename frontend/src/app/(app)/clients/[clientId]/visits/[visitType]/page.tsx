@@ -1445,6 +1445,23 @@ export default function VisitFormPage() {
                   </div>
                   <p className="text-xs text-gray-500">{billing.note}</p>
 
+                  {/* Claim filing deadline warning */}
+                  {visitEnded && visitDate && (() => {
+                    const daysSince = Math.floor((Date.now() - new Date(visitDate).getTime()) / 86400000)
+                    const daysToDeadline = 180 - daysSince
+                    if (daysToDeadline > 150) return null
+                    const color = daysToDeadline <= 7 ? 'red' : daysToDeadline <= 30 ? 'amber' : 'blue'
+                    return (
+                      <div className={`rounded border border-${color}-300 bg-${color}-50 px-3 py-2 text-xs text-${color}-800`}>
+                        {daysToDeadline <= 0
+                          ? `⚠ Filing deadline passed ${Math.abs(daysToDeadline)} day(s) ago — claim may not be reimbursable.`
+                          : daysToDeadline <= 30
+                          ? `⚠ Claim filing deadline in ${daysToDeadline} days (PA Medicaid 180-day rule). File now.`
+                          : `📋 PA Medicaid recommends filing within 30 days of service. ${daysSince} days since service.`}
+                      </div>
+                    )
+                  })()}
+
                   {/* MCO-specific warnings */}
                   {patient?.mco && ['UPMC For You', 'AmeriHealth Caritas', 'Geisinger Health Plan'].includes(patient.mco) && (
                     <div className="rounded border border-blue-100 bg-blue-50 px-3 py-2 text-xs text-blue-800 space-y-1">

@@ -417,6 +417,107 @@ async def send_ma589_reminder_email(
     )
 
 
+async def send_claim_deadline_email(
+    provider_email: str,
+    provider_name: str,
+    patient_initials: str,
+    visit_type: str,
+    service_date: str,
+    days_remaining: int,
+    deadline_type: str,
+) -> None:
+    """Sends a PA Medicaid claim filing deadline reminder.
+    deadline_type: 'initial' (180-day), 'corrected' (365-day), or 'secondary' (60-day from EOB).
+    days_remaining <= 0 means the deadline has passed.
+    """
+    if not _configured():
+        return
+    resend.api_key = settings.RESEND_API_KEY
+
+    abs_days = abs(days_remaining)
+    day_word = "day" if abs_days == 1 else "days"
+
+    if deadline_type == "secondary":
+        deadline_days = 60
+        deadline_label = "secondary claim (60 days from EOB)"
+    elif deadline_type == "corrected":
+        deadline_days = 365
+        deadline_label = "corrected claim (365-day limit)"
+    else:
+        deadline_days = 180
+        deadline_label = "initial claim (180-day PA Medicaid limit)"
+
+    is_best_practice_nudge = deadline_type == "initial" and days_remaining == 150
+
+    if days_remaining <= 0:
+        if deadline_type == "secondary":
+            subject = f"Secondary claim filing deadline passed — {abs_days} {day_word} overdue"
+        elif deadline_type == "corrected":
+            subject = f"Corrected claim filing deadline passed — {abs_days} {day_word} overdue"
+        else:
+            subject = f"PA Medicaid claim filing deadline passed — {abs_days} {day_word} overdue"
+        urgency_text = (
+            f"The {deadline_label} for visit <strong>{visit_type}</strong> (patient {patient_initials}, "
+            f"service date {service_date}) passed <strong>{abs_days} {day_word} ago</strong>. "
+            "This claim may no longer be reimbursable. Contact PA Medicaid immediately if you believe "
+            "an exception applies."
+        )
+        cta_color = "#dc2626"
+    elif is_best_practice_nudge:
+        subject = f"Reminder: PA Medicaid recommends filing claims within 30 days of service"
+        urgency_text = (
+            f"It has been 30 days since the service date ({service_date}) for visit "
+            f"<strong>{visit_type}</strong> (patient {patient_initials}). "
+            "PA Medicaid recommends filing within 30 days, though the hard deadline is "
+            f"<strong>{deadline_days} days</strong> from service date. File now to avoid delays."
+        )
+        cta_color = "#2563eb"
+    else:
+        if deadline_type == "secondary":
+            subject = f"Secondary claim due in {days_remaining} {day_word} — 60-day EOB window"
+        elif deadline_type == "corrected":
+            subject = f"Corrected claim due in {days_remaining} {day_word} — file before deadline"
+        else:
+            subject = f"PA Medicaid claim due in {days_remaining} {day_word} — file to avoid forfeiture"
+        urgency_text = (
+            f"The {deadline_label} for visit <strong>{visit_type}</strong> (patient {patient_initials}, "
+            f"service date {service_date}) expires in <strong>{days_remaining} {day_word}</strong>. "
+            "File this claim now to ensure reimbursement."
+        )
+        cta_color = "#dc2626" if days_remaining <= 7 else ("#d97706" if days_remaining <= 30 else "#2563eb")
+
+    await asyncio.to_thread(
+        resend.Emails.send,
+        {
+            "from": settings.EMAIL_FROM,
+            "to": [provider_email],
+            "subject": subject,
+            "html": f"""
+<!DOCTYPE html>
+<html>
+<body style="font-family: sans-serif; color: #1a1a1a; max-width: 480px; margin: 0 auto; padding: 24px;">
+  <p style="font-size: 16px;">Hi {provider_name},</p>
+  <p>{urgency_text}</p>
+  <p style="margin: 28px 0;">
+    <a href="{settings.FRONTEND_ORIGIN}/clients"
+       style="background:{cta_color};color:#fff;padding:12px 24px;border-radius:6px;
+              text-decoration:none;font-weight:600;font-size:15px;display:inline-block;">
+      View Claims in DoulaShield &rarr;
+    </a>
+  </p>
+  <p style="color:#6b7280;font-size:13px;">
+    Open the client&rsquo;s visit page in DoulaShield to submit or resubmit the claim. For manual MCOs
+    (UPMC, HPP, FFS), download the CMS 1500 and submit through the payer&rsquo;s portal.
+  </p>
+  <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
+  <p style="color:#9ca3af;font-size:12px;">The DoulaShield Team</p>
+</body>
+</html>
+""",
+        },
+    )
+
+
 async def send_deposit_link(provider_email: str, provider_name: str, checkout_url: str) -> None:
     if not _configured():
         raise RuntimeError("Email not configured — set RESEND_API_KEY")
