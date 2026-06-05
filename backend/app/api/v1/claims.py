@@ -325,14 +325,14 @@ async def download_audit_packet(
                 )
                 admin = admin_q.scalar_one_or_none()
                 if admin and admin.zipzign_api_key_encrypted:
-                    api_key = _decrypt(admin.zipzign_api_key_encrypted)
                     from app.core.config import settings as _settings
-                    zz_url = f"{_settings.ZIPZIGN_BASE_URL}/api/documents/{visit.ma91_zipzign_request_id}/download"
+                    # ZipZign /pdf/:id endpoint — publicly accessible by document ID (no auth header needed)
+                    zz_url = f"{_settings.ZIPZIGN_BASE_URL}/pdf/{visit.ma91_zipzign_request_id}"
                     log.info(
                         "Fetching ZipZign MA 91 PDF for visit %s (status=%s request_id=%s)",
                         visit.id, visit.ma91_status, visit.ma91_zipzign_request_id,
                     )
-                    resp = await hc.get(zz_url, headers={"Authorization": f"Bearer {api_key}"})
+                    resp = await hc.get(zz_url)
                     if resp.status_code == 200 and b"%PDF" in resp.content[:10]:
                         zipzign_signed_pdf_bytes = resp.content
                         log.info("ZipZign MA 91 PDF fetched successfully (%d bytes)", len(resp.content))

@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.18.4] — 2026-06-05
+
+### Fixed
+- **Audit Packet — ZipZign signed MA 91 PDF still 404**: The download URL was wrong. ZipZign's PDF-serve endpoint is `GET /pdf/:id` (not `/api/documents/:id/download`). The document ID alone provides security (128-bit unguessable); no Authorization header is required. Fixed the URL and removed the auth header from the fetch call.
+
+---
+
 ## [1.18.3] — 2026-06-05
 
 ### Fixed
