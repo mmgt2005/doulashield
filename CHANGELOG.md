@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.21.4] — 2026-06-06
+
+### Fixed
+- **Vercel build failure — `visitDate` not in scope**: The claim deadline inline warning in the visit form referenced `visitDate`, which was a local variable inside `handleSubmitClaim()` and not accessible at JSX render scope. Replaced with `watch('visit_date')` called inline, which is valid at any render depth.
+
+---
+
 ## [1.21.3] — 2026-06-05
 
 ### Fixed
