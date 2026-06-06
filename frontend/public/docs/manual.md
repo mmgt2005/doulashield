@@ -1,6 +1,6 @@
 # DoulaShield User Manual
 
-**v1.13.0 · Last updated 2026-06-03**
+**v1.21.0 · Last updated 2026-06-05**
 
 This manual covers every provider-facing feature in DoulaShield. Read it start to finish once, then use the headings as a reference when you need a quick reminder.
 
@@ -13,8 +13,19 @@ This manual covers every provider-facing feature in DoulaShield. Read it start t
 3. [Documenting Visits](#documenting-visits)
 4. [MA 91 Patient Signatures](#ma-91-patient-signatures)
 5. [Claims & Billing](#claims--billing)
+   - [Submitting a Claim](#submitting-a-claim)
+   - [Tracking Claim Status](#tracking-claim-status)
+   - [Denial Error Codes and Resubmission](#denial-error-codes-and-resubmission)
+   - [Downloading a Medicaid Audit Packet](#downloading-a-medicaid-audit-packet)
+   - [Scanning Paper Remittances (EOBs)](#scanning-paper-remittances-eobs)
+   - [Claim Filing Deadlines](#claim-filing-deadlines)
 6. [Reports Dashboard](#reports-dashboard)
 7. [Settings](#settings)
+   - [CAQH ProView Attestation](#caqh-proview-attestation)
+   - [PROMISe™ Re-enrollment](#promise-re-enrollment)
+   - [PCB Perinatal Certification](#pcb-perinatal-certification)
+   - [Liability Insurance](#liability-insurance)
+   - [MA 589 Patient Certification](#ma-589-patient-certification)
 8. [Reference: Billing Codes](#reference-billing-codes)
 9. [Reference: MCO Submission Channels](#reference-mco-submission-channels)
 10. [Reference: PA HealthChoices Zones](#reference-pa-healthchoices-zones)
@@ -69,6 +80,23 @@ In **Settings → Telehealth**, paste your personal meeting room URL. DoulaShiel
 
 Once saved, the **Start Telehealth** button on every visit form will open your room and send the link to the client automatically (if the client has an email on file).
 
+### Understanding the Dashboard
+
+The main Dashboard (first page after login) shows alert banners at the top whenever a credential is expiring or a claim deadline is approaching. Banners are **amber** for upcoming deadlines and **red** when a deadline has already passed or is imminent (≤7 days).
+
+| Banner | Appears when | What to do |
+|---|---|---|
+| CAQH attestation | ≤14 days to 90-day re-attestation deadline | Re-attest at proview.caqh.org, then update **Settings → CAQH Attestation** |
+| PROMISe™ re-enrollment | ≤90 days to 5-year re-enrollment deadline | Re-enroll at promise.dhs.pa.gov, then update **Settings → PROMISe™ Re-enrollment** |
+| PCB Perinatal Certification | ≤60 days to 2-year renewal deadline | Renew at pacertboard.org, then update **Settings → PCB Perinatal Certification** |
+| Liability insurance | ≤30 days to policy expiry | Renew your policy, then update **Settings → Liability Insurance** |
+| Claim deadline — overdue | Any unfiled claim is past the 180-day PA Medicaid deadline | Open the client record and file or correct the claim immediately |
+| Claim deadline — urgent | Any unfiled claim is within 30 days of the 180-day deadline | Open the client record and file the claim |
+
+Banners clear automatically once the date is updated in Settings (for credential banners) or the claim is filed/paid (for deadline banners). There is no dismiss button — the only resolution is completing the underlying action.
+
+The **Reports Dashboard** (sidebar → Reports) is a separate page showing billing pipeline statistics, revenue, and MCO breakdown. It is not the same as the main Dashboard.
+
 ---
 
 ## Managing Clients
@@ -100,6 +128,8 @@ Click **Create Client** to save.
 
 Open any client from the **Clients** list and click **Edit profile**. You can update all fields including re-scanning a new Medicaid card. Changes to the address re-geocode coordinates automatically.
 
+When a Medicaid card has been scanned for a client, a small **"Card scanned"** badge with a camera icon appears next to the MCO line in the client header. This lets you confirm at a glance that a card image is on file (which also enables the embedded card image in the audit packet).
+
 ### Checking Medicaid Eligibility
 
 On any client's overview page, the eligibility row shows the last checked status (**Active** or **Inactive**) and date. Click **Check eligibility** to query the MCO in real time through Availity.
@@ -109,6 +139,8 @@ Requirements: Availity credentials connected in Settings, client has an MCO and 
 ### Adding a Referring Provider
 
 The referring physician's NPI (Box 17b) and name (Box 17) are required on every claim. Enter them in the client profile under **Referring Provider NPI** and **Referring Provider Name**. These fields are shared across all visits for that client — enter them once and they auto-fill every CMS 1500.
+
+After typing the 10-digit NPI in the client profile edit form, click **Verify NPI** to look it up in the NPPES registry. If found, the referring doctor's name is automatically filled into the **Referring Provider Name** field (CMS 1500 Box 17) — no manual name entry needed.
 
 On a **Prenatal 1** visit, you can scan the MA 589 physician certification form to auto-fill both fields:
 
@@ -233,7 +265,7 @@ The **PA Medicaid Claim** section appears at the bottom of each visit form (belo
 | **Manual portal** | UPMC For You, Health Partners Plans, Highmark Wholecare, FFS |
 
 **Before submitting:**
-- Enter the **Referring Provider NPI** (Box 17b) — required; the claim will be rejected without it.
+- Enter the **Referring Provider NPI** (Box 17b) — required; the claim will be rejected without it. After typing the 10-digit NPI, click **Verify NPI** to look it up in the NPPES registry. If found, the referring doctor's name is displayed for confirmation and automatically saved to the client's profile (populating CMS 1500 Box 17).
 - Geisinger Health Plan may require a **Prior Authorization Number** (Box 23). If Geisinger is your patient's MCO, an amber-bordered field appears; enter the auth number if you have one.
 
 **Availity MCOs:**
@@ -257,13 +289,53 @@ The claim status badge uses four colors:
 
 **For manual MCO claims:** Use the **Log claim status** form in the claim section to record what the portal or paper EOB shows. Select the status (Submitted / Paid / Denied), date, and paid amount. Click **Save status** — the badge updates immediately.
 
+### Denial Error Codes and Resubmission
+
+When a claim is denied, DoulaShield automatically reads the denial reason and matches it to a known error code. A color-coded detail card appears below the denied badge showing:
+
+- **Code** — a short identifier (e.g. MOD-U8, SIG-MISS)
+- **Description** — what went wrong
+- **Risk** — the compliance or payment consequence
+- **Fix instructions** — exactly what to correct before resubmitting
+
+The four built-in codes are:
+
+| Code | Problem |
+|---|---|
+| **MOD-U8** | Missing or incorrect modifier — U8 required on T1032 postnatal visits; T1033 Labor requires no modifier |
+| **SIG-MISS** | Provider or client signature not detected |
+| **DT-RANGE** | Service date is in the future or beyond the 365-day filing limit |
+| **DUP-CLAIM** | Same client ID and service date already exist in the system |
+
+If the payer returns a standard X12 adjustment code (e.g. CO-45) that isn't in the list above, DoulaShield captures it automatically and stores it for future reference.
+
+**To resubmit:** After correcting the underlying issue, click **↺ Resubmit Claim** in the claim section. For Availity claims the original claim is re-posted using the stored data. For manual MCO claims the status resets to Submitted so you can track the new outcome. The resubmission count is shown next to the button so you always know how many attempts have been made.
+
+**CMS 1500 Box 22 on resubmissions:** DoulaShield automatically sets Box 22 (Resubmission Code / Original Ref. No.) to code **7** (replacement claim) with the original Availity claim ID as the reference number. Original claims use code **1**. This tells Availity and the MCO that the claim is a correction of a prior submission rather than a duplicate, and is required for the resubmission to be processed correctly.
+
+### Downloading a Medicaid Audit Packet
+
+Once a claim exists for a visit, a **📋 Download Audit Packet** button appears in the **PA Medicaid Claim** section of the visit form, directly below the claim status panel. Click it to download a single PDF that assembles every document a PA Medicaid auditor expects:
+
+1. **Cover / Claim Summary** — patient initials, Medicaid ID (last 4), MCO, service date, procedure code, billed and paid amounts.
+2. **Member Information & Eligibility** — full patient demographics, eligibility status and last verified date, embedded Medicaid card image (if scanned).
+3. **Service Documentation** — visit type, dates/times, duration, location, full SOAP note, visit entry notes, referring provider, prior authorization number.
+4. **MA 91 Certification** — the full legal MA 91 text, patient name, signed timestamp, and embedded signature image (in-person). For telehealth visits where the patient signed via ZipZign, the actual signed PDF document is appended immediately after this section so auditors have the fully executed document with the ZipZign request ID on record.
+5. **Provider Credentials** — NPI, CAQH attestation date and days until expiry, PROMISe™ re-enrollment date and days until expiry, PCB certification, liability insurance expiry, MCO contracts.
+6. **Billing Record** — claim ID, submission date, current status, billed/paid amounts, denial reason, remittance linkage.
+7. **CMS 1500** — the completed form appended as the final pages.
+
+The audit packet is for your records and any auditor requests — no patient signature is required to generate it.
+
 ### Scanning Paper Remittances (EOBs)
 
+Both EOB scan entry points accept **photos (JPEG/PNG)** and **digital PDF files** (up to 20 MB). Use **Take photo** to photograph a paper remittance with your phone camera, or **Upload PDF / image** to upload an EOB PDF you received by email or downloaded from an MCO portal.
+
 **From a single visit page (one patient):**
-Open the visit, scroll to the claim section, and click **Scan Remittance / EOB**. Photograph the paper EOB. DoulaShield extracts the status, paid amount, and denial reason for this visit's claim line and updates the record automatically.
+Open the visit, scroll to the claim section, and click **Scan Remittance / EOB**. Photograph the paper EOB or upload the PDF. DoulaShield extracts the status, paid amount, and denial reason for this visit's claim line and updates the record automatically.
 
 **From the Reports page (full remittance, all patients at once):**
-Go to **Reports → Remittance / EOB Scan** at the bottom of the page. Photograph the full multi-patient EOB. DoulaShield extracts every claim line and matches each one to a client in your roster by patient name. A review table appears showing:
+Go to **Reports → Remittance / EOB Scan** at the bottom of the page. Photograph or upload the full multi-patient EOB. DoulaShield extracts every claim line and matches each one to a client in your roster by patient name. A review table appears showing:
 
 - Each claim line from the EOB
 - The matched client (linked to their profile), or "no match" in gray
@@ -271,6 +343,36 @@ Go to **Reports → Remittance / EOB Scan** at the bottom of the page. Photograp
 - An **Apply ↓** button for each matched line
 
 Click **Apply ↓** on a row to update that visit's claim status. Rows showing "no claim" mean the visit exists in your roster but no claim has been submitted yet — go to that visit page to submit first. Click **Dismiss** to close the review table.
+
+### Claim Filing Deadlines
+
+Pennsylvania Medicaid imposes strict timely-filing deadlines. A claim received after the deadline is automatically rejected and cannot be recovered.
+
+| Claim type | Deadline | Clock starts |
+|---|---|---|
+| **Initial claim** | 180 days | Service date |
+| **Corrected / resubmitted claim** | 365 days | Original service date |
+| **Secondary claim** (patient has other insurance) | 60 days | EOB payment date |
+| **Best practice** | 30 days | Service date |
+
+The 30-day best-practice window is not a hard deadline, but MCOs process claims faster and with fewer denials when they are submitted within 30 days of service.
+
+**Inline warning on the visit form:**
+When a visit has been ended but no claim has been filed, the PA Medicaid Claim section shows a color-coded banner once 30 days have passed since service:
+- **Blue** — 30 or more days since service; PA Medicaid recommends filing within 30 days
+- **Amber** — within 30 days of the 180-day deadline; file now
+- **Red** — within 7 days of the deadline or already overdue; claim may not be reimbursable
+
+**Dashboard banners:**
+The main Dashboard shows an amber banner when any unfiled claim is within 30 days of the 180-day cutoff, and a red banner when any claim has already passed it. Click the link in the banner to go directly to your clients list.
+
+**Automated email reminders:**
+DoulaShield sends email reminders as filing deadlines approach:
+- *Initial claims* — reminders at 150 days remaining (30-day best-practice nudge), then 90, 60, 30, 14, 7, and 0 days, then daily for the first 7 days overdue
+- *Corrected/resubmitted claims* — reminders at 335 days remaining, then 180, 90, 30, 14, 7, and 0 days, then daily for 7 days overdue
+- *Secondary claims* — reminders at 30, 14, 7, and 0 days remaining, then daily for 7 days overdue
+
+Reminder emails show the patient's initials (e.g., J.D.) rather than their full name for privacy.
 
 ---
 
@@ -322,7 +424,7 @@ Access Settings from the sidebar. Changes save when you click **Save settings**.
 | **PROMISe™ Re-enrollment** | Last enrolled on (date); live 5-year expiry countdown; link to PROMISe™ Portal |
 | **PCB Perinatal Certification** | Last certified on (date); live 2-year expiry countdown; link to PA Certification Board |
 | **Liability Insurance** | Policy expiry date; live countdown; amber ≤30 days, red when expired |
-| **Provider Identity** | NPI, billing provider name, billing address, phone |
+| **Provider Identity** | NPI, billing provider name, billing address, phone. After entering your NPI, click **Verify NPI** to confirm it against the NPPES registry — your registered name and taxonomy are shown as confirmation. |
 | **Escrow & Billing** | Shows your escrow agreement status and deferred balance (collected from MCO remittances) |
 | **PA HealthChoices** | Zone (Southeast, Southwest, Lehigh/Capital, Northeast/Northwest) and counties served (checkbox list) |
 | **MCO Contracts** | Checkboxes for all 8 MCOs + FFS; optional contract effective date for each |
@@ -342,7 +444,7 @@ CAQH ProView is the credential database used by all PA MCOs to verify provider e
 2. Return to DoulaShield **Settings → CAQH Attestation** and update **Last attested on** to today's date.
 3. The expiry preview updates immediately — green means you have more than 14 days, amber means 14 days or fewer, red means overdue.
 
-**Reminders:** DoulaShield automatically emails you at 30, 14, 7, and 0 days before expiry, and daily for the first 7 days after expiry. If the dashboard shows an amber or red banner, act immediately to avoid billing disruption.
+**Reminders:** DoulaShield automatically emails you at 30, 14, 7, and 0 days before expiry, and daily for the first 7 days after expiry. The 30-day email is an early warning — the dashboard banner does not appear until 14 or fewer days remain. Do not wait for the dashboard banner to act; start re-attestation when you receive the 30-day email.
 
 ### PROMISe™ Re-enrollment
 
@@ -383,8 +485,8 @@ The MA 589 Physician Certification form must be completed for each patient befor
 
 **Workflow:**
 1. Have the referring physician sign the MA 589 form.
-2. Open the client's profile and click **Edit profile**.
-3. Enter the date the form was signed in the **MA 589 signed date** field.
+2. Open the client's profile.
+3. Click **Edit profile** and enter the date the form was signed in the **MA 589 signed date** field.
 4. The badge disappears once the date is recorded.
 
 ---
