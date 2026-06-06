@@ -1446,8 +1446,9 @@ export default function VisitFormPage() {
                   <p className="text-xs text-gray-500">{billing.note}</p>
 
                   {/* Claim filing deadline warning */}
-                  {visitEnded && visitDate && (() => {
-                    const daysSince = Math.floor((Date.now() - new Date(visitDate).getTime()) / 86400000)
+                  {visitEnded && watch('visit_date') && (() => {
+                    const svcDate = watch('visit_date') as string
+                    const daysSince = Math.floor((Date.now() - new Date(svcDate).getTime()) / 86400000)
                     const daysToDeadline = 180 - daysSince
                     if (daysToDeadline > 150) return null
                     const color = daysToDeadline <= 7 ? 'red' : daysToDeadline <= 30 ? 'amber' : 'blue'
