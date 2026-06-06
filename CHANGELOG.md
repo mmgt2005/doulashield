@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.21.3] — 2026-06-05
+
+### Fixed
+- **In-app manual pages showed v1.13.0 content**: `frontend/public/docs/manual.md` and `frontend/public/docs/admin-guide.md` are the files the app fetches at runtime to render the User Manual and Admin Guide pages. These copies had not been updated since v1.13.0 while the repo-root originals were already at v1.21.0. Synced both copies so the in-app pages now show current content.
+
+---
+
 ## [1.21.2] — 2026-06-05
 
 ### Fixed
