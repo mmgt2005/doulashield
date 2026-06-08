@@ -5,6 +5,7 @@ export const metadata: Metadata = {
   title: 'DoulaShield',
   description: 'HIPAA-compliant documentation for doulas',
   robots: 'noindex, nofollow', // PHI application — never index
+  icons: { icon: '/logo.png', apple: '/logo.png' },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

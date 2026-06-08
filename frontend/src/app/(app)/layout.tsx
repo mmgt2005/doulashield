@@ -69,7 +69,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
-          <span className="text-base font-bold text-blue-700">DoulaShield</span>
+          <img src="/logo.png" alt="DoulaShield" className="h-8 w-auto" />
         </header>
 
         <main className="flex-1 overflow-auto p-4 lg:p-6">

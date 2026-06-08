@@ -30,8 +30,8 @@ export default function ForgotPasswordPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900">DoulaShield</h1>
-          <p className="mt-1 text-sm text-gray-500">Reset your password</p>
+          <img src="/logo.png" alt="DoulaShield" className="mx-auto w-44 h-auto" />
+          <p className="mt-3 text-sm text-gray-500">Reset your password</p>
         </div>
 
         <div className="bg-white p-6 rounded-lg shadow space-y-4">

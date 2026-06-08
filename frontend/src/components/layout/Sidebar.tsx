@@ -43,8 +43,8 @@ export default function Sidebar({ onClose }: SidebarProps) {
 
   return (
     <aside className="w-56 flex-shrink-0 bg-white border-r border-gray-200 flex flex-col h-full">
-      <div className="px-4 py-5 border-b border-gray-200">
-        <span className="text-lg font-bold text-blue-700">DoulaShield</span>
+      <div className="px-4 py-4 border-b border-gray-200">
+        <img src="/logo.png" alt="DoulaShield" className="w-36 h-auto" />
       </div>
       <nav className="flex-1 px-2 py-4 space-y-1 flex flex-col">
         <div className="space-y-1">
