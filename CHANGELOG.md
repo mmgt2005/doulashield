@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.21.6] — 2026-06-08
+
+### Changed
+- **Logo replaced with original brand asset**: swapped the SVG-generated approximation for the professionally designed DoulaShield PNG — clean line-art shield, correct doula+baby figure, proper magenta/orange typography, and HIPAA tagline.
+
+---
+
 ## [1.21.5] — 2026-06-08
 
 ### Added
