@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 640" width="560" height="640">
+  <rect width="560" height="640" fill="white"/>
+
+  <!-- === ORANGE SHIELD (full fill) === -->
+  <path d="M280,40 L458,95 L458,292 Q458,430 280,520 Q102,430 102,292 L102,95 Z"
+        fill="#F28C1E"/>
+
+  <!-- === MAGENTA C-ARC (left/outer overlapping arc) === -->
+  <!-- Thick outer stroke -->
+  <path d="M206,52 Q88,84 78,202 Q68,322 118,418 Q150,470 206,500"
+        fill="none" stroke="#C8166A" stroke-width="62" stroke-linecap="round"/>
+  <!-- White inner cutout — creates C-stroke effect -->
+  <path d="M210,84 Q118,114 110,218 Q103,330 148,424 Q175,468 214,496"
+        fill="none" stroke="white" stroke-width="36" stroke-linecap="round"/>
+
+  <!-- === MAGENTA RIGHT SHIELD BORDER (thin) === -->
+  <path d="M280,40 L458,95 L458,292 Q458,430 280,520"
+        fill="none" stroke="#C8166A" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- White gap on right border -->
+  <path d="M280,58 L446,108 L446,292 Q446,415 280,502"
+        fill="none" stroke="white" stroke-width="6"/>
+
+  <!-- === YELLOW ACCENT STRIPES (lower-right inside shield) === -->
+  <rect x="358" y="300" width="22" height="82" rx="6" fill="#FFD000"
+        transform="rotate(-25,369,341)"/>
+  <rect x="386" y="300" width="22" height="82" rx="6" fill="#FFD000"
+        transform="rotate(-25,397,341)"/>
+
+  <!-- === DOULA + BABY FIGURE (white) === -->
+  <!-- Head -->
+  <circle cx="282" cy="180" r="30" fill="white"/>
+  <!-- Shoulders / upper body -->
+  <path d="M250,220 Q270,212 282,212 Q294,212 314,220 L316,248 Q282,238 248,248 Z"
+        fill="white"/>
+  <!-- Left arm — curves outward then swoops down and inward -->
+  <path d="M248,240 Q218,258 210,295 Q205,325 220,355 Q232,375 258,384"
+        fill="none" stroke="white" stroke-width="22" stroke-linecap="round"/>
+  <!-- Right arm — mirror -->
+  <path d="M316,240 Q346,258 354,295 Q359,325 344,355 Q332,375 306,384"
+        fill="none" stroke="white" stroke-width="22" stroke-linecap="round"/>
+  <!-- Baby body (in the cradle of the arms) -->
+  <ellipse cx="282" cy="378" rx="24" ry="16" fill="#F28C1E"/>
+  <!-- Baby head -->
+  <circle cx="282" cy="358" r="18" fill="white"/>
+  <!-- Baby inner fill (orange so it looks like a baby inside the arms) -->
+  <circle cx="282" cy="358" r="11" fill="#F28C1E"/>
+
+  <!-- === TEXT === -->
+  <!-- DOULA (magenta) then SHIELD (orange), hand-tuned x positions -->
+  <text x="44" y="576"
+        font-family="'Arial Black','Helvetica Neue',Arial,sans-serif"
+        font-weight="900" font-size="72" fill="#C8166A">DOULA</text>
+  <text x="274" y="576"
+        font-family="'Arial Black','Helvetica Neue',Arial,sans-serif"
+        font-weight="900" font-size="72" fill="#F28C1E">SHIELD</text>
+
+  <!-- Tagline -->
+  <text x="280" y="616"
+        font-family="Arial,sans-serif" font-weight="700" font-size="18"
+        fill="#C8166A" text-anchor="middle" letter-spacing="1">
+    HIPAA-COMPLIANT  |  AUDIT-PROOF VAULT
+  </text>
+</svg>
