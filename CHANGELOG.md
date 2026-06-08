@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.21.5] — 2026-06-08
+
+### Added
+- **DoulaShield logo** (`frontend/public/logo.png` + `logo.svg`): the brand logo now displays in the sidebar, mobile top bar, login page, forgot-password page, reset-password page, and browser favicon/tab icon.
+
+---
+
 ## [1.21.4] — 2026-06-06
 
 ### Fixed
