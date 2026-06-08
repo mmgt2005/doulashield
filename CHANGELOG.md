@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.21.7] — 2026-06-08
+
+### Added
+- **Favicon** (`favicon.ico` + `favicon.png`): dedicated shield-mark icon for browser tabs and Apple touch icon, replacing the scaled-down full logo. `favicon.ico` includes 16/32/48 px sizes for crisp rendering across all browsers.
+
+---
+
 ## [1.21.6] — 2026-06-08
 
 ### Changed
