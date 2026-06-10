@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.23.1] — 2026-06-10
+
+### Fixed
+- **Alembic migration revision collision**: Two migration files both claimed revision `"0034"` (`0034_fix_mod_u8_description.py` and the new billing providers migration). This caused `alembic upgrade head` to fail with a "multiple heads" error at container startup, preventing uvicorn from ever starting and making the Railway healthcheck fail. Renamed the billing providers migration to `0035` with `down_revision = "0034"` to restore a linear chain.
+
+---
+
 ## [1.22.0] — 2026-06-10
 
 ### Added
