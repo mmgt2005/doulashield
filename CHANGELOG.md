@@ -12,6 +12,19 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.22.0] — 2026-06-10
+
+### Added
+- **Admin Impersonation ("View As User")**: Admins can click "View as" on any provider row in the Users table to enter a fully-scoped impersonation session. Every data fetch is automatically filtered to that provider's records. A persistent amber banner at the top of every page makes the impersonation session impossible to miss. One click on "Exit" restores the admin session without re-login. Page refresh naturally ends impersonation (in-memory only — nothing persisted). Full HIPAA audit trail: `IMPERSONATE_START` and `IMPERSONATE_END` events with admin ID, target ID, and target email in `extra_context`.
+  - Backend: `POST /api/v1/admin/users/{user_id}/impersonate` (admin-only) returns a short-lived provider JWT with `imp` extra claim
+  - Backend: `POST /api/v1/auth/impersonate/end` records the audit end event
+  - Frontend: `priorSession` Zustand state holds the admin token in memory; `startImpersonation` / `exitImpersonation` swap tokens seamlessly
+  - Frontend: `ImpersonationBanner` — fixed amber bar with provider name and Exit button
+  - Sidebar admin links auto-hide during impersonation (provider role is active)
+  - Admin routes redirect impersonated sessions to `/dashboard` (existing role guard)
+
+---
+
 ## [1.21.7] — 2026-06-08
 
 ### Added

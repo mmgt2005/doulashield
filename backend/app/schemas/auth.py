@@ -29,3 +29,11 @@ class MFAVerifyRequest(BaseModel):
 class ChangePasswordRequest(BaseModel):
     current_password: str
     new_password: str
+
+
+class ImpersonateResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    target_id: str
+    target_email: str
+    target_name: str | None

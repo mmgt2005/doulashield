@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import axios from 'axios'
 import { getAccessToken } from '@/lib/auth'
 import { useAuthStore } from '@/store/auth-store'
@@ -9,7 +10,8 @@ import { User, UserWithBilling } from '@/types/domain'
 type MergedUser = User & Partial<Omit<UserWithBilling, keyof User>>
 
 export default function AdminUsersPage() {
-  const { user: currentUser } = useAuthStore()
+  const router = useRouter()
+  const { user: currentUser, startImpersonation } = useAuthStore()
   const [users, setUsers] = useState<MergedUser[]>([])
   const [loading, setLoading] = useState(true)
   const [actionToast, setActionToast] = useState<string | null>(null)
@@ -147,6 +149,35 @@ export default function AdminUsersPage() {
       await reload()
     } catch (e: unknown) {
       const msg = axios.isAxiosError(e) ? e.response?.data?.detail : 'Failed to update role'
+      showToast(`Error: ${msg}`)
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const handleViewAs = async (u: MergedUser) => {
+    setActionLoading(`viewas-${u.id}`)
+    try {
+      const res = await axios.post<{ access_token: string; target_id: string; target_email: string; target_name: string | null }>(
+        `${api}/api/v1/admin/users/${u.id}/impersonate`,
+        {},
+        { headers },
+      )
+      const targetUser: User = {
+        id: res.data.target_id,
+        email: res.data.target_email,
+        role: 'provider',
+        full_name: res.data.target_name,
+        mfa_enabled: u.mfa_enabled,
+        is_active: u.is_active,
+        created_at: u.created_at,
+        last_sign_in_at: u.last_sign_in_at,
+        welcome_email_sent_at: u.welcome_email_sent_at,
+      }
+      startImpersonation(targetUser, res.data.access_token)
+      router.push('/dashboard')
+    } catch (e: unknown) {
+      const msg = axios.isAxiosError(e) ? e.response?.data?.detail : 'Failed to start impersonation'
       showToast(`Error: ${msg}`)
     } finally {
       setActionLoading(null)
@@ -369,6 +400,15 @@ export default function AdminUsersPage() {
                           className="rounded border border-gray-300 px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50 whitespace-nowrap"
                         >
                           {actionLoading === `role-${u.id}` ? '…' : u.role === 'admin' ? 'Make Provider' : 'Make Admin'}
+                        </button>
+                      )}
+                      {isProvider && u.id !== currentUser?.id && (
+                        <button
+                          onClick={() => handleViewAs(u)}
+                          disabled={actionLoading === `viewas-${u.id}`}
+                          className="rounded border border-amber-300 bg-amber-50 px-2 py-1 text-xs font-medium text-amber-700 hover:bg-amber-100 disabled:opacity-50 whitespace-nowrap"
+                        >
+                          {actionLoading === `viewas-${u.id}` ? '…' : 'View as'}
                         </button>
                       )}
                     </div>

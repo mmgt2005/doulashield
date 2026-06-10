@@ -4,6 +4,7 @@ import { useCallback, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Sidebar from '@/components/layout/Sidebar'
 import SessionTimeoutModal from '@/components/layout/SessionTimeoutModal'
+import ImpersonationBanner from '@/components/layout/ImpersonationBanner'
 import { useSessionTimeout } from '@/hooks/useSessionTimeout'
 import { useAuth } from '@/hooks/useAuth'
 import { useAuthStore } from '@/store/auth-store'
@@ -12,7 +13,7 @@ import { clearAccessToken } from '@/lib/auth'
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
-  const { logout, isLoading: authLoading } = useAuthStore()
+  const { logout, isLoading: authLoading, priorSession } = useAuthStore()
   // Hydrates user + role into the auth store for all pages under (app).
   useAuth()
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -33,7 +34,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { showWarning, resetTimeout } = useSessionTimeout(handleTimeout)
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <>
+    <ImpersonationBanner />
+    <div className={`flex h-screen overflow-hidden${priorSession ? ' pt-9' : ''}`}>
       {/* Desktop sidebar — always visible on lg+ */}
       <div className="hidden lg:flex">
         <Sidebar />
@@ -83,5 +86,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
       {showWarning && <SessionTimeoutModal onStayLoggedIn={resetTimeout} />}
     </div>
+    </>
   )
 }

@@ -35,7 +35,8 @@ from app.schemas.auth import (
 from app.services import email_service
 from app.services.auth_service import AuthService
 from app.services.eligibility_service import EligibilityService
-from app.core.security import hash_password, is_valid_password, verify_password
+from app.core.security import decode_token, hash_password, is_valid_password, verify_password
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 
 class ForgotPasswordRequest(BaseModel):
@@ -321,6 +322,40 @@ async def forgot_password(
         )
 
     return _RESET_RESPONSE
+
+
+_bearer = HTTPBearer()
+
+
+@router.post("/impersonate/end", status_code=status.HTTP_204_NO_CONTENT)
+async def end_impersonation(
+    request: Request,
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    credentials: Annotated[HTTPAuthorizationCredentials, Depends(_bearer)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    audit: Annotated[AuditLogger, Depends(get_audit)],
+) -> None:
+    try:
+        payload = decode_token(credentials.credentials)
+    except Exception:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid token")
+
+    imp_claim = payload.get("imp")
+    if not imp_claim:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Not an impersonation session")
+
+    await audit.log(
+        action="IMPERSONATE_END",
+        resource_type="user",
+        resource_id=current_user.id,
+        user_id=uuid.UUID(imp_claim),
+        ip_address=get_client_ip(request),
+        user_agent=get_user_agent(request),
+        extra_context={
+            "admin_id": imp_claim,
+            "target_id": str(current_user.id),
+        },
+    )
 
 
 @router.post("/reset-password")
