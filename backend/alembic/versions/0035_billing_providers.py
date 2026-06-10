@@ -1,15 +1,15 @@
 """Add billing_providers table and billing_provider_id on users
 
-Revision ID: 0034
-Revises: 0033
+Revision ID: 0035
+Revises: 0034
 Create Date: 2026-06-10
 """
 import sqlalchemy as sa
 from alembic import op
 from sqlalchemy.dialects import postgresql
 
-revision = "0034"
-down_revision = "0033"
+revision = "0035"
+down_revision = "0034"
 branch_labels = None
 depends_on = None
 
