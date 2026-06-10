@@ -10,9 +10,10 @@ from sqlalchemy.future import select
 
 from app.core.audit import AuditLogger
 from app.core.encryption import decrypt_field, encrypt_field
+from app.models.billing_provider import BillingProvider
 from app.models.patient import Patient
 from app.models.user import User
-from app.schemas.admin import McoContract, ProviderSettingsRead, ProviderSettingsUpdate
+from app.schemas.admin import BillingProviderRead, McoContract, ProviderSettingsRead, ProviderSettingsUpdate
 from app.services.availity_client import AvailityClient, MCO_PAYER_IDS
 
 logger = logging.getLogger(__name__)
@@ -33,6 +34,14 @@ class EligibilityService:
         self._db = db
         self._audit = audit
 
+    async def _fetch_billing_provider(self, user: User) -> BillingProvider | None:
+        if not user.billing_provider_id:
+            return None
+        bp_result = await self._db.execute(
+            select(BillingProvider).where(BillingProvider.id == user.billing_provider_id)
+        )
+        return bp_result.scalar_one_or_none()
+
     async def get_provider_settings(self, user_id: uuid.UUID) -> ProviderSettingsRead:
         result = await self._db.execute(select(User).where(User.id == user_id))
         user = result.scalar_one_or_none()
@@ -42,6 +51,7 @@ class EligibilityService:
             select(User).where(User.role == "admin", User.zipzign_api_key_encrypted.isnot(None)).limit(1)
         )
         zipzign_configured = admin_q.scalar_one_or_none() is not None
+        billing_provider_row = await self._fetch_billing_provider(user)
         today = date.today()
         caqh_expiry = user.caqh_last_attested_on + timedelta(days=90) if user.caqh_last_attested_on else None
         caqh_days_remaining = (caqh_expiry - today).days if caqh_expiry else None
@@ -66,6 +76,8 @@ class EligibilityService:
             provider_ssn_connected=user.provider_ssn_encrypted is not None,
             provider_signature_path=user.provider_signature_path,
             billing_provider_name=user.billing_provider_name,
+            billing_provider_id=user.billing_provider_id,
+            billing_provider=BillingProviderRead.model_validate(billing_provider_row) if billing_provider_row else None,
             mco_contracts=_parse_mco_contracts(user.mco_contracts_json),
             caqh_last_attested_on=user.caqh_last_attested_on,
             caqh_days_remaining=caqh_days_remaining,
@@ -115,6 +127,8 @@ class EligibilityService:
             user.provider_signature_path = data.provider_signature_path or None
         if data.billing_provider_name is not None:
             user.billing_provider_name = data.billing_provider_name or None
+        if data.billing_provider_id is not None:
+            user.billing_provider_id = data.billing_provider_id
         if data.mco_contracts is not None:
             user.mco_contracts_json = (
                 json.dumps([c.model_dump(mode="json") for c in data.mco_contracts])
@@ -145,6 +159,7 @@ class EligibilityService:
             select(User).where(User.role == "admin", User.zipzign_api_key_encrypted.isnot(None)).limit(1)
         )
         zipzign_configured = admin_q2.scalar_one_or_none() is not None
+        billing_provider_row2 = await self._fetch_billing_provider(user)
         today2 = date.today()
         caqh_expiry2 = user.caqh_last_attested_on + timedelta(days=90) if user.caqh_last_attested_on else None
         caqh_days_remaining2 = (caqh_expiry2 - today2).days if caqh_expiry2 else None
@@ -169,6 +184,8 @@ class EligibilityService:
             provider_ssn_connected=user.provider_ssn_encrypted is not None,
             provider_signature_path=user.provider_signature_path,
             billing_provider_name=user.billing_provider_name,
+            billing_provider_id=user.billing_provider_id,
+            billing_provider=BillingProviderRead.model_validate(billing_provider_row2) if billing_provider_row2 else None,
             mco_contracts=_parse_mco_contracts(user.mco_contracts_json),
             caqh_last_attested_on=user.caqh_last_attested_on,
             caqh_days_remaining=caqh_days_remaining2,

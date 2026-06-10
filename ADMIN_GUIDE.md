@@ -1,6 +1,6 @@
 # DoulaShield Admin Guide
 
-**v1.22.0 · Last updated 2026-06-10**
+**v1.23.0 · Last updated 2026-06-10**
 
 This guide covers everything admins can do that providers cannot. For day-to-day provider features (documenting visits, submitting claims, etc.) refer to `MANUAL.md`.
 
@@ -11,9 +11,10 @@ This guide covers everything admins can do that providers cannot. For day-to-day
 1. [Introduction](#introduction)
 2. [Managing Provider Accounts](#managing-provider-accounts)
 3. [Billing & Escrow](#billing--escrow)
-4. [Admin-Only Settings](#admin-only-settings)
-5. [Audit Logs](#audit-logs)
-6. [Reference: Audit Action Types](#reference-audit-action-types)
+4. [Billing Providers (Group NPIs)](#billing-providers-group-npis)
+5. [Admin-Only Settings](#admin-only-settings)
+6. [Audit Logs](#audit-logs)
+7. [Reference: Audit Action Types](#reference-audit-action-types)
 
 ---
 
@@ -157,6 +158,69 @@ Admin accounts are created with `deposit_paid = true` and `escrow_balance_remain
 
 ---
 
+## Billing Providers (Group NPIs)
+
+PA Medicaid doula agencies employ multiple rendering providers (doulas) but submit all claims through a single billing entity with a group NPI. The Billing Providers section lets you register that entity once and assign it to any number of doulas.
+
+### What Billing Providers Do
+
+When a doula is linked to a billing provider:
+
+- **Box 33 / Box 33a** on the CMS 1500 use the billing entity's name and group NPI.
+- **Box 24J** keeps the doula's individual NPI (rendering provider).
+- **Box 25** uses the billing entity's EIN (if configured) rather than the doula's SSN.
+- The **Availity 837P** claim body includes a `billingProvider` object with the group NPI alongside the doula as the rendering provider.
+
+Doulas with no billing provider assigned continue to use their own NPI for both Box 24J and Box 33a — no change from the current behavior.
+
+### Managing Billing Providers
+
+Go to **Billing Providers** in the admin sidebar (between **Users** and **Audit Logs**). The page lists all registered billing entities with their name, NPI, and the number of doulas currently assigned.
+
+#### Adding a Billing Provider
+
+Click **+ Add Billing Provider**. Fill in:
+
+| Field | Required | Notes |
+|---|---|---|
+| **Name** | Yes | Legal entity name as registered in PROMISe |
+| **NPI** | Yes | 10-digit group NPI |
+| **Taxonomy Code** | No | Defaults to `374J00000X` if left blank |
+| **Address** | No | Used in Box 33 of the CMS 1500 |
+| **City / State / ZIP** | No | Same — Box 33 address fields |
+| **Phone** | No | Box 33 phone |
+| **Tax ID (EIN)** | No | Stored Fernet-encrypted; used in Box 25 when configured |
+
+Click **Save**. The new entity appears in the list immediately.
+
+#### Editing a Billing Provider
+
+Click **Edit** on any row. All fields are editable. Changes take effect on the next claim generated or submitted — already-submitted claims are not retroactively updated.
+
+#### Deleting a Billing Provider
+
+Click **Delete** on the row. Any doulas currently assigned to this entity will have `billing_provider_id` set to NULL automatically (ON DELETE SET NULL), reverting them to self-billing. Confirm the deletion in the prompt — it cannot be undone.
+
+### Assigning a Billing Provider to a Doula
+
+In the **Users** table, find the provider row. The **Billing Provider** column contains a dropdown listing all registered billing entities plus a "— None —" option. Select the appropriate billing entity. The change takes effect immediately — no save button required.
+
+To remove an assignment, select **— None —** from the dropdown.
+
+### Viewing the Assignment from the Provider's Side
+
+Providers cannot change their own billing provider assignment. When a billing provider is assigned, the provider's **Settings** page shows a read-only green panel:
+
+```
+Billing through: Agency Name
+NPI 1234567890 · Box 33a on CMS 1500
+Your NPI (9876543210) appears in Box 24J as rendering provider.
+```
+
+If no billing provider is assigned, the panel shows a gray note: *No billing provider linked — your NPI used for both Box 24J and Box 33a.*
+
+---
+
 ## Admin-Only Settings
 
 Two fields in **Settings** are visible only to admins:
@@ -233,3 +297,5 @@ HIPAA requires an immutable audit trail. The database has a rule that blocks UPD
 | `ESCROW_DEDUCTION` | Automatic escrow charge from remittance | user |
 | `GENERATE_AUDIT_PACKET` | Medicaid audit packet PDF downloaded | claim |
 | `RESUBMIT_CLAIM` | Denied claim resubmitted to Availity or status reset | claim |
+| `CREATE_BILLING_PROVIDER` | Admin created a new billing provider entity | user |
+| `UPDATE_BILLING_PROVIDER` | Admin updated a billing provider entity | user |

@@ -9,6 +9,12 @@ import { User, UserWithBilling } from '@/types/domain'
 
 type MergedUser = User & Partial<Omit<UserWithBilling, keyof User>>
 
+interface BillingProviderOption {
+  id: string
+  name: string
+  npi: string
+}
+
 export default function AdminUsersPage() {
   const router = useRouter()
   const { user: currentUser, startImpersonation } = useAuthStore()
@@ -26,6 +32,7 @@ export default function AdminUsersPage() {
   const [createRole, setCreateRole] = useState<'provider' | 'admin'>('provider')
   const [createError, setCreateError] = useState<string | null>(null)
   const [creating, setCreating] = useState<'only' | 'send' | false>(false)
+  const [billingProviders, setBillingProviders] = useState<BillingProviderOption[]>([])
   const [credentials, setCredentials] = useState<{ email: string; password: string } | null>(null)
   const [copied, setCopied] = useState(false)
 
@@ -38,15 +45,17 @@ export default function AdminUsersPage() {
   }
 
   const reload = async () => {
-    const [usersRes, billingRes] = await Promise.allSettled([
+    const [usersRes, billingRes, bpRes] = await Promise.allSettled([
       axios.get<User[]>(`${api}/api/v1/admin/users`, { headers }),
       axios.get<UserWithBilling[]>(`${api}/api/v1/admin/billing/users`, { headers }),
+      axios.get<BillingProviderOption[]>(`${api}/api/v1/admin/billing-providers`, { headers }),
     ])
     const baseUsers = usersRes.status === 'fulfilled' ? usersRes.value.data : []
     const billingMap = billingRes.status === 'fulfilled'
       ? Object.fromEntries(billingRes.value.data.map((u) => [u.id, u]))
       : {}
     setUsers(baseUsers.map((u) => ({ ...u, ...(billingMap[u.id] ?? {}) })))
+    if (bpRes.status === 'fulfilled') setBillingProviders(bpRes.value.data)
   }
 
   useEffect(() => {
@@ -173,11 +182,31 @@ export default function AdminUsersPage() {
         created_at: u.created_at,
         last_sign_in_at: u.last_sign_in_at,
         welcome_email_sent_at: u.welcome_email_sent_at,
+        billing_provider_id: null,
       }
       startImpersonation(targetUser, res.data.access_token)
       router.push('/dashboard')
     } catch (e: unknown) {
       const msg = axios.isAxiosError(e) ? e.response?.data?.detail : 'Failed to start impersonation'
+      showToast(`Error: ${msg}`)
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const assignBillingProvider = async (userId: string, billingProviderId: string | null) => {
+    setActionLoading(`bp-${userId}`)
+    try {
+      await axios.patch(
+        `${api}/api/v1/admin/users/${userId}`,
+        { billing_provider_id: billingProviderId },
+        { headers },
+      )
+      setUsers((prev) =>
+        prev.map((u) => (u.id === userId ? { ...u, billing_provider_id: billingProviderId } : u))
+      )
+    } catch (e: unknown) {
+      const msg = axios.isAxiosError(e) ? e.response?.data?.detail : 'Failed to assign billing provider'
       showToast(`Error: ${msg}`)
     } finally {
       setActionLoading(null)
@@ -283,7 +312,7 @@ export default function AdminUsersPage() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50">
             <tr>
-              {['Email', 'Role', 'MFA', 'Active', 'Joined', 'Last Emailed', 'Deposit', 'Balance', 'Subscription', 'Actions'].map((h) => (
+              {['Email', 'Role', 'MFA', 'Active', 'Joined', 'Last Emailed', 'Deposit', 'Balance', 'Subscription', 'Billing Provider', 'Actions'].map((h) => (
                 <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">{h}</th>
               ))}
             </tr>
@@ -339,6 +368,25 @@ export default function AdminUsersPage() {
                       <span className="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">Canceled</span>
                     ) : (
                       <span className="text-gray-400 text-xs">None</span>
+                    )}
+                  </td>
+
+                  {/* Billing Provider */}
+                  <td className="px-4 py-3">
+                    {isProvider ? (
+                      <select
+                        value={(u as MergedUser & { billing_provider_id?: string | null }).billing_provider_id ?? ''}
+                        onChange={(e) => assignBillingProvider(u.id, e.target.value || null)}
+                        disabled={actionLoading === `bp-${u.id}`}
+                        className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-700 focus:outline-none focus:border-blue-400 disabled:opacity-50 max-w-[160px]"
+                      >
+                        <option value="">— None —</option>
+                        {billingProviders.map((bp) => (
+                          <option key={bp.id} value={bp.id}>{bp.name}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <span className="text-gray-300">—</span>
                     )}
                   </td>
 

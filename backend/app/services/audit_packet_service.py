@@ -177,6 +177,7 @@ def generate_audit_packet(
     provider_data: dict,
     claim_data: dict,
     zipzign_signed_pdf_bytes: bytes | None = None,
+    billing_provider_data: dict | None = None,
 ) -> bytes:
     """
     Build a Medicaid audit packet PDF and return raw bytes.
@@ -482,6 +483,7 @@ def generate_audit_packet(
             patient_data=patient_data,
             visit_data=visit_data,
             provider_data=provider_data,
+            billing_provider_data=billing_provider_data,
         )
     except Exception:
         cms_bytes = None

@@ -19,6 +19,7 @@ from app.api.v1.soap_notes import router as soap_notes_router
 from app.api.v1.visits import router as visits_router
 from app.api.v1.admin.users import router as admin_users_router
 from app.api.v1.admin.audit_logs import router as admin_audit_router
+from app.api.v1.admin.billing_providers import router as admin_billing_providers_router
 
 api_router = APIRouter()
 
@@ -40,4 +41,5 @@ api_router.include_router(documents_router)
 api_router.include_router(directory_router)
 api_router.include_router(admin_users_router)
 api_router.include_router(admin_audit_router)
+api_router.include_router(admin_billing_providers_router)
 api_router.include_router(stats_router)

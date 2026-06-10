@@ -314,6 +314,7 @@ def generate_pdf(
     visit_data: dict,
     provider_data: dict,
     claim_data: dict | None = None,
+    billing_provider_data: dict | None = None,
 ) -> bytes:
     """
     Fills the official CMS 1500 blank form with claim data and returns PDF bytes.
@@ -327,6 +328,9 @@ def generate_pdf(
                        prior_auth_number (str|None), alternate_location (str|None)
     provider_data keys: npi (str), full_name (str), provider_address (str), provider_phone (str),
                         provider_ssn (str), provider_signature_bytes (bytes|None)
+    billing_provider_data keys (optional): npi (str), name (str), address, city, state,
+                        zip_code, phone, tax_id — when present, overrides Box 33/33a/25
+                        (billing entity NPI); provider_data.npi stays in Box 24J (rendering)
     """
     proc_code, modifier, rate_cents, diag_codes, _ = billing_for_visit(
         visit_data.get("visit_type", "")
@@ -362,12 +366,30 @@ def generate_pdf(
     address = patient_data.get("address", "")
     pt_street, pt_city, pt_state, pt_zip = _parse_address(address)
 
-    # Provider info
+    # Provider info — npi is always the rendering provider NPI (Box 24J)
     npi = provider_data.get("npi", "")
-    # Box 33 uses the PROMISe-registered billing name; falls back to full_name if not set
-    provider_name = provider_data.get("billing_provider_name") or provider_data.get("full_name", "")
-    prov_addr = provider_data.get("provider_address", "")
-    prov_phone_raw = provider_data.get("provider_phone", "")
+
+    # Box 33/33a — billing entity when linked, otherwise fall back to rendering provider
+    if billing_provider_data:
+        billing_npi = billing_provider_data.get("npi", npi)
+        provider_name = billing_provider_data.get("name", "")
+        prov_addr = (
+            f"{billing_provider_data.get('address', '')}, "
+            f"{billing_provider_data.get('city', '')}, "
+            f"{billing_provider_data.get('state', '')} "
+            f"{billing_provider_data.get('zip_code', '')}"
+        ).strip(", ")
+        prov_phone_raw = billing_provider_data.get("phone", provider_data.get("provider_phone", ""))
+        tax_id_for_box25 = billing_provider_data.get("tax_id") or provider_data.get("provider_ssn", "")
+        box25_is_ein = bool(billing_provider_data.get("tax_id"))
+    else:
+        billing_npi = npi
+        provider_name = provider_data.get("billing_provider_name") or provider_data.get("full_name", "")
+        prov_addr = provider_data.get("provider_address", "")
+        prov_phone_raw = provider_data.get("provider_phone", "")
+        tax_id_for_box25 = provider_data.get("provider_ssn", "")
+        box25_is_ein = False
+
     prov_phone_digits = re.sub(r"\D", "", prov_phone_raw)
     prov_phone_area = prov_phone_digits[:3] if len(prov_phone_digits) >= 10 else ""
     prov_phone_num = prov_phone_digits[3:] if len(prov_phone_digits) >= 10 else prov_phone_digits
@@ -506,8 +528,8 @@ def generate_pdf(
         "local1a": "1",
         "local1":  npi,
 
-        # Box 25 — Federal Tax ID (SSN for sole proprietor)
-        "tax_id": provider_ssn,
+        # Box 25 — Federal Tax ID (EIN when billing provider linked; SSN for sole proprietor)
+        "tax_id": tax_id_for_box25,
 
         # Box 26 — Patient account number
         "pt_account": pt_account,
@@ -535,8 +557,8 @@ def generate_pdf(
         "doc_phone area": prov_phone_area,
         "doc_phone":      prov_phone_num,
 
-        # Box 33a — NPI
-        "pin": npi,
+        # Box 33a — Billing provider NPI (agency NPI when linked; rendering NPI otherwise)
+        "pin": billing_npi,
 
         # Box 33b — Taxonomy as group qualifier
         "grp": DOULA_TAXONOMY,
@@ -557,7 +579,7 @@ def generate_pdf(
     _set_radio(writer, "ins_sex", "/FEMALE" if gender == "F" else "/MALE")
     _set_radio(writer, "rel_to_ins", "/S")    # Self
     _set_radio(writer, "assignment", "/YES")
-    _set_radio(writer, "ssn", "/SSN")         # Box 25 — SSN not EIN
+    _set_radio(writer, "ssn", "/EIN" if box25_is_ein else "/SSN")  # Box 25
     _set_radio(writer, "ins_benefit_plan", "/YES" if patient_data.get("has_other_insurance") else "/NO")
 
     # Tell every PDF viewer to regenerate visual appearances from /V (text) and /AS (radio)

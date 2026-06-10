@@ -17,6 +17,7 @@ from app.core.billing_constants import (
     rate_dollars,
 )
 from app.core.encryption import decrypt_field
+from app.models.billing_provider import BillingProvider
 from app.models.claim import Claim
 from app.models.claim_error_code import ClaimErrorCode
 from app.models.patient import Patient
@@ -166,6 +167,25 @@ class ClaimsService:
         }
         if data.claim_data:
             claim_body.update(data.claim_data)
+
+        # Add billing provider when configured — Box 33a / Availity billingProvider
+        if user.billing_provider_id:
+            bp_result = await self._db.execute(
+                select(BillingProvider).where(BillingProvider.id == user.billing_provider_id)
+            )
+            billing_provider = bp_result.scalar_one_or_none()
+            if billing_provider:
+                claim_body["billingProvider"] = {
+                    "npi": billing_provider.npi,
+                    "organizationName": billing_provider.name,
+                    "taxonomyCode": billing_provider.taxonomy_code or DOULA_TAXONOMY,
+                    "address": {
+                        "address1": billing_provider.address or "",
+                        "city": billing_provider.city or "",
+                        "state": billing_provider.state or "",
+                        "postalCode": billing_provider.zip_code or "",
+                    },
+                }
 
         client = self._make_client(user)
         raw_response = await client.post("/claims", body=claim_body)

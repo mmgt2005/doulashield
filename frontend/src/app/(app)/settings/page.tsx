@@ -113,6 +113,8 @@ export default function SettingsPage() {
   const [sigCanvasRef, setSigCanvasRef] = useState<HTMLCanvasElement | null>(null)
   const [sigPad, setSigPad] = useState<import('signature_pad').default | null>(null)
 
+  const [billingProvider, setBillingProvider] = useState<{ id: string; name: string; npi: string } | null>(null)
+
   const [pwCurrent, setPwCurrent] = useState('')
   const [pwNew, setPwNew] = useState('')
   const [pwConfirm, setPwConfirm] = useState('')
@@ -127,7 +129,7 @@ export default function SettingsPage() {
     if (!isAuthenticated) return
     const headers = { Authorization: `Bearer ${getAccessToken()}` }
     axios
-      .get<{ npi: string | null; billing_provider_name: string | null; availity_connected: boolean; telehealth_link: string | null; contact_email: string | null; zipzign_connected: boolean; zone: string | null; counties: string[] | null; provider_address: string | null; provider_phone: string | null; provider_ssn_connected: boolean; provider_signature_path: string | null; mco_contracts: Array<{ mco: string; contract_date: string | null }> | null; caqh_last_attested_on: string | null; caqh_days_remaining: number | null; promise_last_enrolled_on: string | null; promise_days_remaining: number | null; pcb_last_certified_on: string | null; pcb_days_remaining: number | null; liability_insurance_expires_on: string | null; liability_days_remaining: number | null }>(
+      .get<{ npi: string | null; billing_provider_name: string | null; availity_connected: boolean; telehealth_link: string | null; contact_email: string | null; zipzign_connected: boolean; zone: string | null; counties: string[] | null; provider_address: string | null; provider_phone: string | null; provider_ssn_connected: boolean; provider_signature_path: string | null; mco_contracts: Array<{ mco: string; contract_date: string | null }> | null; caqh_last_attested_on: string | null; caqh_days_remaining: number | null; promise_last_enrolled_on: string | null; promise_days_remaining: number | null; pcb_last_certified_on: string | null; pcb_days_remaining: number | null; liability_insurance_expires_on: string | null; liability_days_remaining: number | null; billing_provider: { id: string; name: string; npi: string } | null }>(
         `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/me/provider-settings`,
         { headers }
       )
@@ -157,6 +159,7 @@ export default function SettingsPage() {
         setValue('promise_last_enrolled_on', r.data.promise_last_enrolled_on ?? '')
         setValue('pcb_last_certified_on', r.data.pcb_last_certified_on ?? '')
         setValue('liability_insurance_expires_on', r.data.liability_insurance_expires_on ?? '')
+        setBillingProvider(r.data.billing_provider ?? null)
       })
     axios
       .get<BillingStatus>(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/billing/status`, { headers })
@@ -662,6 +665,15 @@ export default function SettingsPage() {
             />
             <NpiLookup npi={watch('npi') ?? ''} />
           </div>
+          {billingProvider ? (
+            <div className="rounded border border-green-200 bg-green-50 p-3 text-xs text-green-800 space-y-0.5">
+              <p className="font-medium">Billing through: {billingProvider.name}</p>
+              <p className="text-green-700">NPI {billingProvider.npi} · Box 33a on CMS 1500</p>
+              <p className="text-green-600">Your NPI ({watch('npi') || '—'}) appears in Box 24J as rendering provider.</p>
+            </div>
+          ) : (
+            <p className="text-xs text-gray-400">No billing provider linked — your NPI is used for both Box 24J and Box 33a. Contact your admin to link a billing entity.</p>
+          )}
           <div>
             <label htmlFor="provider_address" className="block text-sm font-medium text-gray-700">
               Practice / billing address

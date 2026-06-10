@@ -1,13 +1,40 @@
 import uuid
 from datetime import date, datetime
 from typing import Literal
-
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr
 
 
 class McoContract(BaseModel):
     mco: str
     contract_date: date | None = None
+
+
+class BillingProviderCreate(BaseModel):
+    name: str
+    npi: str
+    taxonomy_code: str | None = None
+    address: str | None = None
+    city: str | None = None
+    state: str | None = None
+    zip_code: str | None = None
+    phone: str | None = None
+    tax_id: str | None = None  # plaintext on write; encrypted on save; never returned
+
+
+class BillingProviderRead(BaseModel):
+    id: uuid.UUID
+    name: str
+    npi: str
+    taxonomy_code: str | None
+    address: str | None
+    city: str | None
+    state: str | None
+    zip_code: str | None
+    phone: str | None
+    tax_id_connected: bool  # True if tax_id_encrypted is non-null; raw EIN never returned
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UserCreate(BaseModel):
@@ -21,6 +48,7 @@ class UserUpdate(BaseModel):
     full_name: str | None = None
     role: Literal["provider", "admin"] | None = None
     is_active: bool | None = None
+    billing_provider_id: uuid.UUID | None = None
 
 
 class UserRead(BaseModel):
@@ -33,6 +61,7 @@ class UserRead(BaseModel):
     created_at: datetime
     last_sign_in_at: datetime | None = None
     welcome_email_sent_at: datetime | None = None
+    billing_provider_id: uuid.UUID | None = None
 
     model_config = {"from_attributes": True}
 
@@ -51,6 +80,7 @@ class ProviderSettingsUpdate(BaseModel):
     provider_ssn: str | None = None          # plain text on write; encrypted on save; never returned
     provider_signature_path: str | None = None
     billing_provider_name: str | None = None  # exact name as registered in PROMISe (used in CMS 1500 Box 33)
+    billing_provider_id: uuid.UUID | None = None  # link to shared billing entity
     mco_contracts: list[McoContract] | None = None
     caqh_last_attested_on: date | None = None
     promise_last_enrolled_on: date | None = None
@@ -71,6 +101,8 @@ class ProviderSettingsRead(BaseModel):
     provider_ssn_connected: bool
     provider_signature_path: str | None
     billing_provider_name: str | None
+    billing_provider_id: uuid.UUID | None
+    billing_provider: BillingProviderRead | None  # populated from JOIN when linked
     mco_contracts: list[McoContract] | None
     caqh_last_attested_on: date | None
     caqh_days_remaining: int | None  # None = no date set; negative = overdue

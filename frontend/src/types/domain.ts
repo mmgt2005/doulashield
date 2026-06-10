@@ -10,6 +10,7 @@ export interface User {
   created_at: string
   last_sign_in_at: string | null
   welcome_email_sent_at: string | null
+  billing_provider_id: string | null
 }
 
 export interface Patient {

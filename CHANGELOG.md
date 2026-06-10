@@ -99,6 +99,25 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.23.0] — 2026-06-10
+
+### Added
+- **Billing Provider support** — Admins can now create shared billing entities (agency group NPIs) and assign them to individual doula providers. When a billing provider is linked, the agency's NPI appears in **Box 33a** of the CMS 1500 and as the Availity `billingProvider` object, while the doula's individual NPI stays in **Box 24J** as the rendering provider. Doulas with no billing provider assigned continue to use their own NPI for both boxes (no regression for sole practitioners).
+- **`/admin/billing-providers` page**: New admin-only CRUD page listing all billing providers (name, NPI, taxonomy code, address, phone) with Add and Edit modals.
+- **`GET/POST/PUT/DELETE /api/v1/admin/billing-providers`**: Full CRUD API for billing providers. Tax ID stored Fernet-encrypted; `tax_id_connected` boolean indicates whether an EIN is on file without returning the raw value.
+- **Assign billing provider on Admin Users page**: New "Billing Provider" dropdown column in the provider rows table; selecting a billing entity (or "None") immediately patches `billing_provider_id` on the user.
+- **Read-only billing provider display on Settings page**: Providers see a green info panel confirming their billing entity name and NPI, or a "no billing provider linked" notice if unassigned. Providers cannot change this assignment themselves — admin-only.
+- **"Billing Providers" link in admin sidebar** between Users and Audit Logs.
+- **Migration 0034**: `public.billing_providers` table + `billing_provider_id` UUID FK on `public.users` (ON DELETE SET NULL).
+
+### Changed
+- `ProviderSettingsRead` now includes `billing_provider_id` and nested `billing_provider` object.
+- `UserRead` (admin endpoint) now includes `billing_provider_id`.
+- `cms1500_service.generate_pdf()` accepts an optional `billing_provider_data` dict; when provided, Box 33/33a use the billing entity and the EIN radio is set rather than SSN.
+- `claims_service.submit_claim()` adds a `billingProvider` object to the Availity 837P body when a billing provider is configured.
+
+---
+
 ## [1.20.1] — 2026-06-05
 
 ### Fixed

@@ -11,6 +11,7 @@ from app.core.audit import AuditLogger
 from app.core.config import settings
 from app.core.encryption import decrypt_field
 from app.dependencies import CurrentUser, get_audit, get_client_ip, get_current_user, get_db, get_user_agent
+from app.models.billing_provider import BillingProvider
 from app.models.claim import Claim
 from app.models.patient import Patient
 from app.models.user import User
@@ -195,6 +196,33 @@ async def download_cms1500(
         except Exception:
             pass
 
+    # Fetch linked billing provider (agency NPI for Box 33a)
+    billing_provider = None
+    if user.billing_provider_id:
+        bp_result = await db.execute(
+            select(BillingProvider).where(BillingProvider.id == user.billing_provider_id)
+        )
+        billing_provider = bp_result.scalar_one_or_none()
+
+    billing_provider_data: dict | None = None
+    if billing_provider:
+        bp_tax_id = ""
+        if billing_provider.tax_id_encrypted:
+            try:
+                bp_tax_id = _decrypt(billing_provider.tax_id_encrypted)
+            except Exception:
+                pass
+        billing_provider_data = {
+            "npi": billing_provider.npi,
+            "name": billing_provider.name,
+            "address": billing_provider.address or provider_address,
+            "city": billing_provider.city or "",
+            "state": billing_provider.state or "",
+            "zip_code": billing_provider.zip_code or "",
+            "phone": billing_provider.phone or (user.provider_phone or ""),
+            "tax_id": bp_tax_id if bp_tax_id else provider_ssn,
+        }
+
     try:
         pdf_bytes = cms1500_service.generate_pdf(
             patient_data={
@@ -228,6 +256,7 @@ async def download_cms1500(
                 "provider_ssn": provider_ssn,
                 "provider_signature_bytes": provider_sig_bytes,
             },
+            billing_provider_data=billing_provider_data,
             claim_data={
                 "paid_amount": claim.paid_amount if claim else None,
                 "resubmit_count": claim.resubmit_count if claim else 0,
@@ -366,6 +395,34 @@ async def download_audit_packet(
         except Exception:
             pass
 
+    # Billing provider — same logic as download_cms1500
+    from app.models.billing_provider import BillingProvider as _BillingProvider
+    _billing_provider = None
+    if user.billing_provider_id:
+        _bp_result = await db.execute(
+            select(_BillingProvider).where(_BillingProvider.id == user.billing_provider_id)
+        )
+        _billing_provider = _bp_result.scalar_one_or_none()
+
+    audit_billing_provider_data: dict | None = None
+    if _billing_provider:
+        _bp_tax_id = ""
+        if _billing_provider.tax_id_encrypted:
+            try:
+                _bp_tax_id = _decrypt(_billing_provider.tax_id_encrypted)
+            except Exception:
+                pass
+        audit_billing_provider_data = {
+            "npi": _billing_provider.npi,
+            "name": _billing_provider.name,
+            "address": _billing_provider.address or provider_address,
+            "city": _billing_provider.city or "",
+            "state": _billing_provider.state or "",
+            "zip_code": _billing_provider.zip_code or "",
+            "phone": _billing_provider.phone or (user.provider_phone or ""),
+            "tax_id": _bp_tax_id if _bp_tax_id else provider_ssn,
+        }
+
     from app.services import audit_packet_service
 
     try:
@@ -435,6 +492,7 @@ async def download_audit_packet(
                 "submitted_at": claim.submitted_at if claim else None,
                 "remittance_id": str(claim.remittance_id) if claim and claim.remittance_id else None,
             },
+            billing_provider_data=audit_billing_provider_data,
         )
     except Exception as exc:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc))
