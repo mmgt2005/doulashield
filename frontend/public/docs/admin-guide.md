@@ -1,6 +1,6 @@
 # DoulaShield Admin Guide
 
-**v1.21.0 · Last updated 2026-06-05**
+**v1.22.0 · Last updated 2026-06-10**
 
 This guide covers everything admins can do that providers cannot. For day-to-day provider features (documenting visits, submitting claims, etc.) refer to `MANUAL.md`.
 
@@ -80,6 +80,44 @@ You cannot deactivate your own account.
 ### Self-Lockout Prevention
 
 Your own row in the Users table has no Deactivate, Make Admin, or Make Provider buttons. This prevents an admin from accidentally locking themselves out or removing their own admin access.
+
+---
+
+### Impersonating a Provider ("View As")
+
+The **View as** button (amber outline) appears on any active provider row that is not your own account. It lets you enter a fully-scoped impersonation session where every data fetch is automatically filtered to that provider's records — exactly as if you had logged in as them.
+
+**How to start:**
+
+1. In the Users table, find the provider row.
+2. Click **View as**.
+3. An amber banner appears at the top of every page: *👁 Viewing as **Provider Name** — admin impersonation session*.
+4. You are redirected to the provider's Dashboard. All sidebar links, clients, visits, claims, and reports show only that provider's data.
+
+**What changes during impersonation:**
+
+- The access token is replaced with a short-lived provider JWT. All API calls use this token.
+- Admin navigation links (Users, Audit Logs) disappear — the provider role is active.
+- Navigating directly to `/admin/users` redirects to `/dashboard`.
+- Your admin session is held in memory and is never written to disk or storage.
+
+**How to exit:**
+
+Click **Exit** in the amber banner. This calls `POST /api/v1/auth/impersonate/end` to write the `IMPERSONATE_END` audit entry, then restores your admin token and user from memory — no re-login required.
+
+**Page refresh during impersonation:**
+
+Refreshing the page ends the impersonation session (in-memory state is cleared). Your admin session is restored automatically via your httpOnly refresh cookie. This is by design — impersonation is intentionally session-scoped.
+
+**HIPAA audit trail:**
+
+Every impersonation start writes an `IMPERSONATE_START` entry with your admin ID, the target provider's ID, and their email address. Every exit writes `IMPERSONATE_END`. Both entries appear in the Audit Logs view.
+
+**Limitations:**
+
+- You can only impersonate users with the `provider` role (not other admins).
+- You cannot impersonate your own account.
+- PHI you access during impersonation is logged under the provider's UUID, which is correct — you are accessing their records.
 
 ---
 
