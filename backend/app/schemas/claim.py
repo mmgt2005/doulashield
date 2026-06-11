@@ -3,8 +3,9 @@ from __future__ import annotations
 import uuid
 from datetime import date, datetime
 from decimal import Decimal
+from typing import Any
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, model_validator
 
 
 class ClaimErrorCodeRead(BaseModel):
@@ -59,5 +60,13 @@ class ClaimRead(BaseModel):
     error_code: str | None
     resubmit_count: int
     remittance_id: uuid.UUID | None
+    filing_deadline_date: date | None = None
+    days_until_filing_deadline: int | None = None
     created_at: datetime
     updated_at: datetime
+
+    @model_validator(mode="after")
+    def _compute_deadline_days(self) -> "ClaimRead":
+        if self.filing_deadline_date:
+            self.days_until_filing_deadline = (self.filing_deadline_date - date.today()).days
+        return self

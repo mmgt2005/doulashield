@@ -464,7 +464,7 @@ async def send_claim_deadline_email(
         )
         cta_color = "#dc2626"
     elif is_best_practice_nudge:
-        subject = f"Reminder: PA Medicaid recommends filing claims within 30 days of service"
+        subject = "Reminder: PA Medicaid recommends filing claims within 30 days of service"
         urgency_text = (
             f"It has been 30 days since the service date ({service_date}) for visit "
             f"<strong>{visit_type}</strong> (patient {patient_initials}). "
@@ -508,6 +508,71 @@ async def send_claim_deadline_email(
   <p style="color:#6b7280;font-size:13px;">
     Open the client&rsquo;s visit page in DoulaShield to submit or resubmit the claim. For manual MCOs
     (UPMC, HPP, FFS), download the CMS 1500 and submit through the payer&rsquo;s portal.
+  </p>
+  <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
+  <p style="color:#9ca3af;font-size:12px;">The DoulaShield Team</p>
+</body>
+</html>
+""",
+        },
+    )
+
+
+async def send_filing_deadline_reminder_email(
+    provider_email: str,
+    provider_name: str,
+    patient_name: str,
+    days_remaining: int,
+    service_date: str,
+    claim_url: str,
+) -> None:
+    """Sends a timely-filing deadline reminder. days_remaining <= 0 means overdue."""
+    if not _configured():
+        return
+    resend.api_key = settings.RESEND_API_KEY
+
+    abs_days = abs(days_remaining)
+    day_word = "day" if abs_days == 1 else "days"
+
+    if days_remaining <= 0:
+        subject = "Claim filing deadline overdue — action required"
+        urgency_text = (
+            f"The timely-filing deadline for <strong>{patient_name}</strong> "
+            f"(service date {service_date}) passed <strong>{abs_days} {day_word} ago</strong>. "
+            "This claim may no longer be reimbursable."
+        )
+        cta_color = "#dc2626"
+    else:
+        subject = f"Claim filing deadline in {days_remaining} {day_word}"
+        urgency_text = (
+            f"The timely-filing deadline for <strong>{patient_name}</strong> "
+            f"(service date {service_date}) is in <strong>{days_remaining} {day_word}</strong>. "
+            "Submit or resubmit the claim before the deadline to ensure reimbursement."
+        )
+        cta_color = "#d97706" if days_remaining <= 7 else "#2563eb"
+
+    await asyncio.to_thread(
+        resend.Emails.send,
+        {
+            "from": settings.EMAIL_FROM,
+            "to": [provider_email],
+            "subject": subject,
+            "html": f"""
+<!DOCTYPE html>
+<html>
+<body style="font-family: sans-serif; color: #1a1a1a; max-width: 480px; margin: 0 auto; padding: 24px;">
+  <p style="font-size: 16px;">Hi {provider_name},</p>
+  <p>{urgency_text}</p>
+  <p style="margin: 28px 0;">
+    <a href="{claim_url}"
+       style="background:{cta_color};color:#fff;padding:12px 24px;border-radius:6px;
+              text-decoration:none;font-weight:600;font-size:15px;display:inline-block;">
+      View Claim &rarr;
+    </a>
+  </p>
+  <p style="color:#6b7280;font-size:13px;">
+    PA Medicaid MCOs typically enforce a 365-day timely-filing window from the date of service.
+    Contact your MCO if you need to request a filing deadline exception.
   </p>
   <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
   <p style="color:#9ca3af;font-size:12px;">The DoulaShield Team</p>

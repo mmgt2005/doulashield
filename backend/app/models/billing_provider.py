@@ -2,8 +2,7 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import DateTime, String, Text, func
-from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
 
@@ -12,16 +11,20 @@ class BillingProvider(Base):
     __tablename__ = "billing_providers"
     __table_args__ = {"schema": "public"}
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid())
-    name: Mapped[str] = mapped_column(String(200), nullable=False)
-    npi: Mapped[str] = mapped_column(String(10), nullable=False)
-    taxonomy_code: Mapped[str | None] = mapped_column(String(15), nullable=True)
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    name: Mapped[str] = mapped_column(Text, nullable=False)
+    group_npi: Mapped[str | None] = mapped_column(Text, nullable=True)
     address: Mapped[str | None] = mapped_column(Text, nullable=True)
-    city: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    state: Mapped[str | None] = mapped_column(String(2), nullable=True)
-    zip_code: Mapped[str | None] = mapped_column(String(10), nullable=True)
-    phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
-    tax_id_encrypted: Mapped[str | None] = mapped_column(Text, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
+    city: Mapped[str | None] = mapped_column(Text, nullable=True)
+    state: Mapped[str | None] = mapped_column(Text, nullable=True)
+    zip: Mapped[str | None] = mapped_column(Text, nullable=True)
+    phone: Mapped[str | None] = mapped_column(Text, nullable=True)
+    stripe_customer_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    stripe_subscription_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    subscription_status: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    providers: Mapped[list["User"]] = relationship(  # type: ignore[name-defined]
+        "User", foreign_keys="User.billing_provider_id", back_populates="billing_provider"
     )

@@ -14,8 +14,14 @@ from sqlalchemy.future import select
 from app.core.audit import AuditLogger
 from app.core.config import settings
 from app.dependencies import CurrentUser, get_audit, get_current_user, get_db, require_admin
+from app.models.billing_provider import BillingProvider
 from app.models.user import User
-from app.schemas.admin import UserCreate
+from app.schemas.admin import (
+    BillingProviderCreate,
+    BillingProviderRead,
+    BillingProviderUpdate,
+    UserCreate,
+)
 from app.core.security import hash_password
 from app.schemas.billing import (
     BillingStatusRead,
@@ -182,42 +188,60 @@ async def stripe_webhook(
                     )
 
     elif event_type in ("customer.subscription.created", "customer.subscription.updated", "customer.subscription.deleted"):
-        user_id_str = (data.get("metadata") or {}).get("user_id")
+        meta = data.get("metadata") or {}
+        bp_id_str = meta.get("billing_provider_id")
+        user_id_str = meta.get("user_id")
         sub_id = data.get("id")
         new_status = data.get("status")
         if event_type == "customer.subscription.deleted":
             new_status = "canceled"
 
-        if user_id_str:
+        if bp_id_str:
             try:
-                uid = uuid.UUID(user_id_str)
-                result = await db.execute(select(User).where(User.id == uid))
+                bp_uuid = uuid.UUID(bp_id_str)
+                bp_result = await db.execute(select(BillingProvider).where(BillingProvider.id == bp_uuid))
             except ValueError:
-                result = await db.execute(select(User).where(User.stripe_subscription_id == sub_id))
+                bp_result = await db.execute(select(BillingProvider).where(BillingProvider.stripe_subscription_id == sub_id))
+            bp = bp_result.scalar_one_or_none()
+            if bp and new_status:
+                bp.subscription_status = new_status
+                await db.commit()
         else:
-            result = await db.execute(select(User).where(User.stripe_subscription_id == sub_id))
-
-        user = result.scalar_one_or_none()
-        if user and new_status:
-            user.subscription_status = new_status
-            await db.commit()
+            if user_id_str:
+                try:
+                    uid = uuid.UUID(user_id_str)
+                    result = await db.execute(select(User).where(User.id == uid))
+                except ValueError:
+                    result = await db.execute(select(User).where(User.stripe_subscription_id == sub_id))
+            else:
+                result = await db.execute(select(User).where(User.stripe_subscription_id == sub_id))
+            user = result.scalar_one_or_none()
+            if user and new_status:
+                user.subscription_status = new_status
+                await db.commit()
 
     elif event_type == "invoice.payment_failed":
         sub_id = data.get("subscription")
         if sub_id:
-            result = await db.execute(select(User).where(User.stripe_subscription_id == sub_id))
-            user = result.scalar_one_or_none()
-            if user:
-                user.subscription_status = "past_due"
+            bp_result = await db.execute(select(BillingProvider).where(BillingProvider.stripe_subscription_id == sub_id))
+            bp = bp_result.scalar_one_or_none()
+            if bp:
+                bp.subscription_status = "past_due"
                 await db.commit()
-                await audit.log(
-                    action="SUBSCRIPTION_PAYMENT_FAILED",
-                    resource_type="user",
-                    resource_id=user.id,
-                    ip_address="stripe-webhook",
-                    user_agent="",
-                    extra_context={"invoice_id": data.get("id")},
-                )
+            else:
+                result = await db.execute(select(User).where(User.stripe_subscription_id == sub_id))
+                user = result.scalar_one_or_none()
+                if user:
+                    user.subscription_status = "past_due"
+                    await db.commit()
+                    await audit.log(
+                        action="SUBSCRIPTION_PAYMENT_FAILED",
+                        resource_type="user",
+                        resource_id=user.id,
+                        ip_address="stripe-webhook",
+                        user_agent="",
+                        extra_context={"invoice_id": data.get("id")},
+                    )
 
     elif event_type == "payment_intent.payment_failed":
         meta = data.get("metadata") or {}
@@ -311,11 +335,16 @@ async def create_account_only(
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="A user with this email already exists")
 
-    role = body.role if body.role in ("provider", "admin") else "provider"
+    role = body.role if body.role in ("provider", "admin", "billing_admin") else "provider"
     temp_password = _generate_temp_password()
     new_user_read = await AdminService(db).create_user(
         UserCreate(email=str(body.email), password=temp_password, full_name=body.full_name, role=role)
     )
+    if role == "billing_admin" and body.managed_billing_provider_id:
+        result_u = await db.execute(select(User).where(User.id == new_user_read.id))
+        created = result_u.scalar_one()
+        created.managed_billing_provider_id = body.managed_billing_provider_id
+        await db.commit()
 
     await audit.log(
         action="CREATE_PROVIDER_ACCOUNT_ONLY",
@@ -473,3 +502,184 @@ async def list_users_with_billing(
 ) -> list[UserWithBillingRead]:
     result = await db.execute(select(User).order_by(User.created_at.desc()))
     return [UserWithBillingRead.model_validate(u) for u in result.scalars().all()]
+
+
+# ── Billing Provider endpoints ────────────────────────────────────────────────
+
+async def _get_billing_provider(bp_id: uuid.UUID, db: AsyncSession) -> BillingProvider:
+    result = await db.execute(select(BillingProvider).where(BillingProvider.id == bp_id))
+    bp = result.scalar_one_or_none()
+    if not bp:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Billing provider not found")
+    return bp
+
+
+@router.get("/admin/billing-providers", response_model=list[BillingProviderRead])
+async def list_billing_providers(
+    _: Annotated[CurrentUser, Depends(require_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> list[BillingProviderRead]:
+    result = await db.execute(select(BillingProvider).order_by(BillingProvider.name))
+    bps = result.scalars().all()
+    reads = []
+    for bp in bps:
+        count_result = await db.execute(
+            select(User).where(User.billing_provider_id == bp.id)
+        )
+        provider_count = len(count_result.scalars().all())
+        r = BillingProviderRead.model_validate(bp)
+        r.provider_count = provider_count
+        reads.append(r)
+    return reads
+
+
+@router.post("/admin/billing-providers", response_model=BillingProviderRead, status_code=status.HTTP_201_CREATED)
+async def create_billing_provider(
+    body: BillingProviderCreate,
+    _: Annotated[CurrentUser, Depends(require_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    audit: Annotated[AuditLogger, Depends(get_audit)],
+    request: Request,
+) -> BillingProviderRead:
+    bp = BillingProvider(**body.model_dump())
+    db.add(bp)
+    await db.commit()
+    await db.refresh(bp)
+    await audit.log(
+        action="CREATE_BILLING_PROVIDER",
+        resource_type="billing_provider",
+        resource_id=bp.id,
+        ip_address=request.headers.get("X-Forwarded-For", request.client.host if request.client else ""),
+        user_agent=request.headers.get("User-Agent", ""),
+        extra_context={"name": bp.name},
+    )
+    r = BillingProviderRead.model_validate(bp)
+    r.provider_count = 0
+    return r
+
+
+@router.put("/admin/billing-providers/{bp_id}", response_model=BillingProviderRead)
+async def update_billing_provider(
+    bp_id: uuid.UUID,
+    body: BillingProviderUpdate,
+    _: Annotated[CurrentUser, Depends(require_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> BillingProviderRead:
+    bp = await _get_billing_provider(bp_id, db)
+    for field, value in body.model_dump(exclude_none=True).items():
+        setattr(bp, field, value)
+    await db.commit()
+    await db.refresh(bp)
+    count_result = await db.execute(select(User).where(User.billing_provider_id == bp.id))
+    provider_count = len(count_result.scalars().all())
+    r = BillingProviderRead.model_validate(bp)
+    r.provider_count = provider_count
+    return r
+
+
+@router.delete("/admin/billing-providers/{bp_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_billing_provider(
+    bp_id: uuid.UUID,
+    _: Annotated[CurrentUser, Depends(require_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> None:
+    bp = await _get_billing_provider(bp_id, db)
+    count_result = await db.execute(select(User).where(User.billing_provider_id == bp.id))
+    if count_result.scalars().first():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot delete billing provider with assigned providers",
+        )
+    await db.delete(bp)
+    await db.commit()
+
+
+@router.post("/admin/billing-providers/{bp_id}/assign-provider")
+async def assign_provider_to_billing_provider(
+    bp_id: uuid.UUID,
+    body: dict,
+    _: Annotated[CurrentUser, Depends(require_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    audit: Annotated[AuditLogger, Depends(get_audit)],
+    request: Request,
+) -> dict:
+    bp = await _get_billing_provider(bp_id, db)
+    provider_user_id = body.get("provider_user_id")
+    if not provider_user_id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="provider_user_id required")
+    try:
+        uid = uuid.UUID(str(provider_user_id))
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid provider_user_id")
+    provider = await _get_provider(uid, db)
+    provider.billing_provider_id = bp.id
+    await db.commit()
+    await audit.log(
+        action="ASSIGN_BILLING_PROVIDER",
+        resource_type="user",
+        resource_id=provider.id,
+        ip_address=request.headers.get("X-Forwarded-For", request.client.host if request.client else ""),
+        user_agent=request.headers.get("User-Agent", ""),
+        extra_context={"billing_provider_id": str(bp.id), "billing_provider_name": bp.name},
+    )
+    return {"provider_user_id": str(provider.id), "billing_provider_id": str(bp.id)}
+
+
+@router.post("/admin/billing-providers/{bp_id}/start-subscription")
+async def start_billing_provider_subscription(
+    bp_id: uuid.UUID,
+    _: Annotated[CurrentUser, Depends(require_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    audit: Annotated[AuditLogger, Depends(get_audit)],
+    request: Request,
+) -> dict:
+    _require_stripe()
+    bp = await _get_billing_provider(bp_id, db)
+    if bp.subscription_status in ("active", "trialing"):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Subscription already active")
+    result = await db.execute(select(User).where(User.billing_provider_id == bp.id))
+    providers = result.scalars().all()
+    if not providers:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No providers assigned to this billing provider")
+    representative = providers[0]
+    result = await stripe_service.start_subscription(representative, db)
+    await audit.log(
+        action="START_BILLING_PROVIDER_SUBSCRIPTION",
+        resource_type="billing_provider",
+        resource_id=bp.id,
+        ip_address=request.headers.get("X-Forwarded-For", request.client.host if request.client else ""),
+        user_agent=request.headers.get("User-Agent", ""),
+        extra_context=result,
+    )
+    return result
+
+
+@router.get("/admin/stats/billing-providers")
+async def billing_provider_stats(
+    _: Annotated[CurrentUser, Depends(require_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> list[dict]:
+    from sqlalchemy import func as sqlfunc, case, text as sqlt
+    rows = await db.execute(
+        sqlt("""
+            SELECT
+                bp.id::text AS billing_provider_id,
+                bp.name,
+                bp.subscription_status,
+                COUNT(DISTINCT u.id) AS provider_count,
+                COUNT(c.id) AS total_claims,
+                COALESCE(SUM(c.billed_amount), 0) AS total_billed,
+                COALESCE(SUM(c.paid_amount), 0) AS total_paid,
+                ROUND(
+                    100.0 * SUM(CASE WHEN c.status = 'denied' THEN 1 ELSE 0 END)
+                    / NULLIF(COUNT(c.id), 0),
+                    1
+                ) AS denial_rate
+            FROM public.billing_providers bp
+            LEFT JOIN public.users u ON u.billing_provider_id = bp.id
+            LEFT JOIN public.claims c ON c.provider_id = u.id
+            GROUP BY bp.id, bp.name, bp.subscription_status
+            ORDER BY bp.name
+        """)
+    )
+    return [dict(r) for r in rows.mappings()]

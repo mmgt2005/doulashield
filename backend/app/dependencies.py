@@ -73,6 +73,12 @@ async def require_admin(user: Annotated[CurrentUser, Depends(get_current_user)])
     return user
 
 
+async def require_billing_admin(user: Annotated[CurrentUser, Depends(get_current_user)]) -> CurrentUser:
+    if user.role not in ("admin", "billing_admin"):
+        raise _FORBIDDEN
+    return user
+
+
 def get_client_ip(request: Request) -> str | None:
     forwarded_for = request.headers.get("X-Forwarded-For")
     if forwarded_for:

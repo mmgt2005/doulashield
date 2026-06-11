@@ -8,6 +8,7 @@ import stripe
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
+from app.models.billing_provider import BillingProvider
 from app.models.escrow_deduction import EscrowDeduction
 from app.models.user import User
 
@@ -56,6 +57,27 @@ async def create_deposit_checkout_link(provider: User, db: AsyncSession) -> str:
 
 async def start_subscription(provider: User, db: AsyncSession) -> dict:
     _init()
+    if provider.billing_provider_id and provider.billing_provider:
+        bp = provider.billing_provider
+        if not bp.stripe_customer_id:
+            customer = await asyncio.to_thread(
+                stripe.Customer.create,
+                email=provider.email,
+                name=bp.name,
+                metadata={"billing_provider_id": str(bp.id)},
+            )
+            bp.stripe_customer_id = customer.id
+        sub = await asyncio.to_thread(
+            stripe.Subscription.create,
+            customer=bp.stripe_customer_id,
+            items=[{"price": settings.STRIPE_MONTHLY_PRICE_ID}],
+            metadata={"billing_provider_id": str(bp.id)},
+        )
+        bp.stripe_subscription_id = sub.id
+        bp.subscription_status = sub.status
+        await db.commit()
+        return {"subscription_id": sub.id, "status": sub.status}
+
     customer_id = await get_or_create_customer(provider, db)
     sub = await asyncio.to_thread(
         stripe.Subscription.create,

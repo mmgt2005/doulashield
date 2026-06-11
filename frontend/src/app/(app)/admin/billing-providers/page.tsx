@@ -3,361 +3,293 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 import { getAccessToken } from '@/lib/auth'
-
-interface BillingProvider {
-  id: string
-  name: string
-  npi: string
-  taxonomy_code: string | null
-  address: string | null
-  city: string | null
-  state: string | null
-  zip_code: string | null
-  phone: string | null
-  tax_id_connected: boolean
-  created_at: string
-}
-
-interface FormState {
-  name: string
-  npi: string
-  taxonomy_code: string
-  address: string
-  city: string
-  state: string
-  zip_code: string
-  phone: string
-  tax_id: string
-}
-
-const EMPTY_FORM: FormState = {
-  name: '',
-  npi: '',
-  taxonomy_code: '',
-  address: '',
-  city: '',
-  state: '',
-  zip_code: '',
-  phone: '',
-  tax_id: '',
-}
+import { BillingProvider } from '@/types/domain'
 
 export default function BillingProvidersPage() {
   const [providers, setProviders] = useState<BillingProvider[]>([])
+  const [stats, setStats] = useState<Record<string, unknown>[]>([])
   const [loading, setLoading] = useState(true)
-  const [showModal, setShowModal] = useState(false)
-  const [editing, setEditing] = useState<BillingProvider | null>(null)
-  const [form, setForm] = useState<FormState>(EMPTY_FORM)
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [toast, setToast] = useState<string | null>(null)
+  const [actionLoading, setActionLoading] = useState<string | null>(null)
 
-  const base = process.env.NEXT_PUBLIC_API_URL
+  const [showCreate, setShowCreate] = useState(false)
+  const [form, setForm] = useState({ name: '', group_npi: '', address: '', city: '', state: '', zip: '', phone: '' })
+  const [formError, setFormError] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editForm, setEditForm] = useState({ name: '', group_npi: '', address: '', city: '', state: '', zip: '', phone: '' })
+
   const headers = { Authorization: `Bearer ${getAccessToken()}` }
+  const api = process.env.NEXT_PUBLIC_API_URL
 
   const showToast = (msg: string) => {
     setToast(msg)
-    setTimeout(() => setToast(null), 3000)
+    setTimeout(() => setToast(null), 4000)
   }
 
-  const load = async () => {
-    try {
-      const res = await axios.get<BillingProvider[]>(
-        `${base}/api/v1/admin/billing-providers`,
-        { headers }
-      )
-      setProviders(res.data)
-    } catch {
-      // silently fail — error shown in empty state
-    } finally {
-      setLoading(false)
-    }
+  const reload = async () => {
+    const [bpRes, statsRes] = await Promise.allSettled([
+      axios.get<BillingProvider[]>(`${api}/api/v1/admin/billing-providers`, { headers }),
+      axios.get<Record<string, unknown>[]>(`${api}/api/v1/admin/stats/billing-providers`, { headers }),
+    ])
+    if (bpRes.status === 'fulfilled') setProviders(bpRes.value.data)
+    if (statsRes.status === 'fulfilled') setStats(statsRes.value.data)
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    reload().finally(() => setLoading(false))
+  }, [])
 
-  const openCreate = () => {
-    setEditing(null)
-    setForm(EMPTY_FORM)
-    setError(null)
-    setShowModal(true)
-  }
-
-  const openEdit = (bp: BillingProvider) => {
-    setEditing(bp)
-    setForm({
-      name: bp.name,
-      npi: bp.npi,
-      taxonomy_code: bp.taxonomy_code ?? '',
-      address: bp.address ?? '',
-      city: bp.city ?? '',
-      state: bp.state ?? '',
-      zip_code: bp.zip_code ?? '',
-      phone: bp.phone ?? '',
-      tax_id: '',
-    })
-    setError(null)
-    setShowModal(true)
-  }
-
-  const handleSave = async () => {
-    if (!form.name.trim() || !form.npi.trim()) {
-      setError('Name and NPI are required.')
-      return
-    }
+  const createProvider = async () => {
+    if (!form.name.trim()) { setFormError('Name is required'); return }
     setSaving(true)
-    setError(null)
+    setFormError(null)
     try {
-      const body: Record<string, string | null> = {
+      await axios.post(`${api}/api/v1/admin/billing-providers`, {
         name: form.name.trim(),
-        npi: form.npi.trim(),
-        taxonomy_code: form.taxonomy_code.trim() || null,
+        group_npi: form.group_npi.trim() || null,
         address: form.address.trim() || null,
         city: form.city.trim() || null,
         state: form.state.trim() || null,
-        zip_code: form.zip_code.trim() || null,
+        zip: form.zip.trim() || null,
         phone: form.phone.trim() || null,
-        tax_id: form.tax_id.trim() || null,
-      }
-      if (editing) {
-        await axios.put(`${base}/api/v1/admin/billing-providers/${editing.id}`, body, { headers })
-        showToast('Billing provider updated.')
-      } else {
-        await axios.post(`${base}/api/v1/admin/billing-providers`, body, { headers })
-        showToast('Billing provider created.')
-      }
-      setShowModal(false)
-      await load()
+      }, { headers })
+      setShowCreate(false)
+      setForm({ name: '', group_npi: '', address: '', city: '', state: '', zip: '', phone: '' })
+      showToast('Billing provider created')
+      await reload()
     } catch (e: unknown) {
-      const msg = axios.isAxiosError(e) ? e.response?.data?.detail : 'Failed to save'
-      setError(typeof msg === 'string' ? msg : 'Failed to save')
+      const msg = axios.isAxiosError(e) ? e.response?.data?.detail : 'Failed to create'
+      setFormError(String(msg))
     } finally {
       setSaving(false)
     }
   }
 
-  const handleDelete = async (bp: BillingProvider) => {
-    if (!confirm(`Delete billing provider "${bp.name}"? Linked providers will lose their billing assignment.`)) return
+  const saveEdit = async (id: string) => {
+    setSaving(true)
     try {
-      await axios.delete(`${base}/api/v1/admin/billing-providers/${bp.id}`, { headers })
-      showToast('Billing provider deleted.')
-      await load()
-    } catch {
-      showToast('Failed to delete billing provider.')
+      await axios.put(`${api}/api/v1/admin/billing-providers/${id}`, {
+        name: editForm.name.trim() || null,
+        group_npi: editForm.group_npi.trim() || null,
+        address: editForm.address.trim() || null,
+        city: editForm.city.trim() || null,
+        state: editForm.state.trim() || null,
+        zip: editForm.zip.trim() || null,
+        phone: editForm.phone.trim() || null,
+      }, { headers })
+      setEditingId(null)
+      showToast('Updated')
+      await reload()
+    } catch (e: unknown) {
+      const msg = axios.isAxiosError(e) ? e.response?.data?.detail : 'Failed to update'
+      showToast(`Error: ${msg}`)
+    } finally {
+      setSaving(false)
     }
   }
 
-  return (
-    <div className="max-w-4xl space-y-6 p-4 lg:p-6">
-      {toast && (
-        <div className="fixed top-4 right-4 z-50 rounded-lg border border-green-200 bg-green-50 px-4 py-2 text-sm font-medium text-green-800 shadow">
-          {toast}
-        </div>
-      )}
+  const deleteProvider = async (id: string, name: string) => {
+    if (!confirm(`Delete "${name}"? This cannot be undone.`)) return
+    setActionLoading(`del-${id}`)
+    try {
+      await axios.delete(`${api}/api/v1/admin/billing-providers/${id}`, { headers })
+      showToast(`Deleted ${name}`)
+      await reload()
+    } catch (e: unknown) {
+      const msg = axios.isAxiosError(e) ? e.response?.data?.detail : 'Failed to delete'
+      showToast(`Error: ${msg}`)
+    } finally {
+      setActionLoading(null)
+    }
+  }
 
+  const startSubscription = async (id: string, name: string) => {
+    setActionLoading(`sub-${id}`)
+    try {
+      await axios.post(`${api}/api/v1/admin/billing-providers/${id}/start-subscription`, {}, { headers })
+      showToast(`Subscription started for ${name}`)
+      await reload()
+    } catch (e: unknown) {
+      const msg = axios.isAxiosError(e) ? e.response?.data?.detail : 'Failed to start subscription'
+      showToast(`Error: ${msg}`)
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const getStatsFor = (id: string) => stats.find((s) => s.billing_provider_id === id)
+
+  const subBadge = (status: string | null) => {
+    if (status === 'active' || status === 'trialing')
+      return <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">Active</span>
+    if (status === 'past_due')
+      return <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">Past Due</span>
+    if (status === 'canceled')
+      return <span className="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">Canceled</span>
+    return <span className="text-xs text-gray-400">None</span>
+  }
+
+  if (loading) return <p className="text-sm text-gray-500">Loading…</p>
+
+  return (
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">Billing Providers</h1>
-          <p className="mt-0.5 text-sm text-gray-500">
-            Shared billing entities (group NPI). When assigned to a provider, the agency NPI
-            appears in Box 33a of the CMS 1500 and in Availity claims.
-          </p>
-        </div>
+        <h1 className="text-xl font-bold text-gray-900">Billing Providers</h1>
         <button
-          onClick={openCreate}
+          onClick={() => { setShowCreate(true); setFormError(null) }}
           className="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
         >
-          + Add Billing Provider
+          + Add Agency
         </button>
       </div>
 
-      {loading ? (
-        <p className="text-sm text-gray-500">Loading…</p>
-      ) : providers.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-gray-300 p-8 text-center">
-          <p className="text-sm text-gray-500">No billing providers yet.</p>
-          <p className="mt-1 text-xs text-gray-400">
-            Create one to let doulas submit claims under an agency group NPI.
-          </p>
-        </div>
-      ) : (
-        <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
-              <tr>
-                <th className="px-4 py-3">Name</th>
-                <th className="px-4 py-3">NPI</th>
-                <th className="px-4 py-3">Location</th>
-                <th className="px-4 py-3">Tax ID</th>
-                <th className="px-4 py-3">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {providers.map((bp) => (
-                <tr key={bp.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-medium text-gray-900">{bp.name}</td>
-                  <td className="px-4 py-3 font-mono text-gray-700">{bp.npi}</td>
-                  <td className="px-4 py-3 text-gray-600">
-                    {[bp.city, bp.state].filter(Boolean).join(', ') || '—'}
-                  </td>
-                  <td className="px-4 py-3">
-                    {bp.tax_id_connected ? (
-                      <span className="rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700 border border-green-200">
-                        ✓ On file
-                      </span>
-                    ) : (
-                      <span className="text-gray-400 text-xs">—</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => openEdit(bp)}
-                        className="text-xs font-medium text-blue-600 hover:underline"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDelete(bp)}
-                        className="text-xs font-medium text-red-500 hover:underline"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {toast && (
+        <div className="rounded-lg bg-blue-50 border border-blue-200 px-4 py-2 text-sm text-blue-800">{toast}</div>
+      )}
+
+      {/* Stats summary */}
+      {stats.length > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="rounded-lg border border-gray-200 bg-white px-4 py-3">
+            <p className="text-xs text-gray-500">Agencies</p>
+            <p className="text-lg font-bold text-gray-900">{stats.length}</p>
+          </div>
+          <div className="rounded-lg border border-gray-200 bg-white px-4 py-3">
+            <p className="text-xs text-gray-500">Total Providers</p>
+            <p className="text-lg font-bold text-gray-900">{stats.reduce((a, s) => a + Number(s.provider_count ?? 0), 0)}</p>
+          </div>
+          <div className="rounded-lg border border-gray-200 bg-white px-4 py-3">
+            <p className="text-xs text-gray-500">Total Billed</p>
+            <p className="text-lg font-bold text-gray-900">${Number(stats.reduce((a, s) => a + Number(s.total_billed ?? 0), 0)).toFixed(2)}</p>
+          </div>
+          <div className="rounded-lg border border-gray-200 bg-white px-4 py-3">
+            <p className="text-xs text-gray-500">Total Paid</p>
+            <p className="text-lg font-bold text-gray-900">${Number(stats.reduce((a, s) => a + Number(s.total_paid ?? 0), 0)).toFixed(2)}</p>
+          </div>
         </div>
       )}
 
-      {/* Create / Edit Modal */}
-      {showModal && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/30 p-4">
-          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl space-y-4">
-            <h2 className="text-base font-semibold text-gray-900">
-              {editing ? 'Edit Billing Provider' : 'Add Billing Provider'}
-            </h2>
+      <div className="bg-white rounded-lg border border-gray-200 overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50">
+            <tr>
+              {['Name', 'Group NPI', 'Providers', 'Claims', 'Billed', 'Paid', 'Denial %', 'Subscription', 'Actions'].map((h) => (
+                <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {providers.length === 0 && (
+              <tr><td colSpan={9} className="px-4 py-6 text-center text-sm text-gray-400">No billing providers yet</td></tr>
+            )}
+            {providers.map((bp) => {
+              const s = getStatsFor(bp.id)
+              const isSubActive = bp.subscription_status === 'active' || bp.subscription_status === 'trialing'
+              if (editingId === bp.id) {
+                return (
+                  <tr key={bp.id} className="bg-blue-50">
+                    <td className="px-3 py-2" colSpan={8}>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
+                        {(['name', 'group_npi', 'address', 'city', 'state', 'zip', 'phone'] as const).map((f) => (
+                          <input
+                            key={f}
+                            value={editForm[f]}
+                            onChange={(e) => setEditForm((prev) => ({ ...prev, [f]: e.target.value }))}
+                            placeholder={f.replace('_', ' ')}
+                            className="rounded border border-gray-300 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none"
+                          />
+                        ))}
+                      </div>
+                    </td>
+                    <td className="px-3 py-2">
+                      <div className="flex gap-2">
+                        <button onClick={() => saveEdit(bp.id)} disabled={saving} className="rounded bg-blue-600 px-2 py-1 text-xs text-white hover:bg-blue-700 disabled:opacity-50">Save</button>
+                        <button onClick={() => setEditingId(null)} className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-600 hover:bg-gray-50">Cancel</button>
+                      </div>
+                    </td>
+                  </tr>
+                )
+              }
+              return (
+                <tr key={bp.id}>
+                  <td className="px-4 py-3 font-medium text-gray-900">{bp.name}</td>
+                  <td className="px-4 py-3 text-gray-500">{bp.group_npi ?? '—'}</td>
+                  <td className="px-4 py-3 text-gray-700">{s ? String(s.provider_count) : String(bp.provider_count)}</td>
+                  <td className="px-4 py-3 text-gray-700">{s ? String(s.total_claims) : '—'}</td>
+                  <td className="px-4 py-3 text-gray-700">{s ? `$${Number(s.total_billed).toFixed(2)}` : '—'}</td>
+                  <td className="px-4 py-3 text-gray-700">{s ? `$${Number(s.total_paid).toFixed(2)}` : '—'}</td>
+                  <td className="px-4 py-3 text-gray-700">{s && s.denial_rate != null ? `${s.denial_rate}%` : '—'}</td>
+                  <td className="px-4 py-3">{subBadge(bp.subscription_status)}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {!isSubActive && (
+                        <button
+                          onClick={() => startSubscription(bp.id, bp.name)}
+                          disabled={actionLoading === `sub-${bp.id}`}
+                          className="rounded bg-green-600 px-2 py-1 text-xs text-white hover:bg-green-700 disabled:opacity-50 whitespace-nowrap"
+                        >
+                          {actionLoading === `sub-${bp.id}` ? 'Starting…' : 'Start Sub'}
+                        </button>
+                      )}
+                      <button
+                        onClick={() => { setEditingId(bp.id); setEditForm({ name: bp.name, group_npi: bp.group_npi ?? '', address: bp.address ?? '', city: bp.city ?? '', state: bp.state ?? '', zip: bp.zip ?? '', phone: bp.phone ?? '' }) }}
+                        className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-600 hover:bg-gray-50 whitespace-nowrap"
+                      >
+                        Edit
+                      </button>
+                      {bp.provider_count === 0 && (
+                        <button
+                          onClick={() => deleteProvider(bp.id, bp.name)}
+                          disabled={actionLoading === `del-${bp.id}`}
+                          className="rounded border border-red-300 px-2 py-1 text-xs text-red-600 hover:bg-red-50 disabled:opacity-50 whitespace-nowrap"
+                        >
+                          Delete
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
 
+      {/* Create modal */}
+      {showCreate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md space-y-4">
+            <h3 className="text-base font-semibold text-gray-900">Add Billing Agency</h3>
             <div className="space-y-3">
-              <div>
-                <label className="block text-xs font-medium text-gray-700">Name *</label>
-                <input
-                  type="text"
-                  value={form.name}
-                  onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))}
-                  placeholder="Doula Agency Inc."
-                  className="mt-1 w-full rounded border border-gray-300 px-2 py-1.5 text-sm focus:outline-none focus:border-blue-400"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700">NPI (Group) *</label>
-                <input
-                  type="text"
-                  value={form.npi}
-                  onChange={(e) => setForm(f => ({ ...f, npi: e.target.value }))}
-                  placeholder="10-digit group NPI"
-                  maxLength={10}
-                  className="mt-1 w-full rounded border border-gray-300 px-2 py-1.5 text-sm font-mono focus:outline-none focus:border-blue-400"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-gray-700">Address</label>
+              {([
+                ['name', 'Agency Name *', 'text'],
+                ['group_npi', 'Group NPI', 'text'],
+                ['address', 'Street Address', 'text'],
+                ['city', 'City', 'text'],
+                ['state', 'State', 'text'],
+                ['zip', 'ZIP', 'text'],
+                ['phone', 'Phone', 'tel'],
+              ] as [keyof typeof form, string, string][]).map(([field, label, type]) => (
+                <div key={field}>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
                   <input
-                    type="text"
-                    value={form.address}
-                    onChange={(e) => setForm(f => ({ ...f, address: e.target.value }))}
-                    className="mt-1 w-full rounded border border-gray-300 px-2 py-1.5 text-sm focus:outline-none focus:border-blue-400"
+                    type={type}
+                    value={form[field]}
+                    onChange={(e) => setForm((prev) => ({ ...prev, [field]: e.target.value }))}
+                    className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                 </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-700">City</label>
-                  <input
-                    type="text"
-                    value={form.city}
-                    onChange={(e) => setForm(f => ({ ...f, city: e.target.value }))}
-                    className="mt-1 w-full rounded border border-gray-300 px-2 py-1.5 text-sm focus:outline-none focus:border-blue-400"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-700">State</label>
-                  <input
-                    type="text"
-                    value={form.state}
-                    onChange={(e) => setForm(f => ({ ...f, state: e.target.value }))}
-                    maxLength={2}
-                    placeholder="PA"
-                    className="mt-1 w-full rounded border border-gray-300 px-2 py-1.5 text-sm uppercase focus:outline-none focus:border-blue-400"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-700">ZIP Code</label>
-                  <input
-                    type="text"
-                    value={form.zip_code}
-                    onChange={(e) => setForm(f => ({ ...f, zip_code: e.target.value }))}
-                    className="mt-1 w-full rounded border border-gray-300 px-2 py-1.5 text-sm focus:outline-none focus:border-blue-400"
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-gray-700">Phone</label>
-                  <input
-                    type="text"
-                    value={form.phone}
-                    onChange={(e) => setForm(f => ({ ...f, phone: e.target.value }))}
-                    className="mt-1 w-full rounded border border-gray-300 px-2 py-1.5 text-sm focus:outline-none focus:border-blue-400"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-700">Taxonomy Code</label>
-                  <input
-                    type="text"
-                    value={form.taxonomy_code}
-                    onChange={(e) => setForm(f => ({ ...f, taxonomy_code: e.target.value }))}
-                    placeholder="374J00000X"
-                    className="mt-1 w-full rounded border border-gray-300 px-2 py-1.5 text-sm font-mono focus:outline-none focus:border-blue-400"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-700">
-                  EIN (Tax ID) — Box 25
-                  {editing?.tax_id_connected && (
-                    <span className="ml-2 font-normal text-green-600">✓ currently on file</span>
-                  )}
-                </label>
-                <input
-                  type="password"
-                  value={form.tax_id}
-                  onChange={(e) => setForm(f => ({ ...f, tax_id: e.target.value }))}
-                  placeholder={editing?.tax_id_connected ? 'Leave blank to keep existing' : 'XX-XXXXXXX'}
-                  className="mt-1 w-full rounded border border-gray-300 px-2 py-1.5 text-sm focus:outline-none focus:border-blue-400"
-                />
-                <p className="mt-0.5 text-xs text-gray-400">Stored encrypted. Never displayed after save.</p>
-              </div>
+              ))}
             </div>
-
-            {error && <p className="text-xs text-red-600">{error}</p>}
-
-            <div className="flex justify-end gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setShowModal(false)}
-                className="rounded border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
-              >
+            {formError && <p className="text-xs text-red-600">{formError}</p>}
+            <div className="flex items-center justify-end gap-3 pt-1">
+              <button onClick={() => setShowCreate(false)} disabled={saving} className="rounded border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50">
                 Cancel
               </button>
-              <button
-                type="button"
-                onClick={handleSave}
-                disabled={saving}
-                className="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-              >
-                {saving ? 'Saving…' : editing ? 'Save Changes' : 'Create'}
+              <button onClick={createProvider} disabled={saving} className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">
+                {saving ? 'Creating…' : 'Create Agency'}
               </button>
             </div>
           </div>

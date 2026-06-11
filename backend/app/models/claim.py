@@ -36,6 +36,7 @@ class Claim(Base):
     )
     resubmit_count: Mapped[int] = mapped_column(Integer, server_default="0", nullable=False)
     remittance_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("public.remittances.id"), nullable=True)
+    filing_deadline_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 

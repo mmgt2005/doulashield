@@ -16,7 +16,7 @@ class User(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
     email: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     password_hash: Mapped[str] = mapped_column(String, nullable=False)
-    role: Mapped[str] = mapped_column(String, nullable=False)  # 'provider' | 'admin'
+    role: Mapped[str] = mapped_column(String, nullable=False)  # 'provider' | 'admin' | 'billing_admin'
     full_name: Mapped[str | None] = mapped_column(String, nullable=True)
     totp_secret: Mapped[str | None] = mapped_column(String, nullable=True)
     mfa_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
@@ -34,6 +34,12 @@ class User(Base):
     provider_ssn_encrypted: Mapped[str | None] = mapped_column(Text, nullable=True)
     provider_signature_path: Mapped[str | None] = mapped_column(Text, nullable=True)
     billing_provider_name: Mapped[str | None] = mapped_column(Text, nullable=True)  # exact name as registered in PROMISe
+    billing_provider_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("public.billing_providers.id", ondelete="SET NULL"), nullable=True
+    )
+    managed_billing_provider_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("public.billing_providers.id", ondelete="SET NULL"), nullable=True
+    )
     mco_contracts_json: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON array: [{mco, contract_date}]
     caqh_last_attested_on: Mapped[date | None] = mapped_column(Date, nullable=True)
     promise_last_enrolled_on: Mapped[date | None] = mapped_column(Date, nullable=True)
@@ -65,3 +71,6 @@ class User(Base):
     )
 
     patients: Mapped[list["Patient"]] = relationship(back_populates="provider")  # type: ignore[name-defined]
+    billing_provider: Mapped["BillingProvider | None"] = relationship(  # type: ignore[name-defined]
+        "BillingProvider", foreign_keys=[billing_provider_id], back_populates="providers"
+    )

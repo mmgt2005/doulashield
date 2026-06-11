@@ -10,7 +10,7 @@ from sqlalchemy.future import select
 from app.core.audit import AuditLogger
 from app.core.config import settings
 from app.core.encryption import decrypt_field
-from app.dependencies import CurrentUser, get_audit, get_client_ip, get_current_user, get_db, get_user_agent
+from app.dependencies import CurrentUser, get_audit, get_client_ip, get_current_user, get_db, get_user_agent, require_billing_admin
 from app.models.billing_provider import BillingProvider
 from app.models.claim import Claim
 from app.models.patient import Patient
@@ -196,32 +196,14 @@ async def download_cms1500(
         except Exception:
             pass
 
-    # Fetch linked billing provider (agency NPI for Box 33a)
-    billing_provider = None
-    if user.billing_provider_id:
-        bp_result = await db.execute(
-            select(BillingProvider).where(BillingProvider.id == user.billing_provider_id)
-        )
-        billing_provider = bp_result.scalar_one_or_none()
-
-    billing_provider_data: dict | None = None
-    if billing_provider:
-        bp_tax_id = ""
-        if billing_provider.tax_id_encrypted:
-            try:
-                bp_tax_id = _decrypt(billing_provider.tax_id_encrypted)
-            except Exception:
-                pass
-        billing_provider_data = {
-            "npi": billing_provider.npi,
-            "name": billing_provider.name,
-            "address": billing_provider.address or provider_address,
-            "city": billing_provider.city or "",
-            "state": billing_provider.state or "",
-            "zip_code": billing_provider.zip_code or "",
-            "phone": billing_provider.phone or (user.provider_phone or ""),
-            "tax_id": bp_tax_id if bp_tax_id else provider_ssn,
-        }
+    # Resolve billing NPI/name: use billing provider entity when assigned
+    if user.billing_provider_id and user.billing_provider:
+        bp = user.billing_provider
+        billing_npi = bp.group_npi or user.npi or ""
+        billing_name = bp.name
+    else:
+        billing_npi = user.npi or ""
+        billing_name = user.billing_provider_name or user.full_name or ""
 
     try:
         pdf_bytes = cms1500_service.generate_pdf(
@@ -248,15 +230,14 @@ async def download_cms1500(
                 "alternate_location": visit.alternate_location if visit else None,
             },
             provider_data={
-                "npi": user.npi or "",
+                "npi": billing_npi,
                 "full_name": user.full_name or "",
-                "billing_provider_name": user.billing_provider_name or user.full_name or "",
+                "billing_provider_name": billing_name,
                 "provider_address": provider_address,
                 "provider_phone": user.provider_phone or "",
                 "provider_ssn": provider_ssn,
                 "provider_signature_bytes": provider_sig_bytes,
             },
-            billing_provider_data=billing_provider_data,
             claim_data={
                 "paid_amount": claim.paid_amount if claim else None,
                 "resubmit_count": claim.resubmit_count if claim else 0,
@@ -387,6 +368,15 @@ async def download_audit_packet(
         except Exception:
             pass
 
+    # Resolve billing NPI/name for audit packet Box 33 / 33a
+    if user.billing_provider_id and user.billing_provider:
+        _bp = user.billing_provider
+        billing_npi = _bp.group_npi or user.npi or ""
+        billing_name = _bp.name
+    else:
+        billing_npi = user.npi or ""
+        billing_name = user.billing_provider_name or user.full_name or ""
+
     import json as _json
     mco_contracts = []
     if user.mco_contracts_json:
@@ -394,34 +384,6 @@ async def download_audit_packet(
             mco_contracts = _json.loads(user.mco_contracts_json)
         except Exception:
             pass
-
-    # Billing provider — same logic as download_cms1500
-    from app.models.billing_provider import BillingProvider as _BillingProvider
-    _billing_provider = None
-    if user.billing_provider_id:
-        _bp_result = await db.execute(
-            select(_BillingProvider).where(_BillingProvider.id == user.billing_provider_id)
-        )
-        _billing_provider = _bp_result.scalar_one_or_none()
-
-    audit_billing_provider_data: dict | None = None
-    if _billing_provider:
-        _bp_tax_id = ""
-        if _billing_provider.tax_id_encrypted:
-            try:
-                _bp_tax_id = _decrypt(_billing_provider.tax_id_encrypted)
-            except Exception:
-                pass
-        audit_billing_provider_data = {
-            "npi": _billing_provider.npi,
-            "name": _billing_provider.name,
-            "address": _billing_provider.address or provider_address,
-            "city": _billing_provider.city or "",
-            "state": _billing_provider.state or "",
-            "zip_code": _billing_provider.zip_code or "",
-            "phone": _billing_provider.phone or (user.provider_phone or ""),
-            "tax_id": _bp_tax_id if _bp_tax_id else provider_ssn,
-        }
 
     from app.services import audit_packet_service
 
@@ -467,9 +429,9 @@ async def download_audit_packet(
                 "ma91_status": visit.ma91_status if visit else None,
             },
             provider_data={
-                "npi": user.npi or "",
+                "npi": billing_npi,
                 "full_name": user.full_name or "",
-                "billing_provider_name": user.billing_provider_name or user.full_name or "",
+                "billing_provider_name": billing_name,
                 "provider_address": provider_address,
                 "provider_phone": user.provider_phone or "",
                 "provider_ssn": provider_ssn,
@@ -492,7 +454,6 @@ async def download_audit_packet(
                 "submitted_at": claim.submitted_at if claim else None,
                 "remittance_id": str(claim.remittance_id) if claim and claim.remittance_id else None,
             },
-            billing_provider_data=audit_billing_provider_data,
         )
     except Exception as exc:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc))
@@ -580,6 +541,72 @@ async def check_claim_status(
     try:
         return await _svc(db, audit).check_claim_status(
             claim_id, current_user.id, get_client_ip(request), get_user_agent(request)
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+# ── Billing-admin endpoints ───────────────────────────────────────────────────
+
+@router.get("/billing-admin/claims", response_model=list[ClaimRead])
+async def list_billing_admin_claims(
+    current_user: Annotated[CurrentUser, Depends(require_billing_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    audit: Annotated[AuditLogger, Depends(get_audit)],
+) -> list[ClaimRead]:
+    """Return all claims for providers in the caller's managed billing provider."""
+    if current_user.role == "admin":
+        return await _svc(db, audit).list_all_claims_admin()
+
+    user_result = await db.execute(select(User).where(User.id == current_user.id))
+    caller = user_result.scalar_one_or_none()
+    if not caller or not caller.managed_billing_provider_id:
+        return []
+
+    provider_result = await db.execute(
+        select(User).where(User.billing_provider_id == caller.managed_billing_provider_id)
+    )
+    providers = provider_result.scalars().all()
+    all_claims: list[ClaimRead] = []
+    for p in providers:
+        claims = await _svc(db, audit).list_all_provider_claims(p.id)
+        all_claims.extend(claims)
+    return all_claims
+
+
+@router.put(
+    "/billing-admin/patients/{patient_id}/visits/{visit_type}/claims/manual",
+    response_model=ClaimRead,
+)
+async def billing_admin_update_manual_claim(
+    request: Request,
+    patient_id: uuid.UUID,
+    visit_type: str,
+    body: ManualClaimUpsert,
+    current_user: Annotated[CurrentUser, Depends(require_billing_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    audit: Annotated[AuditLogger, Depends(get_audit)],
+) -> ClaimRead:
+    """Update a manual claim's EOB data, scoped to the billing admin's managed providers."""
+    patient_result = await db.execute(select(Patient).where(Patient.id == patient_id))
+    patient = patient_result.scalar_one_or_none()
+    if not patient or not patient.is_active:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found")
+
+    if current_user.role != "admin":
+        caller_result = await db.execute(select(User).where(User.id == current_user.id))
+        caller = caller_result.scalar_one_or_none()
+        if not caller or not caller.managed_billing_provider_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No managed billing provider")
+        provider_result = await db.execute(select(User).where(User.id == patient.provider_id))
+        provider = provider_result.scalar_one_or_none()
+        if not provider or provider.billing_provider_id != caller.managed_billing_provider_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Patient not in your agency")
+
+    try:
+        return await _svc(db, audit).log_manual_claim(
+            patient_id, patient.provider_id, visit_type, body,
+            get_client_ip(request), get_user_agent(request)
         )
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))

@@ -1,4 +1,4 @@
-export type UserRole = 'provider' | 'admin'
+export type UserRole = 'provider' | 'admin' | 'billing_admin'
 
 export interface User {
   id: string
@@ -11,6 +11,22 @@ export interface User {
   last_sign_in_at: string | null
   welcome_email_sent_at: string | null
   billing_provider_id: string | null
+  managed_billing_provider_id: string | null
+}
+
+export interface BillingProvider {
+  id: string
+  name: string
+  group_npi: string | null
+  address: string | null
+  city: string | null
+  state: string | null
+  zip: string | null
+  phone: string | null
+  stripe_subscription_id: string | null
+  subscription_status: string | null
+  created_at: string
+  provider_count: number
 }
 
 export interface Patient {
@@ -130,6 +146,8 @@ export interface Claim {
   error_code: string | null
   resubmit_count: number
   remittance_id: string | null
+  filing_deadline_date: string | null
+  days_until_filing_deadline: number | null
   created_at: string
   updated_at: string
 }

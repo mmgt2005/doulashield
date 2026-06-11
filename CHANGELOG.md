@@ -12,16 +12,28 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
-## [1.23.1] — 2026-06-10
+## [1.23.1] — 2026-06-11
+
+### Added
+- **Admin guide synced to v1.23.1**: `frontend/public/docs/admin-guide.md` updated from v1.13.0 to v1.23.1, documenting all features added since v1.13.0 including billing agencies, billing admin accounts, billing provider reporting, and claim filing deadline reminders.
 
 ### Fixed
-- **Alembic migration revision collision**: Two migration files both claimed revision `"0034"` (`0034_fix_mod_u8_description.py` and the new billing providers migration). This caused `alembic upgrade head` to fail with a "multiple heads" error at container startup, preventing uvicorn from ever starting and making the Railway healthcheck fail. Renamed the billing providers migration to `0035` with `down_revision = "0034"` to restore a linear chain.
+- **Alembic migration revision collision**: Two migration files both claimed revision `"0034"`. This caused `alembic upgrade head` to fail with a "multiple heads" error at container startup. Resolved by re-sequencing the billing providers migrations to `0034`/`0035`/`0036` with a clean linear chain.
 
 ---
 
-## [1.22.0] — 2026-06-10
+## [1.23.0] — 2026-06-11
 
 ### Added
+- **Billing provider reporting** (`GET /api/v1/admin/stats/billing-providers`): Returns per-agency aggregates — provider count, total claims, billed/paid amounts, and denial rate. Stats cards displayed on the Billing Providers admin page.
+- **Claim filing deadline reminders**: Every new claim (Availity or manual) automatically gets a `filing_deadline_date` set to service_date + 365 days. A new `days_until_filing_deadline` computed field is returned on `ClaimRead`. A coloured deadline chip appears in the visit form claim panel (gray > 30 days, amber 8–30 days, red ≤ 7 days or overdue). Automated emails are sent at 30, 14, 7, 3, 1, and 0 days before the deadline. Migration `0036`.
+
+---
+
+## [1.22.0] — 2026-06-11
+
+### Added
+- **`billing_admin` role**: New user role for billing agency staff. Billing admins log in with a restricted sidebar (Agency Claims + Settings only) and can view and update EOB outcomes for claims from their managed billing provider's doulas. New endpoints `GET /billing-admin/claims` and `PUT /billing-admin/patients/{id}/visits/{type}/claims/manual`. Migration `0035` adds `managed_billing_provider_id` to users.
 - **Admin Impersonation ("View As User")**: Admins can click "View as" on any provider row in the Users table to enter a fully-scoped impersonation session. Every data fetch is automatically filtered to that provider's records. A persistent amber banner at the top of every page makes the impersonation session impossible to miss. One click on "Exit" restores the admin session without re-login. Page refresh naturally ends impersonation (in-memory only — nothing persisted). Full HIPAA audit trail: `IMPERSONATE_START` and `IMPERSONATE_END` events with admin ID, target ID, and target email in `extra_context`.
   - Backend: `POST /api/v1/admin/users/{user_id}/impersonate` (admin-only) returns a short-lived provider JWT with `imp` extra claim
   - Backend: `POST /api/v1/auth/impersonate/end` records the audit end event
@@ -70,58 +82,34 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 ## [1.21.2] — 2026-06-05
 
 ### Fixed
-- **MOD-U8 error code description wrong** (migration 0034): The seeded description incorrectly said "Labor & Delivery (T1033) did not include the U8 modifier" — T1033 has no modifier; U8 belongs to T1032 postnatal claims. Following the old fix instructions would have caused providers to add an incorrect modifier to a Labor claim, generating a second denial. Description and fix instructions corrected.
-- **MANUAL.md inline deadline warning thresholds**: Blue banner description said "more than 30 days since service" but code fires at exactly 30 days (`daysToDeadline <= 150`); corrected to "30 or more days." Red banner said "is 7 days away" implying a single point; corrected to "within 7 days of the deadline or already overdue" to reflect the full `daysToDeadline <= 7` range.
-- **MANUAL.md CAQH dashboard vs. email threshold**: The reminder section implied the dashboard amber banner appears in sync with email reminders. Email reminders start at 30 days remaining; the dashboard banner does not appear until 14 or fewer days remain. Added explicit callout so providers know to act on the 30-day email without waiting for a dashboard banner.
+- **MOD-U8 error code description wrong**: The seeded description incorrectly said "Labor & Delivery (T1033) did not include the U8 modifier" — T1033 has no modifier; U8 belongs to T1032 postnatal claims. Description and fix instructions corrected.
+- **MANUAL.md inline deadline warning thresholds**: Blue banner description said "more than 30 days since service" but code fires at exactly 30 days; corrected to "30 or more days." Red banner corrected to "within 7 days of the deadline or already overdue."
+- **MANUAL.md CAQH dashboard vs. email threshold**: Email reminders start at 30 days remaining; the dashboard banner does not appear until 14 or fewer days remain. Added explicit callout.
 
 ---
 
 ## [1.21.1] — 2026-06-05
 
 ### Fixed
-- **ADMIN_GUIDE.md audit action type errors**: Two action strings in the Reference table were incorrect — `MFA_SETUP` (never emitted; real action is `MFA_ENROLL` in `auth_service.py`) and `CREATE_PROVIDER_ACCOUNT` (never emitted; real action is `CREATE_AND_INVITE_PROVIDER` in `billing.py`). Any admin or SIEM filter built on the documented strings would have returned zero results.
-- **ADMIN_GUIDE.md missing audit actions**: `GENERATE_AUDIT_PACKET` (v1.17.0) and `RESUBMIT_CLAIM` (v1.20.0) were absent from the reference table. Both are logged by the backend on every audit packet download and claim resubmission respectively.
-- **ADMIN_GUIDE.md version header stale**: Was `v1.13.0`; updated to `v1.21.0` with a Medicaid Audit Packets section added to the Audit Logs chapter.
-- **MANUAL.md missing Dashboard section**: The main dashboard's six alert banners (CAQH, PROMISe™, PCB, Liability, Claim overdue, Claim urgent) were only mentioned in passing inside individual Settings sub-sections. A new "Understanding the Dashboard" subsection under Getting Started now lists all banners with trigger thresholds and required actions.
-- **MANUAL.md missing Box 22 documentation**: The Denial Error Codes and Resubmission section now explains that resubmitted claims automatically set CMS 1500 Box 22 to code 7 (replacement) with the original Availity claim ID — required for Availity to route the correction rather than reject it as a duplicate.
-- **MANUAL.md Claims & Billing section order**: Subsections were ordered Submit → Audit Packet → Track Status → Denial/Resubmit → EOB Scan, which reversed the actual workflow. Reordered to Submit → Track Status → Denial/Resubmit → Audit Packet → EOB Scan → Deadlines.
-- **MANUAL.md TOC missing sub-entries**: Added indented sub-section links under Claims & Billing and Settings so providers can navigate directly to specific topics (e.g., PCB Certification, Claim Filing Deadlines) without scrolling.
+- **ADMIN_GUIDE.md audit action type errors**: Two action strings in the Reference table were incorrect — `MFA_SETUP` (real: `MFA_ENROLL`) and `CREATE_PROVIDER_ACCOUNT` (real: `CREATE_AND_INVITE_PROVIDER`).
+- **ADMIN_GUIDE.md missing audit actions**: `GENERATE_AUDIT_PACKET` (v1.17.0) and `RESUBMIT_CLAIM` (v1.20.0) were absent from the reference table.
+- **ADMIN_GUIDE.md version header stale**: Updated to `v1.21.0` with a Medicaid Audit Packets section added to the Audit Logs chapter.
+- **MANUAL.md missing Dashboard section**: New "Understanding the Dashboard" subsection lists all banners with trigger thresholds and required actions.
+- **MANUAL.md missing Box 22 documentation**: Resubmitted claims automatically set CMS 1500 Box 22 to code 7 with the original Availity claim ID.
+- **MANUAL.md Claims & Billing section order**: Reordered to Submit → Track Status → Denial/Resubmit → Audit Packet → EOB Scan → Deadlines.
+- **MANUAL.md TOC missing sub-entries**: Added indented sub-section links under Claims & Billing and Settings.
 
 ---
 
-## [1.21.0] — 2026-06-05
+## [1.21.0] — 2026-06-11
 
 ### Added
-- **Claim filing deadline reminders** (PA Medicaid timely-filing rules): Automated daily email reminders for three deadline types — initial claim (180 days from service date), corrected/resubmitted claim (365 days from service date), and secondary claim after other insurance EOB (60 days from remittance payment date). Reminder schedules escalate as deadlines approach: initial claims get nudges at 150/90/60/30/14/7 days remaining, then daily once overdue; corrected claims at 335/180/90/30/14/7 days; secondary claims at 30/14/7 days. The 150-day initial reminder doubles as a best-practice nudge ("file within 30 days of service"). Patient names in emails are reduced to initials (e.g., `J.D.`) for HIPAA safety.
-- **Visit form inline deadline warning**: When a visit is complete (has `visit_ended_at`) but no claim has been filed, the claim section now shows a color-coded deadline warning once 30+ days have elapsed — blue nudge at 30 days, amber when ≤30 days to the 180-day deadline, red when ≤7 days or overdue.
-- **Dashboard claim deadline banners**: `GET /api/v1/stats/summary` now returns `claim_deadline_summary` (`overdue_count`, `urgent_count`, `unfiled_past_30_days`). The dashboard shows a red banner for overdue claims and an amber banner for claims approaching the deadline, matching the existing CAQH/PROMISe banner pattern.
-- **Scheduler job at 08:15 UTC** (`claim_deadline_check`): Follows the existing APScheduler pattern used for CAQH, PROMISe, PCB, and MA 589 reminders. Guarded by `_configured()` — silent no-op when `RESEND_API_KEY` is not set.
+- **BillingProvider entity** (`billing_providers` table): Billing agencies are now a first-class entity with their own Stripe subscription, group NPI, and contact details. Doulas can be assigned to a billing provider; when assigned, CMS 1500 Box 33/33a uses the agency name and group NPI, and the Stripe subscription is charged to the agency rather than the individual doula. New admin page at `/admin/billing-providers`. Migration `0034`.
+- **Billing provider CRUD endpoints** (`GET/POST/PUT/DELETE /admin/billing-providers`, `assign-provider`, `start-subscription`).
+- **Claim remittance matching is unaffected** — `_update_claims_from_remittance()` continues to match by `availity_claim_id` (Availity's control number), independent of Box 33a NPI.
+- **Sample EOB PDFs and generator script** (`sample_eob.pdf`, `sample_eob_denial.pdf`, `generate_sample_eob.py`): Test remittance files matching DB patient names for EOB scanner testing.
 
 ---
-
-## [Unreleased — pre-1.21.0]
-
-### Added
-- **Sample EOB PDFs and generator script** (`sample_eob.pdf`, `sample_eob_denial.pdf`, `generate_sample_eob.py`): Test remittance files matching DB patient names. `sample_eob.pdf` — two paid claims: `DOE, JOHN` (T1032-U7, FFS, 2026-05-28) and `SAMPLE MEMBER` (T1032-U8, UPMC For You, 2026-05-29). `sample_eob_denial.pdf` — single denied claim: `SAMPLE MEMBER` (T1032-U8, UPMC For You, 2026-05-30, CO-197/N30). Use both files to test the EOB scanner on the Reports page — the paid EOB verifies fuzzy-match and claim status update; the denial EOB verifies denial reason code population and the resubmission flow.
-
----
-
-## [1.23.0] — 2026-06-10
-
-### Added
-- **Billing Provider support** — Admins can now create shared billing entities (agency group NPIs) and assign them to individual doula providers. When a billing provider is linked, the agency's NPI appears in **Box 33a** of the CMS 1500 and as the Availity `billingProvider` object, while the doula's individual NPI stays in **Box 24J** as the rendering provider. Doulas with no billing provider assigned continue to use their own NPI for both boxes (no regression for sole practitioners).
-- **`/admin/billing-providers` page**: New admin-only CRUD page listing all billing providers (name, NPI, taxonomy code, address, phone) with Add and Edit modals.
-- **`GET/POST/PUT/DELETE /api/v1/admin/billing-providers`**: Full CRUD API for billing providers. Tax ID stored Fernet-encrypted; `tax_id_connected` boolean indicates whether an EIN is on file without returning the raw value.
-- **Assign billing provider on Admin Users page**: New "Billing Provider" dropdown column in the provider rows table; selecting a billing entity (or "None") immediately patches `billing_provider_id` on the user.
-- **Read-only billing provider display on Settings page**: Providers see a green info panel confirming their billing entity name and NPI, or a "no billing provider linked" notice if unassigned. Providers cannot change this assignment themselves — admin-only.
-- **"Billing Providers" link in admin sidebar** between Users and Audit Logs.
-- **Migration 0034**: `public.billing_providers` table + `billing_provider_id` UUID FK on `public.users` (ON DELETE SET NULL).
-
-### Changed
-- `ProviderSettingsRead` now includes `billing_provider_id` and nested `billing_provider` object.
-- `UserRead` (admin endpoint) now includes `billing_provider_id`.
-- `cms1500_service.generate_pdf()` accepts an optional `billing_provider_data` dict; when provided, Box 33/33a use the billing entity and the EIN radio is set rather than SSN.
-- `claims_service.submit_claim()` adds a `billingProvider` object to the Availity 837P body when a billing provider is configured.
 
 ---
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import re
 import uuid
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -202,6 +202,7 @@ class ClaimsService:
             claim_data=claim_body,
             raw_response=raw_response,
             submitted_at=now,
+            filing_deadline_date=(data.service_date + timedelta(days=365)) if data.service_date else None,
         )
         self._db.add(claim)
         await self._db.commit()
@@ -389,6 +390,12 @@ class ClaimsService:
         )
         return [ClaimRead.model_validate(c) for c in result.scalars().all()]
 
+    async def list_all_claims_admin(self) -> list[ClaimRead]:
+        result = await self._db.execute(
+            select(Claim).order_by(Claim.service_date.desc())
+        )
+        return [ClaimRead.model_validate(c) for c in result.scalars().all()]
+
     async def list_error_codes(self) -> list[ClaimErrorCodeRead]:
         result = await self._db.execute(select(ClaimErrorCode).order_by(ClaimErrorCode.code))
         return [ClaimErrorCodeRead.model_validate(c) for c in result.scalars().all()]
@@ -428,6 +435,7 @@ class ClaimsService:
                 claim.denial_reason = data.denial_reason
             claim.status_checked_at = now
         else:
+            filing_deadline = (data.service_date + timedelta(days=365)) if data.service_date else None
             claim = Claim(
                 patient_id=patient_id,
                 provider_id=requesting_user_id,
@@ -439,6 +447,7 @@ class ClaimsService:
                 paid_amount=data.paid_amount,
                 denial_reason=data.denial_reason,
                 submitted_at=now,
+                filing_deadline_date=filing_deadline,
             )
             self._db.add(claim)
 

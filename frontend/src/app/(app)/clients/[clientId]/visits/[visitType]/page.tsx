@@ -1275,6 +1275,21 @@ export default function VisitFormPage() {
                       {existingClaim.resubmit_count > 0 && (
                         <p className="text-xs text-gray-500">Resubmitted {existingClaim.resubmit_count} time{existingClaim.resubmit_count !== 1 ? 's' : ''}</p>
                       )}
+                      {existingClaim.days_until_filing_deadline != null && (
+                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                          existingClaim.days_until_filing_deadline <= 7
+                            ? 'bg-red-100 text-red-700'
+                            : existingClaim.days_until_filing_deadline <= 30
+                            ? 'bg-amber-100 text-amber-700'
+                            : 'bg-gray-100 text-gray-500'
+                        }`}>
+                          {existingClaim.days_until_filing_deadline < 0
+                            ? `Filing deadline ${Math.abs(existingClaim.days_until_filing_deadline)}d overdue`
+                            : existingClaim.days_until_filing_deadline === 0
+                            ? 'Filing deadline today'
+                            : `Filing deadline: ${existingClaim.days_until_filing_deadline}d`}
+                        </span>
+                      )}
                       <div className="flex flex-wrap items-center gap-x-2 text-xs text-gray-500">
                         {existingClaim.submitted_at && (
                           <span>Submitted {new Date(existingClaim.submitted_at).toLocaleDateString()}</span>

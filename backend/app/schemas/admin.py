@@ -3,52 +3,28 @@ from datetime import date, datetime
 from typing import Literal
 from pydantic import BaseModel, ConfigDict, EmailStr
 
+RoleLiteral = Literal["provider", "admin", "billing_admin"]
+
 
 class McoContract(BaseModel):
     mco: str
     contract_date: date | None = None
 
 
-class BillingProviderCreate(BaseModel):
-    name: str
-    npi: str
-    taxonomy_code: str | None = None
-    address: str | None = None
-    city: str | None = None
-    state: str | None = None
-    zip_code: str | None = None
-    phone: str | None = None
-    tax_id: str | None = None  # plaintext on write; encrypted on save; never returned
-
-
-class BillingProviderRead(BaseModel):
-    id: uuid.UUID
-    name: str
-    npi: str
-    taxonomy_code: str | None
-    address: str | None
-    city: str | None
-    state: str | None
-    zip_code: str | None
-    phone: str | None
-    tax_id_connected: bool  # True if tax_id_encrypted is non-null; raw EIN never returned
-    created_at: datetime
-
-    model_config = ConfigDict(from_attributes=True)
-
-
 class UserCreate(BaseModel):
     email: EmailStr
     password: str
     full_name: str | None = None
-    role: Literal["provider", "admin"] = "provider"
+    role: RoleLiteral = "provider"
+    managed_billing_provider_id: uuid.UUID | None = None
 
 
 class UserUpdate(BaseModel):
     full_name: str | None = None
-    role: Literal["provider", "admin"] | None = None
+    role: RoleLiteral | None = None
     is_active: bool | None = None
     billing_provider_id: uuid.UUID | None = None
+    managed_billing_provider_id: uuid.UUID | None = None
 
 
 class UserRead(BaseModel):
@@ -62,6 +38,7 @@ class UserRead(BaseModel):
     last_sign_in_at: datetime | None = None
     welcome_email_sent_at: datetime | None = None
     billing_provider_id: uuid.UUID | None = None
+    managed_billing_provider_id: uuid.UUID | None = None
 
     model_config = {"from_attributes": True}
 
@@ -86,6 +63,23 @@ class ProviderSettingsUpdate(BaseModel):
     promise_last_enrolled_on: date | None = None
     pcb_last_certified_on: date | None = None
     liability_insurance_expires_on: date | None = None
+
+
+class BillingProviderRead(BaseModel):
+    id: uuid.UUID
+    name: str
+    group_npi: str | None
+    address: str | None
+    city: str | None
+    state: str | None
+    zip: str | None
+    phone: str | None
+    stripe_subscription_id: str | None
+    subscription_status: str | None
+    created_at: datetime
+    provider_count: int = 0
+
+    model_config = {"from_attributes": True}
 
 
 class ProviderSettingsRead(BaseModel):
@@ -126,3 +120,17 @@ class AuditLogRead(BaseModel):
     timestamp: datetime
 
     model_config = {"from_attributes": True}
+
+
+class BillingProviderCreate(BaseModel):
+    name: str
+    group_npi: str | None = None
+    address: str | None = None
+    city: str | None = None
+    state: str | None = None
+    zip: str | None = None
+    phone: str | None = None
+
+
+class BillingProviderUpdate(BillingProviderCreate):
+    name: str | None = None

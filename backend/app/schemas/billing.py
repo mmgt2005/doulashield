@@ -39,12 +39,14 @@ class CreateAndInviteRequest(BaseModel):
     email: EmailStr
     full_name: str | None = None
     role: str = "provider"
+    managed_billing_provider_id: uuid.UUID | None = None
 
 
 class CreateAccountOnlyRequest(BaseModel):
     email: EmailStr
     full_name: str | None = None
     role: str = "provider"
+    managed_billing_provider_id: uuid.UUID | None = None
 
 
 class SendWelcomeEmailRequest(BaseModel):

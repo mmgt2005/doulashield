@@ -534,6 +534,72 @@ async def _run_claim_deadline_check() -> None:
     )
 
 
+_FILING_REMINDER_DAYS = {30, 14, 7, 3, 1, 0}
+_filing_logger = logging.getLogger("doulashield.filing_deadline")
+
+
+async def _run_filing_deadline_check() -> None:
+    """
+    Send timely-filing deadline reminders for claims not yet paid/denied at
+    30, 14, 7, 3, 1, and 0 days before the filing deadline.
+    """
+    from app.core.encryption import decrypt_field
+    from app.dependencies import _AsyncSession
+    from app.models.claim import Claim
+    from app.models.patient import Patient
+    from app.models.user import User
+    from app.services.email_service import send_filing_deadline_reminder_email
+
+    _filing_logger.info("filing_deadline_check: starting")
+
+    async with _AsyncSession() as db:
+        from sqlalchemy.future import select as _select
+
+        result = await db.execute(
+            _select(Claim, User, Patient)
+            .join(User, User.id == Claim.provider_id)
+            .join(Patient, Patient.id == Claim.patient_id)
+            .where(
+                Claim.filing_deadline_date.isnot(None),
+                Claim.status.notin_(["paid", "denied"]),
+                User.is_active.is_(True),
+            )
+        )
+        rows = result.all()
+
+    _filing_logger.info("filing_deadline_check: found %d open claims with deadline", len(rows))
+
+    today = date.today()
+    sent = 0
+    for claim, provider, patient in rows:
+        try:
+            days = (claim.filing_deadline_date - today).days
+            if days not in _FILING_REMINDER_DAYS:
+                continue
+            patient_name = decrypt_field(patient.name_encrypted)
+            provider_name = provider.full_name or provider.email
+            svc_date = claim.service_date.isoformat() if claim.service_date else "unknown"
+            claim_url = (
+                f"{settings.FRONTEND_ORIGIN}/clients/{patient.id}"
+                f"/visits/{claim.visit_type}"
+            )
+            await send_filing_deadline_reminder_email(
+                provider.email, provider_name, patient_name, days, svc_date, claim_url
+            )
+            sent += 1
+            _filing_logger.info(
+                "filing_deadline_check: sent reminder to provider=%s claim=%s days=%d",
+                provider.id, claim.id, days,
+            )
+        except Exception as exc:
+            _filing_logger.error(
+                "filing_deadline_check: claim=%s FAILED: %s",
+                claim.id, exc, exc_info=True,
+            )
+
+    _filing_logger.info("filing_deadline_check: done sent=%d", sent)
+
+
 @asynccontextmanager
 async def _lifespan(app: FastAPI):
     # hour=7 UTC ≈ 02:00 ET; avoids pytz dependency for named timezone strings
@@ -593,18 +659,18 @@ async def _lifespan(app: FastAPI):
         misfire_grace_time=3600,
     )
     scheduler.add_job(
-        _run_claim_deadline_check,
+        _run_filing_deadline_check,
         trigger="cron",
         hour=8,
         minute=15,
-        id="claim_deadline_check",
+        id="filing_deadline_check",
         replace_existing=True,
         misfire_grace_time=3600,
     )
     scheduler.start()
     _sync_logger.info(
         "APScheduler started — remittance sync 07:00, CAQH 07:30, PROMISe 07:45, "
-        "PCB 07:55, Liability 08:00, MA589 08:05, Claim deadlines 08:15 UTC"
+        "PCB 07:55, Liability 08:00, MA589 08:05, filing deadline 08:15 UTC"
     )
     try:
         yield

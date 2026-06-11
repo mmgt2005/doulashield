@@ -19,6 +19,11 @@ const adminLinks = [
   { href: '/admin/audit-logs', label: 'Audit Logs' },
 ]
 
+const billingAdminLinks = [
+  { href: '/billing-admin/claims', label: 'Agency Claims' },
+  { href: '/settings', label: 'Settings' },
+]
+
 interface SidebarProps {
   onClose?: () => void
 }
@@ -40,7 +45,10 @@ export default function Sidebar({ onClose }: SidebarProps) {
     }
   }
 
-  const links = [...providerLinks, ...(user?.role === 'admin' ? adminLinks : [])]
+  const links =
+    user?.role === 'billing_admin'
+      ? billingAdminLinks
+      : [...providerLinks, ...(user?.role === 'admin' ? adminLinks : [])]
 
   return (
     <aside className="w-56 flex-shrink-0 bg-white border-r border-gray-200 flex flex-col h-full">
@@ -94,9 +102,11 @@ export default function Sidebar({ onClose }: SidebarProps) {
           <span className={`mt-1 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
             user.role === 'admin'
               ? 'bg-purple-100 text-purple-700'
+              : user.role === 'billing_admin'
+              ? 'bg-teal-100 text-teal-700'
               : 'bg-blue-100 text-blue-700'
           }`}>
-            {user.role === 'admin' ? 'Admin' : 'Provider'}
+            {user.role === 'admin' ? 'Admin' : user.role === 'billing_admin' ? 'Billing Admin' : 'Provider'}
           </span>
         )}
         <button

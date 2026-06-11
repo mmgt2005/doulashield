@@ -1,6 +1,6 @@
 # DoulaShield Admin Guide
 
-**v1.22.0 · Last updated 2026-06-10**
+**v1.23.1 · Last updated 2026-06-11**
 
 This guide covers everything admins can do that providers cannot. For day-to-day provider features (documenting visits, submitting claims, etc.) refer to `MANUAL.md`.
 
@@ -11,9 +11,13 @@ This guide covers everything admins can do that providers cannot. For day-to-day
 1. [Introduction](#introduction)
 2. [Managing Provider Accounts](#managing-provider-accounts)
 3. [Billing & Escrow](#billing--escrow)
-4. [Admin-Only Settings](#admin-only-settings)
-5. [Audit Logs](#audit-logs)
-6. [Reference: Audit Action Types](#reference-audit-action-types)
+4. [Billing Agencies (Billing Providers)](#billing-agencies-billing-providers)
+5. [Billing Admin Accounts](#billing-admin-accounts)
+6. [Billing Provider Reporting](#billing-provider-reporting)
+7. [Claim Filing Deadline Reminders](#claim-filing-deadline-reminders)
+8. [Admin-Only Settings](#admin-only-settings)
+9. [Audit Logs](#audit-logs)
+10. [Reference: Audit Action Types](#reference-audit-action-types)
 
 ---
 
@@ -157,6 +161,105 @@ Admin accounts are created with `deposit_paid = true` and `escrow_balance_remain
 
 ---
 
+## Billing Agencies (Billing Providers)
+
+Some doulas bill through a third-party billing agency rather than under their own NPI. DoulaShield models these as **Billing Provider** entities — separate from individual user accounts.
+
+### What Billing Providers Change
+
+When a doula is assigned to a billing provider:
+- **CMS 1500 Box 33** (Billing Provider Name) uses the agency name instead of the doula's name.
+- **CMS 1500 Box 33a** (Billing Provider NPI) uses the agency's Group NPI instead of the doula's personal NPI.
+- **Stripe subscription** is charged to the billing provider entity, not the individual doula.
+- The doula's own Subscription column in the Users table still shows their individual status; the agency's subscription is managed on the Billing Providers page.
+
+Claim remittance matching is **not affected** — Availity assigns a control number at submission time which is stored as `availity_claim_id`. Remittance 835 files reference this same number regardless of which NPI appeared in Box 33a.
+
+### Creating a Billing Agency
+
+Navigate to **Billing Providers** in the admin sidebar.
+
+1. Click **+ Add Agency**.
+2. Fill in Agency Name (required), Group NPI, address, phone.
+3. Click **Create Agency**. The agency appears in the table.
+
+### Assigning a Doula to an Agency
+
+Use the API or the assign-provider action on the Billing Providers page (`POST /admin/billing-providers/{id}/assign-provider` with `{ "provider_user_id": "..." }`). The doula's CMS 1500 forms immediately reflect the agency NPI and name.
+
+### Starting a Subscription for an Agency
+
+1. Ensure at least one provider is assigned to the agency.
+2. Click **Start Sub** in the agency row.
+3. DoulaShield creates a Stripe subscription on the agency's customer record. The Subscription column updates to "Active."
+
+### Editing or Deleting an Agency
+
+- **Edit** — click the Edit button on any row to update name, NPI, or contact details inline.
+- **Delete** — only available when the agency has zero assigned providers. The button does not appear when providers are assigned.
+
+---
+
+## Billing Admin Accounts
+
+Billing agency staff who need to update EOB/claim outcomes for the doulas they manage can be granted the **Billing Admin** role. Billing admins have a restricted interface — they see only **Agency Claims** and **Settings** in the sidebar, and cannot access admin pages.
+
+### Creating a Billing Admin Account
+
+On the Users page, click **+ Add User**, select **Billing Admin** as the role, and choose the managed agency from the dropdown. The account is created with `managed_billing_provider_id` set to the selected agency.
+
+### What Billing Admins Can Do
+
+- View all claims from providers assigned to their managed agency (`GET /billing-admin/claims`)
+- Scan paper EOBs and update manual claim outcomes for any of their agency's providers
+- View and update their own Settings
+
+### What Billing Admins Cannot Do
+
+- Access the admin Users, Billing Providers, or Audit Logs pages
+- View or modify patients, visits, or claims from providers outside their agency
+- Start subscriptions or manage Stripe billing
+
+---
+
+## Billing Provider Reporting
+
+The Billing Providers page shows per-agency aggregate stats pulled from `GET /admin/stats/billing-providers`:
+
+| Column | Description |
+|---|---|
+| **Providers** | Number of doulas assigned to the agency |
+| **Claims** | Total claims filed by the agency's providers |
+| **Billed** | Sum of `billed_amount` across all claims |
+| **Paid** | Sum of `paid_amount` across all claims |
+| **Denial %** | Percentage of claims with status `denied` |
+
+A summary row above the table aggregates totals across all agencies.
+
+---
+
+## Claim Filing Deadline Reminders
+
+PA Medicaid MCOs enforce a **365-day timely-filing window** from the date of service. DoulaShield automatically tracks this for every claim.
+
+### Deadline Chip on Visit Pages
+
+When a claim exists on a visit, the claim panel shows a colored deadline chip:
+
+| Color | Meaning |
+|---|---|
+| Gray | More than 30 days until deadline |
+| Amber | 8–30 days until deadline |
+| Red | 0–7 days until deadline or overdue |
+
+### Email Reminders
+
+Providers receive automated reminder emails at **30, 14, 7, 3, 1, and 0 days** before the filing deadline for any open (not yet paid or denied) claim. Emails include a direct link to the visit page to take action.
+
+Reminders run daily at **08:15 UTC**. No reminder is sent for claims that are already `paid` or `denied`.
+
+---
+
 ## Admin-Only Settings
 
 Two fields in **Settings** are visible only to admins:
@@ -230,6 +333,10 @@ HIPAA requires an immutable audit trail. The database has a rule that blocks UPD
 | `START_SUBSCRIPTION` | Monthly subscription started | user |
 | `DEPOSIT_PAID` | Stripe deposit webhook confirmed | user |
 | `MANUAL_CUSTOMER_LINK` | Admin linked Stripe customer ID manually | user |
+| `CREATE_BILLING_PROVIDER` | Admin created a billing agency | billing_provider |
+| `ASSIGN_BILLING_PROVIDER` | Admin assigned a provider to an agency | user |
+| `START_BILLING_PROVIDER_SUBSCRIPTION` | Admin started subscription for a billing agency | billing_provider |
+| `GENERATE_AUDIT_PACKET` | Medicaid audit packet PDF downloaded | patient |
 | `ESCROW_DEDUCTION` | Automatic escrow charge from remittance | user |
 | `GENERATE_AUDIT_PACKET` | Medicaid audit packet PDF downloaded | claim |
 | `RESUBMIT_CLAIM` | Denied claim resubmitted to Availity or status reset | claim |
