@@ -16,6 +16,7 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ### Fixed
 - **Startup crash (healthcheck failure)**: `billing_provider_id` was defined twice in the `User` SQLAlchemy model — once before `managed_billing_provider_id` and again after it. The duplicate triggered a mapper configuration error at import time, preventing uvicorn from ever binding and causing all Railway healthchecks to fail. Removed the redundant definition.
+- **Vercel build failure (TypeScript)**: The admin impersonation handler (`handleViewAs`) constructed an inline `User` object missing the `managed_billing_provider_id` field, which is required by the `User` interface. Added `managed_billing_provider_id: null` to the object literal to fix the type error.
 
 ---
 
