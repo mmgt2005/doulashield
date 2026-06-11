@@ -219,6 +219,44 @@ Your NPI (9876543210) appears in Box 24J as rendering provider.
 
 If no billing provider is assigned, the panel shows a gray note: *No billing provider linked — your NPI used for both Box 24J and Box 33a.*
 
+### Shared Availity Credentials and the Claim Review Queue
+
+When a billing provider entity has **Availity credentials configured** (see below), claims from its assigned doulas are routed to a review queue instead of being submitted to Availity directly. This lets the billing admin review and correct each claim before it reaches the payer.
+
+**How it works:**
+1. A doula assigned to the agency submits a claim from the visit form.
+2. Instead of going to Availity immediately, the claim is saved with status **Pending Review** (amber badge).
+3. The billing admin opens **Agency Claims** in their sidebar and sees all queued claims with a **Submit ↗** button.
+4. The billing admin clicks **Submit ↗** — the claim is sent to Availity using the **agency's** shared credentials (Group NPI in Box 33a, doula's NPI in Box 24J).
+5. The claim status updates to the Availity response (Submitted, Processing, Paid, Denied).
+
+**If the agency has no Availity credentials configured**, doulas' claims bypass the queue and are submitted directly using the individual doula's own Availity credentials — the same path as unassigned providers. This ensures backward compatibility during agency onboarding.
+
+### Configuring Agency Availity Credentials
+
+When a billing admin logs in, their sidebar shows **Agency Claims** and **Agency Settings**. The **Agency Settings** page (`/billing-admin/settings`) lets the billing admin enter:
+
+- **Availity NPI** — the 10-digit NPI used in Box 33a of all agency claims
+- **Client ID** — the agency's Availity OAuth client ID
+- **Client Secret** — the agency's Availity OAuth client secret (write-only; stored encrypted)
+
+Once all three are saved, a **Connected ✓** badge appears and the claim review queue activates for all doulas assigned to the agency.
+
+The billing admin can reach this page from the **Agency Settings** link in their sidebar.
+
+### The Billing Admin Role
+
+When creating a user who will manage a billing provider entity:
+1. In **Create Provider Account**, set **Role** to **Billing Admin**.
+2. After account creation, assign the user to the appropriate billing provider via the **Billing Provider** column on the Users page.
+
+Billing admins see only their own agency's claims and settings — they cannot access provider client records or admin pages. Their sidebar shows:
+
+- **Agency Claims** — review and submit queued claims
+- **Agency Settings** — configure Availity credentials and view agency info
+
+When a new billing provider entity is created, any billing admin already linked to it receives an **agency onboarding email** confirming the agency name, Group NPI, and links to the Agency Claims and Agency Settings pages.
+
 ---
 
 ## Admin-Only Settings
@@ -299,3 +337,6 @@ HIPAA requires an immutable audit trail. The database has a rule that blocks UPD
 | `RESUBMIT_CLAIM` | Denied claim resubmitted to Availity or status reset | claim |
 | `CREATE_BILLING_PROVIDER` | Admin created a new billing provider entity | user |
 | `UPDATE_BILLING_PROVIDER` | Admin updated a billing provider entity | user |
+| `SUBMIT_CLAIM_TO_QUEUE` | Provider claim routed to agency pending-review queue | claim |
+| `UPDATE_AGENCY_AVAILITY` | Billing admin saved agency Availity credentials | user |
+| `SUBMIT_AGENCY_CLAIM` | Billing admin submitted a queued claim to Availity using agency credentials | claim |
