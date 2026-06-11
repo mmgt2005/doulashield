@@ -261,6 +261,18 @@ export default function BillingProvidersPage() {
                         >
                           Edit
                         </button>
+                        <a
+                          href={`/billing-admin/claims?bp_id=${bp.id}`}
+                          className="rounded border border-blue-200 px-2 py-1 text-xs font-medium text-blue-700 hover:bg-blue-50"
+                        >
+                          View Claims
+                        </a>
+                        <a
+                          href={`/billing-admin/settings?bp_id=${bp.id}`}
+                          className="rounded border border-blue-200 px-2 py-1 text-xs font-medium text-blue-700 hover:bg-blue-50"
+                        >
+                          Settings
+                        </a>
                         {!['active', 'trialing'].includes(bp.subscription_status ?? '') && (
                           <button
                             onClick={() => startSubscription(bp)}

@@ -10,8 +10,17 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ## [Unreleased]
 
+---
+
+## [1.25.1] — 2026-06-11
+
+### Fixed
+- **`billing_admin` role constraint (CRITICAL)**: Creating a user with `role: "billing_admin"` triggered `asyncpg.exceptions.CheckViolationError` because the PostgreSQL check constraint on `public.users.role` only permitted `('provider', 'admin')`. Alembic migration 0040 drops and recreates the constraint to include `'billing_admin'`.
+- **Admin view of billing-admin pages**: All billing-admin API endpoints (`GET /billing-admin/claims`, `GET /billing-admin/providers`, `GET/PATCH /billing-admin/agency-settings`, `POST /billing-admin/claims/{id}/submit`) now accept an optional `?bp_id=<uuid>` query param. When a platform admin provides this param, they see that agency's data without needing to log in as the billing admin. The admin billing-providers page gains "View Claims" and "Settings" action links for each agency row.
+- **Individual subscription cancelled on agency assignment**: When a provider is assigned to a billing agency via `PUT /admin/billing/assign-provider`, their individual Stripe subscription is automatically cancelled (if active/trialing and Stripe is configured). Cancellation result is recorded in the audit log.
+
 ### Docs
-- **Admin Guide**: Added "Billing Admin Role", "Shared Availity Credentials and the Claim Review Queue", and "Configuring Agency Availity Credentials" sections. Added `SUBMIT_CLAIM_TO_QUEUE`, `UPDATE_AGENCY_AVAILITY`, and `SUBMIT_AGENCY_CLAIM` to the audit action types reference table.
+- **Admin Guide**: Added "Billing Admin Role", "Shared Availity Credentials and the Claim Review Queue", "Configuring Agency Availity Credentials", and "Admin View of Billing Admin Pages" sections. Added `SUBMIT_CLAIM_TO_QUEUE`, `UPDATE_AGENCY_AVAILITY`, `SUBMIT_AGENCY_CLAIM`, and `ASSIGN_BILLING_PROVIDER` to the audit action types reference table.
 
 ---
 

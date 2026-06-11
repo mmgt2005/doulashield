@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import axios from 'axios'
 import { getAccessToken } from '@/lib/auth'
 import type { Claim } from '@/types/domain'
@@ -30,8 +31,12 @@ const STATUS_COLORS = {
 }
 
 export default function BillingAdminClaimsPage() {
+  const searchParams = useSearchParams()
+  const bpId = searchParams.get('bp_id')
+
   const [claims, setClaims] = useState<Claim[]>([])
   const [providers, setProviders] = useState<Provider[]>([])
+  const [agencyName, setAgencyName] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [filterProvider, setFilterProvider] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
@@ -40,6 +45,8 @@ export default function BillingAdminClaimsPage() {
 
   const api = process.env.NEXT_PUBLIC_API_URL
   const headers = { Authorization: `Bearer ${getAccessToken()}` }
+
+  const bpParam = bpId ? `?bp_id=${bpId}` : ''
 
   const handleSubmitClaim = async (claimId: string) => {
     setSubmitting(claimId)
@@ -61,16 +68,22 @@ export default function BillingAdminClaimsPage() {
   useEffect(() => {
     const load = async () => {
       setLoading(true)
-      const [claimsRes, providersRes] = await Promise.allSettled([
-        axios.get<Claim[]>(`${api}/api/v1/billing-admin/claims`, { headers }),
-        axios.get<Provider[]>(`${api}/api/v1/billing-admin/providers`, { headers }),
-      ])
-      if (claimsRes.status === 'fulfilled') setClaims(claimsRes.value.data)
-      if (providersRes.status === 'fulfilled') setProviders(providersRes.value.data)
+      const requests = [
+        axios.get<Claim[]>(`${api}/api/v1/billing-admin/claims${bpParam}`, { headers }),
+        axios.get<Provider[]>(`${api}/api/v1/billing-admin/providers${bpParam}`, { headers }),
+        ...(bpId ? [axios.get(`${api}/api/v1/billing-admin/agency-settings${bpParam}`, { headers })] : []),
+      ]
+      const results = await Promise.allSettled(requests)
+      if (results[0].status === 'fulfilled') setClaims((results[0] as PromiseFulfilledResult<{ data: Claim[] }>).value.data)
+      if (results[1].status === 'fulfilled') setProviders((results[1] as PromiseFulfilledResult<{ data: Provider[] }>).value.data)
+      if (bpId && results[2]?.status === 'fulfilled') {
+        const settingsResult = results[2] as PromiseFulfilledResult<{ data: { name: string } }>
+        setAgencyName(settingsResult.value.data.name)
+      }
       setLoading(false)
     }
     load()
-  }, [])
+  }, [bpId])
 
   const providerMap = new Map(providers.map(p => [p.id, p]))
 
@@ -98,7 +111,14 @@ export default function BillingAdminClaimsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-gray-900">Agency Claims</h1>
+        <div>
+          <h1 className="text-xl font-bold text-gray-900">Agency Claims</h1>
+          {bpId && agencyName && (
+            <p className="mt-0.5 text-xs text-blue-600 font-medium">
+              Viewing as admin: {agencyName}
+            </p>
+          )}
+        </div>
         {pendingReviewCount > 0 && (
           <span className="rounded-full bg-orange-100 px-3 py-1 text-xs font-semibold text-orange-700">
             {pendingReviewCount} pending review

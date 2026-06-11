@@ -649,6 +649,14 @@ async def assign_provider_to_billing_provider(
     except ValueError:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid provider_user_id")
     provider = await _get_provider(uid, db)
+    # Cancel individual Stripe subscription when moving to an agency
+    cancelled_sub: dict | None = None
+    if (
+        provider.stripe_subscription_id
+        and provider.subscription_status in ("active", "trialing")
+        and _configured()
+    ):
+        cancelled_sub = await stripe_service.cancel_subscription(provider, db)
     provider.billing_provider_id = bp.id
     await db.commit()
     await audit.log(
@@ -657,9 +665,17 @@ async def assign_provider_to_billing_provider(
         resource_id=provider.id,
         ip_address=request.headers.get("X-Forwarded-For", request.client.host if request.client else ""),
         user_agent=request.headers.get("User-Agent", ""),
-        extra_context={"billing_provider_id": str(bp.id), "billing_provider_name": bp.name},
+        extra_context={
+            "billing_provider_id": str(bp.id),
+            "billing_provider_name": bp.name,
+            **({"cancelled_subscription": cancelled_sub} if cancelled_sub else {}),
+        },
     )
-    return {"provider_user_id": str(provider.id), "billing_provider_id": str(bp.id)}
+    return {
+        "provider_user_id": str(provider.id),
+        "billing_provider_id": str(bp.id),
+        **({"subscription_cancelled": True} if cancelled_sub and cancelled_sub.get("cancelled") else {}),
+    }
 
 
 @router.post("/admin/billing-providers/{bp_id}/start-subscription")
@@ -728,12 +744,15 @@ async def billing_provider_stats(
 async def list_billing_admin_claims(
     current_user: Annotated[CurrentUser, Depends(require_billing_admin)],
     db: Annotated[AsyncSession, Depends(get_db)],
+    bp_id: uuid.UUID | None = None,
 ) -> list[ClaimRead]:
-    """Returns all claims across all providers assigned to the billing admin's managed agency."""
-    if not current_user.managed_billing_provider_id:
+    """Returns all claims across all providers assigned to the billing admin's managed agency.
+    Admins may pass ?bp_id=<uuid> to view any agency's claim queue."""
+    effective_bp_id = bp_id if (current_user.role == "admin" and bp_id) else current_user.managed_billing_provider_id
+    if not effective_bp_id:
         return []
     providers_result = await db.execute(
-        select(User.id).where(User.billing_provider_id == current_user.managed_billing_provider_id)
+        select(User.id).where(User.billing_provider_id == effective_bp_id)
     )
     provider_ids = [row.id for row in providers_result]
     if not provider_ids:
@@ -750,13 +769,16 @@ async def list_billing_admin_claims(
 async def list_billing_admin_providers(
     current_user: Annotated[CurrentUser, Depends(require_billing_admin)],
     db: Annotated[AsyncSession, Depends(get_db)],
+    bp_id: uuid.UUID | None = None,
 ) -> list[dict]:
-    """Returns all providers assigned to the billing admin's managed agency."""
-    if not current_user.managed_billing_provider_id:
+    """Returns all providers assigned to the billing admin's managed agency.
+    Admins may pass ?bp_id=<uuid> to view any agency's providers."""
+    effective_bp_id = bp_id if (current_user.role == "admin" and bp_id) else current_user.managed_billing_provider_id
+    if not effective_bp_id:
         return []
     result = await db.execute(
         select(User).where(
-            User.billing_provider_id == current_user.managed_billing_provider_id,
+            User.billing_provider_id == effective_bp_id,
             User.is_active.is_(True),
         ).order_by(User.full_name)
     )
@@ -770,11 +792,14 @@ async def list_billing_admin_providers(
 async def get_agency_settings(
     current_user: Annotated[CurrentUser, Depends(require_billing_admin)],
     db: Annotated[AsyncSession, Depends(get_db)],
+    bp_id: uuid.UUID | None = None,
 ) -> BillingProviderRead:
-    """Returns the billing admin's managed agency settings (never returns raw Availity secrets)."""
-    if not current_user.managed_billing_provider_id:
+    """Returns the billing admin's managed agency settings (never returns raw Availity secrets).
+    Admins may pass ?bp_id=<uuid> to view any agency's settings."""
+    effective_bp_id = bp_id if (current_user.role == "admin" and bp_id) else current_user.managed_billing_provider_id
+    if not effective_bp_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No managed agency found")
-    bp = await _get_billing_provider(current_user.managed_billing_provider_id, db)
+    bp = await _get_billing_provider(effective_bp_id, db)
     count_result = await db.execute(select(User).where(User.billing_provider_id == bp.id))
     provider_count = len(count_result.scalars().all())
     return _bp_to_read(bp, provider_count)
@@ -787,11 +812,13 @@ async def update_agency_settings(
     db: Annotated[AsyncSession, Depends(get_db)],
     audit: Annotated[AuditLogger, Depends(get_audit)],
     request: Request,
+    bp_id: uuid.UUID | None = None,
 ) -> BillingProviderRead:
-    """Allows a billing admin to update their agency's Availity credentials and other settings."""
-    if not current_user.managed_billing_provider_id:
+    """Allows a billing admin (or admin) to update an agency's Availity credentials and other settings."""
+    effective_bp_id = bp_id if (current_user.role == "admin" and bp_id) else current_user.managed_billing_provider_id
+    if not effective_bp_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No managed agency found")
-    bp = await _get_billing_provider(current_user.managed_billing_provider_id, db)
+    bp = await _get_billing_provider(effective_bp_id, db)
     update_data = body.model_dump(exclude_none=True)
     if "availity_client_id" in update_data:
         bp.availity_client_id_encrypted = encrypt_field(update_data.pop("availity_client_id"))
@@ -843,16 +870,24 @@ async def submit_agency_claim(
             detail=f"Claim is not in pending_billing_review status (current: {claim.status})",
         )
 
-    # Ownership: claim's provider must belong to this billing admin's agency
-    if not current_user.managed_billing_provider_id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No managed agency")
+    # Resolve which agency is submitting this claim
     provider_result = await db.execute(select(User).where(User.id == claim.provider_id))
     provider = provider_result.scalar_one_or_none()
-    if not provider or provider.billing_provider_id != current_user.managed_billing_provider_id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Claim does not belong to your agency")
+    if not provider or not provider.billing_provider_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Claim provider has no assigned agency")
+
+    # Admins may submit on behalf of any agency; billing_admins only their own
+    if current_user.role == "admin":
+        effective_bp_id = provider.billing_provider_id
+    else:
+        if not current_user.managed_billing_provider_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No managed agency")
+        if provider.billing_provider_id != current_user.managed_billing_provider_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Claim does not belong to your agency")
+        effective_bp_id = current_user.managed_billing_provider_id
 
     # Load agency
-    bp = await _get_billing_provider(current_user.managed_billing_provider_id, db)
+    bp = await _get_billing_provider(effective_bp_id, db)
     if not bp.availity_client_id_encrypted or not bp.availity_client_secret_encrypted:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

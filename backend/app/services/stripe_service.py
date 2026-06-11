@@ -91,6 +91,28 @@ async def start_subscription(provider: User, db: AsyncSession) -> dict:
     return {"subscription_id": sub.id, "status": sub.status}
 
 
+async def cancel_subscription(provider: User, db: AsyncSession) -> dict:
+    """Cancel the provider's individual Stripe subscription immediately."""
+    if not provider.stripe_subscription_id:
+        return {"cancelled": False, "reason": "no subscription"}
+    _init()
+    try:
+        sub = await asyncio.to_thread(
+            stripe.Subscription.cancel,
+            provider.stripe_subscription_id,
+        )
+        provider.subscription_status = sub.status  # "canceled"
+        provider.stripe_subscription_id = None
+        await db.commit()
+        return {"cancelled": True, "subscription_id": sub.id, "status": sub.status}
+    except stripe.InvalidRequestError:
+        # Subscription already cancelled or doesn't exist — clear stale reference
+        provider.stripe_subscription_id = None
+        provider.subscription_status = "canceled"
+        await db.commit()
+        return {"cancelled": True, "reason": "already_cancelled"}
+
+
 async def process_escrow_deduction(
     provider: User,
     remittance_amount: Decimal,

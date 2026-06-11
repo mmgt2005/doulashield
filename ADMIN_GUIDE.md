@@ -1,6 +1,6 @@
 # DoulaShield Admin Guide
 
-**v1.23.1 · Last updated 2026-06-10**
+**v1.25.1 · Last updated 2026-06-11**
 
 This guide covers everything admins can do that providers cannot. For day-to-day provider features (documenting visits, submitting claims, etc.) refer to `MANUAL.md`.
 
@@ -244,6 +244,15 @@ Once all three are saved, a **Connected ✓** badge appears and the claim review
 
 The billing admin can reach this page from the **Agency Settings** link in their sidebar.
 
+### Admin View of Billing Admin Pages
+
+Platform admins can view any agency's claim queue and settings directly — without logging in as the billing admin user. On the **Billing Providers** page, each agency row has two action links:
+
+- **View Claims** — opens `/billing-admin/claims?bp_id=<agency-uuid>` showing that agency's full claim queue, including pending-review claims and their Submit ↗ buttons. The admin can submit claims on behalf of the agency using the agency's Availity credentials.
+- **Settings** — opens `/billing-admin/settings?bp_id=<agency-uuid>` showing the agency's Availity NPI, Connected status, and credential update form.
+
+An amber "**Viewing as admin: Agency Name**" banner appears at the top of both pages when accessed via `bp_id`, so it is clear you are in a cross-agency view. All API calls automatically pass the `bp_id` so the correct agency data is returned.
+
 ### The Billing Admin Role
 
 When creating a user who will manage a billing provider entity:
@@ -340,3 +349,4 @@ HIPAA requires an immutable audit trail. The database has a rule that blocks UPD
 | `SUBMIT_CLAIM_TO_QUEUE` | Provider claim routed to agency pending-review queue | claim |
 | `UPDATE_AGENCY_AVAILITY` | Billing admin saved agency Availity credentials | user |
 | `SUBMIT_AGENCY_CLAIM` | Billing admin submitted a queued claim to Availity using agency credentials | claim |
+| `ASSIGN_BILLING_PROVIDER` | Admin assigned a provider to a billing agency (individual subscription cancelled if active) | user |

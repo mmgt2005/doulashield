@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import axios from 'axios'
 import { getAccessToken } from '@/lib/auth'
 
@@ -18,6 +19,9 @@ interface AgencySettings {
 }
 
 export default function BillingAdminSettingsPage() {
+  const searchParams = useSearchParams()
+  const bpId = searchParams.get('bp_id')
+
   const [settings, setSettings] = useState<AgencySettings | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -31,11 +35,13 @@ export default function BillingAdminSettingsPage() {
   const api = process.env.NEXT_PUBLIC_API_URL
   const headers = { Authorization: `Bearer ${getAccessToken()}` }
 
+  const bpParam = bpId ? `?bp_id=${bpId}` : ''
+
   useEffect(() => {
     const load = async () => {
       setLoading(true)
       try {
-        const res = await axios.get<AgencySettings>(`${api}/api/v1/billing-admin/agency-settings`, { headers })
+        const res = await axios.get<AgencySettings>(`${api}/api/v1/billing-admin/agency-settings${bpParam}`, { headers })
         setSettings(res.data)
         setAvailityNpi(res.data.availity_npi ?? '')
       } catch {
@@ -45,7 +51,7 @@ export default function BillingAdminSettingsPage() {
       }
     }
     load()
-  }, [])
+  }, [bpId])
 
   const handleSave = async () => {
     setSaving(true)
@@ -56,7 +62,7 @@ export default function BillingAdminSettingsPage() {
       if (availityClientId) body.availity_client_id = availityClientId
       if (availityClientSecret) body.availity_client_secret = availityClientSecret
       if (availityNpi !== (settings?.availity_npi ?? '')) body.availity_npi = availityNpi
-      const res = await axios.patch<AgencySettings>(`${api}/api/v1/billing-admin/agency-settings`, body, { headers })
+      const res = await axios.patch<AgencySettings>(`${api}/api/v1/billing-admin/agency-settings${bpParam}`, body, { headers })
       setSettings(res.data)
       setAvailityClientId('')
       setAvailityClientSecret('')
@@ -84,7 +90,12 @@ export default function BillingAdminSettingsPage() {
 
   return (
     <div className="max-w-2xl space-y-6">
-      <h1 className="text-xl font-bold text-gray-900">Agency Settings</h1>
+      <div>
+        <h1 className="text-xl font-bold text-gray-900">Agency Settings</h1>
+        {bpId && (
+          <p className="mt-0.5 text-xs text-blue-600 font-medium">Viewing as admin</p>
+        )}
+      </div>
 
       {/* Agency info (read-only) */}
       <div className="rounded-lg border border-gray-200 bg-white p-5 space-y-3">
