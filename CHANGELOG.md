@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.24.1] — 2026-06-11
+
+### Fixed
+- **Backend startup crash** — `AssertionError: Status code 204 must not have a response body` on the `DELETE /admin/billing-providers/{bp_id}` endpoint. With `from __future__ import annotations` active, FastAPI 0.115 cannot correctly resolve `-> None` return types on endpoints that use complex `Annotated[..., Depends()]` parameters, causing the route registration to treat the 204 as having a body. Fixed by using `response_class=Response` and returning `Response(status_code=204)` explicitly.
+
+---
+
 ## [1.24.0] — 2026-06-11
 
 ### Added
