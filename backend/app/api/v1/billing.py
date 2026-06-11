@@ -296,6 +296,9 @@ async def create_and_invite(
     result = await db.execute(select(User).where(User.id == new_user_read.id))
     new_user = result.scalar_one()
 
+    if role == "billing_admin" and body.managed_billing_provider_id:
+        new_user.managed_billing_provider_id = body.managed_billing_provider_id
+
     checkout_url: str | None = None
     if role == "provider" and stripe_service._configured() and settings.STRIPE_DEPOSIT_PRICE_ID:
         try:
