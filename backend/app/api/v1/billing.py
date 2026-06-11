@@ -525,6 +525,14 @@ async def _get_billing_provider(bp_id: uuid.UUID, db: AsyncSession) -> BillingPr
     return bp
 
 
+async def _get_managed_bp_id(user_id: uuid.UUID, db: AsyncSession) -> uuid.UUID | None:
+    """Look up a billing admin's managed_billing_provider_id from the DB."""
+    result = await db.execute(
+        select(User.managed_billing_provider_id).where(User.id == user_id)
+    )
+    return result.scalar_one_or_none()
+
+
 @router.get("/admin/billing-providers", response_model=list[BillingProviderRead])
 async def list_billing_providers(
     _: Annotated[CurrentUser, Depends(require_admin)],
@@ -748,7 +756,8 @@ async def list_billing_admin_claims(
 ) -> list[ClaimRead]:
     """Returns all claims across all providers assigned to the billing admin's managed agency.
     Admins may pass ?bp_id=<uuid> to view any agency's claim queue."""
-    effective_bp_id = bp_id if (current_user.role == "admin" and bp_id) else current_user.managed_billing_provider_id
+    managed_bp_id = None if current_user.role == "admin" else await _get_managed_bp_id(current_user.id, db)
+    effective_bp_id = bp_id if (current_user.role == "admin" and bp_id) else managed_bp_id
     if not effective_bp_id:
         return []
     providers_result = await db.execute(
@@ -773,7 +782,8 @@ async def list_billing_admin_providers(
 ) -> list[dict]:
     """Returns all providers assigned to the billing admin's managed agency.
     Admins may pass ?bp_id=<uuid> to view any agency's providers."""
-    effective_bp_id = bp_id if (current_user.role == "admin" and bp_id) else current_user.managed_billing_provider_id
+    managed_bp_id = None if current_user.role == "admin" else await _get_managed_bp_id(current_user.id, db)
+    effective_bp_id = bp_id if (current_user.role == "admin" and bp_id) else managed_bp_id
     if not effective_bp_id:
         return []
     result = await db.execute(
@@ -796,7 +806,8 @@ async def get_agency_settings(
 ) -> BillingProviderRead:
     """Returns the billing admin's managed agency settings (never returns raw Availity secrets).
     Admins may pass ?bp_id=<uuid> to view any agency's settings."""
-    effective_bp_id = bp_id if (current_user.role == "admin" and bp_id) else current_user.managed_billing_provider_id
+    managed_bp_id = None if current_user.role == "admin" else await _get_managed_bp_id(current_user.id, db)
+    effective_bp_id = bp_id if (current_user.role == "admin" and bp_id) else managed_bp_id
     if not effective_bp_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No managed agency found")
     bp = await _get_billing_provider(effective_bp_id, db)
@@ -815,7 +826,8 @@ async def update_agency_settings(
     bp_id: uuid.UUID | None = None,
 ) -> BillingProviderRead:
     """Allows a billing admin (or admin) to update an agency's Availity credentials and other settings."""
-    effective_bp_id = bp_id if (current_user.role == "admin" and bp_id) else current_user.managed_billing_provider_id
+    managed_bp_id = None if current_user.role == "admin" else await _get_managed_bp_id(current_user.id, db)
+    effective_bp_id = bp_id if (current_user.role == "admin" and bp_id) else managed_bp_id
     if not effective_bp_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No managed agency found")
     bp = await _get_billing_provider(effective_bp_id, db)
@@ -880,11 +892,12 @@ async def submit_agency_claim(
     if current_user.role == "admin":
         effective_bp_id = provider.billing_provider_id
     else:
-        if not current_user.managed_billing_provider_id:
+        managed_bp_id = await _get_managed_bp_id(current_user.id, db)
+        if not managed_bp_id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No managed agency")
-        if provider.billing_provider_id != current_user.managed_billing_provider_id:
+        if provider.billing_provider_id != managed_bp_id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Claim does not belong to your agency")
-        effective_bp_id = current_user.managed_billing_provider_id
+        effective_bp_id = managed_bp_id
 
     # Load agency
     bp = await _get_billing_provider(effective_bp_id, db)
