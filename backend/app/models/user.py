@@ -35,7 +35,9 @@ class User(Base):
     provider_signature_path: Mapped[str | None] = mapped_column(Text, nullable=True)
     billing_provider_name: Mapped[str | None] = mapped_column(Text, nullable=True)  # exact name as registered in PROMISe
     billing_provider_id: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("public.billing_providers.id", ondelete="SET NULL"), nullable=True
+        UUID(as_uuid=True),
+        ForeignKey("public.billing_providers.id", ondelete="SET NULL"),
+        nullable=True,
     )
     managed_billing_provider_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("public.billing_providers.id", ondelete="SET NULL"), nullable=True
@@ -47,11 +49,6 @@ class User(Base):
     liability_insurance_expires_on: Mapped[date | None] = mapped_column(Date, nullable=True)
     last_sign_in_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     welcome_email_sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    billing_provider_id: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True),
-        ForeignKey("public.billing_providers.id", ondelete="SET NULL"),
-        nullable=True,
-    )
 
     # Billing
     stripe_customer_id: Mapped[str | None] = mapped_column(Text, nullable=True)
