@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.25.2] — 2026-06-11
+
+### Fixed
+- **Agency settings / billing-admin endpoints crash**: All five billing-admin endpoints (`GET /billing-admin/claims`, `GET /billing-admin/providers`, `GET /billing-admin/agency-settings`, `PATCH /billing-admin/agency-settings`, `POST /billing-admin/claims/{id}/submit`) were referencing `current_user.managed_billing_provider_id`, which does not exist on the `CurrentUser` object (JWT only carries `id` and `role`). Added `_get_managed_bp_id(user_id, db)` helper that queries the column from the database; all five endpoints now use an `await` DB lookup instead of the non-existent attribute.
+
+---
+
 ## [1.25.1] — 2026-06-11
 
 ### Fixed
