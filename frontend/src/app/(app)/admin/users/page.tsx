@@ -183,6 +183,7 @@ export default function AdminUsersPage() {
         last_sign_in_at: u.last_sign_in_at,
         welcome_email_sent_at: u.welcome_email_sent_at,
         billing_provider_id: null,
+        managed_billing_provider_id: null,
       }
       startImpersonation(targetUser, res.data.access_token)
       router.push('/dashboard')
