@@ -12,11 +12,12 @@ interface Provider {
   npi: string | null
 }
 
-function claimStatusDisplay(status: string | null): { label: string; color: 'amber' | 'blue' | 'green' | 'red' } {
+function claimStatusDisplay(status: string | null): { label: string; color: 'amber' | 'blue' | 'green' | 'red' | 'orange' } {
   const s = (status ?? '').toLowerCase()
   if (s === 'paid') return { label: 'Paid', color: 'green' }
   if (s === 'denied' || s === 'rejected') return { label: 'Denied', color: 'red' }
   if (s === 'processing' || s === 'accepted' || s === 'pended' || s === 'received') return { label: 'Processing', color: 'blue' }
+  if (s === 'pending_billing_review') return { label: 'Pending Review', color: 'orange' }
   return { label: 'Submitted', color: 'amber' }
 }
 
@@ -25,6 +26,7 @@ const STATUS_COLORS = {
   blue: 'border-blue-300 bg-blue-50 text-blue-700',
   green: 'border-green-300 bg-green-50 text-green-800',
   red: 'border-red-300 bg-red-50 text-red-700',
+  orange: 'border-orange-300 bg-orange-50 text-orange-700',
 }
 
 export default function BillingAdminClaimsPage() {
@@ -33,9 +35,28 @@ export default function BillingAdminClaimsPage() {
   const [loading, setLoading] = useState(true)
   const [filterProvider, setFilterProvider] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
+  const [submitting, setSubmitting] = useState<string | null>(null)
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   const api = process.env.NEXT_PUBLIC_API_URL
   const headers = { Authorization: `Bearer ${getAccessToken()}` }
+
+  const handleSubmitClaim = async (claimId: string) => {
+    setSubmitting(claimId)
+    setSubmitError(null)
+    try {
+      const res = await axios.post<Claim>(
+        `${api}/api/v1/billing-admin/claims/${claimId}/submit`,
+        {},
+        { headers }
+      )
+      setClaims(prev => prev.map(c => c.id === claimId ? res.data : c))
+    } catch {
+      setSubmitError('Failed to submit claim — check agency Availity credentials in Agency Settings.')
+    } finally {
+      setSubmitting(null)
+    }
+  }
 
   useEffect(() => {
     const load = async () => {
@@ -56,11 +77,17 @@ export default function BillingAdminClaimsPage() {
   const filtered = claims.filter(c => {
     if (filterProvider && c.provider_id !== filterProvider) return false
     if (filterStatus) {
-      const norm = claimStatusDisplay(c.status).label.toLowerCase()
-      if (!norm.includes(filterStatus.toLowerCase())) return false
+      if (filterStatus === 'pending_billing_review') {
+        if ((c.status ?? '').toLowerCase() !== 'pending_billing_review') return false
+      } else {
+        const norm = claimStatusDisplay(c.status).label.toLowerCase()
+        if (!norm.includes(filterStatus.toLowerCase())) return false
+      }
     }
     return true
   })
+
+  const pendingReviewCount = claims.filter(c => (c.status ?? '').toLowerCase() === 'pending_billing_review').length
 
   // Aggregate stats
   const totalBilled = filtered.reduce((a, c) => a + Number(c.billed_amount ?? 0), 0)
@@ -72,7 +99,18 @@ export default function BillingAdminClaimsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-gray-900">Agency Claims</h1>
+        {pendingReviewCount > 0 && (
+          <span className="rounded-full bg-orange-100 px-3 py-1 text-xs font-semibold text-orange-700">
+            {pendingReviewCount} pending review
+          </span>
+        )}
       </div>
+
+      {submitError && (
+        <div className="rounded border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
+          {submitError}
+        </div>
+      )}
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -116,6 +154,7 @@ export default function BillingAdminClaimsPage() {
           className="rounded border border-gray-300 px-3 py-1.5 text-sm text-gray-700"
         >
           <option value="">All statuses</option>
+          <option value="pending_billing_review">Pending Review</option>
           <option value="submitted">Submitted</option>
           <option value="processing">Processing</option>
           <option value="paid">Paid</option>
@@ -151,6 +190,7 @@ export default function BillingAdminClaimsPage() {
                 <th className="px-4 py-3">Denial Reason</th>
                 <th className="px-4 py-3">Claim ID</th>
                 <th className="px-4 py-3">Submitted</th>
+                <th className="px-4 py-3"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -190,6 +230,17 @@ export default function BillingAdminClaimsPage() {
                     </td>
                     <td className="px-4 py-3 text-gray-400 tabular-nums text-xs">
                       {c.submitted_at ? new Date(c.submitted_at).toLocaleDateString() : '—'}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      {(c.status ?? '').toLowerCase() === 'pending_billing_review' && (
+                        <button
+                          onClick={() => handleSubmitClaim(c.id)}
+                          disabled={submitting === c.id}
+                          className="rounded border border-blue-300 bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 hover:bg-blue-100 disabled:opacity-50"
+                        >
+                          {submitting === c.id ? '…' : 'Submit ↗'}
+                        </button>
+                      )}
                     </td>
                   </tr>
                 )

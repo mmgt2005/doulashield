@@ -65,6 +65,15 @@ class ClaimsService:
             str(user.id),
         )
 
+    def _make_agency_client(self, bp: BillingProvider) -> AvailityClient:
+        if not bp.availity_client_id_encrypted or not bp.availity_client_secret_encrypted:
+            raise ValueError("Agency Availity credentials not configured")
+        return AvailityClient(
+            decrypt_field(bp.availity_client_id_encrypted),
+            decrypt_field(bp.availity_client_secret_encrypted),
+            str(bp.id),
+        )
+
     async def _apply_error_code(self, claim: Claim, denial_reason: str) -> None:
         """Match denial_reason to an error code and store it on the claim.
 
@@ -176,16 +185,49 @@ class ClaimsService:
             billing_provider = bp_result.scalar_one_or_none()
             if billing_provider:
                 claim_body["billingProvider"] = {
-                    "npi": billing_provider.npi,
+                    "npi": billing_provider.group_npi or "",
                     "organizationName": billing_provider.name,
-                    "taxonomyCode": billing_provider.taxonomy_code or DOULA_TAXONOMY,
+                    "taxonomyCode": DOULA_TAXONOMY,
                     "address": {
                         "address1": billing_provider.address or "",
                         "city": billing_provider.city or "",
                         "state": billing_provider.state or "",
-                        "postalCode": billing_provider.zip_code or "",
+                        "postalCode": billing_provider.zip or "",
                     },
                 }
+
+                # Agency claim queue: route to pending_billing_review instead of Availity
+                # when the agency has shared Availity credentials configured
+                if billing_provider.availity_client_id_encrypted:
+                    claim = Claim(
+                        patient_id=patient_id,
+                        provider_id=requesting_user_id,
+                        status="pending_billing_review",
+                        visit_type=data.visit_type,
+                        service_date=data.service_date,
+                        billed_amount=billed_amount,
+                        payer_id=payer_id,
+                        claim_data=claim_body,
+                        is_manual=False,
+                        filing_deadline_date=(data.service_date + timedelta(days=365)) if data.service_date else None,
+                    )
+                    self._db.add(claim)
+                    await self._db.commit()
+                    await self._db.refresh(claim)
+                    await self._audit.log(
+                        action="SUBMIT_CLAIM_TO_QUEUE",
+                        resource_type="claim",
+                        resource_id=claim.id,
+                        ip_address=ip,
+                        user_agent=user_agent,
+                        user_id=requesting_user_id,
+                        extra_context={
+                            "patient_id": str(patient_id),
+                            "payer_id": payer_id,
+                            "billing_provider_id": str(user.billing_provider_id),
+                        },
+                    )
+                    return ClaimRead.model_validate(claim)
 
         client = self._make_client(user)
         raw_response = await client.post("/claims", body=claim_body)

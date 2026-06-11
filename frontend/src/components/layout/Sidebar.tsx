@@ -21,7 +21,7 @@ const adminLinks = [
 
 const billingAdminLinks = [
   { href: '/billing-admin/claims', label: 'Agency Claims' },
-  { href: '/settings', label: 'Settings' },
+  { href: '/billing-admin/settings', label: 'Agency Settings' },
 ]
 
 interface SidebarProps {

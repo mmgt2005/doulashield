@@ -13,6 +13,7 @@ from sqlalchemy.future import select
 
 from app.core.audit import AuditLogger
 from app.core.config import settings
+from app.core.encryption import encrypt_field
 from app.dependencies import CurrentUser, get_audit, get_current_user, get_db, require_admin, require_billing_admin
 from app.models.billing_provider import BillingProvider
 from app.models.claim import Claim
@@ -286,7 +287,7 @@ async def create_and_invite(
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="A user with this email already exists")
 
-    role = body.role if body.role in ("provider", "admin") else "provider"
+    role = body.role if body.role in ("provider", "admin", "billing_admin") else "provider"
     temp_password = _generate_temp_password()
     new_user_read = await AdminService(db).create_user(
         UserCreate(email=str(body.email), password=temp_password, full_name=body.full_name, role=role)
@@ -508,6 +509,14 @@ async def list_users_with_billing(
 
 # ── Billing Provider endpoints ────────────────────────────────────────────────
 
+def _bp_to_read(bp: BillingProvider, provider_count: int = 0) -> BillingProviderRead:
+    r = BillingProviderRead.model_validate(bp)
+    r.provider_count = provider_count
+    r.availity_connected = bool(bp.availity_client_id_encrypted and bp.availity_client_secret_encrypted)
+    r.availity_npi = bp.availity_npi
+    return r
+
+
 async def _get_billing_provider(bp_id: uuid.UUID, db: AsyncSession) -> BillingProvider:
     result = await db.execute(select(BillingProvider).where(BillingProvider.id == bp_id))
     bp = result.scalar_one_or_none()
@@ -529,9 +538,7 @@ async def list_billing_providers(
             select(User).where(User.billing_provider_id == bp.id)
         )
         provider_count = len(count_result.scalars().all())
-        r = BillingProviderRead.model_validate(bp)
-        r.provider_count = provider_count
-        reads.append(r)
+        reads.append(_bp_to_read(bp, provider_count))
     return reads
 
 
@@ -555,9 +562,28 @@ async def create_billing_provider(
         user_agent=request.headers.get("User-Agent", ""),
         extra_context={"name": bp.name},
     )
-    r = BillingProviderRead.model_validate(bp)
-    r.provider_count = 0
-    return r
+
+    # Send onboarding email to billing admin if one is linked
+    admin_result = await db.execute(
+        select(User).where(
+            User.managed_billing_provider_id == bp.id,
+            User.is_active.is_(True),
+        )
+    )
+    billing_admin = admin_result.scalar_one_or_none()
+    if billing_admin and billing_admin.email:
+        try:
+            await email_service.send_agency_onboarding_email(
+                admin_email=billing_admin.email,
+                admin_name=billing_admin.full_name or billing_admin.email,
+                agency_name=bp.name,
+                agency_group_npi=bp.group_npi or "",
+                frontend_origin=settings.FRONTEND_ORIGIN,
+            )
+        except Exception:
+            pass  # email failure must not break agency creation
+
+    return _bp_to_read(bp, 0)
 
 
 @router.put("/admin/billing-providers/{bp_id}", response_model=BillingProviderRead)
@@ -568,15 +594,23 @@ async def update_billing_provider(
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> BillingProviderRead:
     bp = await _get_billing_provider(bp_id, db)
-    for field, value in body.model_dump(exclude_none=True).items():
+    update_data = body.model_dump(exclude_none=True)
+    # Handle Availity credential encryption (strip plain fields, store encrypted)
+    if "availity_client_id" in update_data:
+        bp.availity_client_id_encrypted = encrypt_field(update_data.pop("availity_client_id"))
+    else:
+        update_data.pop("availity_client_id", None)
+    if "availity_client_secret" in update_data:
+        bp.availity_client_secret_encrypted = encrypt_field(update_data.pop("availity_client_secret"))
+    else:
+        update_data.pop("availity_client_secret", None)
+    for field, value in update_data.items():
         setattr(bp, field, value)
     await db.commit()
     await db.refresh(bp)
     count_result = await db.execute(select(User).where(User.billing_provider_id == bp.id))
     provider_count = len(count_result.scalars().all())
-    r = BillingProviderRead.model_validate(bp)
-    r.provider_count = provider_count
-    return r
+    return _bp_to_read(bp, provider_count)
 
 
 @router.delete("/admin/billing-providers/{bp_id}", response_class=Response)
@@ -730,3 +764,132 @@ async def list_billing_admin_providers(
         {"id": str(u.id), "email": u.email, "full_name": u.full_name, "npi": u.npi}
         for u in result.scalars().all()
     ]
+
+
+@router.get("/billing-admin/agency-settings", response_model=BillingProviderRead)
+async def get_agency_settings(
+    current_user: Annotated[CurrentUser, Depends(require_billing_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> BillingProviderRead:
+    """Returns the billing admin's managed agency settings (never returns raw Availity secrets)."""
+    if not current_user.managed_billing_provider_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No managed agency found")
+    bp = await _get_billing_provider(current_user.managed_billing_provider_id, db)
+    count_result = await db.execute(select(User).where(User.billing_provider_id == bp.id))
+    provider_count = len(count_result.scalars().all())
+    return _bp_to_read(bp, provider_count)
+
+
+@router.patch("/billing-admin/agency-settings", response_model=BillingProviderRead)
+async def update_agency_settings(
+    body: BillingProviderUpdate,
+    current_user: Annotated[CurrentUser, Depends(require_billing_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    audit: Annotated[AuditLogger, Depends(get_audit)],
+    request: Request,
+) -> BillingProviderRead:
+    """Allows a billing admin to update their agency's Availity credentials and other settings."""
+    if not current_user.managed_billing_provider_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No managed agency found")
+    bp = await _get_billing_provider(current_user.managed_billing_provider_id, db)
+    update_data = body.model_dump(exclude_none=True)
+    if "availity_client_id" in update_data:
+        bp.availity_client_id_encrypted = encrypt_field(update_data.pop("availity_client_id"))
+    else:
+        update_data.pop("availity_client_id", None)
+    if "availity_client_secret" in update_data:
+        bp.availity_client_secret_encrypted = encrypt_field(update_data.pop("availity_client_secret"))
+    else:
+        update_data.pop("availity_client_secret", None)
+    for field, value in update_data.items():
+        if hasattr(bp, field):
+            setattr(bp, field, value)
+    await db.commit()
+    await db.refresh(bp)
+    await audit.log(
+        action="UPDATE_AGENCY_AVAILITY",
+        resource_type="billing_provider",
+        resource_id=bp.id,
+        user_id=current_user.id,
+        ip_address=request.headers.get("X-Forwarded-For", request.client.host if request.client else ""),
+        user_agent=request.headers.get("User-Agent", ""),
+        extra_context={"availity_connected": bool(bp.availity_client_id_encrypted and bp.availity_client_secret_encrypted)},
+    )
+    count_result = await db.execute(select(User).where(User.billing_provider_id == bp.id))
+    provider_count = len(count_result.scalars().all())
+    return _bp_to_read(bp, provider_count)
+
+
+@router.post("/billing-admin/claims/{claim_id}/submit", response_model=ClaimRead)
+async def submit_agency_claim(
+    claim_id: uuid.UUID,
+    current_user: Annotated[CurrentUser, Depends(require_billing_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    audit: Annotated[AuditLogger, Depends(get_audit)],
+    request: Request,
+) -> ClaimRead:
+    """Billing admin reviews a queued claim and submits it to Availity using agency credentials."""
+    from app.core.encryption import decrypt_field
+    from app.services.availity_client import AvailityClient
+
+    # Load the claim
+    claim_result = await db.execute(select(Claim).where(Claim.id == claim_id))
+    claim = claim_result.scalar_one_or_none()
+    if not claim:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Claim not found")
+    if claim.status != "pending_billing_review":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Claim is not in pending_billing_review status (current: {claim.status})",
+        )
+
+    # Ownership: claim's provider must belong to this billing admin's agency
+    if not current_user.managed_billing_provider_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No managed agency")
+    provider_result = await db.execute(select(User).where(User.id == claim.provider_id))
+    provider = provider_result.scalar_one_or_none()
+    if not provider or provider.billing_provider_id != current_user.managed_billing_provider_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Claim does not belong to your agency")
+
+    # Load agency
+    bp = await _get_billing_provider(current_user.managed_billing_provider_id, db)
+    if not bp.availity_client_id_encrypted or not bp.availity_client_secret_encrypted:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Agency Availity credentials not configured — add them in Agency Settings",
+        )
+
+    # Submit via agency credentials
+    client = AvailityClient(
+        decrypt_field(bp.availity_client_id_encrypted),
+        decrypt_field(bp.availity_client_secret_encrypted),
+        str(bp.id),
+    )
+
+    # Use the claim_data stored at queue time (already built with full 837P shape)
+    claim_body = claim.claim_data or {}
+    # Inject agency billing provider override (Box 33a)
+    claim_body["billingProvider"] = {
+        "npi": bp.group_npi or "",
+        "organizationName": bp.name,
+    }
+
+    raw_response = await client.post("/claims", body=claim_body)
+
+    claim.availity_claim_id = raw_response.get("claimId")
+    claim.status = raw_response.get("status", "submitted")
+    claim.submitted_at = datetime.now(timezone.utc)
+    claim.raw_response = raw_response
+    await db.commit()
+    await db.refresh(claim)
+
+    await audit.log(
+        action="SUBMIT_AGENCY_CLAIM",
+        resource_type="claim",
+        resource_id=claim.id,
+        user_id=current_user.id,
+        ip_address=request.headers.get("X-Forwarded-For", request.client.host if request.client else ""),
+        user_agent=request.headers.get("User-Agent", ""),
+        extra_context={"billing_provider_id": str(bp.id), "provider_id": str(claim.provider_id)},
+    )
+    return ClaimRead.model_validate(claim)

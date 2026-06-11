@@ -12,6 +12,25 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.25.0] — 2026-06-11
+
+### Added
+- **Agency onboarding email**: When a new `BillingProvider` record is created, the linked billing admin automatically receives a setup confirmation email with the agency name, Group NPI, and links to the claims queue and Agency Settings page.
+- **`billing_admin` role creation fix**: `create_and_invite` endpoint no longer downgrades `billing_admin` role to `provider`; all three roles (`provider`, `admin`, `billing_admin`) are now accepted correctly.
+- **Shared Availity credentials on BillingProvider**: `availity_client_id_encrypted`, `availity_client_secret_encrypted`, and `availity_npi` columns added to the `billing_providers` table (Alembic migration 0039). Billing admins store agency-level credentials used to submit on behalf of all their providers.
+- **Agency claim review queue**: When a provider assigned to a billing agency submits a claim, it enters `pending_billing_review` status instead of going directly to Availity — provided the agency has Availity credentials configured. If no agency credentials are set, the individual provider's credentials are used as before (backward compatible).
+- **`GET /billing-admin/agency-settings`** + **`PATCH /billing-admin/agency-settings`**: Billing admins can view and update their agency's Availity Client ID, Client Secret (write-only, stored encrypted), and NPI. Returns `availity_connected` boolean and `availity_npi`.
+- **`POST /billing-admin/claims/{claim_id}/submit`**: Billing admin submits a queued claim to Availity using agency credentials. Verifies claim ownership (provider must belong to the billing admin's agency), constructs the Availity request from stored `claim_data`, and updates claim status.
+- **Agency Settings page** (`/billing-admin/settings`): New frontend page with agency info (read-only), Availity NPI input, Client ID and Client Secret fields (write-only with "Connected ✓" badge), and an explanation of how the agency claim queue works.
+- **"Submit ↗" button on agency claims**: Claims page now shows an amber "Pending Review" badge and a "Submit ↗" action button for queued claims; "pending_billing_review" added to the status filter dropdown.
+- **Sidebar "Agency Settings" link** for billing-admin role.
+- **`ClaimsService._make_agency_client()`**: Service-level helper mirroring `_make_client()` but using `BillingProvider` Availity credentials and scoping the Redis token cache to the billing provider ID.
+
+### Fixed
+- **BillingProvider claim body field names**: Corrected `billing_provider.npi` → `group_npi` and `billing_provider.zip_code` → `zip` in the claim submission body builder to match the actual model columns.
+
+---
+
 ## [1.24.1] — 2026-06-11
 
 ### Fixed

@@ -23,6 +23,9 @@ class BillingProviderCreate(BaseModel):
 
 class BillingProviderUpdate(BillingProviderCreate):
     name: str | None = None
+    availity_client_id: str | None = None    # plain text on write; encrypted on save
+    availity_client_secret: str | None = None  # plain text on write; never returned
+    availity_npi: str | None = None
 
 
 class BillingProviderRead(BillingProviderCreate):
@@ -31,6 +34,8 @@ class BillingProviderRead(BillingProviderCreate):
     subscription_status: str | None = None
     created_at: datetime
     provider_count: int = 0
+    availity_connected: bool = False
+    availity_npi: str | None = None
 
     model_config = {"from_attributes": True}
 

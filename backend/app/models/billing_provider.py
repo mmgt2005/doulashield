@@ -23,6 +23,9 @@ class BillingProvider(Base):
     stripe_customer_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     stripe_subscription_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     subscription_status: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    availity_client_id_encrypted: Mapped[str | None] = mapped_column(Text, nullable=True)
+    availity_client_secret_encrypted: Mapped[str | None] = mapped_column(Text, nullable=True)
+    availity_npi: Mapped[str | None] = mapped_column(String(10), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
