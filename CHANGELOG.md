@@ -10,6 +10,9 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ## [Unreleased]
 
+### Docs
+- **Admin Guide**: Added "Billing Admin Role", "Shared Availity Credentials and the Claim Review Queue", and "Configuring Agency Availity Credentials" sections. Added `SUBMIT_CLAIM_TO_QUEUE`, `UPDATE_AGENCY_AVAILITY`, and `SUBMIT_AGENCY_CLAIM` to the audit action types reference table.
+
 ---
 
 ## [1.25.0] — 2026-06-11
