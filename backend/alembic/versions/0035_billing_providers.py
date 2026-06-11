@@ -6,9 +6,7 @@ Create Date: 2026-06-11
 """
 from __future__ import annotations
 
-import sqlalchemy as sa
 from alembic import op
-from sqlalchemy.dialects import postgresql
 
 revision = "0035"
 down_revision = "0034"
@@ -17,37 +15,31 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.create_table(
-        "billing_providers",
-        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
-        sa.Column("name", sa.Text(), nullable=False),
-        sa.Column("group_npi", sa.Text(), nullable=True),
-        sa.Column("address", sa.Text(), nullable=True),
-        sa.Column("city", sa.Text(), nullable=True),
-        sa.Column("state", sa.Text(), nullable=True),
-        sa.Column("zip", sa.Text(), nullable=True),
-        sa.Column("phone", sa.Text(), nullable=True),
-        sa.Column("stripe_customer_id", sa.Text(), nullable=True),
-        sa.Column("stripe_subscription_id", sa.Text(), nullable=True),
-        sa.Column("subscription_status", sa.String(32), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=True),
-        schema="public",
-    )
+    op.execute("""
+        CREATE TABLE IF NOT EXISTS public.billing_providers (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            name TEXT NOT NULL,
+            group_npi TEXT,
+            address TEXT,
+            city TEXT,
+            state TEXT,
+            zip TEXT,
+            phone TEXT,
+            stripe_customer_id TEXT,
+            stripe_subscription_id TEXT,
+            subscription_status VARCHAR(32),
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+            updated_at TIMESTAMPTZ
+        )
+    """)
     op.execute("ALTER TABLE public.billing_providers ENABLE ROW LEVEL SECURITY")
-
-    op.add_column(
-        "users",
-        sa.Column(
-            "billing_provider_id",
-            postgresql.UUID(as_uuid=True),
-            sa.ForeignKey("public.billing_providers.id", ondelete="SET NULL"),
-            nullable=True,
-        ),
-        schema="public",
+    op.execute(
+        "ALTER TABLE public.users"
+        " ADD COLUMN IF NOT EXISTS billing_provider_id UUID"
+        " REFERENCES public.billing_providers(id) ON DELETE SET NULL"
     )
 
 
 def downgrade() -> None:
-    op.drop_column("users", "billing_provider_id", schema="public")
-    op.drop_table("billing_providers", schema="public")
+    op.execute("ALTER TABLE public.users DROP COLUMN IF EXISTS billing_provider_id")
+    op.execute("DROP TABLE IF EXISTS public.billing_providers")

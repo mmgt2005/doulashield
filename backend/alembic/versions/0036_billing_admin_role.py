@@ -6,9 +6,7 @@ Create Date: 2026-06-11
 """
 from __future__ import annotations
 
-import sqlalchemy as sa
 from alembic import op
-from sqlalchemy.dialects import postgresql
 
 revision = "0036"
 down_revision = "0035"
@@ -17,17 +15,12 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.add_column(
-        "users",
-        sa.Column(
-            "managed_billing_provider_id",
-            postgresql.UUID(as_uuid=True),
-            sa.ForeignKey("public.billing_providers.id", ondelete="SET NULL"),
-            nullable=True,
-        ),
-        schema="public",
+    op.execute(
+        "ALTER TABLE public.users"
+        " ADD COLUMN IF NOT EXISTS managed_billing_provider_id UUID"
+        " REFERENCES public.billing_providers(id) ON DELETE SET NULL"
     )
 
 
 def downgrade() -> None:
-    op.drop_column("users", "managed_billing_provider_id", schema="public")
+    op.execute("ALTER TABLE public.users DROP COLUMN IF EXISTS managed_billing_provider_id")

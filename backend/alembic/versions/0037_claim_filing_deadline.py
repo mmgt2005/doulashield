@@ -6,7 +6,6 @@ Create Date: 2026-06-11
 """
 from __future__ import annotations
 
-import sqlalchemy as sa
 from alembic import op
 
 revision = "0037"
@@ -16,12 +15,10 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.add_column(
-        "claims",
-        sa.Column("filing_deadline_date", sa.Date(), nullable=True),
-        schema="public",
+    op.execute(
+        "ALTER TABLE public.claims ADD COLUMN IF NOT EXISTS filing_deadline_date DATE"
     )
 
 
 def downgrade() -> None:
-    op.drop_column("claims", "filing_deadline_date", schema="public")
+    op.execute("ALTER TABLE public.claims DROP COLUMN IF EXISTS filing_deadline_date")
