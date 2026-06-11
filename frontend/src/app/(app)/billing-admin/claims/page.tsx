@@ -3,166 +3,201 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 import { getAccessToken } from '@/lib/auth'
-import { Claim } from '@/types/domain'
-import ImageUploadScanner from '@/components/ui/ImageUploadScanner'
+import type { Claim } from '@/types/domain'
+
+interface Provider {
+  id: string
+  email: string
+  full_name: string | null
+  npi: string | null
+}
+
+function claimStatusDisplay(status: string | null): { label: string; color: 'amber' | 'blue' | 'green' | 'red' } {
+  const s = (status ?? '').toLowerCase()
+  if (s === 'paid') return { label: 'Paid', color: 'green' }
+  if (s === 'denied' || s === 'rejected') return { label: 'Denied', color: 'red' }
+  if (s === 'processing' || s === 'accepted' || s === 'pended' || s === 'received') return { label: 'Processing', color: 'blue' }
+  return { label: 'Submitted', color: 'amber' }
+}
+
+const STATUS_COLORS = {
+  amber: 'border-amber-300 bg-amber-50 text-amber-700',
+  blue: 'border-blue-300 bg-blue-50 text-blue-700',
+  green: 'border-green-300 bg-green-50 text-green-800',
+  red: 'border-red-300 bg-red-50 text-red-700',
+}
 
 export default function BillingAdminClaimsPage() {
   const [claims, setClaims] = useState<Claim[]>([])
+  const [providers, setProviders] = useState<Provider[]>([])
   const [loading, setLoading] = useState(true)
-  const [toast, setToast] = useState<string | null>(null)
-  const [scanning, setScanning] = useState<string | null>(null) // claim id being scanned
-  const [eobError, setEobError] = useState<string | null>(null)
+  const [filterProvider, setFilterProvider] = useState('')
+  const [filterStatus, setFilterStatus] = useState('')
 
-  const headers = { Authorization: `Bearer ${getAccessToken()}` }
   const api = process.env.NEXT_PUBLIC_API_URL
-
-  const showToast = (msg: string) => {
-    setToast(msg)
-    setTimeout(() => setToast(null), 4000)
-  }
-
-  const reload = async () => {
-    const res = await axios.get<Claim[]>(`${api}/api/v1/billing-admin/claims`, { headers })
-    setClaims(res.data)
-  }
+  const headers = { Authorization: `Bearer ${getAccessToken()}` }
 
   useEffect(() => {
-    reload().finally(() => setLoading(false))
+    const load = async () => {
+      setLoading(true)
+      const [claimsRes, providersRes] = await Promise.allSettled([
+        axios.get<Claim[]>(`${api}/api/v1/billing-admin/claims`, { headers }),
+        axios.get<Provider[]>(`${api}/api/v1/billing-admin/providers`, { headers }),
+      ])
+      if (claimsRes.status === 'fulfilled') setClaims(claimsRes.value.data)
+      if (providersRes.status === 'fulfilled') setProviders(providersRes.value.data)
+      setLoading(false)
+    }
+    load()
   }, [])
 
-  const handleEobScanned = async (claim: Claim, data: Record<string, unknown>): Promise<void> => {
-    setEobError(null)
-    const statusMap: Record<string, string> = {
-      paid: 'paid', partially_paid: 'paid', denied: 'denied', pending: 'submitted',
-    }
-    const rawStatus = String(data.claim_status ?? '')
-    const claimStatus = statusMap[rawStatus] ?? 'submitted'
-    const payload: Record<string, unknown> = {
-      status: claimStatus,
-      service_date: claim.service_date,
-    }
-    if (data.paid_amount) payload.paid_amount = data.paid_amount
-    if (data.denial_reason) payload.denial_reason = data.denial_reason
-    try {
-      await axios.put(
-        `${api}/api/v1/billing-admin/patients/${claim.patient_id}/visits/${claim.visit_type}/claims/manual`,
-        payload,
-        { headers }
-      )
-      setScanning(null)
-      showToast('Claim updated from EOB')
-      await reload()
-    } catch {
-      setEobError('Failed to update claim — please try again.')
-    }
-  }
+  const providerMap = new Map(providers.map(p => [p.id, p]))
 
-  const statusBadge = (status: string | null) => {
-    if (!status) return <span className="text-gray-400 text-xs">—</span>
-    const map: Record<string, string> = {
-      paid: 'bg-green-100 text-green-700',
-      submitted: 'bg-blue-100 text-blue-700',
-      denied: 'bg-red-100 text-red-700',
-      pending: 'bg-gray-100 text-gray-600',
+  const filtered = claims.filter(c => {
+    if (filterProvider && c.provider_id !== filterProvider) return false
+    if (filterStatus) {
+      const norm = claimStatusDisplay(c.status).label.toLowerCase()
+      if (!norm.includes(filterStatus.toLowerCase())) return false
     }
-    return (
-      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium capitalize ${map[status] ?? 'bg-gray-100 text-gray-600'}`}>
-        {status}
-      </span>
-    )
-  }
+    return true
+  })
 
-  const deadlineBadge = (claim: Claim) => {
-    const days = claim.days_until_filing_deadline
-    if (days == null) return null
-    const cls =
-      days <= 7 ? 'bg-red-100 text-red-700' :
-      days <= 30 ? 'bg-amber-100 text-amber-700' :
-      'bg-gray-100 text-gray-500'
-    const label =
-      days < 0 ? `Deadline ${Math.abs(days)}d overdue` :
-      days === 0 ? 'Deadline today' :
-      `Deadline in ${days}d`
-    return <span className={`ml-1 inline-flex items-center rounded-full px-1.5 py-0.5 text-xs font-medium ${cls}`}>{label}</span>
-  }
-
-  if (loading) return <p className="text-sm text-gray-500">Loading…</p>
+  // Aggregate stats
+  const totalBilled = filtered.reduce((a, c) => a + Number(c.billed_amount ?? 0), 0)
+  const totalPaid = filtered.reduce((a, c) => a + Number(c.paid_amount ?? 0), 0)
+  const paidCount = filtered.filter(c => claimStatusDisplay(c.status).color === 'green').length
+  const deniedCount = filtered.filter(c => claimStatusDisplay(c.status).color === 'red').length
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-xl font-bold text-gray-900">Agency Claims</h1>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-bold text-gray-900">Agency Claims</h1>
+      </div>
 
-      {toast && (
-        <div className="rounded-lg bg-blue-50 border border-blue-200 px-4 py-2 text-sm text-blue-800">{toast}</div>
-      )}
+      {/* Summary cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="rounded-lg border border-gray-200 bg-white p-4">
+          <p className="text-xs text-gray-500">Total Claims</p>
+          <p className="mt-1 text-2xl font-bold text-gray-900">{filtered.length}</p>
+        </div>
+        <div className="rounded-lg border border-gray-200 bg-white p-4">
+          <p className="text-xs text-gray-500">Total Billed</p>
+          <p className="mt-1 text-2xl font-bold text-gray-900">
+            ${totalBilled.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </p>
+        </div>
+        <div className="rounded-lg border border-green-100 bg-green-50 p-4">
+          <p className="text-xs text-green-600">Total Paid</p>
+          <p className="mt-1 text-2xl font-bold text-green-700">
+            ${totalPaid.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </p>
+        </div>
+        <div className="rounded-lg border border-gray-200 bg-white p-4">
+          <p className="text-xs text-gray-500">Paid / Denied</p>
+          <p className="mt-1 text-2xl font-bold text-gray-900">{paidCount} / {deniedCount}</p>
+        </div>
+      </div>
 
-      {eobError && (
-        <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-2 text-sm text-red-700">{eobError}</div>
-      )}
+      {/* Filters */}
+      <div className="flex flex-wrap gap-3">
+        <select
+          value={filterProvider}
+          onChange={e => setFilterProvider(e.target.value)}
+          className="rounded border border-gray-300 px-3 py-1.5 text-sm text-gray-700"
+        >
+          <option value="">All providers</option>
+          {providers.map(p => (
+            <option key={p.id} value={p.id}>{p.full_name || p.email}</option>
+          ))}
+        </select>
+        <select
+          value={filterStatus}
+          onChange={e => setFilterStatus(e.target.value)}
+          className="rounded border border-gray-300 px-3 py-1.5 text-sm text-gray-700"
+        >
+          <option value="">All statuses</option>
+          <option value="submitted">Submitted</option>
+          <option value="processing">Processing</option>
+          <option value="paid">Paid</option>
+          <option value="denied">Denied</option>
+        </select>
+        {(filterProvider || filterStatus) && (
+          <button
+            onClick={() => { setFilterProvider(''); setFilterStatus('') }}
+            className="text-xs text-blue-600 hover:underline"
+          >
+            Clear filters
+          </button>
+        )}
+      </div>
 
-      <div className="bg-white rounded-lg border border-gray-200 overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50">
-            <tr>
-              {['Visit', 'Service Date', 'MCO', 'Status', 'Billed', 'Paid', 'Denial', 'Actions'].map((h) => (
-                <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {claims.length === 0 && (
-              <tr><td colSpan={8} className="px-4 py-6 text-center text-sm text-gray-400">No claims found</td></tr>
-            )}
-            {claims.map((c) => (
-              <>
-                <tr key={c.id}>
-                  <td className="px-4 py-3 text-gray-700">
-                    {c.visit_type?.replace(/_/g, ' ')}
-                    {deadlineBadge(c)}
-                  </td>
-                  <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{c.service_date ?? '—'}</td>
-                  <td className="px-4 py-3 text-gray-500">{c.payer_id ?? '—'}</td>
-                  <td className="px-4 py-3">{statusBadge(c.status)}</td>
-                  <td className="px-4 py-3 text-gray-700">{c.billed_amount ? `$${Number(c.billed_amount).toFixed(2)}` : '—'}</td>
-                  <td className="px-4 py-3 text-gray-700">{c.paid_amount ? `$${Number(c.paid_amount).toFixed(2)}` : '—'}</td>
-                  <td className="px-4 py-3 text-gray-500 text-xs max-w-32 truncate">{c.denial_reason ?? '—'}</td>
-                  <td className="px-4 py-3">
-                    {c.is_manual && (
-                      <button
-                        onClick={() => { setScanning(c.id); setEobError(null) }}
-                        className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-600 hover:bg-gray-50 whitespace-nowrap"
-                      >
-                        Scan EOB
-                      </button>
-                    )}
-                  </td>
-                </tr>
-                {scanning === c.id && (
-                  <tr key={`scan-${c.id}`}>
-                    <td colSpan={8} className="px-4 pb-3">
-                      <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
-                        <ImageUploadScanner
-                          endpoint="/api/v1/ocr/handbook"
-                          extraFields={{ page_type: 'remittance_eob' }}
-                          label="Scan Remittance / EOB"
-                          acceptPdf
-                          onExtracted={(data) => handleEobScanned(c, data)}
-                        />
-                        <button
-                          onClick={() => setScanning(null)}
-                          className="mt-2 text-xs text-gray-400 hover:text-gray-600"
-                        >
-                          Cancel
-                        </button>
-                      </div>
+      {loading ? (
+        <p className="text-sm text-gray-500">Loading…</p>
+      ) : filtered.length === 0 ? (
+        <div className="rounded-lg border border-dashed border-gray-300 bg-white p-8 text-center">
+          <p className="text-sm text-gray-500">No claims found.</p>
+        </div>
+      ) : (
+        <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
+          <table className="min-w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                <th className="px-4 py-3">Provider</th>
+                <th className="px-4 py-3">Visit Type</th>
+                <th className="px-4 py-3">Service Date</th>
+                <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3">Billed</th>
+                <th className="px-4 py-3">Paid</th>
+                <th className="px-4 py-3">Denial Reason</th>
+                <th className="px-4 py-3">Claim ID</th>
+                <th className="px-4 py-3">Submitted</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {filtered.map(c => {
+                const prov = providerMap.get(c.provider_id)
+                const { label, color } = claimStatusDisplay(c.status)
+                return (
+                  <tr key={c.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3">
+                      <p className="font-medium text-gray-900 text-xs">{prov?.full_name || prov?.email || '—'}</p>
+                      {prov?.npi && <p className="text-gray-400 text-xs font-mono">{prov.npi}</p>}
+                    </td>
+                    <td className="px-4 py-3 text-gray-600 text-xs">{c.visit_type ?? '—'}</td>
+                    <td className="px-4 py-3 text-gray-600 tabular-nums text-xs">{c.service_date ?? '—'}</td>
+                    <td className="px-4 py-3">
+                      <span className={`rounded border px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[color]}`}>
+                        {label}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 tabular-nums text-xs">
+                      {c.billed_amount != null ? `$${Number(c.billed_amount).toFixed(2)}` : '—'}
+                    </td>
+                    <td className="px-4 py-3 tabular-nums text-xs text-green-700">
+                      {c.paid_amount != null ? `$${Number(c.paid_amount).toFixed(2)}` : '—'}
+                    </td>
+                    <td className="px-4 py-3 text-xs text-red-700 max-w-xs">
+                      {c.denial_reason ? (
+                        <span title={c.denial_reason}>
+                          {c.denial_reason.length > 40 ? c.denial_reason.slice(0, 40) + '…' : c.denial_reason}
+                        </span>
+                      ) : '—'}
+                    </td>
+                    <td className="px-4 py-3 font-mono text-xs text-gray-400">
+                      {c.availity_claim_id
+                        ? c.availity_claim_id.slice(0, 12) + '…'
+                        : c.is_manual ? <span className="text-gray-400">manual</span> : '—'}
+                    </td>
+                    <td className="px-4 py-3 text-gray-400 tabular-nums text-xs">
+                      {c.submitted_at ? new Date(c.submitted_at).toLocaleDateString() : '—'}
                     </td>
                   </tr>
-                )}
-              </>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   )
 }

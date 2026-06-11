@@ -141,6 +141,14 @@ async def download_cms1500(
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
+    # Load billing provider for Box 33/33a (group NPI and billing org name)
+    billing_provider: BillingProvider | None = None
+    if user.billing_provider_id:
+        bp_result = await db.execute(
+            select(BillingProvider).where(BillingProvider.id == user.billing_provider_id)
+        )
+        billing_provider = bp_result.scalar_one_or_none()
+
     visit_result = await db.execute(
         select(Visit).where(Visit.patient_id == patient_id, Visit.visit_type == visit_type)
     )
@@ -233,6 +241,7 @@ async def download_cms1500(
                 "npi": billing_npi,
                 "full_name": user.full_name or "",
                 "billing_provider_name": billing_name,
+                "billing_group_npi": billing_npi,
                 "provider_address": provider_address,
                 "provider_phone": user.provider_phone or "",
                 "provider_ssn": provider_ssn,
@@ -283,6 +292,14 @@ async def download_audit_packet(
     user = user_result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    # Load billing provider for Box 33/33a
+    audit_billing_provider: BillingProvider | None = None
+    if user.billing_provider_id:
+        bp_result2 = await db.execute(
+            select(BillingProvider).where(BillingProvider.id == user.billing_provider_id)
+        )
+        audit_billing_provider = bp_result2.scalar_one_or_none()
 
     visit_result = await db.execute(
         select(Visit).where(Visit.patient_id == patient_id, Visit.visit_type == visit_type)
@@ -432,6 +449,7 @@ async def download_audit_packet(
                 "npi": billing_npi,
                 "full_name": user.full_name or "",
                 "billing_provider_name": billing_name,
+                "billing_group_npi": billing_npi,
                 "provider_address": provider_address,
                 "provider_phone": user.provider_phone or "",
                 "provider_ssn": provider_ssn,

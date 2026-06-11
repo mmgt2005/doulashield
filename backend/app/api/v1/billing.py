@@ -13,8 +13,9 @@ from sqlalchemy.future import select
 
 from app.core.audit import AuditLogger
 from app.core.config import settings
-from app.dependencies import CurrentUser, get_audit, get_current_user, get_db, require_admin
+from app.dependencies import CurrentUser, get_audit, get_current_user, get_db, require_admin, require_billing_admin
 from app.models.billing_provider import BillingProvider
+from app.models.claim import Claim
 from app.models.user import User
 from app.schemas.admin import (
     BillingProviderCreate,
@@ -22,6 +23,7 @@ from app.schemas.admin import (
     BillingProviderUpdate,
     UserCreate,
 )
+from app.schemas.claim import ClaimRead
 from app.core.security import hash_password
 from app.schemas.billing import (
     BillingStatusRead,
@@ -683,3 +685,47 @@ async def billing_provider_stats(
         """)
     )
     return [dict(r) for r in rows.mappings()]
+
+
+# ── Billing admin scoped endpoints ────────────────────────────────────────────
+
+@router.get("/billing-admin/claims", response_model=list[ClaimRead])
+async def list_billing_admin_claims(
+    current_user: Annotated[CurrentUser, Depends(require_billing_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> list[ClaimRead]:
+    """Returns all claims across all providers assigned to the billing admin's managed agency."""
+    if not current_user.managed_billing_provider_id:
+        return []
+    providers_result = await db.execute(
+        select(User.id).where(User.billing_provider_id == current_user.managed_billing_provider_id)
+    )
+    provider_ids = [row.id for row in providers_result]
+    if not provider_ids:
+        return []
+    claims_result = await db.execute(
+        select(Claim)
+        .where(Claim.provider_id.in_(provider_ids))
+        .order_by(Claim.created_at.desc())
+    )
+    return [ClaimRead.model_validate(c) for c in claims_result.scalars().all()]
+
+
+@router.get("/billing-admin/providers", response_model=list[dict])
+async def list_billing_admin_providers(
+    current_user: Annotated[CurrentUser, Depends(require_billing_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> list[dict]:
+    """Returns all providers assigned to the billing admin's managed agency."""
+    if not current_user.managed_billing_provider_id:
+        return []
+    result = await db.execute(
+        select(User).where(
+            User.billing_provider_id == current_user.managed_billing_provider_id,
+            User.is_active.is_(True),
+        ).order_by(User.full_name)
+    )
+    return [
+        {"id": str(u.id), "email": u.email, "full_name": u.full_name, "npi": u.npi}
+        for u in result.scalars().all()
+    ]

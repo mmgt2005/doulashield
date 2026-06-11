@@ -31,9 +31,11 @@ class AdminService:
             role=data.role,
             full_name=data.full_name,
         )
-        if data.role == "admin":
+        if data.role in ("admin", "billing_admin"):
             user.deposit_paid = True
             user.escrow_balance_remaining = Decimal("0.00")
+        if data.role == "billing_admin" and data.managed_billing_provider_id:
+            user.managed_billing_provider_id = data.managed_billing_provider_id
         self._db.add(user)
         await self._db.commit()
         await self._db.refresh(user)

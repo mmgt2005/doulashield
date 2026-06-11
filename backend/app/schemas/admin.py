@@ -11,6 +11,30 @@ class McoContract(BaseModel):
     contract_date: date | None = None
 
 
+class BillingProviderCreate(BaseModel):
+    name: str
+    group_npi: str | None = None
+    address: str | None = None
+    city: str | None = None
+    state: str | None = None
+    zip: str | None = None
+    phone: str | None = None
+
+
+class BillingProviderUpdate(BillingProviderCreate):
+    name: str | None = None
+
+
+class BillingProviderRead(BillingProviderCreate):
+    id: uuid.UUID
+    stripe_subscription_id: str | None = None
+    subscription_status: str | None = None
+    created_at: datetime
+    provider_count: int = 0
+
+    model_config = {"from_attributes": True}
+
+
 class UserCreate(BaseModel):
     email: EmailStr
     password: str
@@ -65,23 +89,6 @@ class ProviderSettingsUpdate(BaseModel):
     liability_insurance_expires_on: date | None = None
 
 
-class BillingProviderRead(BaseModel):
-    id: uuid.UUID
-    name: str
-    group_npi: str | None
-    address: str | None
-    city: str | None
-    state: str | None
-    zip: str | None
-    phone: str | None
-    stripe_subscription_id: str | None
-    subscription_status: str | None
-    created_at: datetime
-    provider_count: int = 0
-
-    model_config = {"from_attributes": True}
-
-
 class ProviderSettingsRead(BaseModel):
     npi: str | None
     availity_connected: bool
@@ -120,17 +127,3 @@ class AuditLogRead(BaseModel):
     timestamp: datetime
 
     model_config = {"from_attributes": True}
-
-
-class BillingProviderCreate(BaseModel):
-    name: str
-    group_npi: str | None = None
-    address: str | None = None
-    city: str | None = None
-    state: str | None = None
-    zip: str | None = None
-    phone: str | None = None
-
-
-class BillingProviderUpdate(BillingProviderCreate):
-    name: str | None = None

@@ -50,6 +50,16 @@ export default function Sidebar({ onClose }: SidebarProps) {
       ? billingAdminLinks
       : [...providerLinks, ...(user?.role === 'admin' ? adminLinks : [])]
 
+  const roleLabel =
+    user?.role === 'admin' ? 'Admin' :
+    user?.role === 'billing_admin' ? 'Billing Admin' :
+    'Provider'
+
+  const roleBadgeClass =
+    user?.role === 'admin' ? 'bg-purple-100 text-purple-700' :
+    user?.role === 'billing_admin' ? 'bg-teal-100 text-teal-700' :
+    'bg-blue-100 text-blue-700'
+
   return (
     <aside className="w-56 flex-shrink-0 bg-white border-r border-gray-200 flex flex-col h-full">
       <div className="px-4 py-4 border-b border-gray-200">
@@ -99,14 +109,8 @@ export default function Sidebar({ onClose }: SidebarProps) {
       <div className="px-4 py-4 border-t border-gray-200">
         <p className="text-xs text-gray-500 truncate">{user?.email}</p>
         {user?.role && (
-          <span className={`mt-1 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-            user.role === 'admin'
-              ? 'bg-purple-100 text-purple-700'
-              : user.role === 'billing_admin'
-              ? 'bg-teal-100 text-teal-700'
-              : 'bg-blue-100 text-blue-700'
-          }`}>
-            {user.role === 'admin' ? 'Admin' : user.role === 'billing_admin' ? 'Billing Admin' : 'Provider'}
+          <span className={`mt-1 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${roleBadgeClass}`}>
+            {roleLabel}
           </span>
         )}
         <button

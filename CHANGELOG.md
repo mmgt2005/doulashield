@@ -12,6 +12,18 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.24.0] — 2026-06-11
+
+### Added
+- **Admin Billing Providers page** (`/admin/billing-providers`): Full CRUD UI for billing agencies — create/edit modal with Group NPI, address, city, state, ZIP, phone; stats cards showing provider count, billed/paid totals, denial rate; per-row start-subscription, edit, and delete actions.
+- **Agency Claims page** (`/billing-admin/claims`): Billing admin role now has a dedicated `/billing-admin/claims` page showing all claims across their managed agency's providers, with provider and status filters and aggregate stats cards.
+- **Admin Users page** agency assignment: "Agency" column in the users table, "Assign Agency" per-row action with billing-provider dropdown modal; `billing_admin` option in Create User modal with managed-agency selector.
+- **Role badge in sidebar**: Each role now shows a coloured pill badge (purple=Admin, teal=Billing Admin, blue=Provider) under the sign-out button.
+- **`require_billing_admin` RBAC guard**: New FastAPI dependency that verifies the requesting user is a `billing_admin` and has a `managed_billing_provider_id`; used on all `/billing-admin/*` routes.
+- **Alembic migration 0038** (`reconcile_billing_providers`): Idempotent `ADD COLUMN IF NOT EXISTS` guard for `managed_billing_provider_id` on the users table, ensuring clean `alembic upgrade head` on any environment.
+
+---
+
 ## [1.23.2] — 2026-06-11
 
 ### Fixed

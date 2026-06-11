@@ -40,7 +40,9 @@ class User(Base):
         nullable=True,
     )
     managed_billing_provider_id: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("public.billing_providers.id", ondelete="SET NULL"), nullable=True
+        UUID(as_uuid=True),
+        ForeignKey("public.billing_providers.id", ondelete="SET NULL"),
+        nullable=True,
     )
     mco_contracts_json: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON array: [{mco, contract_date}]
     caqh_last_attested_on: Mapped[date | None] = mapped_column(Date, nullable=True)
@@ -69,5 +71,12 @@ class User(Base):
 
     patients: Mapped[list["Patient"]] = relationship(back_populates="provider")  # type: ignore[name-defined]
     billing_provider: Mapped["BillingProvider | None"] = relationship(  # type: ignore[name-defined]
-        "BillingProvider", foreign_keys=[billing_provider_id], back_populates="providers"
+        "BillingProvider",
+        foreign_keys=[billing_provider_id],
+        back_populates="providers",
+    )
+    managed_billing_provider: Mapped["BillingProvider | None"] = relationship(  # type: ignore[name-defined]
+        "BillingProvider",
+        foreign_keys=[managed_billing_provider_id],
+        back_populates="billing_admins",
     )

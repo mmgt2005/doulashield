@@ -1,24 +1,17 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import axios from 'axios'
 import { getAccessToken } from '@/lib/auth'
 import { useAuthStore } from '@/store/auth-store'
-import { User, UserWithBilling } from '@/types/domain'
+import { User, UserWithBilling, BillingProvider } from '@/types/domain'
 
 type MergedUser = User & Partial<Omit<UserWithBilling, keyof User>>
 
-interface BillingProviderOption {
-  id: string
-  name: string
-  npi: string
-}
-
 export default function AdminUsersPage() {
-  const router = useRouter()
-  const { user: currentUser, startImpersonation } = useAuthStore()
+  const { user: currentUser } = useAuthStore()
   const [users, setUsers] = useState<MergedUser[]>([])
+  const [billingProviders, setBillingProviders] = useState<BillingProvider[]>([])
   const [loading, setLoading] = useState(true)
   const [actionToast, setActionToast] = useState<string | null>(null)
   const [linkModal, setLinkModal] = useState<{ userId: string; email: string } | null>(null)
@@ -29,12 +22,17 @@ export default function AdminUsersPage() {
   const [showCreate, setShowCreate] = useState(false)
   const [createEmail, setCreateEmail] = useState('')
   const [createFullName, setCreateFullName] = useState('')
-  const [createRole, setCreateRole] = useState<'provider' | 'admin'>('provider')
+  const [createRole, setCreateRole] = useState<'provider' | 'admin' | 'billing_admin'>('provider')
+  const [createManagedBpId, setCreateManagedBpId] = useState('')
   const [createError, setCreateError] = useState<string | null>(null)
   const [creating, setCreating] = useState<'only' | 'send' | false>(false)
-  const [billingProviders, setBillingProviders] = useState<BillingProviderOption[]>([])
   const [credentials, setCredentials] = useState<{ email: string; password: string } | null>(null)
   const [copied, setCopied] = useState(false)
+
+  // Assign to agency modal
+  const [assignModal, setAssignModal] = useState<{ userId: string; email: string; currentBpId: string | null } | null>(null)
+  const [assignBpId, setAssignBpId] = useState('')
+  const [assignError, setAssignError] = useState<string | null>(null)
 
   const headers = { Authorization: `Bearer ${getAccessToken()}` }
   const api = process.env.NEXT_PUBLIC_API_URL
@@ -48,7 +46,7 @@ export default function AdminUsersPage() {
     const [usersRes, billingRes, bpRes] = await Promise.allSettled([
       axios.get<User[]>(`${api}/api/v1/admin/users`, { headers }),
       axios.get<UserWithBilling[]>(`${api}/api/v1/admin/billing/users`, { headers }),
-      axios.get<BillingProviderOption[]>(`${api}/api/v1/admin/billing-providers`, { headers }),
+      axios.get<BillingProvider[]>(`${api}/api/v1/admin/billing-providers`, { headers }),
     ])
     const baseUsers = usersRes.status === 'fulfilled' ? usersRes.value.data : []
     const billingMap = billingRes.status === 'fulfilled'
@@ -164,51 +162,36 @@ export default function AdminUsersPage() {
     }
   }
 
-  const handleViewAs = async (u: MergedUser) => {
-    setActionLoading(`viewas-${u.id}`)
-    try {
-      const res = await axios.post<{ access_token: string; target_id: string; target_email: string; target_name: string | null }>(
-        `${api}/api/v1/admin/users/${u.id}/impersonate`,
-        {},
-        { headers },
-      )
-      const targetUser: User = {
-        id: res.data.target_id,
-        email: res.data.target_email,
-        role: 'provider',
-        full_name: res.data.target_name,
-        mfa_enabled: u.mfa_enabled,
-        is_active: u.is_active,
-        created_at: u.created_at,
-        last_sign_in_at: u.last_sign_in_at,
-        welcome_email_sent_at: u.welcome_email_sent_at,
-        billing_provider_id: null,
-        managed_billing_provider_id: null,
-      }
-      startImpersonation(targetUser, res.data.access_token)
-      router.push('/dashboard')
-    } catch (e: unknown) {
-      const msg = axios.isAxiosError(e) ? e.response?.data?.detail : 'Failed to start impersonation'
-      showToast(`Error: ${msg}`)
-    } finally {
-      setActionLoading(null)
-    }
+  const openAssignModal = (userId: string, email: string, currentBpId: string | null) => {
+    setAssignModal({ userId, email, currentBpId })
+    setAssignBpId(currentBpId ?? '')
+    setAssignError(null)
   }
 
-  const assignBillingProvider = async (userId: string, billingProviderId: string | null) => {
-    setActionLoading(`bp-${userId}`)
+  const submitAssign = async () => {
+    if (!assignModal) return
+    setActionLoading(`assign-${assignModal.userId}`)
     try {
-      await axios.patch(
-        `${api}/api/v1/admin/users/${userId}`,
-        { billing_provider_id: billingProviderId },
-        { headers },
-      )
-      setUsers((prev) =>
-        prev.map((u) => (u.id === userId ? { ...u, billing_provider_id: billingProviderId } : u))
-      )
+      if (assignBpId) {
+        await axios.post(
+          `${api}/api/v1/admin/billing-providers/${assignBpId}/assign-provider`,
+          { provider_user_id: assignModal.userId },
+          { headers },
+        )
+      } else {
+        // Unassign: patch billing_provider_id to null via admin users endpoint
+        await axios.patch(
+          `${api}/api/v1/admin/users/${assignModal.userId}`,
+          { billing_provider_id: null },
+          { headers },
+        )
+      }
+      showToast(`Agency assignment updated for ${assignModal.email}`)
+      setAssignModal(null)
+      await reload()
     } catch (e: unknown) {
-      const msg = axios.isAxiosError(e) ? e.response?.data?.detail : 'Failed to assign billing provider'
-      showToast(`Error: ${msg}`)
+      const msg = axios.isAxiosError(e) ? e.response?.data?.detail : 'Failed to assign'
+      setAssignError(String(msg))
     } finally {
       setActionLoading(null)
     }
@@ -218,6 +201,7 @@ export default function AdminUsersPage() {
     setCreateEmail('')
     setCreateFullName('')
     setCreateRole('provider')
+    setCreateManagedBpId('')
     setCreateError(null)
     setCredentials(null)
     setCopied(false)
@@ -241,7 +225,12 @@ export default function AdminUsersPage() {
     try {
       await axios.post(
         `${api}/api/v1/admin/billing/create-and-invite`,
-        { email: createEmail.trim(), full_name: createFullName.trim() || null, role: createRole },
+        {
+          email: createEmail.trim(),
+          full_name: createFullName.trim() || null,
+          role: createRole,
+          ...(createRole === 'billing_admin' && createManagedBpId ? { managed_billing_provider_id: createManagedBpId } : {}),
+        },
         { headers },
       )
       setShowCreate(false)
@@ -265,7 +254,12 @@ export default function AdminUsersPage() {
     try {
       const res = await axios.post<{ user_id: string; email: string; temp_password: string }>(
         `${api}/api/v1/admin/billing/create-account-only`,
-        { email: createEmail.trim(), full_name: createFullName.trim() || null, role: createRole },
+        {
+          email: createEmail.trim(),
+          full_name: createFullName.trim() || null,
+          role: createRole,
+          ...(createRole === 'billing_admin' && createManagedBpId ? { managed_billing_provider_id: createManagedBpId } : {}),
+        },
         { headers },
       )
       setCredentials({ email: res.data.email, password: res.data.temp_password })
@@ -288,6 +282,8 @@ export default function AdminUsersPage() {
       // fallback: select text
     }
   }
+
+  const bpNameMap = Object.fromEntries(billingProviders.map((bp) => [bp.id, bp.name]))
 
   if (loading) return <p className="text-sm text-gray-500">Loading…</p>
 
@@ -313,7 +309,7 @@ export default function AdminUsersPage() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50">
             <tr>
-              {['Email', 'Role', 'MFA', 'Active', 'Joined', 'Last Emailed', 'Deposit', 'Balance', 'Subscription', 'Billing Provider', 'Actions'].map((h) => (
+              {['Email', 'Role', 'Agency', 'MFA', 'Active', 'Joined', 'Last Emailed', 'Deposit', 'Balance', 'Subscription', 'Actions'].map((h) => (
                 <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">{h}</th>
               ))}
             </tr>
@@ -325,11 +321,17 @@ export default function AdminUsersPage() {
               const subStatus = u.subscription_status ?? null
               const balance = u.escrow_balance_remaining ?? 400
               const subActive = subStatus === 'active' || subStatus === 'trialing'
+              const agencyName = u.billing_provider_id ? (bpNameMap[u.billing_provider_id] ?? '—') : null
 
               return (
                 <tr key={u.id}>
                   <td className="px-4 py-3">{u.email}</td>
                   <td className="px-4 py-3 capitalize">{u.role}</td>
+                  <td className="px-4 py-3">
+                    {agencyName
+                      ? <span className="text-xs font-medium text-teal-700">{agencyName}</span>
+                      : <span className="text-gray-300 text-xs">—</span>}
+                  </td>
                   <td className="px-4 py-3">{u.mfa_enabled ? 'Yes' : 'No'}</td>
                   <td className="px-4 py-3">{u.is_active ? 'Yes' : 'No'}</td>
                   <td className="px-4 py-3 text-gray-400">{new Date(u.created_at).toLocaleDateString()}</td>
@@ -372,25 +374,6 @@ export default function AdminUsersPage() {
                     )}
                   </td>
 
-                  {/* Billing Provider */}
-                  <td className="px-4 py-3">
-                    {isProvider ? (
-                      <select
-                        value={(u as MergedUser & { billing_provider_id?: string | null }).billing_provider_id ?? ''}
-                        onChange={(e) => assignBillingProvider(u.id, e.target.value || null)}
-                        disabled={actionLoading === `bp-${u.id}`}
-                        className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-700 focus:outline-none focus:border-blue-400 disabled:opacity-50 max-w-[160px]"
-                      >
-                        <option value="">— None —</option>
-                        {billingProviders.map((bp) => (
-                          <option key={bp.id} value={bp.id}>{bp.name}</option>
-                        ))}
-                      </select>
-                    ) : (
-                      <span className="text-gray-300">—</span>
-                    )}
-                  </td>
-
                   {/* Actions */}
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2 flex-wrap">
@@ -429,6 +412,14 @@ export default function AdminUsersPage() {
                           {actionLoading === `sub-${u.id}` ? 'Starting…' : 'Start Subscription'}
                         </button>
                       )}
+                      {isProvider && billingProviders.length > 0 && (
+                        <button
+                          onClick={() => openAssignModal(u.id, u.email, u.billing_provider_id ?? null)}
+                          className="rounded border border-teal-300 px-2 py-1 text-xs font-medium text-teal-700 hover:bg-teal-50 whitespace-nowrap"
+                        >
+                          Assign Agency
+                        </button>
+                      )}
                       {u.id !== currentUser?.id && (
                         <button
                           onClick={() => toggleActive(u.id, u.email, u.is_active)}
@@ -451,15 +442,6 @@ export default function AdminUsersPage() {
                           {actionLoading === `role-${u.id}` ? '…' : u.role === 'admin' ? 'Make Provider' : 'Make Admin'}
                         </button>
                       )}
-                      {isProvider && u.id !== currentUser?.id && (
-                        <button
-                          onClick={() => handleViewAs(u)}
-                          disabled={actionLoading === `viewas-${u.id}`}
-                          className="rounded border border-amber-300 bg-amber-50 px-2 py-1 text-xs font-medium text-amber-700 hover:bg-amber-100 disabled:opacity-50 whitespace-nowrap"
-                        >
-                          {actionLoading === `viewas-${u.id}` ? '…' : 'View as'}
-                        </button>
-                      )}
                     </div>
                   </td>
                 </tr>
@@ -469,7 +451,7 @@ export default function AdminUsersPage() {
         </table>
       </div>
 
-      {/* Create Provider modal */}
+      {/* Create User modal */}
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md space-y-4">
@@ -516,22 +498,33 @@ export default function AdminUsersPage() {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
                     <div className="flex rounded border border-gray-300 overflow-hidden w-fit">
-                      <button
-                        type="button"
-                        onClick={() => setCreateRole('provider')}
-                        className={`px-4 py-1.5 text-sm font-medium transition-colors ${createRole === 'provider' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}
-                      >
-                        Provider
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setCreateRole('admin')}
-                        className={`px-4 py-1.5 text-sm font-medium transition-colors border-l border-gray-300 ${createRole === 'admin' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}
-                      >
-                        Admin
-                      </button>
+                      {(['provider', 'admin', 'billing_admin'] as const).map((r, i) => (
+                        <button
+                          key={r}
+                          type="button"
+                          onClick={() => { setCreateRole(r); if (r !== 'billing_admin') setCreateManagedBpId('') }}
+                          className={`px-3 py-1.5 text-sm font-medium transition-colors ${i > 0 ? 'border-l border-gray-300' : ''} ${createRole === r ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}
+                        >
+                          {r === 'billing_admin' ? 'Billing Admin' : r.charAt(0).toUpperCase() + r.slice(1)}
+                        </button>
+                      ))}
                     </div>
                   </div>
+                  {createRole === 'billing_admin' && billingProviders.length > 0 && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Managed Agency</label>
+                      <select
+                        value={createManagedBpId}
+                        onChange={(e) => setCreateManagedBpId(e.target.value)}
+                        className="mt-1 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                      >
+                        <option value="">— Select billing provider —</option>
+                        {billingProviders.map((bp) => (
+                          <option key={bp.id} value={bp.id}>{bp.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                   <div>
                     <label htmlFor="create-email" className="block text-sm font-medium text-gray-700">Email *</label>
                     <input
@@ -617,6 +610,44 @@ export default function AdminUsersPage() {
                 className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
               >
                 {actionLoading?.startsWith('link-') ? 'Linking…' : 'Link Customer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Assign to Agency modal */}
+      {assignModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md space-y-4">
+            <h3 className="text-base font-semibold text-gray-900">Assign to Billing Agency</h3>
+            <p className="text-sm text-gray-500">
+              Assigning <strong>{assignModal.email}</strong> to a billing agency sets their CMS 1500 Box 33 billing entity.
+            </p>
+            <select
+              value={assignBpId}
+              onChange={(e) => setAssignBpId(e.target.value)}
+              className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+            >
+              <option value="">— Unassigned (use own NPI) —</option>
+              {billingProviders.map((bp) => (
+                <option key={bp.id} value={bp.id}>{bp.name}{bp.group_npi ? ` (NPI: ${bp.group_npi})` : ''}</option>
+              ))}
+            </select>
+            {assignError && <p className="text-xs text-red-600">{assignError}</p>}
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setAssignModal(null)}
+                className="rounded border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={submitAssign}
+                disabled={actionLoading?.startsWith('assign-')}
+                className="rounded bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700 disabled:opacity-50"
+              >
+                {actionLoading?.startsWith('assign-') ? 'Saving…' : 'Save Assignment'}
               </button>
             </div>
           </div>
