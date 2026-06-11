@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.25.3] — 2026-06-11
+
+### Fixed
+- **Billing admin agency not linked via "Create & Send Email"**: The `create_and_invite` endpoint accepted `managed_billing_provider_id` in the request body but silently discarded it, so billing admins created through "Create & Send Email" had no linked agency. Every subsequent visit to the Agency Settings page returned 404 → "Failed to load agency settings." The fix applies the same `managed_billing_provider_id` assignment that already existed in `create_account_only`.
+
+---
+
 ## [1.25.2] — 2026-06-11
 
 ### Fixed
