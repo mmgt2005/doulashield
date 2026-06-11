@@ -1,7 +1,7 @@
 """managed_billing_provider_id on users for billing_admin role
 
-Revision ID: 0035
-Revises: 0034
+Revision ID: 0036
+Revises: 0035
 Create Date: 2026-06-11
 """
 from __future__ import annotations
@@ -10,8 +10,8 @@ import sqlalchemy as sa
 from alembic import op
 from sqlalchemy.dialects import postgresql
 
-revision = "0035"
-down_revision = "0034"
+revision = "0036"
+down_revision = "0035"
 branch_labels = None
 depends_on = None
 
