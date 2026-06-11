@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from typing import Annotated
 
 import stripe
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
@@ -579,12 +579,12 @@ async def update_billing_provider(
     return r
 
 
-@router.delete("/admin/billing-providers/{bp_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/admin/billing-providers/{bp_id}", response_class=Response)
 async def delete_billing_provider(
     bp_id: uuid.UUID,
     _: Annotated[CurrentUser, Depends(require_admin)],
     db: Annotated[AsyncSession, Depends(get_db)],
-) -> None:
+) -> Response:
     bp = await _get_billing_provider(bp_id, db)
     count_result = await db.execute(select(User).where(User.billing_provider_id == bp.id))
     if count_result.scalars().first():
@@ -594,6 +594,7 @@ async def delete_billing_provider(
         )
     await db.delete(bp)
     await db.commit()
+    return Response(status_code=204)
 
 
 @router.post("/admin/billing-providers/{bp_id}/assign-provider")
