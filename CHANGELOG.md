@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.23.2] — 2026-06-11
+
+### Fixed
+- **Startup crash (healthcheck failure)**: `billing_provider_id` was defined twice in the `User` SQLAlchemy model — once before `managed_billing_provider_id` and again after it. The duplicate triggered a mapper configuration error at import time, preventing uvicorn from ever binding and causing all Railway healthchecks to fail. Removed the redundant definition.
+
+---
+
 ## [1.23.1] — 2026-06-11
 
 ### Added
