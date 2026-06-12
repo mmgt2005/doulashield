@@ -12,6 +12,17 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.25.7] — 2026-06-12
+
+### Changed
+- **Agency-aware claims UI for providers**: Providers assigned to a billing agency with Availity credentials configured now see context-appropriate UI on visit pages.
+  - Pre-submission button reads "Preview CMS 1500 & Submit for Review" instead of "Preview CMS 1500 & Submit".
+  - Inside the CMS 1500 modal, the submit button reads "Send to Agency Review" and an orange notice explains the claim will go to the agency queue first.
+  - Claims in `pending_billing_review` status display an "Pending Agency Review" badge (orange) and show an explanatory message instead of the "Refresh status" button (which was meaningless before the agency admin submits to Availity).
+  - Providers not assigned to an agency, or assigned to an agency without Availity credentials, see no change.
+
+---
+
 ## [1.25.6] — 2026-06-12
 
 ### Added

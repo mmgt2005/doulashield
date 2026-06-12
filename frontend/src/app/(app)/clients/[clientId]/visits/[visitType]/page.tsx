@@ -91,6 +91,7 @@ function claimStatusDisplay(status: string | null): { label: string; colorClasse
   if (s === 'paid') return { label: 'Paid', colorClasses: 'border-green-300 bg-green-50 text-green-800' }
   if (s === 'denied' || s === 'rejected') return { label: 'Denied', colorClasses: 'border-red-300 bg-red-50 text-red-700' }
   if (['processing', 'accepted', 'pended', 'received'].includes(s)) return { label: 'Processing', colorClasses: 'border-blue-300 bg-blue-50 text-blue-700' }
+  if (s === 'pending_billing_review') return { label: 'Pending Agency Review', colorClasses: 'border-orange-300 bg-orange-50 text-orange-700' }
   return { label: 'Submitted', colorClasses: 'border-amber-300 bg-amber-50 text-amber-700' }
 }
 
@@ -179,6 +180,7 @@ export default function VisitFormPage() {
   const [pdfLoading, setPdfLoading] = useState(false)
   const [providerSsnConnected, setProviderSsnConnected] = useState(false)
   const [providerSignaturePath, setProviderSignaturePath] = useState<string | null>(null)
+  const [agencyClaimQueue, setAgencyClaimQueue] = useState(false)
 
   const { register, handleSubmit, setValue, watch, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -210,10 +212,11 @@ export default function VisitFormPage() {
       if (patientRes.data.email) setMa91PatientEmail(patientRes.data.email)
       if (settingsRes) {
         setTelehealthLink(settingsRes.data.telehealth_link ?? null)
-        const s = settingsRes.data as { zipzign_connected?: boolean }
+        const s = settingsRes.data as { zipzign_connected?: boolean; billing_provider?: { availity_connected?: boolean } }
         setZipzignConnected(s.zipzign_connected ?? false)
         setProviderSsnConnected(!!(s as { provider_ssn_connected?: boolean }).provider_ssn_connected)
         setProviderSignaturePath((s as { provider_signature_path?: string | null }).provider_signature_path ?? null)
+        setAgencyClaimQueue(s.billing_provider?.availity_connected === true)
       }
       if (visitRes) {
         const v = visitRes.data
@@ -1230,7 +1233,7 @@ export default function VisitFormPage() {
         {(() => {
           const billing = billingForVisit(visitType)
           const channel = submissionChannel(patient?.mco)
-          const submitLabel = 'Submit to Availity'
+          const submitLabel = agencyClaimQueue ? 'Send to Agency Review' : 'Submit to Availity'
           return (
             <div className="space-y-3 border-t pt-4">
               <h2 className="text-sm font-semibold text-gray-700">PA Medicaid Claim</h2>
@@ -1420,14 +1423,20 @@ export default function VisitFormPage() {
                         </>
                       ) : (
                         <div className="flex flex-wrap gap-2 items-center">
-                          <button
-                            type="button"
-                            onClick={handleCheckClaimStatus}
-                            disabled={claimStatusChecking}
-                            className="text-xs text-blue-600 hover:text-blue-800 disabled:opacity-50"
-                          >
-                            {claimStatusChecking ? 'Checking…' : 'Refresh status'}
-                          </button>
+                          {existingClaim.status === 'pending_billing_review' ? (
+                            <p className="text-xs text-orange-700">
+                              Your billing agency will review and submit this claim to Availity.
+                            </p>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={handleCheckClaimStatus}
+                              disabled={claimStatusChecking}
+                              className="text-xs text-blue-600 hover:text-blue-800 disabled:opacity-50"
+                            >
+                              {claimStatusChecking ? 'Checking…' : 'Refresh status'}
+                            </button>
+                          )}
                           {(existingClaim.status === 'denied' || existingClaim.status === 'rejected') && (
                             <button
                               type="button"
@@ -1643,7 +1652,7 @@ export default function VisitFormPage() {
                         onClick={handleOpenCms1500}
                         className="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
                       >
-                        Preview CMS 1500 &amp; Submit
+                        {agencyClaimQueue ? 'Preview CMS 1500 & Submit for Review' : 'Preview CMS 1500 & Submit'}
                       </button>
                     </>
                   )}
@@ -1743,6 +1752,11 @@ export default function VisitFormPage() {
                       </table>
                       {claimError && <p className="text-xs text-red-600">{claimError}</p>}
                     </div>
+                    {agencyClaimQueue && (
+                      <div className="mx-6 mb-2 rounded border border-orange-200 bg-orange-50 px-3 py-2 text-xs text-orange-700">
+                        This claim will be sent to your billing agency for review before being submitted to Availity.
+                      </div>
+                    )}
                     <div className="flex gap-3 border-t px-6 py-4">
                       <button
                         type="button"
