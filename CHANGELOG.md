@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.25.9] — 2026-06-12
+
+### Fixed
+- **CMS 1500 Box 33a shows rendering provider NPI instead of billing agency NPI**: When a provider is assigned to a billing agency, the CMS 1500 service was falling back to the rendering provider's NPI for Box 33a because `billing_provider_data` is not passed at the call sites. The call sites already supply `billing_group_npi` (the agency group NPI) inside `provider_data`; the service now reads that field as the source for Box 33a, falling back to the rendering NPI only when no agency is assigned.
+
+---
+
 ## [1.25.8] — 2026-06-12
 
 ### Fixed

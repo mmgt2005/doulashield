@@ -383,7 +383,7 @@ def generate_pdf(
         tax_id_for_box25 = billing_provider_data.get("tax_id") or provider_data.get("provider_ssn", "")
         box25_is_ein = bool(billing_provider_data.get("tax_id"))
     else:
-        billing_npi = npi
+        billing_npi = provider_data.get("billing_group_npi") or npi
         provider_name = provider_data.get("billing_provider_name") or provider_data.get("full_name", "")
         prov_addr = provider_data.get("provider_address", "")
         prov_phone_raw = provider_data.get("provider_phone", "")
