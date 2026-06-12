@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.25.4] — 2026-06-12
+
+### Fixed
+- **"View Claims" and "Settings" buttons on Billing Providers page cause app to close**: These links used plain `<a>` tags instead of Next.js `Link`, triggering a full browser reload. On reload the in-memory Zustand auth store is reset to `isAuthenticated: false`; if the subsequent token-refresh cookie exchange fails (CORS edge cases, timing), the app calls `logout()` and redirects to `/login`, appearing as if the app closed. Replaced both `<a>` tags with `Link` for client-side navigation so the auth state is preserved.
+
+---
+
 ## [1.25.3] — 2026-06-11
 
 ### Fixed

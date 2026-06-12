@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import axios from 'axios'
 import { getAccessToken } from '@/lib/auth'
 import type { BillingProvider } from '@/types/domain'
@@ -261,18 +262,18 @@ export default function BillingProvidersPage() {
                         >
                           Edit
                         </button>
-                        <a
+                        <Link
                           href={`/billing-admin/claims?bp_id=${bp.id}`}
                           className="rounded border border-blue-200 px-2 py-1 text-xs font-medium text-blue-700 hover:bg-blue-50"
                         >
                           View Claims
-                        </a>
-                        <a
+                        </Link>
+                        <Link
                           href={`/billing-admin/settings?bp_id=${bp.id}`}
                           className="rounded border border-blue-200 px-2 py-1 text-xs font-medium text-blue-700 hover:bg-blue-50"
                         >
                           Settings
-                        </a>
+                        </Link>
                         {!['active', 'trialing'].includes(bp.subscription_status ?? '') && (
                           <button
                             onClick={() => startSubscription(bp)}
