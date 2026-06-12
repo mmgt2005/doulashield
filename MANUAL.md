@@ -271,6 +271,9 @@ The **PA Medicaid Claim** section appears at the bottom of each visit form (belo
 **Availity MCOs:**
 Click **Preview CMS 1500 & Submit**. A preview modal shows all claim boxes filled with your data. Review it, then click **Submit to Availity**. The claim is transmitted electronically and a status badge appears.
 
+**If your account is managed by a billing agency:**
+The button reads **Preview CMS 1500 & Submit for Review** and the modal submit button reads **Send to Agency Review**. An orange notice in the modal confirms the claim will go to your billing agency's review queue first. Once you submit, the status badge shows **Pending Agency Review** (orange). Your billing agency reviews the claim and submits it to Availity on your behalf — you do not need to take any further action. The **Refresh status** button is hidden while the claim is pending agency review; it reappears once the agency has submitted the claim to Availity.
+
 **Manual MCOs:**
 Click **Preview & Download CMS 1500** to download the completed PDF. Then click the portal link next to the button to open the MCO's submission portal in a new tab. Upload the PDF through their portal.
 
@@ -280,6 +283,7 @@ The claim status badge uses four colors:
 
 | Color | Meaning |
 |---|---|
+| **Orange — Pending Agency Review** | Queued for your billing agency to review and submit to Availity |
 | **Amber — Submitted** | Sent to Availity; awaiting acknowledgment |
 | **Blue — Processing** | Availity accepted; payer is processing |
 | **Green — Paid** | Payment confirmed; paid amount shown |
