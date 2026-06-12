@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.25.5] — 2026-06-12
+
+### Fixed
+- **"View as" button missing from Users page**: The button and its `handleViewAs` handler were accidentally dropped in the v1.21.0 billing provider commit. Restored: admins can again click "View as" on any provider row to enter an impersonation session scoped to that provider's data, with the amber banner and "Exit" button appearing on all pages.
+
+---
+
 ## [1.25.4] — 2026-06-12
 
 ### Fixed
