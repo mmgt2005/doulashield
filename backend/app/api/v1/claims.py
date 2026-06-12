@@ -238,7 +238,7 @@ async def download_cms1500(
                 "alternate_location": visit.alternate_location if visit else None,
             },
             provider_data={
-                "npi": billing_npi,
+                "npi": user.npi or "",
                 "full_name": user.full_name or "",
                 "billing_provider_name": billing_name,
                 "billing_group_npi": billing_npi,
@@ -446,7 +446,7 @@ async def download_audit_packet(
                 "ma91_status": visit.ma91_status if visit else None,
             },
             provider_data={
-                "npi": billing_npi,
+                "npi": user.npi or "",
                 "full_name": user.full_name or "",
                 "billing_provider_name": billing_name,
                 "billing_group_npi": billing_npi,

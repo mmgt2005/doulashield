@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.25.8] — 2026-06-12
+
+### Fixed
+- **CMS 1500 Box 24J shows agency NPI instead of provider NPI**: Both the CMS 1500 preview/download and the audit packet were passing `billing_npi` (the agency group NPI) as `provider_data["npi"]`, which the PDF service writes to Box 24J (rendering provider NPI). Box 24J must always contain the individual rendering provider's NPI. Fixed both call sites to use `user.npi` for `provider_data["npi"]`; `billing_npi` continues to flow to Box 33a via `billing_group_npi` as intended.
+
+---
+
 ## [1.25.7] — 2026-06-12
 
 ### Changed
