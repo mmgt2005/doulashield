@@ -152,6 +152,18 @@ If the $99 deposit was collected outside the app (cash, check, or a Stripe trans
 
 The **Start Subscription** button is disabled if the deposit has not been paid.
 
+### Stripe Price ID Configuration
+
+DoulaShield uses three Stripe price IDs, set as environment variables on the backend service (Railway → backend service → Variables):
+
+| Variable | Used for |
+|---|---|
+| `STRIPE_DEPOSIT_PRICE_ID` | One-time $99 enrollment deposit for individual providers |
+| `STRIPE_MONTHLY_PRICE_ID` | Recurring monthly subscription for individual providers |
+| `STRIPE_AGENCY_MONTHLY_PRICE_ID` | Recurring monthly subscription for billing agencies (billing providers) |
+
+Create each product and price in your Stripe Dashboard (Products → Add Product → Add Price), then copy the `price_1…` ID into the matching variable. If `STRIPE_AGENCY_MONTHLY_PRICE_ID` is left blank, agency subscriptions fall back to `STRIPE_MONTHLY_PRICE_ID`.
+
 ### Admin Billing Exemption
 
 Admin accounts are created with `deposit_paid = true` and `escrow_balance_remaining = $0.00`. The Escrow & Billing section is hidden on the admin Settings page. Admins are never charged deposits, subscription fees, or escrow deductions.
@@ -196,6 +208,10 @@ Click **Save**. The new entity appears in the list immediately.
 #### Editing a Billing Provider
 
 Click **Edit** on any row. All fields are editable. Changes take effect on the next claim generated or submitted — already-submitted claims are not retroactively updated.
+
+#### Starting an Agency Subscription
+
+Click **Start Sub** on the row. DoulaShield creates a Stripe subscription billed to the agency using the `STRIPE_AGENCY_MONTHLY_PRICE_ID` price (falls back to `STRIPE_MONTHLY_PRICE_ID` if not set). The Subscription column updates to "Active." The button only appears when the agency does not already have an active or trialing subscription, and requires at least one provider assigned to the agency (so a Stripe customer record can be created).
 
 #### Deleting a Billing Provider
 
