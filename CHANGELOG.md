@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.25.6] — 2026-06-12
+
+### Added
+- **`STRIPE_AGENCY_MONTHLY_PRICE_ID` environment variable**: Billing agencies (billing providers) can now be billed at a different Stripe price than individual providers. Set this variable in your Railway environment to the `price_1…` ID of your agency subscription product. If left blank, the system falls back to `STRIPE_MONTHLY_PRICE_ID` so existing deployments are unaffected.
+
+---
+
 ## [1.25.5] — 2026-06-12
 
 ### Fixed

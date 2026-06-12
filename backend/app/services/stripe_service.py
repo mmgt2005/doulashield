@@ -67,10 +67,11 @@ async def start_subscription(provider: User, db: AsyncSession) -> dict:
                 metadata={"billing_provider_id": str(bp.id)},
             )
             bp.stripe_customer_id = customer.id
+        agency_price = settings.STRIPE_AGENCY_MONTHLY_PRICE_ID or settings.STRIPE_MONTHLY_PRICE_ID
         sub = await asyncio.to_thread(
             stripe.Subscription.create,
             customer=bp.stripe_customer_id,
-            items=[{"price": settings.STRIPE_MONTHLY_PRICE_ID}],
+            items=[{"price": agency_price}],
             metadata={"billing_provider_id": str(bp.id)},
         )
         bp.stripe_subscription_id = sub.id
