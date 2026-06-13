@@ -12,6 +12,15 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.26.0] — 2026-06-13
+
+### Changed
+- **Admin impersonation — clients scoped to provider only**: When an admin uses "View as" to impersonate a provider and creates a client, that client is now exclusively under the provider and not visible to the admin outside of impersonation.
+  - Backend: `GET /api/v1/patients`, `POST /api/v1/patients`, and `POST /api/v1/patients/search` now return 403 when called with an admin token. Admins can only access patient data through an active impersonation session (where their token role is "provider").
+  - Frontend: The admin sidebar no longer includes provider navigation links (Clients, Dashboard, Reports, Settings). Admins see only admin links outside of impersonation; provider links are shown during an impersonation session as before.
+
+---
+
 ## [1.25.9] — 2026-06-12
 
 ### Fixed
