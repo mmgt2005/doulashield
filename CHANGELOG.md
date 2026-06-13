@@ -12,6 +12,14 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.26.1] — 2026-06-13
+
+### Fixed
+- **Admin client scoping corrected**: v1.26.0 incorrectly blocked admins from managing their own clients entirely. Admins can now create and view their own clients (scoped to their user ID). During impersonation, created clients are still scoped to the provider's user ID as intended. The patient list/search endpoints now consistently use `list_for_provider(current_user.id)` for all roles — admin's own clients have `provider_id = admin.id`, and during impersonation `current_user.id = provider.id` via JWT, so isolation is automatic with no role branching.
+- **Admin sidebar restored**: Admins again see both provider nav links (Dashboard, Clients, Reports, Settings) and admin nav links (Users, Billing Providers, Audit Logs) outside of impersonation sessions.
+
+---
+
 ## [1.26.0] — 2026-06-13
 
 ### Changed

@@ -49,7 +49,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
     user?.role === 'billing_admin'
       ? billingAdminLinks
       : user?.role === 'admin'
-      ? adminLinks
+      ? [...providerLinks, ...adminLinks]
       : providerLinks
 
   const roleLabel =

@@ -33,8 +33,6 @@ async def create_patient(
     db: Annotated[AsyncSession, Depends(get_db)],
     audit: Annotated[AuditLogger, Depends(get_audit)],
 ) -> PatientRead:
-    if current_user.role == "admin":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admins may only manage clients while impersonating a provider.")
     return await _svc(db, audit).create(
         body, current_user.id, get_client_ip(request), get_user_agent(request)
     )
@@ -48,8 +46,6 @@ async def search_patients(
     audit: Annotated[AuditLogger, Depends(get_audit)],
 ) -> list[PatientRead]:
     """Search via POST to keep query terms out of URL/access logs."""
-    if current_user.role == "admin":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admins may only manage clients while impersonating a provider.")
     patients = await _svc(db, audit).list_for_provider(current_user.id)
 
     query = body.query.lower()
@@ -62,8 +58,6 @@ async def list_patients(
     db: Annotated[AsyncSession, Depends(get_db)],
     audit: Annotated[AuditLogger, Depends(get_audit)],
 ) -> list[PatientRead]:
-    if current_user.role == "admin":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admins may only manage clients while impersonating a provider.")
     return await _svc(db, audit).list_for_provider(current_user.id)
 
 
