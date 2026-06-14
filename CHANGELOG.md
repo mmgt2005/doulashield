@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.28.1] — 2026-06-14
+
+### Fixed
+- **TypeScript build error in `FilePreviewModal`**: Axios `content-type` header has a union type that includes non-string values. Cast via `String()` to satisfy the type checker.
+
+---
+
 ## [1.28.0] — 2026-06-14
 
 ### Added
