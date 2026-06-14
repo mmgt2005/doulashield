@@ -30,7 +30,7 @@ export default function FilePreviewModal({ title, fetchUrl, directUrl, contentTy
             headers: { Authorization: `Bearer ${getAccessToken()}` },
             responseType: 'blob',
           })
-          const mime: string = res.headers['content-type'] || ''
+          const mime: string = String(res.headers['content-type'] || '')
           const type = contentType !== 'auto' ? contentType : mime.includes('pdf') ? 'pdf' : 'image'
           setResolvedType(type)
           objectUrl = URL.createObjectURL(new Blob([res.data], { type: mime || 'application/octet-stream' }))
