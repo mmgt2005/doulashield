@@ -12,6 +12,16 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.27.0] — 2026-06-14
+
+### Changed
+- **Agency claims routing**: Providers assigned to a billing agency now always have their claims routed to the agency review queue (`pending_billing_review`), even when the agency has not yet configured Availity credentials. The billing admin decides whether to submit via Availity or log a manual submission.
+- **Billing admin manual submission**: The Agency Claims page now supports logging a manual submission (marking a claim as submitted/paid/denied without going through Availity), for cases where the agency submitted via paper, MCO portal, or phone. Rows are also now expandable inline to see claim details and download the CMS 1500 PDF before acting.
+- **Billing admin CMS 1500 download**: Billing admins can download the CMS 1500 PDF for any claim in their queue via a new `GET /billing-admin/claims/{claim_id}/cms1500.pdf` endpoint. The PDF is generated using the provider's NPI and the agency's group NPI.
+- **Provider manual status updates blocked for agency providers**: Providers assigned to a billing agency can no longer use the manual "Update status" form on the visit page. Their claims are managed entirely by the billing admin once submitted for review.
+
+---
+
 ## [1.26.1] — 2026-06-13
 
 ### Fixed

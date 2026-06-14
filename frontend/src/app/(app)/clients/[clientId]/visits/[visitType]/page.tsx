@@ -181,6 +181,7 @@ export default function VisitFormPage() {
   const [providerSsnConnected, setProviderSsnConnected] = useState(false)
   const [providerSignaturePath, setProviderSignaturePath] = useState<string | null>(null)
   const [agencyClaimQueue, setAgencyClaimQueue] = useState(false)
+  const [hasBillingAgency, setHasBillingAgency] = useState(false)
 
   const { register, handleSubmit, setValue, watch, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -217,6 +218,7 @@ export default function VisitFormPage() {
         setProviderSsnConnected(!!(s as { provider_ssn_connected?: boolean }).provider_ssn_connected)
         setProviderSignaturePath((s as { provider_signature_path?: string | null }).provider_signature_path ?? null)
         setAgencyClaimQueue(s.billing_provider?.availity_connected === true)
+        setHasBillingAgency(s.billing_provider != null)
       }
       if (visitRes) {
         const v = visitRes.data
@@ -1301,7 +1303,7 @@ export default function VisitFormPage() {
                           <span>· Last checked {new Date(existingClaim.status_checked_at).toLocaleDateString()}</span>
                         )}
                       </div>
-                      {existingClaim.is_manual ? (
+                      {existingClaim.is_manual && !hasBillingAgency ? (
                         <>
                           <div className="flex flex-wrap gap-2">
                             <button

@@ -196,38 +196,38 @@ class ClaimsService:
                     },
                 }
 
-                # Agency claim queue: route to pending_billing_review instead of Availity
-                # when the agency has shared Availity credentials configured
-                if billing_provider.availity_client_id_encrypted:
-                    claim = Claim(
-                        patient_id=patient_id,
-                        provider_id=requesting_user_id,
-                        status="pending_billing_review",
-                        visit_type=data.visit_type,
-                        service_date=data.service_date,
-                        billed_amount=billed_amount,
-                        payer_id=payer_id,
-                        claim_data=claim_body,
-                        is_manual=False,
-                        filing_deadline_date=(data.service_date + timedelta(days=365)) if data.service_date else None,
-                    )
-                    self._db.add(claim)
-                    await self._db.commit()
-                    await self._db.refresh(claim)
-                    await self._audit.log(
-                        action="SUBMIT_CLAIM_TO_QUEUE",
-                        resource_type="claim",
-                        resource_id=claim.id,
-                        ip_address=ip,
-                        user_agent=user_agent,
-                        user_id=requesting_user_id,
-                        extra_context={
-                            "patient_id": str(patient_id),
-                            "payer_id": payer_id,
-                            "billing_provider_id": str(user.billing_provider_id),
-                        },
-                    )
-                    return ClaimRead.model_validate(claim)
+                # Agency claim queue: always route to pending_billing_review when provider
+                # belongs to a billing agency — the admin decides whether to submit via
+                # Availity or log a manual submission.
+                claim = Claim(
+                    patient_id=patient_id,
+                    provider_id=requesting_user_id,
+                    status="pending_billing_review",
+                    visit_type=data.visit_type,
+                    service_date=data.service_date,
+                    billed_amount=billed_amount,
+                    payer_id=payer_id,
+                    claim_data=claim_body,
+                    is_manual=False,
+                    filing_deadline_date=(data.service_date + timedelta(days=365)) if data.service_date else None,
+                )
+                self._db.add(claim)
+                await self._db.commit()
+                await self._db.refresh(claim)
+                await self._audit.log(
+                    action="SUBMIT_CLAIM_TO_QUEUE",
+                    resource_type="claim",
+                    resource_id=claim.id,
+                    ip_address=ip,
+                    user_agent=user_agent,
+                    user_id=requesting_user_id,
+                    extra_context={
+                        "patient_id": str(patient_id),
+                        "payer_id": payer_id,
+                        "billing_provider_id": str(user.billing_provider_id),
+                    },
+                )
+                return ClaimRead.model_validate(claim)
 
         client = self._make_client(user)
         raw_response = await client.post("/claims", body=claim_body)

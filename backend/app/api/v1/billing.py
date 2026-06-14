@@ -24,7 +24,7 @@ from app.schemas.admin import (
     BillingProviderUpdate,
     UserCreate,
 )
-from app.schemas.claim import ClaimRead
+from app.schemas.claim import ClaimRead, ManualClaimUpsert
 from app.core.security import hash_password
 from app.schemas.billing import (
     BillingStatusRead,
@@ -942,5 +942,59 @@ async def submit_agency_claim(
         ip_address=request.headers.get("X-Forwarded-For", request.client.host if request.client else ""),
         user_agent=request.headers.get("User-Agent", ""),
         extra_context={"billing_provider_id": str(bp.id), "provider_id": str(claim.provider_id)},
+    )
+    return ClaimRead.model_validate(claim)
+
+
+@router.put("/billing-admin/claims/{claim_id}/status", response_model=ClaimRead)
+async def update_agency_claim_status(
+    claim_id: uuid.UUID,
+    body: ManualClaimUpsert,
+    current_user: Annotated[CurrentUser, Depends(require_billing_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    audit: Annotated[AuditLogger, Depends(get_audit)],
+    request: Request,
+) -> ClaimRead:
+    """Billing admin logs a manual submission or updates status for a queued claim."""
+    claim_result = await db.execute(select(Claim).where(Claim.id == claim_id))
+    claim = claim_result.scalar_one_or_none()
+    if not claim:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Claim not found")
+
+    provider_result = await db.execute(select(User).where(User.id == claim.provider_id))
+    provider = provider_result.scalar_one_or_none()
+    if not provider or not provider.billing_provider_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Claim provider has no assigned agency")
+
+    if current_user.role == "admin":
+        effective_bp_id = provider.billing_provider_id
+    else:
+        managed_bp_id = await _get_managed_bp_id(current_user.id, db)
+        if not managed_bp_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No managed agency")
+        if provider.billing_provider_id != managed_bp_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Claim does not belong to your agency")
+        effective_bp_id = managed_bp_id
+
+    claim.status = body.status
+    claim.is_manual = True
+    if body.paid_amount is not None:
+        claim.paid_amount = body.paid_amount
+    if body.denial_reason is not None:
+        claim.denial_reason = body.denial_reason
+    if body.status == "submitted":
+        claim.submitted_at = datetime.now(timezone.utc)
+
+    await db.commit()
+    await db.refresh(claim)
+
+    await audit.log(
+        action="MANUAL_STATUS_UPDATE",
+        resource_type="claim",
+        resource_id=claim.id,
+        user_id=current_user.id,
+        ip_address=request.headers.get("X-Forwarded-For", request.client.host if request.client else ""),
+        user_agent=request.headers.get("User-Agent", ""),
+        extra_context={"status": body.status, "billing_provider_id": str(effective_bp_id)},
     )
     return ClaimRead.model_validate(claim)

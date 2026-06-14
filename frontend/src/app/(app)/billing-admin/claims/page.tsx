@@ -42,6 +42,13 @@ export default function BillingAdminClaimsPage() {
   const [filterStatus, setFilterStatus] = useState('')
   const [submitting, setSubmitting] = useState<string | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [expandedClaimId, setExpandedClaimId] = useState<string | null>(null)
+  const [manualFormClaimId, setManualFormClaimId] = useState<string | null>(null)
+  const [manualFormStatus, setManualFormStatus] = useState<'submitted' | 'paid' | 'denied'>('submitted')
+  const [manualFormPaid, setManualFormPaid] = useState('')
+  const [manualFormDenial, setManualFormDenial] = useState('')
+  const [manualFormNotes, setManualFormNotes] = useState('')
+  const [manualSaving, setManualSaving] = useState(false)
 
   const api = process.env.NEXT_PUBLIC_API_URL
   const headers = { Authorization: `Bearer ${getAccessToken()}` }
@@ -62,6 +69,46 @@ export default function BillingAdminClaimsPage() {
       setSubmitError('Failed to submit claim — check agency Availity credentials in Agency Settings.')
     } finally {
       setSubmitting(null)
+    }
+  }
+
+  const handleDownloadCms1500 = async (claimId: string, visitType: string) => {
+    try {
+      const res = await axios.get(`${api}/api/v1/billing-admin/claims/${claimId}/cms1500.pdf`, {
+        headers,
+        responseType: 'blob',
+      })
+      const url = URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }))
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `cms1500_${visitType}.pdf`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      setSubmitError('Failed to download CMS 1500 PDF.')
+    }
+  }
+
+  const handleManualStatus = async (claimId: string) => {
+    setManualSaving(true)
+    try {
+      const claim = claims.find(c => c.id === claimId)
+      const res = await axios.put<Claim>(
+        `${api}/api/v1/billing-admin/claims/${claimId}/status`,
+        {
+          status: manualFormStatus,
+          service_date: claim?.service_date ?? new Date().toISOString().split('T')[0],
+          paid_amount: manualFormStatus === 'paid' && manualFormPaid ? Number(manualFormPaid) : undefined,
+          denial_reason: manualFormStatus === 'denied' && manualFormDenial ? manualFormDenial : undefined,
+        },
+        { headers }
+      )
+      setClaims(prev => prev.map(c => c.id === claimId ? res.data : c))
+      setManualFormClaimId(null)
+    } catch {
+      setSubmitError('Failed to update claim status.')
+    } finally {
+      setManualSaving(false)
     }
   }
 
@@ -217,52 +264,155 @@ export default function BillingAdminClaimsPage() {
               {filtered.map(c => {
                 const prov = providerMap.get(c.provider_id)
                 const { label, color } = claimStatusDisplay(c.status)
+                const isExpanded = expandedClaimId === c.id
+                const showManualEntry = manualFormClaimId === c.id
                 return (
-                  <tr key={c.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3">
-                      <p className="font-medium text-gray-900 text-xs">{prov?.full_name || prov?.email || '—'}</p>
-                      {prov?.npi && <p className="text-gray-400 text-xs font-mono">{prov.npi}</p>}
-                    </td>
-                    <td className="px-4 py-3 text-gray-600 text-xs">{c.visit_type ?? '—'}</td>
-                    <td className="px-4 py-3 text-gray-600 tabular-nums text-xs">{c.service_date ?? '—'}</td>
-                    <td className="px-4 py-3">
-                      <span className={`rounded border px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[color]}`}>
-                        {label}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 tabular-nums text-xs">
-                      {c.billed_amount != null ? `$${Number(c.billed_amount).toFixed(2)}` : '—'}
-                    </td>
-                    <td className="px-4 py-3 tabular-nums text-xs text-green-700">
-                      {c.paid_amount != null ? `$${Number(c.paid_amount).toFixed(2)}` : '—'}
-                    </td>
-                    <td className="px-4 py-3 text-xs text-red-700 max-w-xs">
-                      {c.denial_reason ? (
-                        <span title={c.denial_reason}>
-                          {c.denial_reason.length > 40 ? c.denial_reason.slice(0, 40) + '…' : c.denial_reason}
+                  <>
+                    <tr
+                      key={c.id}
+                      className="hover:bg-gray-50 cursor-pointer"
+                      onClick={() => setExpandedClaimId(isExpanded ? null : c.id)}
+                    >
+                      <td className="px-4 py-3">
+                        <p className="font-medium text-gray-900 text-xs">{prov?.full_name || prov?.email || '—'}</p>
+                        {prov?.npi && <p className="text-gray-400 text-xs font-mono">{prov.npi}</p>}
+                      </td>
+                      <td className="px-4 py-3 text-gray-600 text-xs">{c.visit_type ?? '—'}</td>
+                      <td className="px-4 py-3 text-gray-600 tabular-nums text-xs">{c.service_date ?? '—'}</td>
+                      <td className="px-4 py-3">
+                        <span className={`rounded border px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[color]}`}>
+                          {label}
                         </span>
-                      ) : '—'}
-                    </td>
-                    <td className="px-4 py-3 font-mono text-xs text-gray-400">
-                      {c.availity_claim_id
-                        ? c.availity_claim_id.slice(0, 12) + '…'
-                        : c.is_manual ? <span className="text-gray-400">manual</span> : '—'}
-                    </td>
-                    <td className="px-4 py-3 text-gray-400 tabular-nums text-xs">
-                      {c.submitted_at ? new Date(c.submitted_at).toLocaleDateString() : '—'}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      {(c.status ?? '').toLowerCase() === 'pending_billing_review' && (
-                        <button
-                          onClick={() => handleSubmitClaim(c.id)}
-                          disabled={submitting === c.id}
-                          className="rounded border border-blue-300 bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 hover:bg-blue-100 disabled:opacity-50"
-                        >
-                          {submitting === c.id ? '…' : 'Submit ↗'}
-                        </button>
-                      )}
-                    </td>
-                  </tr>
+                      </td>
+                      <td className="px-4 py-3 tabular-nums text-xs">
+                        {c.billed_amount != null ? `$${Number(c.billed_amount).toFixed(2)}` : '—'}
+                      </td>
+                      <td className="px-4 py-3 tabular-nums text-xs text-green-700">
+                        {c.paid_amount != null ? `$${Number(c.paid_amount).toFixed(2)}` : '—'}
+                      </td>
+                      <td className="px-4 py-3 text-xs text-red-700 max-w-xs">
+                        {c.denial_reason ? (
+                          <span title={c.denial_reason}>
+                            {c.denial_reason.length > 40 ? c.denial_reason.slice(0, 40) + '…' : c.denial_reason}
+                          </span>
+                        ) : '—'}
+                      </td>
+                      <td className="px-4 py-3 font-mono text-xs text-gray-400">
+                        {c.availity_claim_id
+                          ? c.availity_claim_id.slice(0, 12) + '…'
+                          : c.is_manual ? <span className="text-gray-400">manual</span> : '—'}
+                      </td>
+                      <td className="px-4 py-3 text-gray-400 tabular-nums text-xs">
+                        {c.submitted_at ? new Date(c.submitted_at).toLocaleDateString() : '—'}
+                      </td>
+                      <td className="px-4 py-3 text-right text-gray-400 text-xs select-none">
+                        {isExpanded ? '▲' : '▼'}
+                      </td>
+                    </tr>
+                    {isExpanded && (
+                      <tr key={`${c.id}-detail`} className="bg-gray-50">
+                        <td colSpan={10} className="px-6 py-4">
+                          <div className="space-y-3">
+                            <div className="flex flex-wrap gap-6 text-xs text-gray-600">
+                              <span><span className="font-medium text-gray-500">Visit type:</span> {c.visit_type ?? '—'}</span>
+                              <span><span className="font-medium text-gray-500">Service date:</span> {c.service_date ?? '—'}</span>
+                              <span><span className="font-medium text-gray-500">Billed:</span> {c.billed_amount != null ? `$${Number(c.billed_amount).toFixed(2)}` : '—'}</span>
+                              <span><span className="font-medium text-gray-500">Provider NPI:</span> {prov?.npi ?? '—'}</span>
+                              {c.availity_claim_id && (
+                                <span><span className="font-medium text-gray-500">Availity ID:</span> <span className="font-mono">{c.availity_claim_id}</span></span>
+                              )}
+                              {c.denial_reason && (
+                                <span className="text-red-700"><span className="font-medium">Denial:</span> {c.denial_reason}</span>
+                              )}
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              <button
+                                onClick={e => { e.stopPropagation(); handleDownloadCms1500(c.id, c.visit_type ?? 'claim') }}
+                                className="rounded border border-gray-300 bg-white px-3 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                              >
+                                Download CMS 1500 (PDF)
+                              </button>
+                              {(c.status ?? '').toLowerCase() === 'pending_billing_review' && (
+                                <button
+                                  onClick={e => { e.stopPropagation(); handleSubmitClaim(c.id) }}
+                                  disabled={submitting === c.id}
+                                  className="rounded border border-blue-300 bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 hover:bg-blue-100 disabled:opacity-50"
+                                >
+                                  {submitting === c.id ? '…' : 'Submit to Availity ↗'}
+                                </button>
+                              )}
+                              <button
+                                onClick={e => {
+                                  e.stopPropagation()
+                                  setManualFormClaimId(showManualEntry ? null : c.id)
+                                  setManualFormStatus('submitted')
+                                  setManualFormPaid('')
+                                  setManualFormDenial('')
+                                  setManualFormNotes('')
+                                }}
+                                className="rounded border border-gray-300 bg-white px-3 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                              >
+                                {showManualEntry ? 'Cancel' : 'Log Manual Submission'}
+                              </button>
+                            </div>
+                            {showManualEntry && (
+                              <div
+                                className="rounded border border-gray-200 bg-white p-4 space-y-3"
+                                onClick={e => e.stopPropagation()}
+                              >
+                                <div className="flex flex-wrap gap-4 items-end">
+                                  <div>
+                                    <label className="block text-xs font-medium text-gray-600 mb-1">Status</label>
+                                    <select
+                                      value={manualFormStatus}
+                                      onChange={e => setManualFormStatus(e.target.value as 'submitted' | 'paid' | 'denied')}
+                                      className="rounded border border-gray-300 px-2 py-1.5 text-xs text-gray-700"
+                                    >
+                                      <option value="submitted">Submitted</option>
+                                      <option value="paid">Paid</option>
+                                      <option value="denied">Denied</option>
+                                    </select>
+                                  </div>
+                                  {manualFormStatus === 'paid' && (
+                                    <div>
+                                      <label className="block text-xs font-medium text-gray-600 mb-1">Paid amount</label>
+                                      <input
+                                        type="number"
+                                        step="0.01"
+                                        placeholder="0.00"
+                                        value={manualFormPaid}
+                                        onChange={e => setManualFormPaid(e.target.value)}
+                                        className="rounded border border-gray-300 px-2 py-1.5 text-xs w-28"
+                                      />
+                                    </div>
+                                  )}
+                                  {manualFormStatus === 'denied' && (
+                                    <div className="flex-1 min-w-48">
+                                      <label className="block text-xs font-medium text-gray-600 mb-1">Denial reason</label>
+                                      <input
+                                        type="text"
+                                        placeholder="Reason for denial…"
+                                        value={manualFormDenial}
+                                        onChange={e => setManualFormDenial(e.target.value)}
+                                        className="rounded border border-gray-300 px-2 py-1.5 text-xs w-full"
+                                      />
+                                    </div>
+                                  )}
+                                  <button
+                                    onClick={() => handleManualStatus(c.id)}
+                                    disabled={manualSaving}
+                                    className="rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                                  >
+                                    {manualSaving ? 'Saving…' : 'Save'}
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </>
                 )
               })}
             </tbody>

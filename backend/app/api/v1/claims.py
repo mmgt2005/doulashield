@@ -273,6 +273,156 @@ async def download_cms1500(
     )
 
 
+@router.get("/billing-admin/claims/{claim_id}/cms1500.pdf")
+async def billing_admin_download_cms1500(
+    request: Request,
+    claim_id: uuid.UUID,
+    current_user: Annotated[CurrentUser, Depends(require_billing_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    audit: Annotated[AuditLogger, Depends(get_audit)],
+) -> Response:
+    from app.core.encryption import decrypt_field as _decrypt
+    from app.services.ocr_service import get_signed_url
+    import httpx as _httpx
+
+    claim_result = await db.execute(select(Claim).where(Claim.id == claim_id))
+    claim = claim_result.scalar_one_or_none()
+    if not claim:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Claim not found")
+
+    provider_result = await db.execute(select(User).where(User.id == claim.provider_id))
+    provider = provider_result.scalar_one_or_none()
+    if not provider:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Provider not found")
+
+    if current_user.role != "admin":
+        caller_result = await db.execute(
+            select(User).where(User.id == current_user.id)
+        )
+        caller = caller_result.scalar_one_or_none()
+        if (
+            not caller
+            or caller.managed_billing_provider_id is None
+            or provider.billing_provider_id != caller.managed_billing_provider_id
+        ):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Claim does not belong to your agency")
+
+    patient_result = await db.execute(select(Patient).where(Patient.id == claim.patient_id))
+    patient = patient_result.scalar_one_or_none()
+    if not patient or not patient.is_active:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Patient not found")
+
+    billing_provider: BillingProvider | None = None
+    if provider.billing_provider_id:
+        bp_result = await db.execute(select(BillingProvider).where(BillingProvider.id == provider.billing_provider_id))
+        billing_provider = bp_result.scalar_one_or_none()
+
+    visit_result = await db.execute(
+        select(Visit).where(Visit.patient_id == claim.patient_id, Visit.visit_type == claim.visit_type)
+    )
+    visit = visit_result.scalar_one_or_none()
+
+    from datetime import date as date_type
+    svc_date: date_type | None = None
+    if visit and visit.visit_date:
+        svc_date = visit.visit_date
+    elif visit and visit.visit_started_at:
+        svc_date = visit.visit_started_at.date()
+
+    location_type = visit.location_type if visit else None
+
+    async with _httpx.AsyncClient(timeout=10) as hc:
+        async def _fetch_bytes(path: str | None) -> bytes | None:
+            if not path:
+                return None
+            try:
+                url = await get_signed_url(path, expires_in=60)
+                resp = await hc.get(url)
+                if resp.status_code == 200:
+                    return resp.content
+            except Exception:
+                pass
+            return None
+
+        ma91_sig_bytes = await _fetch_bytes(visit.ma91_signature_path if visit else None)
+        provider_sig_bytes = await _fetch_bytes(provider.provider_signature_path)
+        patient_address = await _enrich_zip4(patient.address or "", hc)
+        provider_address = await _enrich_zip4(provider.provider_address or "", hc)
+
+    provider_ssn = ""
+    if provider.provider_ssn_encrypted:
+        try:
+            provider_ssn = _decrypt(provider.provider_ssn_encrypted)
+        except Exception:
+            pass
+
+    if billing_provider:
+        billing_npi = billing_provider.group_npi or provider.npi or ""
+        billing_name = billing_provider.name
+    else:
+        billing_npi = provider.npi or ""
+        billing_name = provider.billing_provider_name or provider.full_name or ""
+
+    try:
+        pdf_bytes = cms1500_service.generate_pdf(
+            patient_data={
+                "name": decrypt_field(patient.name_encrypted),
+                "medicaid_id": decrypt_field(patient.medicaid_id_encrypted),
+                "date_of_birth": patient.date_of_birth,
+                "gender": patient.gender,
+                "address": patient_address,
+                "mco": patient.mco or "",
+                "policy_group": patient.policy_group or "",
+                "referring_provider_npi": patient.referring_provider_npi or "",
+                "referring_provider_name": patient.referring_provider_name or "",
+                "has_other_insurance": patient.has_other_insurance,
+                "ma91_signed_at": visit.ma91_signed_at if visit else None,
+                "ma91_signature_bytes": ma91_sig_bytes,
+            },
+            visit_data={
+                "visit_type": claim.visit_type,
+                "visit_date": svc_date,
+                "visit_id": str(visit.id).replace("-", "") if visit else "",
+                "location_type": location_type,
+                "prior_auth_number": visit.prior_auth_number if visit else None,
+                "alternate_location": visit.alternate_location if visit else None,
+            },
+            provider_data={
+                "npi": provider.npi or "",
+                "full_name": provider.full_name or "",
+                "billing_provider_name": billing_name,
+                "billing_group_npi": billing_npi,
+                "provider_address": provider_address,
+                "provider_phone": provider.provider_phone or "",
+                "provider_ssn": provider_ssn,
+                "provider_signature_bytes": provider_sig_bytes,
+            },
+            claim_data={
+                "paid_amount": claim.paid_amount,
+                "resubmit_count": claim.resubmit_count or 0,
+                "availity_claim_id": claim.availity_claim_id,
+            },
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc))
+
+    await audit.log(
+        action="GENERATE_CMS1500",
+        resource_type="claim",
+        resource_id=claim_id,
+        ip_address=get_client_ip(request),
+        user_agent=get_user_agent(request),
+        user_id=current_user.id,
+        extra_context={"visit_type": claim.visit_type, "claim_id": str(claim_id)},
+    )
+
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="cms1500_{claim.visit_type}.pdf"'},
+    )
+
+
 @router.get("/patients/{patient_id}/visits/{visit_type}/audit-packet.pdf")
 async def download_audit_packet(
     request: Request,
@@ -512,6 +662,13 @@ async def log_manual_claim(
     db: Annotated[AsyncSession, Depends(get_db)],
     audit: Annotated[AuditLogger, Depends(get_audit)],
 ) -> ClaimRead:
+    bp_result = await db.execute(select(User).where(User.id == current_user.id))
+    requesting_user = bp_result.scalar_one_or_none()
+    if requesting_user and requesting_user.billing_provider_id is not None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Claims for agency-assigned providers are managed by your billing agency.",
+        )
     try:
         return await _svc(db, audit).log_manual_claim(
             patient_id, current_user.id, visit_type, body,
