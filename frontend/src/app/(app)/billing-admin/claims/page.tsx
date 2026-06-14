@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import axios from 'axios'
 import { getAccessToken } from '@/lib/auth'
 import type { Claim } from '@/types/domain'
+import CMS1500PreviewModal from '@/components/ui/CMS1500PreviewModal'
 
 interface Provider {
   id: string
@@ -43,6 +44,7 @@ export default function BillingAdminClaimsPage() {
   const [submitting, setSubmitting] = useState<string | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [expandedClaimId, setExpandedClaimId] = useState<string | null>(null)
+  const [previewClaim, setPreviewClaim] = useState<{ id: string; visitType: string } | null>(null)
   const [manualFormClaimId, setManualFormClaimId] = useState<string | null>(null)
   const [manualFormStatus, setManualFormStatus] = useState<'submitted' | 'paid' | 'denied'>('submitted')
   const [manualFormPaid, setManualFormPaid] = useState('')
@@ -69,23 +71,6 @@ export default function BillingAdminClaimsPage() {
       setSubmitError('Failed to submit claim — check agency Availity credentials in Agency Settings.')
     } finally {
       setSubmitting(null)
-    }
-  }
-
-  const handleDownloadCms1500 = async (claimId: string, visitType: string) => {
-    try {
-      const res = await axios.get(`${api}/api/v1/billing-admin/claims/${claimId}/cms1500.pdf`, {
-        headers,
-        responseType: 'blob',
-      })
-      const url = URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }))
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `cms1500_${visitType}.pdf`
-      a.click()
-      URL.revokeObjectURL(url)
-    } catch {
-      setSubmitError('Failed to download CMS 1500 PDF.')
     }
   }
 
@@ -157,6 +142,13 @@ export default function BillingAdminClaimsPage() {
 
   return (
     <div className="space-y-6">
+      {previewClaim && (
+        <CMS1500PreviewModal
+          claimId={previewClaim.id}
+          visitType={previewClaim.visitType}
+          onClose={() => setPreviewClaim(null)}
+        />
+      )}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-gray-900">Agency Claims</h1>
@@ -327,10 +319,10 @@ export default function BillingAdminClaimsPage() {
                             </div>
                             <div className="flex flex-wrap gap-2">
                               <button
-                                onClick={e => { e.stopPropagation(); handleDownloadCms1500(c.id, c.visit_type ?? 'claim') }}
+                                onClick={e => { e.stopPropagation(); setPreviewClaim({ id: c.id, visitType: c.visit_type ?? 'claim' }) }}
                                 className="rounded border border-gray-300 bg-white px-3 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50"
                               >
-                                Download CMS 1500 (PDF)
+                                Preview CMS 1500
                               </button>
                               {(c.status ?? '').toLowerCase() === 'pending_billing_review' && (
                                 <button

@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.27.1] — 2026-06-14
+
+### Added
+- **CMS 1500 preview modal for billing admin**: The "Download CMS 1500 (PDF)" button in the expanded claim row is replaced by "Preview CMS 1500", which opens an inline modal showing the completed form in an iframe. A "Download PDF" button inside the modal saves the file (no second network request — uses the same blob). Box 12 (MA 91 patient signature) and Box 31 (provider signature) are both embedded in the preview exactly as they would appear on the submitted form. The new `CMS1500PreviewModal` component (`frontend/src/components/ui/CMS1500PreviewModal.tsx`) is reusable for future contexts.
+
+---
+
 ## [1.27.0] — 2026-06-14
 
 ### Changed
