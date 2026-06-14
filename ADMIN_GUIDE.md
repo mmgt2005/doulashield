@@ -235,18 +235,20 @@ Your NPI (9876543210) appears in Box 24J as rendering provider.
 
 If no billing provider is assigned, the panel shows a gray note: *No billing provider linked — your NPI used for both Box 24J and Box 33a.*
 
-### Shared Availity Credentials and the Claim Review Queue
+### Claim Review Queue
 
-When a billing provider entity has **Availity credentials configured** (see below), claims from its assigned doulas are routed to a review queue instead of being submitted to Availity directly. This lets the billing admin review and correct each claim before it reaches the payer.
+All claims from doulas assigned to an agency are routed to the agency review queue instead of being submitted to Availity directly. This lets the billing admin review and handle each claim before it reaches the payer — whether via Availity or through a manual channel (paper CMS 1500, MCO portal, phone).
 
 **How it works:**
 1. A doula assigned to the agency submits a claim from the visit form.
-2. Instead of going to Availity immediately, the claim is saved with status **Pending Review** (amber badge).
-3. The billing admin opens **Agency Claims** in their sidebar and sees all queued claims with a **Submit ↗** button.
-4. The billing admin clicks **Submit ↗** — the claim is sent to Availity using the **agency's** shared credentials (Group NPI in Box 33a, doula's NPI in Box 24J).
-5. The claim status updates to the Availity response (Submitted, Processing, Paid, Denied).
+2. The claim is saved with status **Pending Review** (orange badge) and appears in the billing admin's **Agency Claims** page.
+3. The billing admin clicks the row to expand it and review the claim details. From the expanded row they can:
+   - **Download CMS 1500 (PDF)** — download the completed form using the provider's NPI (Box 24J) and the agency's group NPI (Box 33a).
+   - **Submit to Availity ↗** — submit electronically using the agency's shared Availity credentials. Only available if agency Availity credentials are configured.
+   - **Log Manual Submission** — record that the claim was filed by another channel (paper, MCO portal, fax, phone). Choose the resulting status (Submitted / Paid / Denied), fill in paid amount or denial reason as applicable, and click **Save**. The claim status updates immediately.
+4. The doula's visit page shows the updated status badge. Agency-assigned doulas cannot edit claim status themselves — all status changes go through the billing admin.
 
-**If the agency has no Availity credentials configured**, doulas' claims bypass the queue and are submitted directly using the individual doula's own Availity credentials — the same path as unassigned providers. This ensures backward compatibility during agency onboarding.
+The claim queue is active as soon as a doula is assigned to the agency, regardless of whether Availity credentials have been configured. Agencies that have not yet set up Availity can still handle claims manually using the **Log Manual Submission** action.
 
 ### Configuring Agency Availity Credentials
 

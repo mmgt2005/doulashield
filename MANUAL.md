@@ -272,7 +272,7 @@ The **PA Medicaid Claim** section appears at the bottom of each visit form (belo
 Click **Preview CMS 1500 & Submit**. A preview modal shows all claim boxes filled with your data. Review it, then click **Submit to Availity**. The claim is transmitted electronically and a status badge appears.
 
 **If your account is managed by a billing agency:**
-The button reads **Preview CMS 1500 & Submit for Review** and the modal submit button reads **Send to Agency Review**. An orange notice in the modal confirms the claim will go to your billing agency's review queue first. Once you submit, the status badge shows **Pending Agency Review** (orange). Your billing agency reviews the claim and submits it to Availity on your behalf — you do not need to take any further action. The **Refresh status** button is hidden while the claim is pending agency review; it reappears once the agency has submitted the claim to Availity.
+The button reads **Preview CMS 1500 & Submit for Review** and the modal submit button reads **Send to Agency Review**. An orange notice in the modal confirms the claim will go to your billing agency's review queue first. Once you submit, the status badge shows **Pending Agency Review** (orange). Your billing agency reviews the claim and submits it to Availity on your behalf (or logs a manual submission if the MCO requires paper or portal filing) — you do not need to take any further action. The **Refresh status** button is hidden while the claim is pending agency review; it reappears once the agency has submitted the claim to Availity.
 
 **Manual MCOs:**
 Click **Preview & Download CMS 1500** to download the completed PDF. Then click the portal link next to the button to open the MCO's submission portal in a new tab. Upload the PDF through their portal.
@@ -291,7 +291,7 @@ The claim status badge uses four colors:
 
 **For Availity claims:** Click **Refresh status** to query Availity for the latest 277CA acknowledgment. Status and paid amount update automatically.
 
-**For manual MCO claims:** Use the **Log claim status** form in the claim section to record what the portal or paper EOB shows. Select the status (Submitted / Paid / Denied), date, and paid amount. Click **Save status** — the badge updates immediately.
+**For manual MCO claims:** Use the **Log claim status** form in the claim section to record what the portal or paper EOB shows. Select the status (Submitted / Paid / Denied), date, and paid amount. Click **Save status** — the badge updates immediately. If your account is managed by a billing agency, this form is not available; your billing admin updates the claim status on your behalf after handling the submission.
 
 ### Denial Error Codes and Resubmission
 
