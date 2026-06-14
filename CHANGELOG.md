@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.28.2] — 2026-06-14
+
+### Fixed
+- **Black boxes in CMS 1500 signature fields (Box 12 and Box 31)**: ReportLab renders RGBA transparent pixels as black when overlaying a PNG signature image onto the PDF. The signature is now composited onto a white RGB background using its alpha channel as a mask before being drawn, so transparent areas appear white on the form instead of as black blocks.
+
+---
+
 ## [1.28.1] — 2026-06-14
 
 ### Fixed
