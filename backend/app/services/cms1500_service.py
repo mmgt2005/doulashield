@@ -180,7 +180,11 @@ def _overlay_signature(pdf_bytes: bytes, sig_bytes: bytes, x: float, y: float, m
         from reportlab.lib.pagesizes import letter
         from PIL import Image as PILImage
 
-        img = PILImage.open(io.BytesIO(sig_bytes)).convert("RGBA")
+        rgba = PILImage.open(io.BytesIO(sig_bytes)).convert("RGBA")
+        # Flatten onto white background — ReportLab renders RGBA transparent pixels as black
+        bg = PILImage.new("RGB", rgba.size, (255, 255, 255))
+        bg.paste(rgba, mask=rgba.split()[3])
+        img = bg
         img_w, img_h = img.size
         scale = min(max_w / img_w, max_h / img_h)
         draw_w = img_w * scale
