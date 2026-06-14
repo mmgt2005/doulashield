@@ -9,6 +9,7 @@ from app.models.audit_log import AuditLog
 from app.models.refresh_token import RefreshToken
 from app.models.escrow_deduction import EscrowDeduction
 from app.models.password_reset_token import PasswordResetToken
+from app.models.claim_document import ClaimDocument
 
 __all__ = [
     "BillingProvider",
@@ -23,4 +24,5 @@ __all__ = [
     "RefreshToken",
     "EscrowDeduction",
     "PasswordResetToken",
+    "ClaimDocument",
 ]

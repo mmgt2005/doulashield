@@ -11,12 +11,15 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
+from fastapi import Form, UploadFile
+
 from app.core.audit import AuditLogger
 from app.core.config import settings
 from app.core.encryption import encrypt_field
 from app.dependencies import CurrentUser, get_audit, get_current_user, get_db, require_admin, require_billing_admin
 from app.models.billing_provider import BillingProvider
 from app.models.claim import Claim
+from app.models.claim_document import ClaimDocument
 from app.models.user import User
 from app.schemas.admin import (
     BillingProviderCreate,
@@ -24,7 +27,7 @@ from app.schemas.admin import (
     BillingProviderUpdate,
     UserCreate,
 )
-from app.schemas.claim import ClaimRead, ManualClaimUpsert
+from app.schemas.claim import ClaimDocumentRead, ClaimRead, ManualClaimUpsert
 from app.core.security import hash_password
 from app.schemas.billing import (
     BillingStatusRead,
@@ -998,3 +1001,70 @@ async def update_agency_claim_status(
         extra_context={"status": body.status, "billing_provider_id": str(effective_bp_id)},
     )
     return ClaimRead.model_validate(claim)
+
+
+@router.post("/billing-admin/claims/{claim_id}/documents", response_model=ClaimDocumentRead, status_code=status.HTTP_201_CREATED)
+async def upload_claim_document(
+    claim_id: uuid.UUID,
+    file: UploadFile,
+    current_user: Annotated[CurrentUser, Depends(require_billing_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    audit: Annotated[AuditLogger, Depends(get_audit)],
+    request: Request,
+    document_type: Annotated[str, Form()] = "other",
+) -> ClaimDocumentRead:
+    """Billing admin uploads a supporting document (prior auth, eligibility, EOB received) to a claim."""
+    from app.services.ocr_service import store_image
+
+    _MAX_BYTES = 20 * 1024 * 1024
+    _ALLOWED_TYPES = {"image/jpeg", "image/png", "application/pdf"}
+
+    content_type = file.content_type or ""
+    if content_type not in _ALLOWED_TYPES:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Only JPEG, PNG, or PDF files are accepted.")
+
+    content_bytes = await file.read()
+    if len(content_bytes) > _MAX_BYTES:
+        raise HTTPException(status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail="File must be under 20 MB.")
+
+    claim_result = await db.execute(select(Claim).where(Claim.id == claim_id))
+    claim = claim_result.scalar_one_or_none()
+    if not claim:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Claim not found")
+
+    provider_result = await db.execute(select(User).where(User.id == claim.provider_id))
+    provider = provider_result.scalar_one_or_none()
+    if not provider or not provider.billing_provider_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Claim provider has no assigned agency")
+
+    if current_user.role != "admin":
+        managed_bp_id = await _get_managed_bp_id(current_user.id, db)
+        if not managed_bp_id or provider.billing_provider_id != managed_bp_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Claim does not belong to your agency")
+
+    file_path = await store_image(
+        content_bytes, content_type, None, current_user.id, f"claim-doc-{claim_id}"
+    )
+
+    doc = ClaimDocument(
+        claim_id=claim_id,
+        uploaded_by=current_user.id,
+        file_path=file_path,
+        file_name=file.filename or "document",
+        document_type=document_type,
+    )
+    db.add(doc)
+    await db.commit()
+    await db.refresh(doc)
+
+    await audit.log(
+        action="UPLOAD_CLAIM_DOCUMENT",
+        resource_type="claim",
+        resource_id=claim_id,
+        user_id=current_user.id,
+        ip_address=request.headers.get("X-Forwarded-For", request.client.host if request.client else ""),
+        user_agent=request.headers.get("User-Agent", ""),
+        extra_context={"file_name": doc.file_name, "document_type": document_type},
+    )
+
+    return ClaimDocumentRead.model_validate(doc)

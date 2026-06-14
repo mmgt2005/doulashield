@@ -7,6 +7,8 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, model_validator
 
+from app.schemas.visit import VisitRead
+
 
 class ClaimErrorCodeRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -70,3 +72,22 @@ class ClaimRead(BaseModel):
         if self.filing_deadline_date:
             self.days_until_filing_deadline = (self.filing_deadline_date - date.today()).days
         return self
+
+
+class ClaimDocumentRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    claim_id: uuid.UUID
+    uploaded_by: uuid.UUID | None
+    file_name: str
+    document_type: str | None
+    created_at: datetime
+
+
+class ClaimReviewDetail(BaseModel):
+    claim: ClaimRead
+    claim_data: dict | None
+    visit: VisitRead | None
+    source_image_url: str | None
+    documents: list[ClaimDocumentRead]

@@ -12,6 +12,21 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.28.0] — 2026-06-14
+
+### Added
+- **Comprehensive billing admin claim review panel**: Expanding a claim row now fetches a full review snapshot (`GET /billing-admin/claims/{claim_id}/review`) with three collapsible sections:
+  - **Claim Details** — payer, procedure code, diagnosis code, billed amount, resubmit count, MA 91 signature status.
+  - **Visit Notes** — the provider's full SOAP note (subjective, objective, assessment, plan, entry, birth notes).
+  - **Documents** — buttons to preview/download the CMS 1500 PDF, the audit packet PDF, and the source document image (if the provider scanned one); a list of billing-admin-uploaded supporting files; and upload buttons for Prior Auth, Eligibility, EOB Received, and Other document types.
+- **Billing admin audit packet**: New `GET /billing-admin/claims/{claim_id}/audit-packet.pdf` endpoint generates the full audit packet (CMS 1500 + SOAP notes + eligibility + MA 91 PDF + credential summary) scoped to the calling agency, accessible from the expanded claim row.
+- **Billing admin document upload**: New `POST /billing-admin/claims/{claim_id}/documents` endpoint (multipart/form-data) stores supporting documents in Supabase Storage and records them in the new `claim_documents` table. New `GET /billing-admin/claims/{claim_id}/documents/{doc_id}/file` endpoint returns a short-lived presigned URL for previewing uploaded documents.
+- **Generic `FilePreviewModal` component**: `frontend/src/components/ui/FilePreviewModal.tsx` — handles both PDF (iframe) and image (img tag) previews, supports both authenticated-blob fetch (`fetchUrl`) and direct presigned URLs (`directUrl`), with download button.
+- **New `claim_documents` table** (`0041_claim_documents.py`): stores billing-admin-uploaded files per claim with foreign keys to `claims` and `users`.
+- **EOB remittance backend guard**: `POST /ocr/handbook` with `page_type='remittance_eob'` now returns 403 for any provider assigned to a billing agency, adding backend defense-in-depth to the existing frontend restriction.
+
+---
+
 ## [1.27.1] — 2026-06-14
 
 ### Added

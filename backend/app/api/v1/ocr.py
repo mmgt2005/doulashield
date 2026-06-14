@@ -9,9 +9,12 @@ from pydantic import BaseModel
 logger = logging.getLogger(__name__)
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request, UploadFile, status
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 
 from app.core.audit import AuditLogger
-from app.dependencies import CurrentUser, get_audit, get_client_ip, get_current_user, get_user_agent
+from app.dependencies import CurrentUser, get_audit, get_client_ip, get_current_user, get_db, get_user_agent
+from app.models.user import User
 from app.services import ocr_service
 
 router = APIRouter(prefix="/ocr", tags=["ocr"])
@@ -89,11 +92,22 @@ async def scan_handbook(
     request: Request,
     file: UploadFile,
     current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
     audit: Annotated[AuditLogger, Depends(get_audit)],
     page_type: Annotated[Literal["soap_note", "prenatal", "birth", "ma_589", "access_card", "remittance_eob"], Form()],
     patient_id: Annotated[str | None, Form()] = None,
 ) -> dict:
     """Scan a handwritten handbook page and extract structured visit data."""
+    if page_type == "remittance_eob":
+        bp_result = await db.execute(
+            select(User.billing_provider_id).where(User.id == current_user.id)
+        )
+        if bp_result.scalar_one_or_none() is not None:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="EOB remittance upload is managed by your billing agency.",
+            )
+
     image_bytes, content_type = await _read_upload(file, allow_pdf=page_type in _PDF_ALLOWED_PAGE_TYPES)
 
     pid: uuid.UUID | None = None
