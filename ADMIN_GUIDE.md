@@ -242,11 +242,18 @@ All claims from doulas assigned to an agency are routed to the agency review que
 **How it works:**
 1. A doula assigned to the agency submits a claim from the visit form.
 2. The claim is saved with status **Pending Review** (orange badge) and appears in the billing admin's **Agency Claims** page.
-3. The billing admin clicks the row to expand it and review the claim details. From the expanded row they can:
-   - **Download CMS 1500 (PDF)** — download the completed form using the provider's NPI (Box 24J) and the agency's group NPI (Box 33a).
-   - **Submit to Availity ↗** — submit electronically using the agency's shared Availity credentials. Only available if agency Availity credentials are configured.
-   - **Log Manual Submission** — record that the claim was filed by another channel (paper, MCO portal, fax, phone). Choose the resulting status (Submitted / Paid / Denied), fill in paid amount or denial reason as applicable, and click **Save**. The claim status updates immediately.
-4. The doula's visit page shows the updated status badge. Agency-assigned doulas cannot edit claim status themselves — all status changes go through the billing admin.
+3. The billing admin clicks the row to expand it. The expanded panel loads a full claim review snapshot:
+   - **Claim Details** — payer, procedure code, diagnosis code, billed amount, resubmit count, and MA 91 signature status (Signed ✓ or pending).
+   - **Visit Notes** — the provider's SOAP note (subjective, objective, assessment, plan, entry, and birth notes). Unpopulated fields are omitted.
+   - **Documents** — access and manage all documents related to the claim:
+     - **Preview CMS 1500** — opens the completed CMS 1500 form in an inline modal (iframe on desktop, open-in-new-tab on mobile). Box 24J uses the doula's individual NPI; Box 33a uses the agency group NPI. A **Download PDF** button is available inside the modal.
+     - **Audit Packet** — previews or downloads the full audit packet PDF (CMS 1500 + SOAP notes + eligibility + MA 91 + provider credentials).
+     - **Source Image** — appears only when the provider scanned a source document (e.g., a handwritten SOAP note). Opens the image in a preview modal.
+     - **Supporting Documents** — a list of documents the billing admin has uploaded to the claim. Each document shows its type label and a **Preview** button.
+     - **Upload buttons** — `+ Prior Auth`, `+ Eligibility`, `+ EOB Received`, `+ Other`. Clicking any button opens a file picker (PDF, JPEG, or PNG, up to 20 MB). The file is stored and immediately appears in the supporting documents list.
+   - **Submit to Availity ↗** — available when the claim is still in Pending Review. Submits electronically using the agency's shared Availity credentials.
+   - **Log Manual Submission** — record that the claim was filed by another channel (paper, MCO portal, fax, phone). Choose Submitted / Paid / Denied, fill in paid amount or denial reason, and click **Save**. The claim status updates immediately.
+4. The doula's visit page shows the updated status badge. Agency-assigned doulas cannot edit claim status themselves — all status changes go through the billing admin. They also cannot upload EOB remittance scans; that is handled exclusively by the billing admin.
 
 The claim queue is active as soon as a doula is assigned to the agency, regardless of whether Availity credentials have been configured. Agencies that have not yet set up Availity can still handle claims manually using the **Log Manual Submission** action.
 
