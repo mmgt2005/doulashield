@@ -12,6 +12,14 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.28.5] — 2026-06-15
+
+### Fixed
+- **In-app Admin Guide and User Manual were out of date**: The static docs served at `/docs/admin-guide.md` and `/docs/manual.md` were behind the root source files by 35 and 6 lines respectively, missing agency claim queue and status update content added in v1.27.0–v1.28.0. Both files are now synced. Version headers in all four files updated to match the current app version.
+- **User Manual missing agency EOB restriction note**: Added a callout to the Scanning Paper Remittances section explaining that agency-assigned providers do not have access to EOB scan features — their billing agency handles remittance processing.
+
+---
+
 ## [1.28.4] — 2026-06-15
 
 ### Fixed

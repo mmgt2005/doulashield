@@ -1,6 +1,6 @@
 # DoulaShield User Manual
 
-**v1.28.4 · Last updated 2026-06-15**
+**v1.28.5 · Last updated 2026-06-15**
 
 This manual covers every provider-facing feature in DoulaShield. Read it start to finish once, then use the headings as a reference when you need a quick reminder.
 
