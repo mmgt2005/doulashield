@@ -1,6 +1,6 @@
 # DoulaShield User Manual
 
-**v1.21.0 · Last updated 2026-06-05**
+**v1.28.4 · Last updated 2026-06-15**
 
 This manual covers every provider-facing feature in DoulaShield. Read it start to finish once, then use the headings as a reference when you need a quick reminder.
 
@@ -332,6 +332,8 @@ Once a claim exists for a visit, a **📋 Download Audit Packet** button appears
 The audit packet is for your records and any auditor requests — no patient signature is required to generate it.
 
 ### Scanning Paper Remittances (EOBs)
+
+> **Note for agency-assigned providers:** If your account is managed by a billing agency, the EOB scan features (both on the visit page and the Reports page) are not available to you. Your billing agency handles remittance processing and updates claim statuses on your behalf.
 
 Both EOB scan entry points accept **photos (JPEG/PNG)** and **digital PDF files** (up to 20 MB). Use **Take photo** to photograph a paper remittance with your phone camera, or **Upload PDF / image** to upload an EOB PDF you received by email or downloaded from an MCO portal.
 

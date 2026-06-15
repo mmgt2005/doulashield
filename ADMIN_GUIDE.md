@@ -1,6 +1,6 @@
 # DoulaShield Admin Guide
 
-**v1.25.1 · Last updated 2026-06-11**
+**v1.28.4 · Last updated 2026-06-15**
 
 This guide covers everything admins can do that providers cannot. For day-to-day provider features (documenting visits, submitting claims, etc.) refer to `MANUAL.md`.
 

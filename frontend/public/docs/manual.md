@@ -1,6 +1,6 @@
 # DoulaShield User Manual
 
-**v1.21.0 · Last updated 2026-06-05**
+**v1.28.4 · Last updated 2026-06-15**
 
 This manual covers every provider-facing feature in DoulaShield. Read it start to finish once, then use the headings as a reference when you need a quick reminder.
 
@@ -271,6 +271,9 @@ The **PA Medicaid Claim** section appears at the bottom of each visit form (belo
 **Availity MCOs:**
 Click **Preview CMS 1500 & Submit**. A preview modal shows all claim boxes filled with your data. Review it, then click **Submit to Availity**. The claim is transmitted electronically and a status badge appears.
 
+**If your account is managed by a billing agency:**
+The button reads **Preview CMS 1500 & Submit for Review** and the modal submit button reads **Send to Agency Review**. An orange notice in the modal confirms the claim will go to your billing agency's review queue first. Once you submit, the status badge shows **Pending Agency Review** (orange). Your billing agency reviews the claim and submits it to Availity on your behalf (or logs a manual submission if the MCO requires paper or portal filing) — you do not need to take any further action. The **Refresh status** button is hidden while the claim is pending agency review; it reappears once the agency has submitted the claim to Availity.
+
 **Manual MCOs:**
 Click **Preview & Download CMS 1500** to download the completed PDF. Then click the portal link next to the button to open the MCO's submission portal in a new tab. Upload the PDF through their portal.
 
@@ -280,6 +283,7 @@ The claim status badge uses four colors:
 
 | Color | Meaning |
 |---|---|
+| **Orange — Pending Agency Review** | Queued for your billing agency to review and submit to Availity |
 | **Amber — Submitted** | Sent to Availity; awaiting acknowledgment |
 | **Blue — Processing** | Availity accepted; payer is processing |
 | **Green — Paid** | Payment confirmed; paid amount shown |
@@ -287,7 +291,7 @@ The claim status badge uses four colors:
 
 **For Availity claims:** Click **Refresh status** to query Availity for the latest 277CA acknowledgment. Status and paid amount update automatically.
 
-**For manual MCO claims:** Use the **Log claim status** form in the claim section to record what the portal or paper EOB shows. Select the status (Submitted / Paid / Denied), date, and paid amount. Click **Save status** — the badge updates immediately.
+**For manual MCO claims:** Use the **Log claim status** form in the claim section to record what the portal or paper EOB shows. Select the status (Submitted / Paid / Denied), date, and paid amount. Click **Save status** — the badge updates immediately. If your account is managed by a billing agency, this form is not available; your billing admin updates the claim status on your behalf after handling the submission.
 
 ### Denial Error Codes and Resubmission
 
@@ -328,6 +332,8 @@ Once a claim exists for a visit, a **📋 Download Audit Packet** button appears
 The audit packet is for your records and any auditor requests — no patient signature is required to generate it.
 
 ### Scanning Paper Remittances (EOBs)
+
+> **Note for agency-assigned providers:** If your account is managed by a billing agency, the EOB scan features (both on the visit page and the Reports page) are not available to you. Your billing agency handles remittance processing and updates claim statuses on your behalf.
 
 Both EOB scan entry points accept **photos (JPEG/PNG)** and **digital PDF files** (up to 20 MB). Use **Take photo** to photograph a paper remittance with your phone camera, or **Upload PDF / image** to upload an EOB PDF you received by email or downloaded from an MCO portal.
 
