@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.28.7] — 2026-06-15
+
+### Fixed
+- **CMS 1500 Box 29 amount format**: Paid amount was rendered as `100.00` (dollar-decimal). Now formatted as cents without a decimal point (`10000`), matching the Box 24F and Box 28 convention where the form pre-prints the decimal separator.
+
+---
+
 ## [1.28.6] — 2026-06-15
 
 ### Changed

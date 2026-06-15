@@ -217,14 +217,14 @@ def _overlay_signature(pdf_bytes: bytes, sig_bytes: bytes, x: float, y: float, m
 # ---------------------------------------------------------------------------
 
 def _format_paid(claim_data: dict | None) -> str:
-    """Return paid amount string for Box 29, or empty string if not applicable."""
+    """Return paid amount in cents (no decimal) for Box 29 — matches Box 24F/28 format."""
     if not claim_data:
         return ""
     paid = claim_data.get("paid_amount")
     if paid is None:
         return ""
     try:
-        return f"{Decimal(str(paid)):.2f}"
+        return str(int(round(Decimal(str(paid)) * 100)))
     except Exception:
         return str(paid)
 
