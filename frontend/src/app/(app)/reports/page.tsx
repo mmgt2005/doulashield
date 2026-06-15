@@ -79,6 +79,7 @@ export default function ReportsPage() {
   const [contracts, setContracts] = useState<McoContract[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [hasBillingAgency, setHasBillingAgency] = useState(false)
   const [allPatients, setAllPatients] = useState<Patient[]>([])
   const [allClaims, setAllClaims] = useState<Claim[]>([])
   const [eobClaims, setEobClaims] = useState<EobClaimLine[] | null>(null)
@@ -99,6 +100,7 @@ export default function ReportsPage() {
       .then(([statsRes, settingsRes, patientsRes, claimsRes]) => {
         setStats(statsRes.data)
         setContracts(settingsRes.data.mco_contracts ?? [])
+        setHasBillingAgency(settingsRes.data.billing_provider != null)
         setAllPatients(patientsRes.data)
         setAllClaims(claimsRes.data)
       })
@@ -343,8 +345,8 @@ export default function ReportsPage() {
         )}
       </div>
 
-      {/* Central EOB Scanner */}
-      <div>
+      {/* Central EOB Scanner — hidden for agency-assigned providers */}
+      {!hasBillingAgency && <div>
         <h2 className="mb-3 text-sm font-semibold text-gray-700">Remittance / EOB Scan</h2>
         {eobClaims ? (
           <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 space-y-3">
@@ -450,7 +452,7 @@ export default function ReportsPage() {
             {eobError && <p className="mt-2 text-xs text-red-600">{eobError}</p>}
           </div>
         )}
-      </div>
+      </div>}
     </div>
   )
 }

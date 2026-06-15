@@ -12,6 +12,14 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.28.3] — 2026-06-15
+
+### Fixed
+- **CMS 1500 Box 33 shows doula's address instead of billing agency address**: Both the provider and billing-admin CMS 1500 endpoints were computing `billing_npi`/`billing_name` but not passing `billing_provider_data` to `generate_pdf()`. The service fell through to the `else` branch and used the doula's home address for Box 33. Both call sites now pass a `billing_provider_data` dict (name, address, city, state, zip, phone, NPI) when a `BillingProvider` is assigned, so Box 33 shows the agency's address.
+- **EOB Remittance scanner visible for agency-assigned providers on Reports page**: The Reports page now reads `billing_provider` from the `/auth/me/provider-settings` response and hides the "Remittance / EOB Scan" section when the provider is assigned to a billing agency. This matches the existing frontend guard on the visit page and the backend 403 guard added in v1.28.0.
+
+---
+
 ## [1.28.2] — 2026-06-14
 
 ### Fixed

@@ -254,6 +254,15 @@ async def download_cms1500(
                 "resubmit_count": claim.resubmit_count if claim else 0,
                 "availity_claim_id": claim.availity_claim_id if claim else None,
             },
+            billing_provider_data={
+                "npi": bp.group_npi or "",
+                "name": bp.name,
+                "address": bp.address or "",
+                "city": bp.city or "",
+                "state": bp.state or "",
+                "zip_code": bp.zip or "",
+                "phone": bp.phone or "",
+            } if (user.billing_provider_id and user.billing_provider) else None,
         )
     except Exception as exc:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc))
@@ -404,6 +413,15 @@ async def billing_admin_download_cms1500(
                 "resubmit_count": claim.resubmit_count or 0,
                 "availity_claim_id": claim.availity_claim_id,
             },
+            billing_provider_data={
+                "npi": billing_provider.group_npi or "",
+                "name": billing_provider.name,
+                "address": billing_provider.address or "",
+                "city": billing_provider.city or "",
+                "state": billing_provider.state or "",
+                "zip_code": billing_provider.zip or "",
+                "phone": billing_provider.phone or "",
+            } if billing_provider else None,
         )
     except Exception as exc:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc))
