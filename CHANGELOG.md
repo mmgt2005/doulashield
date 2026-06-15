@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.28.4] — 2026-06-15
+
+### Fixed
+- **TypeScript build error in reports page**: The `axios.get` call for `/auth/me/provider-settings` was typed to only include `mco_contracts`, causing a type error when reading `billing_provider` from the response. Added `billing_provider: unknown | null` to the response type.
+
+---
+
 ## [1.28.3] — 2026-06-15
 
 ### Fixed
