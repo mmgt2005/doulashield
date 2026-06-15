@@ -128,13 +128,22 @@ export default function NewClientPage() {
 
         <div>
           <label htmlFor="mco" className="block text-sm font-medium text-gray-700">MCO <span className="text-gray-400">(optional)</span></label>
-          <input
+          <select
             {...register('mco')}
             id="mco"
-            type="text"
-            placeholder="e.g. Molina, Anthem, UnitedHealthcare"
             className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-          />
+          >
+            <option value="">— Select MCO —</option>
+            <option>AmeriHealth Caritas</option>
+            <option>Keystone First</option>
+            <option>UPMC For You</option>
+            <option>Geisinger Health Plan</option>
+            <option>Health Partners Plans</option>
+            <option>Aetna Better Health</option>
+            <option>UnitedHealthcare Community Plan</option>
+            <option>Highmark Wholecare</option>
+            <option>FFS</option>
+          </select>
         </div>
 
         <div>

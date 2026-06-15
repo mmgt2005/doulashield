@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.28.6] — 2026-06-15
+
+### Changed
+- **MCO field is now a dropdown on Add Client and Edit Client screens**: Replaced the free-text MCO input with a `<select>` listing all PA Medicaid MCOs (AmeriHealth Caritas, Keystone First, UPMC For You, Geisinger Health Plan, Health Partners Plans, Aetna Better Health, UnitedHealthcare Community Plan, Highmark Wholecare, FFS). OCR card scanning continues to populate the field via `setValue`.
+
+---
+
 ## [1.28.5] — 2026-06-15
 
 ### Fixed

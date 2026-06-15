@@ -220,7 +220,18 @@ export default function ClientDetailPage() {
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600">MCO</label>
-              <input {...register('mco')} className="mt-1 block w-full rounded border border-gray-300 px-3 py-1.5 text-sm" />
+              <select {...register('mco')} className="mt-1 block w-full rounded border border-gray-300 px-3 py-1.5 text-sm">
+                <option value="">— Select MCO —</option>
+                <option>AmeriHealth Caritas</option>
+                <option>Keystone First</option>
+                <option>UPMC For You</option>
+                <option>Geisinger Health Plan</option>
+                <option>Health Partners Plans</option>
+                <option>Aetna Better Health</option>
+                <option>UnitedHealthcare Community Plan</option>
+                <option>Highmark Wholecare</option>
+                <option>FFS</option>
+              </select>
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600">Date of birth</label>
