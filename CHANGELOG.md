@@ -12,6 +12,16 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.28.8] — 2026-06-15
+
+### Added
+- **Reports page resubmission indicator**: A "↺ Resubmitted" row now appears below the Claim Pipeline tiles when any claims have been resubmitted, showing the count of affected claims and total resubmission attempts. Previously resubmitted claims were invisible in the aggregate view.
+
+### Fixed
+- **Settings save errors now show the actual server message**: The "Failed to save" and "Failed to save signature" error handlers previously swallowed all errors with a generic message, making it impossible to diagnose the failure. They now display the backend's error detail (e.g., "Storage failed: …" for Supabase issues). A 401 response redirects to the login page instead of showing a confusing error.
+
+---
+
 ## [1.28.7] — 2026-06-15
 
 ### Fixed

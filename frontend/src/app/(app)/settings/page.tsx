@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import axios from 'axios'
 import { getAccessToken } from '@/lib/auth'
@@ -94,6 +95,7 @@ By agreeing to these terms, you authorize DoulaShield to charge your saved payme
 
 export default function SettingsPage() {
   const { user, isLoading: authLoading, isAuthenticated } = useAuthStore()
+  const router = useRouter()
   const isAdmin = user?.role === 'admin'
   const [connected, setConnected] = useState(false)
   const [zipzignConnected, setZipzignConnected] = useState(false)
@@ -244,8 +246,13 @@ export default function SettingsPage() {
       setZipzignConnected(res.data.zipzign_connected)
       setProviderSsnConnected(res.data.provider_ssn_connected ?? false)
       setSaved(true)
-    } catch {
-      setSaveError('Failed to save. Please try again.')
+    } catch (e: unknown) {
+      if (axios.isAxiosError(e) && e.response?.status === 401) {
+        router.push('/login')
+        return
+      }
+      const detail = axios.isAxiosError(e) ? (e.response?.data?.detail ?? null) : null
+      setSaveError(detail ? `Failed to save: ${detail}` : 'Failed to save. Please try again.')
     }
   }
 
@@ -947,8 +954,13 @@ export default function SettingsPage() {
                     setProviderSignaturePath(res.data.path)
                     setSigSaved(true)
                     sigPad.clear()
-                  } catch {
-                    setSigError('Failed to save signature. Please try again.')
+                  } catch (e: unknown) {
+                    if (axios.isAxiosError(e) && e.response?.status === 401) {
+                      router.push('/login')
+                      return
+                    }
+                    const detail = axios.isAxiosError(e) ? (e.response?.data?.detail ?? null) : null
+                    setSigError(detail ? `Failed to save signature: ${detail}` : 'Failed to save signature. Please try again.')
                   } finally {
                     setSigSaving(false)
                   }
