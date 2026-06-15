@@ -93,7 +93,7 @@ export default function ReportsPage() {
 
     Promise.all([
       axios.get<Stats>(`${base}/api/v1/stats/summary`, { headers }),
-      axios.get<{ mco_contracts: McoContract[] | null }>(`${base}/api/v1/auth/me/provider-settings`, { headers }),
+      axios.get<{ mco_contracts: McoContract[] | null; billing_provider: unknown | null }>(`${base}/api/v1/auth/me/provider-settings`, { headers }),
       axios.get<Patient[]>(`${base}/api/v1/patients`, { headers }).catch(() => ({ data: [] as Patient[] })),
       axios.get<Claim[]>(`${base}/api/v1/claims`, { headers }).catch(() => ({ data: [] as Claim[] })),
     ])
