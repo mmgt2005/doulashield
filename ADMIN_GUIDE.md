@@ -84,23 +84,23 @@ Your own row in the Users table has no Deactivate, Make Admin, or Make Provider 
 
 ---
 
-### Impersonating a Provider ("View As")
+### Impersonating Another User ("View As")
 
-The **View as** button (amber outline) appears on any active provider row that is not your own account. It lets you enter a fully-scoped impersonation session where every data fetch is automatically filtered to that provider's records — exactly as if you had logged in as them.
+The **View as** button (amber outline) appears on any provider or admin row that is not your own account and that you are not currently impersonating someone else from. It lets you enter a fully-scoped impersonation session — every data fetch is filtered to that user's records, and their role is active for the duration.
 
 **How to start:**
 
-1. In the Users table, find the provider row.
+1. In the Users table, find the row for the provider or admin you want to view as.
 2. Click **View as**.
-3. An amber banner appears at the top of every page: *👁 Viewing as **Provider Name** — admin impersonation session*.
-4. You are redirected to the provider's Dashboard. All sidebar links, clients, visits, claims, and reports show only that provider's data.
+3. An amber banner appears at the top of every page: *👁 Viewing as **Name** — admin impersonation session*.
+4. You are redirected to the Dashboard. For provider impersonation all sidebar links, clients, visits, claims, and reports show only that provider's data. For admin impersonation, admin navigation (Users, Audit Logs) remains accessible.
 
 **What changes during impersonation:**
 
-- The access token is replaced with a short-lived provider JWT. All API calls use this token.
-- Admin navigation links (Users, Audit Logs) disappear — the provider role is active.
-- Navigating directly to `/admin/users` redirects to `/dashboard`.
-- Your admin session is held in memory and is never written to disk or storage.
+- The access token is replaced with a short-lived JWT carrying the target user's role. All API calls use this token.
+- When impersonating a **provider**: admin navigation links disappear; navigating directly to `/admin/users` redirects to `/dashboard`.
+- When impersonating an **admin**: admin navigation links remain visible — you see the app exactly as that admin does.
+- Your original admin session is held in memory and is never written to disk or storage.
 
 **How to exit:**
 
@@ -112,13 +112,14 @@ Refreshing the page ends the impersonation session (in-memory state is cleared).
 
 **HIPAA audit trail:**
 
-Every impersonation start writes an `IMPERSONATE_START` entry with your admin ID, the target provider's ID, and their email address. Every exit writes `IMPERSONATE_END`. Both entries appear in the Audit Logs view.
+Every impersonation start writes an `IMPERSONATE_START` entry with your admin ID, the target user's ID, and their email address. Every exit writes `IMPERSONATE_END`. Both entries appear in the Audit Logs view.
 
 **Limitations:**
 
-- You can only impersonate users with the `provider` role (not other admins).
+- `billing_admin` accounts cannot be impersonated (their agency-scoped access does not transfer meaningfully to a session).
 - You cannot impersonate your own account.
-- PHI you access during impersonation is logged under the provider's UUID, which is correct — you are accessing their records.
+- You cannot start a nested impersonation session while already impersonating someone else — the **View as** button is hidden during an active impersonation.
+- PHI you access during impersonation is logged under the target user's UUID, which is correct — you are accessing their records.
 
 ---
 
