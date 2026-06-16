@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.28.9] — 2026-06-16
+
+### Added
+- **Admin "View As" between admin accounts**: Admins can now use the "View As" button to impersonate other admin accounts (not just providers). The impersonation banner shows correctly, and the impersonated session carries the `admin` role so admin pages load without redirect. `billing_admin` accounts remain non-impersonatable. Self-impersonation and nested impersonation (starting a second "View As" while already impersonating) are blocked.
+
+---
+
 ## [1.28.8] — 2026-06-15
 
 ### Added

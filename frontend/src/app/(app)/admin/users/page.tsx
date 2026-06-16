@@ -11,7 +11,7 @@ type MergedUser = User & Partial<Omit<UserWithBilling, keyof User>>
 
 export default function AdminUsersPage() {
   const router = useRouter()
-  const { user: currentUser, startImpersonation } = useAuthStore()
+  const { user: currentUser, startImpersonation, priorSession } = useAuthStore()
   const [users, setUsers] = useState<MergedUser[]>([])
   const [billingProviders, setBillingProviders] = useState<BillingProvider[]>([])
   const [loading, setLoading] = useState(true)
@@ -296,7 +296,7 @@ export default function AdminUsersPage() {
       const targetUser: User = {
         id: res.data.target_id,
         email: res.data.target_email,
-        role: 'provider',
+        role: u.role as User['role'],
         full_name: res.data.target_name,
         mfa_enabled: u.mfa_enabled,
         is_active: u.is_active,
@@ -453,7 +453,7 @@ export default function AdminUsersPage() {
                           Assign Agency
                         </button>
                       )}
-                      {isProvider && u.id !== currentUser?.id && (
+                      {(isProvider || u.role === 'admin') && u.id !== currentUser?.id && !priorSession && (
                         <button
                           onClick={() => handleViewAs(u)}
                           disabled={actionLoading === `viewas-${u.id}`}

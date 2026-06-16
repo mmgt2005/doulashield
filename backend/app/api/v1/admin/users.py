@@ -62,14 +62,14 @@ async def impersonate_user(
 
     if not target:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-    if target.role != "provider":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Can only impersonate providers")
+    if target.role == "billing_admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot impersonate billing admin accounts")
     if target.id == admin.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot impersonate yourself")
 
     imp_token = create_access_token(
         str(target.id),
-        "provider",
+        target.role,
         extra={"imp": str(admin.id)},
     )
 
