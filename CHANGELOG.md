@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.29.1] — 2026-06-23
+
+### Fixed
+- **Add Client form blocked by browser date validation**: The date-of-birth field (`<input type="date">`) could block form submission entirely if the user typed a date in MM/DD/YYYY format rather than using the date picker widget. The browser's native validation error appeared silently and prevented the React submit handler from running. Added `noValidate` to the form so all validation is handled by Zod and the backend. Also updated both walkthrough guide tables to label DOB as optional and note that the Referring NPI column does not correspond to an Add Client field.
+
+---
+
 ## [1.29.0] — 2026-06-23
 
 ### Added
