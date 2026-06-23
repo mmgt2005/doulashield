@@ -57,7 +57,7 @@ async def update_user(
         pre = pre_result.scalar_one_or_none()
         if pre:
             if body.is_demo is True and not pre.is_demo:
-                # False → True: auto-send walkthrough email
+                # False → True: auto-send walkthrough email; flag existing patients as demo
                 send_guide_to = (pre.email, pre.full_name or pre.email)
             elif body.is_demo is False and pre.is_demo:
                 # True → False: deactivate demo patients
@@ -69,6 +69,19 @@ async def update_user(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
 
     if send_guide_to:
+        # Flag all existing active patients as demo so they're cleaned up on demo disable
+        existing_result = await db.execute(
+            select(Patient).where(
+                Patient.provider_id == user_id,
+                Patient.is_demo == False,  # noqa: E712
+                Patient.is_active == True,  # noqa: E712
+            )
+        )
+        for ep in existing_result.scalars().all():
+            ep.is_demo = True
+        await db.commit()
+        logger.info("Flagged existing patients as demo for provider %s", user_id)
+
         try:
             origin = f"{request.url.scheme}://{request.headers.get('host', '')}"
             await send_walkthrough_email(send_guide_to[0], send_guide_to[1], origin)
