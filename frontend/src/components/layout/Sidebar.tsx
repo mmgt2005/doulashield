@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAuthStore } from '@/store/auth-store'
@@ -31,6 +32,7 @@ interface SidebarProps {
 export default function Sidebar({ onClose }: SidebarProps) {
   const pathname = usePathname()
   const { user, logout } = useAuthStore()
+  const [showGuide, setShowGuide] = useState(false)
 
   const handleLogout = async () => {
     try {
@@ -106,8 +108,117 @@ export default function Sidebar({ onClose }: SidebarProps) {
               Admin Guide
             </Link>
           )}
+          {user?.is_demo && (
+            <button
+              onClick={() => { setShowGuide(true); onClose?.() }}
+              className="block w-full text-left px-3 py-1.5 rounded text-xs font-medium text-green-700 hover:bg-green-50 transition-colors"
+            >
+              Walkthrough Guide
+            </button>
+          )}
         </div>
       </nav>
+
+      {/* Walkthrough Guide modal */}
+      {showGuide && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => setShowGuide(false)}
+        >
+          <div
+            className="bg-white rounded-lg shadow-xl p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto space-y-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between">
+              <div>
+                <h3 className="text-base font-semibold text-gray-900">Walkthrough Guide</h3>
+                <p className="text-xs text-gray-400 mt-0.5">Demo mode is on — claims are simulated and nothing goes to Availity</p>
+              </div>
+              <button onClick={() => setShowGuide(false)} className="text-gray-400 hover:text-gray-600 text-xl leading-none ml-4">×</button>
+            </div>
+
+            {/* Steps */}
+            <div className="space-y-2 text-sm">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Workflow Steps</p>
+              {[
+                ['1', 'Add a client', 'Clients → Add Client. Use any name from the table below.'],
+                ['2', 'Document a visit', 'Open the client → click a visit type (e.g. Prenatal 1) → Start Visit → End Visit → fill in SOAP notes.'],
+                ['3', 'Collect MA 91 signature', 'Click "Collect MA 91 Signature" and sign on-screen, or test ZipZign with your own email.'],
+                ['4', 'Submit claim', 'Click "Submit Claim". Demo Mode is on — simulated, nothing goes to Availity. Status shows as Processing.'],
+                ['5', 'Explore Reports & Audit Packet', 'Go to Reports to see the claim. Open the visit and click "Download Audit Packet".'],
+                ['6', 'Log payment (EOB)', 'Reports → Scan Remittance / EOB → upload the payment document to mark the claim as paid.'],
+              ].map(([n, title, desc]) => (
+                <div key={n} className="flex gap-3 rounded-lg border border-gray-200 p-3">
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-100 text-xs font-bold text-gray-600 mt-0.5">{n}</span>
+                  <div>
+                    <p className="font-medium text-gray-800 text-xs">{title}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">{desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Sample SOAP */}
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Sample SOAP Notes (Prenatal 1)</p>
+              <div className="rounded-lg border border-gray-200 p-3 space-y-1.5 text-xs">
+                {[
+                  ['Subjective', 'First doula visit at 12 weeks. Morning sickness improving. Client interested in natural birth and breastfeeding support.'],
+                  ['Objective', 'BP 118/72. Client alert and engaged. Reviewed birth preferences and prenatal nutrition.'],
+                  ['Assessment', 'Low-risk pregnancy at 12 weeks progressing normally.'],
+                  ['Plan', 'Provide birth education materials. Schedule Prenatal 2 at 20 weeks. Follow up on iron levels.'],
+                ].map(([label, text]) => (
+                  <div key={label}>
+                    <span className="font-medium text-gray-500">{label}: </span>
+                    <span className="text-gray-700">{text}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 10 patients */}
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">10 Sample Patients</p>
+              <div className="overflow-x-auto rounded-lg border border-gray-200">
+                <table className="w-full text-xs">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      {['#', 'Name', 'Medicaid ID', 'MCO', 'DOB', 'Address', 'Referring NPI'].map((h) => (
+                        <th key={h} className="px-3 py-2 text-left font-medium text-gray-500 whitespace-nowrap">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {[
+                      ['1', 'Jane Sample', '1234567890', 'AmeriHealth Caritas', '01/15/1992', '123 Main St, Philadelphia, PA 19103', '9999999999'],
+                      ['2', 'Maria Rodriguez', '2345678901', 'UPMC For You', '11/22/1988', '456 Oak Ave, Pittsburgh, PA 15213', '9999999999'],
+                      ['3', 'Ashley Williams', '3456789012', 'Keystone First', '07/08/1995', '789 Elm Rd, Allentown, PA 18101', '9999999999'],
+                      ['4', 'Sarah Johnson', '4567890123', 'Geisinger Health Plan', '03/30/1990', '321 Pine St, Scranton, PA 18501', '9999999999'],
+                      ['5', 'Emily Davis', '5678901234', 'Aetna Better Health', '09/12/1993', '654 Maple Ave, Harrisburg, PA 17101', '9999999999'],
+                      ['6', 'Destiny Brown', '6789012345', 'Health Partners Plans', '05/05/1997', '987 Cedar Ln, Reading, PA 19601', '9999999999'],
+                      ['7', 'Tamara Wilson', '7890123456', 'Highmark Wholecare', '12/28/1991', '147 Birch Way, Lancaster, PA 17601', '9999999999'],
+                      ['8', 'Keisha Moore', '8901234567', 'UnitedHealthcare Community Plan', '02/14/1986', '258 Spruce St, Erie, PA 16501', '9999999999'],
+                      ['9', 'Brianna Taylor', '9012345678', 'FFS', '08/22/1994', '369 Walnut Dr, York, PA 17401', '9999999999'],
+                      ['10', 'Jasmine Anderson', '0123456789', 'AmeriHealth Caritas', '06/11/1989', '741 Chestnut Blvd, Bethlehem, PA 18015', '9999999999'],
+                    ].map((row, i) => (
+                      <tr key={row[0]} className={i % 2 === 1 ? 'bg-gray-50' : ''}>
+                        {row.map((cell, j) => (
+                          <td key={j} className="px-3 py-2 text-gray-700 whitespace-nowrap">{cell}</td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p className="text-xs text-gray-400">Patient 9 (FFS) demonstrates the manual billing path — download CMS 1500 and submit to the MCO portal directly.</p>
+            </div>
+
+            <div className="flex justify-end pt-1">
+              <button onClick={() => setShowGuide(false)} className="rounded border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Close</button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="px-4 py-4 border-t border-gray-200">
         <p className="text-xs text-gray-500 truncate">{user?.email}</p>
         {user?.role && (

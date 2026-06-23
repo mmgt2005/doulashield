@@ -81,6 +81,82 @@ async def send_welcome_and_deposit(
     )
 
 
+async def send_walkthrough_email(provider_email: str, provider_name: str, frontend_origin: str) -> None:
+    """Sent automatically when an admin enables demo mode for a provider."""
+    if not _configured():
+        raise RuntimeError("Email not configured — set RESEND_API_KEY")
+    resend.api_key = settings.RESEND_API_KEY
+
+    await asyncio.to_thread(
+        resend.Emails.send,
+        {
+            "from": settings.EMAIL_FROM,
+            "to": [provider_email],
+            "subject": "Your DoulaShield Walkthrough Guide",
+            "html": f"""
+<!DOCTYPE html>
+<html>
+<body style="font-family: sans-serif; color: #1a1a1a; max-width: 600px; margin: 0 auto; padding: 24px;">
+  <p style="font-size: 16px;">Hi {provider_name},</p>
+  <p>Your DoulaShield account is in <strong>Demo Mode</strong>. You can practice the full billing
+  workflow below — nothing will be sent to Availity while demo mode is on. When you're ready to go
+  live, your admin will disable demo mode.</p>
+  <p style="margin:0;"><a href="{frontend_origin}/login" style="color:#2563eb;">Log in to DoulaShield &rarr;</a></p>
+
+  <h2 style="font-size:14px;font-weight:600;color:#374151;margin-top:28px;margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em;">Workflow Steps</h2>
+  <ol style="padding-left:20px;margin:0;line-height:1.9;font-size:14px;color:#374151;">
+    <li><strong>Add a client</strong> — Clients &rarr; Add Client. Use any name from the table below.</li>
+    <li><strong>Document a visit</strong> — Open the client &rarr; click a visit type (e.g. Prenatal 1) &rarr; Start Visit &rarr; End Visit &rarr; fill in SOAP notes.</li>
+    <li><strong>Collect MA&nbsp;91 signature</strong> — Click &ldquo;Collect MA&nbsp;91 Signature&rdquo; and sign on-screen, or test ZipZign by sending to your own email.</li>
+    <li><strong>Submit claim</strong> — Click &ldquo;Submit Claim.&rdquo; <strong>Demo Mode is on</strong>&mdash;the submission is simulated. No real claim goes to Availity. Status shows as Processing.</li>
+    <li><strong>Explore Reports &amp; Audit Packet</strong> — Go to Reports to see the claim. Open the visit and click &ldquo;Download Audit Packet&rdquo; to see the full 7-section PDF.</li>
+    <li><strong>Log payment (EOB)</strong> — When payment arrives, go to Reports &rarr; Scan Remittance / EOB &rarr; upload the payment document to mark the claim as paid.</li>
+  </ol>
+
+  <h2 style="font-size:14px;font-weight:600;color:#374151;margin-top:28px;margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em;">Sample SOAP Notes (Prenatal 1)</h2>
+  <table style="font-size:13px;border-collapse:collapse;width:100%;">
+    <tr><td style="padding:3px 12px 3px 0;color:#6b7280;white-space:nowrap;vertical-align:top;">Subjective</td><td style="padding:3px 0;color:#111827;">First doula visit at 12 weeks. Morning sickness improving. Client interested in natural birth and breastfeeding support.</td></tr>
+    <tr><td style="padding:3px 12px 3px 0;color:#6b7280;vertical-align:top;">Objective</td><td style="padding:3px 0;color:#111827;">BP 118/72. Client alert and engaged. Reviewed birth preferences and prenatal nutrition.</td></tr>
+    <tr><td style="padding:3px 12px 3px 0;color:#6b7280;vertical-align:top;">Assessment</td><td style="padding:3px 0;color:#111827;">Low-risk pregnancy at 12 weeks progressing normally.</td></tr>
+    <tr><td style="padding:3px 12px 3px 0;color:#6b7280;vertical-align:top;">Plan</td><td style="padding:3px 0;color:#111827;">Provide birth education materials. Schedule Prenatal 2 at 20 weeks. Follow up on iron levels.</td></tr>
+  </table>
+
+  <h2 style="font-size:14px;font-weight:600;color:#374151;margin-top:28px;margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em;">10 Sample Patients</h2>
+  <p style="font-size:12px;color:#6b7280;margin:0 0 8px;">Use any of these when adding clients. Referring NPI 9999999999 is a placeholder.</p>
+  <table style="font-size:12px;border-collapse:collapse;width:100%;">
+    <thead>
+      <tr style="background:#f9fafb;">
+        <th style="padding:6px 8px;text-align:left;border-bottom:1px solid #e5e7eb;color:#6b7280;">#</th>
+        <th style="padding:6px 8px;text-align:left;border-bottom:1px solid #e5e7eb;color:#6b7280;">Name</th>
+        <th style="padding:6px 8px;text-align:left;border-bottom:1px solid #e5e7eb;color:#6b7280;">Medicaid ID</th>
+        <th style="padding:6px 8px;text-align:left;border-bottom:1px solid #e5e7eb;color:#6b7280;">MCO</th>
+        <th style="padding:6px 8px;text-align:left;border-bottom:1px solid #e5e7eb;color:#6b7280;">DOB</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="padding:5px 8px;border-bottom:1px solid #f3f4f6;">1</td><td style="padding:5px 8px;border-bottom:1px solid #f3f4f6;">Jane Sample</td><td style="padding:5px 8px;border-bottom:1px solid #f3f4f6;font-family:monospace;">1234567890</td><td style="padding:5px 8px;border-bottom:1px solid #f3f4f6;">AmeriHealth Caritas</td><td style="padding:5px 8px;border-bottom:1px solid #f3f4f6;">01/15/1992</td></tr>
+      <tr style="background:#f9fafb;"><td style="padding:5px 8px;border-bottom:1px solid #f3f4f6;">2</td><td style="padding:5px 8px;border-bottom:1px solid #f3f4f6;">Maria Rodriguez</td><td style="padding:5px 8px;border-bottom:1px solid #f3f4f6;font-family:monospace;">2345678901</td><td style="padding:5px 8px;border-bottom:1px solid #f3f4f6;">UPMC For You</td><td style="padding:5px 8px;border-bottom:1px solid #f3f4f6;">11/22/1988</td></tr>
+      <tr><td style="padding:5px 8px;border-bottom:1px solid #f3f4f6;">3</td><td style="padding:5px 8px;border-bottom:1px solid #f3f4f6;">Ashley Williams</td><td style="padding:5px 8px;border-bottom:1px solid #f3f4f6;font-family:monospace;">3456789012</td><td style="padding:5px 8px;border-bottom:1px solid #f3f4f6;">Keystone First</td><td style="padding:5px 8px;border-bottom:1px solid #f3f4f6;">07/08/1995</td></tr>
+      <tr style="background:#f9fafb;"><td style="padding:5px 8px;border-bottom:1px solid #f3f4f6;">4</td><td style="padding:5px 8px;border-bottom:1px solid #f3f4f6;">Sarah Johnson</td><td style="padding:5px 8px;border-bottom:1px solid #f3f4f6;font-family:monospace;">4567890123</td><td style="padding:5px 8px;border-bottom:1px solid #f3f4f6;">Geisinger Health Plan</td><td style="padding:5px 8px;border-bottom:1px solid #f3f4f6;">03/30/1990</td></tr>
+      <tr><td style="padding:5px 8px;border-bottom:1px solid #f3f4f6;">5</td><td style="padding:5px 8px;border-bottom:1px solid #f3f4f6;">Emily Davis</td><td style="padding:5px 8px;border-bottom:1px solid #f3f4f6;font-family:monospace;">5678901234</td><td style="padding:5px 8px;border-bottom:1px solid #f3f4f6;">Aetna Better Health</td><td style="padding:5px 8px;border-bottom:1px solid #f3f4f6;">09/12/1993</td></tr>
+      <tr style="background:#f9fafb;"><td style="padding:5px 8px;border-bottom:1px solid #f3f4f6;">6</td><td style="padding:5px 8px;border-bottom:1px solid #f3f4f6;">Destiny Brown</td><td style="padding:5px 8px;border-bottom:1px solid #f3f4f6;font-family:monospace;">6789012345</td><td style="padding:5px 8px;border-bottom:1px solid #f3f4f6;">Health Partners Plans</td><td style="padding:5px 8px;border-bottom:1px solid #f3f4f6;">05/05/1997</td></tr>
+      <tr><td style="padding:5px 8px;border-bottom:1px solid #f3f4f6;">7</td><td style="padding:5px 8px;border-bottom:1px solid #f3f4f6;">Tamara Wilson</td><td style="padding:5px 8px;border-bottom:1px solid #f3f4f6;font-family:monospace;">7890123456</td><td style="padding:5px 8px;border-bottom:1px solid #f3f4f6;">Highmark Wholecare</td><td style="padding:5px 8px;border-bottom:1px solid #f3f4f6;">12/28/1991</td></tr>
+      <tr style="background:#f9fafb;"><td style="padding:5px 8px;border-bottom:1px solid #f3f4f6;">8</td><td style="padding:5px 8px;border-bottom:1px solid #f3f4f6;">Keisha Moore</td><td style="padding:5px 8px;border-bottom:1px solid #f3f4f6;font-family:monospace;">8901234567</td><td style="padding:5px 8px;border-bottom:1px solid #f3f4f6;">UnitedHealthcare Community Plan</td><td style="padding:5px 8px;border-bottom:1px solid #f3f4f6;">02/14/1986</td></tr>
+      <tr><td style="padding:5px 8px;border-bottom:1px solid #f3f4f6;">9</td><td style="padding:5px 8px;border-bottom:1px solid #f3f4f6;">Brianna Taylor</td><td style="padding:5px 8px;border-bottom:1px solid #f3f4f6;font-family:monospace;">9012345678</td><td style="padding:5px 8px;border-bottom:1px solid #f3f4f6;">FFS</td><td style="padding:5px 8px;border-bottom:1px solid #f3f4f6;">08/22/1994</td></tr>
+      <tr style="background:#f9fafb;"><td style="padding:5px 8px;">10</td><td style="padding:5px 8px;">Jasmine Anderson</td><td style="padding:5px 8px;font-family:monospace;">0123456789</td><td style="padding:5px 8px;">AmeriHealth Caritas</td><td style="padding:5px 8px;">06/11/1989</td></tr>
+    </tbody>
+  </table>
+  <p style="font-size:12px;color:#6b7280;margin-top:8px;">All addresses: use any Philadelphia-area address. Referring NPI: 9999999999.</p>
+
+  <hr style="border:none;border-top:1px solid #e5e7eb;margin:28px 0;">
+  <p style="color:#9ca3af;font-size:12px;">The DoulaShield Team</p>
+</body>
+</html>
+""",
+        },
+    )
+
+
 async def send_password_reset_email(email: str, name: str, reset_url: str) -> None:
     if not _configured():
         raise RuntimeError("Email not configured — set RESEND_API_KEY")

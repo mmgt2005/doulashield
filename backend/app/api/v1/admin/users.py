@@ -1,3 +1,4 @@
+import logging
 import uuid
 from typing import Annotated
 
@@ -12,6 +13,9 @@ from app.models.user import User
 from app.schemas.admin import UserCreate, UserRead, UserUpdate
 from app.schemas.auth import ImpersonateResponse
 from app.services.admin_service import AdminService
+from app.services.email_service import send_walkthrough_email
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/admin/users", tags=["admin"])
 
@@ -38,15 +42,33 @@ async def list_users(
 
 @router.patch("/{user_id}", response_model=UserRead)
 async def update_user(
+    request: Request,
     user_id: uuid.UUID,
     body: UserUpdate,
     _: Annotated[CurrentUser, Depends(require_admin)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> UserRead:
+    # Detect demo mode being enabled so we can auto-send the walkthrough email
+    send_guide_to: tuple[str, str] | None = None
+    if body.is_demo is True:
+        pre_result = await db.execute(select(User).where(User.id == user_id))
+        pre = pre_result.scalar_one_or_none()
+        if pre and not pre.is_demo:
+            send_guide_to = (pre.email, pre.full_name or pre.email)
+
     try:
-        return await AdminService(db).update_user(user_id, body)
+        updated = await AdminService(db).update_user(user_id, body)
     except ValueError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+
+    if send_guide_to:
+        try:
+            origin = f"{request.url.scheme}://{request.headers.get('host', '')}"
+            await send_walkthrough_email(send_guide_to[0], send_guide_to[1], origin)
+        except Exception:
+            logger.warning("Failed to send walkthrough email to %s", send_guide_to[0], exc_info=True)
+
+    return updated
 
 
 @router.post("/{user_id}/impersonate", response_model=ImpersonateResponse)
