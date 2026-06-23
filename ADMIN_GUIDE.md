@@ -137,7 +137,12 @@ While demo mode is on, every claim submission the provider makes is intercepted:
 
 **Disabling Demo Mode:**
 
-Click **Demo On** → **Disable Demo Mode**. Real Availity submissions resume on the provider's next claim. Existing demo claims in the database are unaffected — they simply remain as "Processing" indefinitely, or the provider can delete their test clients via the normal client deactivation flow.
+Click **Demo On** → **Disable Demo Mode**. Two things happen automatically:
+
+1. Real Availity submissions resume on the provider's next claim.
+2. All clients the provider added while demo mode was on are **automatically deactivated** and disappear from their Clients list. Demo claims attached to those clients are also gone from view. No manual cleanup needed.
+
+Demo clients are tracked by an internal flag set at creation time, so only clients created during demo mode are removed — any real clients the provider had before demo was enabled are unaffected.
 
 **Sharing the Walkthrough Guide:**
 

@@ -12,6 +12,15 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.30.0] — 2026-06-23
+
+### Added
+- **Demo clients auto-removed when demo mode is disabled**: Clients created while a provider has demo mode on are now flagged with `is_demo = true`. When an admin disables demo mode, all of that provider's demo clients are automatically deactivated — they disappear from the Clients list without any manual cleanup. The provider's real clients are unaffected.
+- **"Demo" badge on demo clients**: While demo mode is on, each demo client in the provider's Clients list shows a green "Demo" pill so the provider can visually distinguish them from real clients.
+- **DB migration 0043**: adds `is_demo BOOLEAN NOT NULL DEFAULT false` column to `public.patients`.
+
+---
+
 ## [1.29.2] — 2026-06-23
 
 ### Fixed
