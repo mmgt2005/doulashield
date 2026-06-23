@@ -15,8 +15,11 @@ Sections:
 """
 import io
 import json
+import logging
 from datetime import date, timedelta
 from typing import Any
+
+log = logging.getLogger(__name__)
 
 from pypdf import PdfReader, PdfWriter
 from reportlab.lib import colors
@@ -483,9 +486,11 @@ def generate_audit_packet(
             patient_data=patient_data,
             visit_data=visit_data,
             provider_data=provider_data,
+            claim_data=claim_data,
             billing_provider_data=billing_provider_data,
         )
     except Exception:
+        log.exception("CMS 1500 generation failed — omitting from audit packet")
         cms_bytes = None
 
     writer = PdfWriter()

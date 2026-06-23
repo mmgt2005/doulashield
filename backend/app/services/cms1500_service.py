@@ -498,8 +498,8 @@ def generate_pdf(
         # Box 22 — Resubmission code + original reference number
         # Code 1 = original claim; code 7 = replacement (corrected resubmission).
         # Original ref is the payer's claim control number from the prior submission.
-        "223": "7" if (claim_data.get("resubmit_count") or 0) > 0 else "1",
-        "original_ref": (claim_data.get("availity_claim_id") or "") if (claim_data.get("resubmit_count") or 0) > 0 else "",
+        "223": "7" if claim_data and (claim_data.get("resubmit_count") or 0) > 0 else "1",
+        "original_ref": (claim_data.get("availity_claim_id") or "") if claim_data and (claim_data.get("resubmit_count") or 0) > 0 else "",
 
         # Box 23 — Prior authorization number (Geisinger requires it)
         "prior_auth": visit_data.get("prior_auth_number") or "",
