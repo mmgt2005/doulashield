@@ -12,6 +12,14 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.30.2] — 2026-06-23
+
+### Fixed
+- **Retroactive demo-patient flagging could delete real clients**: When demo mode was enabled, the previous logic marked every active patient for the provider as `is_demo = true` — including any real clients added before demo was turned on. Those would have been incorrectly deactivated on demo disable. Reverted to creation-time flagging only: `is_demo` is set at the moment a patient is created, based on whether the provider has demo mode on at that instant. Existing patients are never touched on enable.
+- **`is_demo` now settable via `PATCH /patients/{id}`**: Added `is_demo` to `PatientUpdate` so an admin (or support) can explicitly mark a specific patient as `is_demo = true` when needed — for example, a patient created before migration 0043 deployed.
+
+---
+
 ## [1.30.1] — 2026-06-23
 
 ### Fixed
