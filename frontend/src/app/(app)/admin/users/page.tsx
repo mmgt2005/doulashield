@@ -839,7 +839,7 @@ export default function AdminUsersPage() {
                 <table className="w-full text-xs">
                   <thead className="bg-gray-50">
                     <tr>
-                      {['#', 'Name', 'Medicaid ID', 'MCO', 'DOB', 'Address', 'Referring NPI'].map((h) => (
+                      {['#', 'Name', 'Medicaid ID', 'MCO', 'DOB (optional)', 'Address', 'Referring NPI'].map((h) => (
                         <th key={h} className="px-3 py-2 text-left font-medium text-gray-500 whitespace-nowrap">{h}</th>
                       ))}
                     </tr>
@@ -867,6 +867,7 @@ export default function AdminUsersPage() {
                 </table>
               </div>
               <p className="text-xs text-gray-400">Referring NPI 9999999999 is a recognizable placeholder. Patient 9 (FFS) demonstrates the manual billing path.</p>
+              <p className="text-xs text-gray-400 mt-1">Date of birth is optional — providers can leave it blank or pick any date using the date picker. The Referring NPI column does not appear on the Add Client form; leave it blank.</p>
             </div>
 
             <div className="flex justify-end pt-1">

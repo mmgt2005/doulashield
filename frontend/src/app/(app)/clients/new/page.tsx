@@ -103,7 +103,7 @@ export default function NewClientPage() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 bg-white p-6 rounded-lg border border-gray-200">
+      <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4 bg-white p-6 rounded-lg border border-gray-200">
         <div>
           <label htmlFor="name" className="block text-sm font-medium text-gray-700">Full name</label>
           <input

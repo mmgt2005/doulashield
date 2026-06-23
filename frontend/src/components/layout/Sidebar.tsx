@@ -183,7 +183,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
                 <table className="w-full text-xs">
                   <thead className="bg-gray-50">
                     <tr>
-                      {['#', 'Name', 'Medicaid ID', 'MCO', 'DOB', 'Address', 'Referring NPI'].map((h) => (
+                      {['#', 'Name', 'Medicaid ID', 'MCO', 'DOB (optional)', 'Address', 'Referring NPI'].map((h) => (
                         <th key={h} className="px-3 py-2 text-left font-medium text-gray-500 whitespace-nowrap">{h}</th>
                       ))}
                     </tr>
@@ -211,6 +211,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
                 </table>
               </div>
               <p className="text-xs text-gray-400">Patient 9 (FFS) demonstrates the manual billing path — download CMS 1500 and submit to the MCO portal directly.</p>
+              <p className="text-xs text-gray-400 mt-1">Date of birth is optional — you can leave it blank or use the date picker widget to enter any date. The Referring NPI field does not appear on Add Client; leave it blank.</p>
             </div>
 
             <div className="flex justify-end pt-1">
