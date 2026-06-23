@@ -69,19 +69,6 @@ async def update_user(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
 
     if send_guide_to:
-        # Flag all existing active patients as demo so they're cleaned up on demo disable
-        existing_result = await db.execute(
-            select(Patient).where(
-                Patient.provider_id == user_id,
-                Patient.is_demo == False,  # noqa: E712
-                Patient.is_active == True,  # noqa: E712
-            )
-        )
-        for ep in existing_result.scalars().all():
-            ep.is_demo = True
-        await db.commit()
-        logger.info("Flagged existing patients as demo for provider %s", user_id)
-
         try:
             origin = f"{request.url.scheme}://{request.headers.get('host', '')}"
             await send_walkthrough_email(send_guide_to[0], send_guide_to[1], origin)

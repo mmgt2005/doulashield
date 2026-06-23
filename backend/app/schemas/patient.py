@@ -37,6 +37,7 @@ class PatientUpdate(BaseModel):
     referring_provider_name: str | None = None
     has_other_insurance: bool | None = None
     ma589_signed_date: date | None = None
+    is_demo: bool | None = None
     # medicaid_id updates go through a separate admin-only flow
 
 

@@ -174,6 +174,8 @@ class PatientService:
             patient.has_other_insurance = data.has_other_insurance
         if data.ma589_signed_date is not None:
             patient.ma589_signed_date = data.ma589_signed_date
+        if data.is_demo is not None:
+            patient.is_demo = data.is_demo
 
         await self._db.commit()
         await self._db.refresh(patient)
