@@ -141,13 +141,17 @@ Click **Demo On** → **Disable Demo Mode**. Real Availity submissions resume on
 
 **Sharing the Walkthrough Guide:**
 
-Click **Walkthrough Guide** on the provider's row to open a reference card. Screen-share it during onboarding or take a screenshot and send it. The card contains:
+When you enable demo mode, the walkthrough guide is **automatically emailed** to the provider. The email contains the six workflow steps, sample SOAP notes, and the 10 patient records — no manual forwarding needed.
+
+You can also open the guide yourself at any time by clicking **Walkthrough Guide** on the provider's row. Screen-share it during onboarding or take a screenshot and send it. The card contains:
 
 - **Six workflow steps** from adding a client through uploading an EOB remittance scan to close the claim as paid.
 - **Sample SOAP notes** for a Prenatal 1 visit (Subjective / Objective / Assessment / Plan) that the provider can copy and adapt.
 - **10 fake patients** with realistic names, 10-digit Medicaid IDs, all nine supported MCOs (including FFS for the manual billing path), dates of birth, Philadelphia-area addresses, and a recognizable placeholder NPI (`9999999999`).
 
 The provider enters this data into the real UI themselves — walking through the entry process is part of the training.
+
+The same guide is available to the provider directly: a green **Walkthrough Guide** link appears in their sidebar under the Help section while demo mode is on. They can open it at any time without needing to contact you.
 
 ---
 
