@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.29.2] — 2026-06-23
+
+### Fixed
+- **CMS 1500 missing from all audit packets**: `cms1500_service.generate_pdf()` called `claim_data.get()` unconditionally in the Box 22 resubmission-code block (lines 501–502). `audit_packet_service` called `generate_pdf()` without forwarding `claim_data`, so `claim_data` arrived as `None`, raised `AttributeError`, and was silently caught — `cms_bytes` was set to `None` and the CMS 1500 was never appended to the PDF. Fixed by (1) guarding the two Box 22 lines with `if claim_data`, (2) passing `claim_data` through from `generate_audit_packet()` so Box 22 and Box 29 are now filled correctly, and (3) replacing the bare `except` with `log.exception` so future failures appear in logs.
+
+---
+
 ## [1.29.1] — 2026-06-23
 
 ### Fixed
