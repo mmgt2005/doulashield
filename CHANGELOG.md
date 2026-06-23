@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.30.1] — 2026-06-23
+
+### Fixed
+- **Existing patients not flagged as demo on enable**: When an admin enables demo mode for a provider, all of that provider's currently-active patients are now marked `is_demo = true` — even if they were created before demo mode was turned on (or before migration 0043 added the flag). This means disabling demo mode will correctly clean them up. Previously, only patients created *after* demo was enabled carried the flag.
+
+---
+
 ## [1.30.0] — 2026-06-23
 
 ### Added
