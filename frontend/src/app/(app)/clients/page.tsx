@@ -46,7 +46,12 @@ export default function ClientsPage() {
               href={`/clients/${p.id}`}
               className="flex items-center justify-between px-4 py-3 hover:bg-gray-50"
             >
-              <span className="text-sm font-medium text-gray-900">{p.name}</span>
+              <span className="flex items-center gap-2">
+                <span className="text-sm font-medium text-gray-900">{p.name}</span>
+                {p.is_demo && (
+                  <span className="rounded-full border border-green-300 bg-green-50 px-1.5 py-0.5 text-xs font-medium text-green-700">Demo</span>
+                )}
+              </span>
               <span className="text-xs text-gray-400">{p.mco ?? '—'}</span>
             </Link>
           ))}

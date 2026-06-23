@@ -50,6 +50,7 @@ export interface Patient {
   eligibility_checked_at: string | null
   ma589_signed_date: string | null
   is_active: boolean
+  is_demo: boolean
   created_at: string
   updated_at: string
 }

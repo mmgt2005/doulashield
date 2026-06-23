@@ -8,6 +8,7 @@ from sqlalchemy.future import select
 from app.core.audit import AuditLogger
 from app.core.encryption import decrypt_field, encrypt_field
 from app.models.patient import Patient
+from app.models.user import User
 from app.schemas.patient import PatientCreate, PatientRead, PatientReadWithMedicaidId, PatientUpdate
 
 
@@ -32,6 +33,7 @@ def _to_read(patient: Patient) -> PatientRead:
         eligibility_status=patient.eligibility_status,
         eligibility_checked_at=patient.eligibility_checked_at,
         is_active=patient.is_active,
+        is_demo=patient.is_demo,
         created_at=patient.created_at,
         updated_at=patient.updated_at,
     )
@@ -45,6 +47,10 @@ class PatientService:
     async def create(
         self, data: PatientCreate, provider_id: uuid.UUID, ip: str, user_agent: str
     ) -> PatientRead:
+        user_result = await self._db.execute(select(User).where(User.id == provider_id))
+        provider = user_result.scalar_one_or_none()
+        is_demo = provider.is_demo if provider else False
+
         patient = Patient(
             provider_id=provider_id,
             name_encrypted=encrypt_field(data.name),
@@ -62,6 +68,7 @@ class PatientService:
             referring_provider_name=data.referring_provider_name,
             has_other_insurance=data.has_other_insurance,
             ma589_signed_date=data.ma589_signed_date,
+            is_demo=is_demo,
         )
         self._db.add(patient)
         await self._db.commit()

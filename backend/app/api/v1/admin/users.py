@@ -9,6 +9,7 @@ from sqlalchemy.future import select
 from app.core.audit import AuditLogger
 from app.core.security import create_access_token
 from app.dependencies import CurrentUser, get_audit, get_client_ip, get_db, get_user_agent, require_admin
+from app.models.patient import Patient
 from app.models.user import User
 from app.schemas.admin import UserCreate, UserRead, UserUpdate
 from app.schemas.auth import ImpersonateResponse
@@ -48,13 +49,19 @@ async def update_user(
     _: Annotated[CurrentUser, Depends(require_admin)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> UserRead:
-    # Detect demo mode being enabled so we can auto-send the walkthrough email
+    # Read pre-state to detect demo mode transitions
     send_guide_to: tuple[str, str] | None = None
-    if body.is_demo is True:
+    deactivate_demo_patients = False
+    if body.is_demo is not None:
         pre_result = await db.execute(select(User).where(User.id == user_id))
         pre = pre_result.scalar_one_or_none()
-        if pre and not pre.is_demo:
-            send_guide_to = (pre.email, pre.full_name or pre.email)
+        if pre:
+            if body.is_demo is True and not pre.is_demo:
+                # False → True: auto-send walkthrough email
+                send_guide_to = (pre.email, pre.full_name or pre.email)
+            elif body.is_demo is False and pre.is_demo:
+                # True → False: deactivate demo patients
+                deactivate_demo_patients = True
 
     try:
         updated = await AdminService(db).update_user(user_id, body)
@@ -67,6 +74,19 @@ async def update_user(
             await send_walkthrough_email(send_guide_to[0], send_guide_to[1], origin)
         except Exception:
             logger.warning("Failed to send walkthrough email to %s", send_guide_to[0], exc_info=True)
+
+    if deactivate_demo_patients:
+        demo_result = await db.execute(
+            select(Patient).where(
+                Patient.provider_id == user_id,
+                Patient.is_demo == True,  # noqa: E712
+                Patient.is_active == True,  # noqa: E712
+            )
+        )
+        for dp in demo_result.scalars().all():
+            dp.is_active = False
+        await db.commit()
+        logger.info("Deactivated demo patients for provider %s on demo disable", user_id)
 
     return updated
 

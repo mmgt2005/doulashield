@@ -60,6 +60,7 @@ class PatientRead(BaseModel):
     eligibility_status: str | None
     eligibility_checked_at: datetime | None
     is_active: bool
+    is_demo: bool = False
     created_at: datetime
     updated_at: datetime
     # medicaid_id deliberately excluded — use GET /patients/{id}/medicaid-id
