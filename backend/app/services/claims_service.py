@@ -229,6 +229,27 @@ class ClaimsService:
                 )
                 return ClaimRead.model_validate(claim)
 
+        # Demo mode: simulate submission without calling Availity
+        if user.is_demo:
+            claim = Claim(
+                patient_id=patient_id,
+                provider_id=requesting_user_id,
+                availity_claim_id=f"DEMO-{uuid.uuid4().hex[:8].upper()}",
+                visit_type=data.visit_type,
+                status="processing",
+                service_date=data.service_date,
+                billed_amount=billed_amount,
+                payer_id=payer_id,
+                claim_data=claim_body,
+                raw_response={"demo": True, "message": "Demo mode — not submitted to Availity"},
+                submitted_at=now,
+                filing_deadline_date=(data.service_date + timedelta(days=365)) if data.service_date else None,
+            )
+            self._db.add(claim)
+            await self._db.commit()
+            await self._db.refresh(claim)
+            return ClaimRead.model_validate(claim)
+
         client = self._make_client(user)
         raw_response = await client.post("/claims", body=claim_body)
 
@@ -378,6 +399,10 @@ class ClaimsService:
         user = user_result.scalar_one_or_none()
         if not user:
             raise ValueError("User not found")
+
+        # Demo mode or demo claim: return current state without polling Availity
+        if user.is_demo or (claim.availity_claim_id and claim.availity_claim_id.startswith("DEMO-")):
+            return ClaimRead.model_validate(claim)
 
         availity = self._make_client(user)
         raw_response = await availity.get(f"/claims/{claim.availity_claim_id}/status")

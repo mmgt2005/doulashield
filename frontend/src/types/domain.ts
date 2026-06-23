@@ -7,6 +7,7 @@ export interface User {
   full_name: string | null
   mfa_enabled: boolean
   is_active: boolean
+  is_demo?: boolean
   created_at: string
   last_sign_in_at: string | null
   welcome_email_sent_at: string | null
