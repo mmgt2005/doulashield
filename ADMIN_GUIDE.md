@@ -1,6 +1,6 @@
 # DoulaShield Admin Guide
 
-**v1.28.5 · Last updated 2026-06-15**
+**v1.29.0 · Last updated 2026-06-23**
 
 This guide covers everything admins can do that providers cannot. For day-to-day provider features (documenting visits, submitting claims, etc.) refer to `MANUAL.md`.
 
@@ -120,6 +120,34 @@ Every impersonation start writes an `IMPERSONATE_START` entry with your admin ID
 - You cannot impersonate your own account.
 - You cannot start a nested impersonation session while already impersonating someone else — the **View as** button is hidden during an active impersonation.
 - PHI you access during impersonation is logged under the target user's UUID, which is correct — you are accessing their records.
+
+---
+
+### Onboarding New Providers (Demo Mode)
+
+New providers land on an empty dashboard and need to practice the full workflow — adding a client, documenting a visit, collecting an MA 91 signature, submitting a claim, and uploading an EOB — before they start billing real clients. Demo Mode lets them do this safely without sending any claims to Availity.
+
+**Enabling Demo Mode:**
+
+1. Find the provider's row in the Users table.
+2. Click **Demo Off** (the gray toggle button). A confirmation modal explains that claim submissions will be simulated.
+3. Click **Enable Demo Mode**. The button turns green and reads **Demo On**.
+
+While demo mode is on, every claim submission the provider makes is intercepted: a `DEMO-XXXXXXXX` tracking ID is generated, the claim appears in Reports with status "Processing," and no data is sent to Availity. Status polls on demo claims also return immediately without contacting Availity. EOB upload and all other features (SOAP notes, MA 91 signatures, audit packets, ZipZign, CMS 1500 download) function normally.
+
+**Disabling Demo Mode:**
+
+Click **Demo On** → **Disable Demo Mode**. Real Availity submissions resume on the provider's next claim. Existing demo claims in the database are unaffected — they simply remain as "Processing" indefinitely, or the provider can delete their test clients via the normal client deactivation flow.
+
+**Sharing the Walkthrough Guide:**
+
+Click **Walkthrough Guide** on the provider's row to open a reference card. Screen-share it during onboarding or take a screenshot and send it. The card contains:
+
+- **Six workflow steps** from adding a client through uploading an EOB remittance scan to close the claim as paid.
+- **Sample SOAP notes** for a Prenatal 1 visit (Subjective / Objective / Assessment / Plan) that the provider can copy and adapt.
+- **10 fake patients** with realistic names, 10-digit Medicaid IDs, all nine supported MCOs (including FFS for the manual billing path), dates of birth, Philadelphia-area addresses, and a recognizable placeholder NPI (`9999999999`).
+
+The provider enters this data into the real UI themselves — walking through the entry process is part of the training.
 
 ---
 

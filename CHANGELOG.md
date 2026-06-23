@@ -12,6 +12,15 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.29.0] — 2026-06-23
+
+### Added
+- **Provider Demo Mode**: Admins can now toggle a "Demo Mode" flag on any provider account from the Users page. While demo mode is on, claim submissions for that provider are simulated — a realistic `DEMO-XXXXXXXX` claim ID is generated and the claim appears as "Processing" in Reports, but nothing is sent to Availity. Status checks on demo claims are also intercepted. Disable demo mode when the provider is ready for live billing; their existing data is unaffected and real Availity submissions resume immediately.
+- **Walkthrough Guide modal**: A "Walkthrough Guide" button on each provider row opens a reference card the admin can share (screen-share or screenshot) with a new provider. It contains six numbered workflow steps, a set of sample SOAP notes for a Prenatal 1 visit, and a table of 10 fake patients with realistic names, Medicaid IDs, MCOs (all nine options including FFS), dates of birth, addresses, and a placeholder NPI — enough to walk through the full workflow from adding a client to uploading an EOB. Steps include a note on Demo Mode and on scanning a remittance EOB once "payment" arrives.
+- **DB migration 0042**: adds `is_demo BOOLEAN NOT NULL DEFAULT false` column to `public.users`.
+
+---
+
 ## [1.28.9] — 2026-06-16
 
 ### Added
