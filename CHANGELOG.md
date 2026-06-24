@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.31.0] — 2026-06-24
+
+### Added
+- **Sample Remittance Advice PDF in Walkthrough Guide**: A downloadable `sample-remittance-advice.pdf` is now linked inside the Walkthrough Guide modal (both the admin Users page version and the provider Sidebar version). The PDF is a realistic PA Medicaid Provider Remittance Advice showing five sample claim outcomes — two paid in full, one partially adjusted (CO-45), and two denied (CO-4, CO-96) — with adjustment/denial reason codes, recommended actions, and a payment summary. Providers can download it and use it in step 6 to practice the EOB upload flow without waiting for a real remittance.
+
+---
+
 ## [1.30.2] — 2026-06-23
 
 ### Fixed
