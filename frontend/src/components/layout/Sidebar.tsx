@@ -108,6 +108,17 @@ export default function Sidebar({ onClose }: SidebarProps) {
               Admin Guide
             </Link>
           )}
+          {user?.role === 'billing_admin' && (
+            <Link
+              href="/billing-admin-guide"
+              onClick={onClose}
+              className={`block px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+                pathname === '/billing-admin-guide' ? 'bg-blue-50 text-blue-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
+              }`}
+            >
+              Billing Admin Guide
+            </Link>
+          )}
           {user?.is_demo && (
             <button
               onClick={() => { setShowGuide(true); onClose?.() }}

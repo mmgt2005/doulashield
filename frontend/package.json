@@ -1,10 +1,10 @@
 {
   "name": "doulashield-frontend",
-  "version": "1.31.0",
+  "version": "1.32.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "prebuild": "cp ../MANUAL.md public/docs/manual.md && cp ../ADMIN_GUIDE.md public/docs/admin-guide.md",
+    "prebuild": "cp ../MANUAL.md public/docs/manual.md && cp ../ADMIN_GUIDE.md public/docs/admin-guide.md && cp ../BILLING_ADMIN_GUIDE.md public/docs/billing-admin-guide.md",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",

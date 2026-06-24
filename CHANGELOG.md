@@ -12,6 +12,16 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.32.0] — 2026-06-24
+
+### Fixed
+- **Demo patient claims excluded from billing admin queue**: Claims belonging to patients flagged as `is_demo=True` (created while a provider has demo mode on) no longer appear in the billing admin's Agency Claims page. The backend `GET /billing-admin/claims` query now joins the Patient table and filters out demo patients, so billing admins only see real claims requiring action.
+
+### Added
+- **Billing Admin Guide**: A new reference guide is available from the sidebar under Help → "Billing Admin Guide" for all `billing_admin` users. The guide covers the full billing admin workflow: configuring Availity credentials, reviewing claims (SOAP notes, CMS 1500, audit packet), submitting to Availity, logging manual submissions, uploading supporting documents, and tracking paid/denied outcomes. Accessible at `/billing-admin-guide`; restricted to `billing_admin` and `admin` roles.
+
+---
+
 ## [1.31.0] — 2026-06-24
 
 ### Added

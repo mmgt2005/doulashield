@@ -20,6 +20,7 @@ from app.dependencies import CurrentUser, get_audit, get_current_user, get_db, r
 from app.models.billing_provider import BillingProvider
 from app.models.claim import Claim
 from app.models.claim_document import ClaimDocument
+from app.models.patient import Patient
 from app.models.user import User
 from app.schemas.admin import (
     BillingProviderCreate,
@@ -774,7 +775,9 @@ async def list_billing_admin_claims(
         return []
     claims_result = await db.execute(
         select(Claim)
+        .join(Patient, Claim.patient_id == Patient.id)
         .where(Claim.provider_id.in_(provider_ids))
+        .where(Patient.is_demo == False)  # noqa: E712
         .order_by(Claim.created_at.desc())
     )
     return [ClaimRead.model_validate(c) for c in claims_result.scalars().all()]
