@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "cp ../MANUAL.md public/docs/manual.md && cp ../ADMIN_GUIDE.md public/docs/admin-guide.md",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
