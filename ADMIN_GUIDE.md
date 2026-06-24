@@ -10,6 +10,7 @@ This guide covers everything admins can do that providers cannot. For day-to-day
 
 1. [Introduction](#introduction)
 2. [Managing Provider Accounts](#managing-provider-accounts)
+   - [Onboarding New Providers (Demo Mode)](#onboarding-new-providers-demo-mode)
 3. [Billing & Escrow](#billing--escrow)
 4. [Billing Providers (Group NPIs)](#billing-providers-group-npis)
 5. [Admin-Only Settings](#admin-only-settings)
@@ -153,6 +154,7 @@ You can also open the guide yourself at any time by clicking **Walkthrough Guide
 - **Six workflow steps** from adding a client through uploading an EOB remittance scan to close the claim as paid.
 - **Sample SOAP notes** for a Prenatal 1 visit (Subjective / Objective / Assessment / Plan) that the provider can copy and adapt.
 - **10 fake patients** with realistic names, 10-digit Medicaid IDs, all nine supported MCOs (including FFS for the manual billing path), dates of birth, Philadelphia-area addresses, and a recognizable placeholder NPI (`9999999999`).
+- **Download Sample Remittance Advice (EOB)** — a realistic PA Medicaid remittance PDF showing five claim outcomes (two paid, one partially adjusted CO-45, two denied CO-4 and CO-96) with reason code explanations and recommended actions. The provider downloads it and uploads it in step 6 to complete the full EOB scan flow during practice.
 
 The provider enters this data into the real UI themselves — walking through the entry process is part of the training.
 
