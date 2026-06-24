@@ -1,6 +1,6 @@
 # DoulaShield User Manual
 
-**v1.28.5 · Last updated 2026-06-15**
+**v1.31.0 · Last updated 2026-06-24**
 
 This manual covers every provider-facing feature in DoulaShield. Read it start to finish once, then use the headings as a reference when you need a quick reminder.
 
@@ -9,6 +9,7 @@ This manual covers every provider-facing feature in DoulaShield. Read it start t
 ## Table of Contents
 
 1. [Getting Started](#getting-started)
+   - [Demo Mode — Practice Walkthrough](#demo-mode--practice-walkthrough)
 2. [Managing Clients](#managing-clients)
 3. [Documenting Visits](#documenting-visits)
 4. [MA 91 Patient Signatures](#ma-91-patient-signatures)
@@ -79,6 +80,27 @@ Without Availity credentials, you can still download CMS 1500 PDFs and submit ma
 In **Settings → Telehealth**, paste your personal meeting room URL. DoulaShield works with any HIPAA-compliant platform. Recommended free option: [Doxy.me](https://doxy.me) — create a free account, navigate to your room, and copy the URL.
 
 Once saved, the **Start Telehealth** button on every visit form will open your room and send the link to the client automatically (if the client has an email on file).
+
+### Demo Mode — Practice Walkthrough
+
+If your admin has enabled **Demo Mode** on your account, you will see a **"Walkthrough Guide"** button in the left sidebar. Demo Mode lets you practice the full billing workflow — adding clients, documenting visits, collecting signatures, submitting claims, and scanning an EOB — without sending anything to Availity or touching any real claim data.
+
+**What happens in Demo Mode:**
+
+- Claim submissions are intercepted and return a simulated response. Nothing goes to Availity.
+- The claim appears in your pipeline with a `DEMO-XXXXXXXX` claim ID so you know it is not real.
+- All other features work exactly as they do in production: CMS 1500 generation, audit packets, SOAP notes, and MA 91 signatures all function normally.
+
+**Using the Walkthrough Guide:**
+
+Open the guide from the sidebar button. It provides:
+
+1. Step-by-step workflow instructions (add client → document visit → sign MA 91 → submit claim → explore reports → scan EOB).
+2. Sample SOAP notes you can copy into any prenatal visit.
+3. A table of 10 sample patients with Medicaid IDs, MCOs, dates of birth, and addresses — use any row when creating a practice client.
+4. A **Download Sample Remittance Advice (EOB)** link — a realistic PA Medicaid remittance PDF showing five claim outcomes (paid, partial adjustment, and two denials). Download it and upload it on the Reports page (step 6) to practice the full EOB scan flow.
+
+When you are ready for live billing, ask your admin to disable Demo Mode. Demo clients added during the walkthrough are removed automatically at that point.
 
 ### Understanding the Dashboard
 
