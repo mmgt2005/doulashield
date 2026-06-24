@@ -536,12 +536,12 @@ All billing codes are pre-filled automatically based on visit type. This table i
 
 ## Reference: MCO Submission Channels
 
-| MCO | Submission Method | Availity Payer ID | Portal |
+| MCO | Submission Method | EDI Payer ID | Portal / Notes |
 |---|---|---|---|
 | AmeriHealth Caritas | Availity (electronic) | AMCRN | — |
 | Keystone First | Availity (electronic) | 23284 | — |
 | Geisinger Health Plan | Availity (electronic) | 75273 | — |
-| Aetna Better Health | Availity (electronic) | AETNB | — |
+| Aetna Better Health | Availity / Office Ally | 23228 | Electronic: DoulaShield submits via Availity API (payer 23228). Portal fallback: Availity → "Medicaid Claim Submission – Office Ally" (free; requires Office Ally account). Paper: PO Box 982973, El Paso, TX 79998-2973. |
 | UnitedHealthcare Community Plan | Availity (electronic) | 04567 | — |
 | UPMC For You | Manual portal | — | [UPMC Health Plan Provider OnLine](https://www.upmchealthplan.com/providers/online) |
 | Health Partners Plans | Manual portal | — | [Health Partners Plans Provider Portal](https://www.healthpartnersplans.com/home/providers/claims-and-billing/claim-submissions/) |

@@ -98,6 +98,8 @@ For MCOs that support electronic submission (AmeriHealth Caritas, Keystone First
 
 If submission fails (credential error, validation rejection), the claim returns to **Pending Billing Review** and an error message appears in the row. Correct the issue and resubmit.
 
+**Aetna Better Health note:** DoulaShield submits Aetna Better Health claims via EDI (payer ID 23228). If an Aetna claim fails through the API, use the manual path: log into the Availity portal, click **"Medicaid Claim Submission – Office Ally"**, and submit the claim through Office Ally (free, requires an Office Ally account). Then log the submission in DoulaShield using **Log Manual Submission**. Paper claims mail to: PO Box 982973, El Paso, TX 79998-2973.
+
 ---
 
 ## Logging a Manual Submission

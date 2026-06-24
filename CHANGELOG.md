@@ -12,6 +12,14 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.32.1] — 2026-06-24
+
+### Fixed
+- **Aetna Better Health payer ID corrected**: DoulaShield was using `"AETNB"` as the EDI payer ID for Aetna Better Health of Pennsylvania, which is not a valid payer identifier in any clearinghouse directory. The correct EDI payer ID is **23228** (per Aetna's own Quick Reference Guide, which lists "Emdeon Payer ID: 23228"). Claims submitted via Availity's API now use the correct payer ID, preventing routing failures. Updated in `backend/app/services/availity_client.py`.
+- **Documentation updated**: MANUAL.md MCO reference table corrected to show payer ID 23228 and notes the Office Ally portal fallback (Availity portal → "Medicaid Claim Submission – Office Ally"). BILLING_ADMIN_GUIDE.md updated with Aetna-specific submission guidance and paper mail address.
+
+---
+
 ## [1.32.0] — 2026-06-24
 
 ### Fixed
