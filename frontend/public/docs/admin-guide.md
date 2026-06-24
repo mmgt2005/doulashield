@@ -1,6 +1,6 @@
 # DoulaShield Admin Guide
 
-**v1.28.5 · Last updated 2026-06-15**
+**v1.31.0 · Last updated 2026-06-24**
 
 This guide covers everything admins can do that providers cannot. For day-to-day provider features (documenting visits, submitting claims, etc.) refer to `MANUAL.md`.
 
@@ -10,6 +10,7 @@ This guide covers everything admins can do that providers cannot. For day-to-day
 
 1. [Introduction](#introduction)
 2. [Managing Provider Accounts](#managing-provider-accounts)
+   - [Onboarding New Providers (Demo Mode)](#onboarding-new-providers-demo-mode)
 3. [Billing & Escrow](#billing--escrow)
 4. [Billing Providers (Group NPIs)](#billing-providers-group-npis)
 5. [Admin-Only Settings](#admin-only-settings)
@@ -84,23 +85,23 @@ Your own row in the Users table has no Deactivate, Make Admin, or Make Provider 
 
 ---
 
-### Impersonating a Provider ("View As")
+### Impersonating Another User ("View As")
 
-The **View as** button (amber outline) appears on any active provider row that is not your own account. It lets you enter a fully-scoped impersonation session where every data fetch is automatically filtered to that provider's records — exactly as if you had logged in as them.
+The **View as** button (amber outline) appears on any provider or admin row that is not your own account and that you are not currently impersonating someone else from. It lets you enter a fully-scoped impersonation session — every data fetch is filtered to that user's records, and their role is active for the duration.
 
 **How to start:**
 
-1. In the Users table, find the provider row.
+1. In the Users table, find the row for the provider or admin you want to view as.
 2. Click **View as**.
-3. An amber banner appears at the top of every page: *👁 Viewing as **Provider Name** — admin impersonation session*.
-4. You are redirected to the provider's Dashboard. All sidebar links, clients, visits, claims, and reports show only that provider's data.
+3. An amber banner appears at the top of every page: *👁 Viewing as **Name** — admin impersonation session*.
+4. You are redirected to the Dashboard. For provider impersonation all sidebar links, clients, visits, claims, and reports show only that provider's data. For admin impersonation, admin navigation (Users, Audit Logs) remains accessible.
 
 **What changes during impersonation:**
 
-- The access token is replaced with a short-lived provider JWT. All API calls use this token.
-- Admin navigation links (Users, Audit Logs) disappear — the provider role is active.
-- Navigating directly to `/admin/users` redirects to `/dashboard`.
-- Your admin session is held in memory and is never written to disk or storage.
+- The access token is replaced with a short-lived JWT carrying the target user's role. All API calls use this token.
+- When impersonating a **provider**: admin navigation links disappear; navigating directly to `/admin/users` redirects to `/dashboard`.
+- When impersonating an **admin**: admin navigation links remain visible — you see the app exactly as that admin does.
+- Your original admin session is held in memory and is never written to disk or storage.
 
 **How to exit:**
 
@@ -112,13 +113,52 @@ Refreshing the page ends the impersonation session (in-memory state is cleared).
 
 **HIPAA audit trail:**
 
-Every impersonation start writes an `IMPERSONATE_START` entry with your admin ID, the target provider's ID, and their email address. Every exit writes `IMPERSONATE_END`. Both entries appear in the Audit Logs view.
+Every impersonation start writes an `IMPERSONATE_START` entry with your admin ID, the target user's ID, and their email address. Every exit writes `IMPERSONATE_END`. Both entries appear in the Audit Logs view.
 
 **Limitations:**
 
-- You can only impersonate users with the `provider` role (not other admins).
+- `billing_admin` accounts cannot be impersonated (their agency-scoped access does not transfer meaningfully to a session).
 - You cannot impersonate your own account.
-- PHI you access during impersonation is logged under the provider's UUID, which is correct — you are accessing their records.
+- You cannot start a nested impersonation session while already impersonating someone else — the **View as** button is hidden during an active impersonation.
+- PHI you access during impersonation is logged under the target user's UUID, which is correct — you are accessing their records.
+
+---
+
+### Onboarding New Providers (Demo Mode)
+
+New providers land on an empty dashboard and need to practice the full workflow — adding a client, documenting a visit, collecting an MA 91 signature, submitting a claim, and uploading an EOB — before they start billing real clients. Demo Mode lets them do this safely without sending any claims to Availity.
+
+**Enabling Demo Mode:**
+
+1. Find the provider's row in the Users table.
+2. Click **Demo Off** (the gray toggle button). A confirmation modal explains that claim submissions will be simulated.
+3. Click **Enable Demo Mode**. The button turns green and reads **Demo On**.
+
+While demo mode is on, every claim submission the provider makes is intercepted: a `DEMO-XXXXXXXX` tracking ID is generated, the claim appears in Reports with status "Processing," and no data is sent to Availity. Status polls on demo claims also return immediately without contacting Availity. EOB upload and all other features (SOAP notes, MA 91 signatures, audit packets, ZipZign, CMS 1500 download) function normally.
+
+**Disabling Demo Mode:**
+
+Click **Demo On** → **Disable Demo Mode**. Two things happen automatically:
+
+1. Real Availity submissions resume on the provider's next claim.
+2. All clients the provider added while demo mode was on are **automatically deactivated** and disappear from their Clients list. Demo claims attached to those clients are also gone from view. No manual cleanup needed.
+
+Demo clients are tracked by an internal flag set at creation time, so only clients created during demo mode are removed — any real clients the provider had before demo was enabled are unaffected.
+
+**Sharing the Walkthrough Guide:**
+
+When you enable demo mode, the walkthrough guide is **automatically emailed** to the provider. The email contains the six workflow steps, sample SOAP notes, and the 10 patient records — no manual forwarding needed.
+
+You can also open the guide yourself at any time by clicking **Walkthrough Guide** on the provider's row. Screen-share it during onboarding or take a screenshot and send it. The card contains:
+
+- **Six workflow steps** from adding a client through uploading an EOB remittance scan to close the claim as paid.
+- **Sample SOAP notes** for a Prenatal 1 visit (Subjective / Objective / Assessment / Plan) that the provider can copy and adapt.
+- **10 fake patients** with realistic names, 10-digit Medicaid IDs, all nine supported MCOs (including FFS for the manual billing path), dates of birth, Philadelphia-area addresses, and a recognizable placeholder NPI (`9999999999`).
+- **Download Sample Remittance Advice (EOB)** — a realistic PA Medicaid remittance PDF showing five claim outcomes (two paid, one partially adjusted CO-45, two denied CO-4 and CO-96) with reason code explanations and recommended actions. The provider downloads it and uploads it in step 6 to complete the full EOB scan flow during practice.
+
+The provider enters this data into the real UI themselves — walking through the entry process is part of the training.
+
+The same guide is available to the provider directly: a green **Walkthrough Guide** link appears in their sidebar under the Help section while demo mode is on. They can open it at any time without needing to contact you.
 
 ---
 
