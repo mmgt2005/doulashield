@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.40.1] — 2026-06-26
+
+### Added
+- **Monthly cost column on Billing Providers table**: The admin Billing Providers screen now shows a "Monthly" column displaying seat count and calculated monthly total (e.g. "4 seats / $220/mo") for agencies with an active or trialing subscription. Computed client-side as `max(3, provider_count) × $55`. Shows "—" for agencies without an active subscription.
+
+---
+
 ## [1.40.0] — 2026-06-26
 
 ### Added
