@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.37.1] — 2026-06-26
+
+### Fixed
+- **Sidebar sign-out hidden for admin**: The sign-out button and user footer were pushed off-screen for admin users because their sidebar has 9 nav links + 3 help links, overflowing the available height. Adding `overflow-y-auto` and `min-h-0` to the nav element makes it scroll internally while keeping the sign-out footer always visible.
+
+---
+
 ## [1.37.0] — 2026-06-26
 
 ### Added
