@@ -69,6 +69,15 @@ const SERVICE_STATUS_COLORS: Record<string, string> = {
   cancelled: 'bg-gray-100 text-gray-500',
 }
 
+const TASK_DOWNLOAD_LINKS: Record<string, { label: string; href: string }> = {
+  pcb_client_eval_1: { label: 'Download PCB Client Evaluation Form', href: '/docs/pcb-client-evaluation.pdf' },
+  pcb_client_eval_2: { label: 'Download PCB Client Evaluation Form', href: '/docs/pcb-client-evaluation.pdf' },
+  pcb_client_eval_3: { label: 'Download PCB Client Evaluation Form', href: '/docs/pcb-client-evaluation.pdf' },
+  pcb_ref_letter_1: { label: 'Download Recommendation Letter Template', href: '/docs/pcb-recommendation-letter-template.pdf' },
+  pcb_ref_letter_2: { label: 'Download Recommendation Letter Template', href: '/docs/pcb-recommendation-letter-template.pdf' },
+  pcb_ref_letter_3: { label: 'Download Recommendation Letter Template', href: '/docs/pcb-recommendation-letter-template.pdf' },
+}
+
 const AGREEMENT_SECTIONS = [
   {
     title: '1. Appointment of Agent and Surrogate Authority',
@@ -520,6 +529,16 @@ export default function EnrollmentStatusPage() {
                             <p className="text-sm font-medium text-gray-800">{task.label}</p>
                             {task.description && (
                               <p className="mt-1 text-xs text-gray-500 leading-relaxed">{task.description}</p>
+                            )}
+                            {TASK_DOWNLOAD_LINKS[task.task_key] && (
+                              <a
+                                href={TASK_DOWNLOAD_LINKS[task.task_key].href}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="mt-1 inline-block text-xs text-blue-600 hover:underline"
+                              >
+                                {TASK_DOWNLOAD_LINKS[task.task_key].label} →
+                              </a>
                             )}
                           </div>
                         </div>

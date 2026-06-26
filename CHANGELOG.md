@@ -12,6 +12,17 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.39.4] — 2026-06-26
+
+### Added
+- **PCB Client Evaluation form download link**: A "Download PCB Client Evaluation Form →" link now appears on each of the three client evaluation tasks (`pcb_client_eval_1/2/3`) in the enrollment status page, linking directly to the hosted PDF at `/docs/pcb-client-evaluation.pdf`.
+- **Recommendation letter template**: A "Download Recommendation Letter Template →" link now appears on each of the three letter of recommendation tasks (`pcb_ref_letter_1/2/3`) in the enrollment status page. The template PDF (`/docs/pcb-recommendation-letter-template.pdf`) is a printable fill-in form providers can hand to clients, covering: client name, doula name, dates of service, free-form recommendation space, and a signature/date line.
+
+### Changed
+- Removed the now-redundant plain-text "Download the official PCB evaluation form at pacertboard.org/doula" sentence from the `pcb_client_eval_1` task description — the downloadable link in the UI replaces it.
+
+---
+
 ## [1.39.3] — 2026-06-26
 
 ### Fixed

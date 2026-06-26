@@ -94,8 +94,7 @@ _TASK_SEEDS: dict[str, list[dict]] = {
                 "9 competencies: communication, active listening, comfort measures, emotional support, "
                 "advocacy, information sharing, postpartum support, breastfeeding support, and referrals "
                 "to resources — include your comments for each. Must be from a client served within the "
-                "last 12 months. If you do not reside in Pennsylvania, the client must be PA-based. "
-                "Download the official PCB evaluation form at pacertboard.org/doula."
+                "last 12 months. If you do not reside in Pennsylvania, the client must be PA-based."
             ),
             "sort_order": 4,
         },
@@ -212,8 +211,7 @@ _TASK_SEEDS: dict[str, list[dict]] = {
                 "9 competencies: communication, active listening, comfort measures, emotional support, "
                 "advocacy, information sharing, postpartum support, breastfeeding support, and referrals "
                 "to resources — include your comments for each. Must be from a client served within the "
-                "last 12 months. If you do not reside in Pennsylvania, the client must be PA-based. "
-                "Download the official PCB evaluation form at pacertboard.org/doula."
+                "last 12 months. If you do not reside in Pennsylvania, the client must be PA-based."
             ),
             "sort_order": 4,
         },
