@@ -229,6 +229,7 @@ export default function BillingProvidersPage() {
                 <th className="px-4 py-3">Paid</th>
                 <th className="px-4 py-3">Denial %</th>
                 <th className="px-4 py-3">Subscription</th>
+                <th className="px-4 py-3">Monthly</th>
                 <th className="px-4 py-3">Actions</th>
               </tr>
             </thead>
@@ -254,6 +255,16 @@ export default function BillingProvidersPage() {
                       {s?.denial_rate != null ? `${s.denial_rate}%` : '—'}
                     </td>
                     <td className="px-4 py-3">{subBadge(bp.subscription_status)}</td>
+                    <td className="px-4 py-3 tabular-nums text-xs">
+                      {['active', 'trialing'].includes(bp.subscription_status ?? '') ? (
+                        <span className="text-gray-700">
+                          {Math.max(3, bp.provider_count)} seats<br />
+                          <span className="font-medium">${(Math.max(3, bp.provider_count) * 55).toLocaleString()}/mo</span>
+                        </span>
+                      ) : (
+                        <span className="text-gray-400">—</span>
+                      )}
+                    </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1">
                         <button
