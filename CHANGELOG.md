@@ -12,6 +12,19 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.34.0] — 2026-06-26
+
+### Added
+- **Stage 2 — Enrollment**: Admins can now create an Enrollment (Stage 2) service for a provider who has a PCB certification date on record. Six tasks are auto-generated: W-9 Form, Government-Issued Photo ID, Liability Insurance Face Sheet, PROMISe™ Type 13 Application (Medicaid), PROMISe™ Type 130 Application (CHIP), and CAQH ProView Enrollment. The "Mark Enrollment Complete" modal records the PROMISe™ enrollment date, PROMISe ID/ATN, CAQH ProView ID, and liability insurance expiry — writing `promise_last_enrolled_on` and `liability_insurance_expires_on` back to the provider's profile.
+- **Stage 3 — MCO Contracting**: Admins can create an MCO Contracting (Stage 3) service once Stage 2 is complete. Ten tasks are auto-generated: 5-Year Work History, Resume/CV, and one application+LOI task for each of the 8 PA Medicaid MCOs (AmeriHealth Caritas, Keystone First, UPMC For You, Geisinger Health Plan, Highmark Wholecare, UnitedHealthcare Community Plan, Aetna Better Health, Health Partners Plans). Each MCO task has a "Contract signed" date field to record when the individual contract is returned.
+- **Stage filter tabs**: The Enrollment Services admin page now shows three tabs — PCB Certification, Enrollment (Stage 2), and MCO Contracting (Stage 3) — with a per-tab service count. Services are filtered to the active tab.
+- **Stage badges**: Each enrollment service row now shows a colored stage badge (PCB in gray, Stage 2 in blue, Stage 3 in purple) alongside the existing status badge.
+- **Stage gates**: Stage 2 requires `pcb_last_certified_on` to be set on the provider. Stage 3 requires a completed Stage 2 enrollment service for the same provider. The API returns a clear 422 error if the prerequisite is not met.
+- **Enrollment Admin Guide — Stage 2 & 3 sections**: The Enrollment Admin Guide (`/enrollment-admin-guide`) now includes task-by-task instructions for both Stage 2 (what each document is, how to navigate PROMISe™ and CAQH ProView, what the liability face sheet must show) and Stage 3 (work history format, LOI guidance, MCO-specific notes, expected credentialing timeline).
+- **New DB column**: `stage` VARCHAR(30) added to `enrollment_services` (migration 0045, default `'pcb'`).
+
+---
+
 ## [1.33.0] — 2026-06-26
 
 ### Added

@@ -163,13 +163,21 @@ The same guide is available to the provider directly: a green **Walkthrough Guid
 
 ---
 
-## PCB Enrollment Services
+## Enrollment Services (Three-Stage Credentialing)
 
-DoulaShield can manage the full Pennsylvania Certification Board (PCB) credentialing process for a doula provider on behalf of the agency. Go to **Admin → Enrollment Services** to start and track credentialing applications.
+DoulaShield manages the full credentialing pipeline for doula providers across three stages. Go to **Admin → Enrollment Services** to create and track services for each stage. The page shows three tabs — PCB Certification, Enrollment (Stage 2), and MCO Contracting (Stage 3) — each with a count of active services.
 
-### Choosing a Pathway
+Each stage auto-generates a task checklist. Upload documents per task, enter any required data, mark tasks complete, and use the stage-specific "Mark Complete" button when all tasks are done.
 
-PCB offers two pathways. Select the one that fits the provider:
+For task-by-task instructions (what to collect, what to verify, how to navigate PROMISe™ and CAQH), see **Help → Enrollment Guide** in the sidebar.
+
+---
+
+### Stage 1 — PCB Certification
+
+The first stage. Creates a Pennsylvania Certification Board (PCB) credentialing checklist for the provider.
+
+**Choosing a Pathway:**
 
 | Pathway | Who it's for | Requirements |
 |---|---|---|
@@ -178,31 +186,90 @@ PCB offers two pathways. Select the one that fits the provider:
 
 When in doubt, use Education/Training — it is available to all applicants regardless of experience.
 
-### Creating an Enrollment Service
-
+**Creating a Stage 1 service:**
 1. Click **+ New Enrollment Service**.
-2. Select the provider from the dropdown.
-3. Choose the pathway (Education/Training or Experienced).
-4. Click **Create Service** — the task checklist is generated automatically.
+2. Select "PCB Certification" as the stage.
+3. Select the provider and choose a pathway.
+4. Click **Create Service** — the task checklist is generated automatically (6 tasks for Education/Training, 8 for Experienced).
 
-### Working Through the Tasks
+**Task notes:**
+- **Training hours field** — enter total documented hours when uploading training certs. DoulaShield blocks completion if under 24.
+- **HIPAA hours field** — enter hours covering HIPAA/confidentiality (must be ≥ 1).
+- Upload documents per task (PDF, JPEG, PNG, up to 20 MB). Uploading advances a "not started" task to "in progress."
 
-Each task has an upload slot and an optional notes field. Click the task row to expand it:
-
-- **Upload Document** — attach the relevant certificate or form (PDF, JPEG, PNG, up to 20 MB). Uploading a document automatically advances the task from "not started" to "in progress."
-- **Training hours field** (Education/Training only) — enter the total documented hours when uploading training certificates. DoulaShield prevents the task from being marked complete if the total is under 24. A badge shows how many more hours are needed.
-- **HIPAA hours field** (Education/Training only) — enter hours covering HIPAA/confidentiality specifically. Must be ≥ 1.
-- **Mark Complete** — once a document is uploaded and any required hour counts are met, click this to mark the task done.
-
-For step-by-step guidance on what to collect and verify for each task, see **Help → Enrollment Guide** in the sidebar.
-
-### Submitting to PCB and Recording the Certificate
-
-PCB has no API — once all tasks are complete, submit the application packet at **pacertboard.org/doula**. When the certificate arrives (typically 4–6 weeks):
-
-1. Upload the certificate file as a document on the service.
+**Completing Stage 1:** PCB has no API — submit the application packet at pacertboard.org/doula when all tasks are done. When the certificate arrives (typically 4–6 weeks):
+1. Upload the certificate as a document.
 2. Click **Mark PCB Certification Complete** and enter the issue date.
-3. DoulaShield writes the certification date to the provider's profile (`pcb_last_certified_on`). The date appears in the provider's Settings page and is used as proof of credentials for subsequent steps (CAQH setup, MCO contracting).
+3. DoulaShield writes `pcb_last_certified_on` to the provider's profile. This unlocks Stage 2.
+
+---
+
+### Stage 2 — Enrollment (PROMISe™, Liability, CAQH)
+
+**Prerequisite:** Provider must have a PCB certification date on record. The API blocks Stage 2 creation if `pcb_last_certified_on` is not set.
+
+**Creating a Stage 2 service:**
+1. Click **+ New Enrollment Service** → select "Enrollment — Stage 2".
+2. Select the provider. Click **Create Service**.
+
+Six tasks are auto-generated:
+
+| Task | What it collects |
+|---|---|
+| W-9 Form | IRS W-9 with provider's legal name and TIN |
+| Government-Issued Photo ID | Driver's license, state ID, or passport (front + back) |
+| Liability Insurance Face Sheet | Declarations page showing coverage limits and dates |
+| PROMISe™ Type 13 Application | Medicaid provider enrollment — ATN from DHS portal |
+| PROMISe™ Type 130 Application | CHIP provider enrollment — separate ATN |
+| CAQH ProView Enrollment | Screenshot of attested CAQH profile; record CAQH ID in notes |
+
+**Completing Stage 2:** Click **Mark Enrollment Complete** when all tasks are done. Enter:
+- PROMISe™ enrollment date (required)
+- PROMISe™ Provider ID / ATN (optional — enter when received from DHS)
+- CAQH ProView ID (optional)
+- Liability insurance expiry date (optional)
+
+DoulaShield writes `promise_last_enrolled_on` and `liability_insurance_expires_on` to the provider's profile and unlocks Stage 3.
+
+---
+
+### Stage 3 — MCO Contracting
+
+**Prerequisite:** A completed Stage 2 enrollment service for the same provider. The API blocks Stage 3 creation otherwise.
+
+**Creating a Stage 3 service:**
+1. Click **+ New Enrollment Service** → select "MCO Contracting — Stage 3".
+2. Select the provider. Click **Create Service**.
+
+Ten tasks are auto-generated:
+
+| Task | What it collects |
+|---|---|
+| 5-Year Work History | Employers, dates, reason for leaving; gaps must be explained |
+| Resume / CV | Current resume highlighting doula experience and certifications |
+| AmeriHealth Caritas — Application + LOI | Credentialing application and Letter of Intent |
+| Keystone First — Application + LOI | Credentialing application and LOI |
+| UPMC For You — Application + LOI | Credentialing application and LOI |
+| Geisinger Health Plan — Application + LOI | Credentialing application and LOI |
+| Highmark Wholecare — Application + LOI | Credentialing application and LOI |
+| UnitedHealthcare Community Plan — Application + LOI | Credentialing application and LOI |
+| Aetna Better Health — Application + LOI | Credentialing application and LOI |
+| Health Partners Plans — Application + LOI | Credentialing application and LOI |
+
+Each MCO task has a **"Contract signed"** date field — enter the date when the signed contract is received from the MCO, then mark the task complete. Individual contract dates are preserved in task data for reference.
+
+**Completing Stage 3:** Click **Mark MCO Contracting Complete** when all tasks are done. Enter the final contracting completion date. MCO credentialing typically takes 60–120 days per MCO — submit all applications simultaneously.
+
+---
+
+### Provider Credential Summary
+
+After all three stages are complete, the provider's Settings page shows:
+- PCB certification date (`pcb_last_certified_on`)
+- PROMISe™ enrollment date (`promise_last_enrolled_on`)
+- CAQH ProView attestation date (`caqh_last_attested_on`, renewed by provider every 120 days)
+- Liability insurance expiry (`liability_insurance_expires_on`)
+- Contracted MCOs and contract dates (`mco_contracts`)
 
 ---
 
@@ -459,5 +526,7 @@ HIPAA requires an immutable audit trail. The database has a rule that blocks UPD
 | `UPDATE_AGENCY_AVAILITY` | Billing admin saved agency Availity credentials | user |
 | `SUBMIT_AGENCY_CLAIM` | Billing admin submitted a queued claim to Availity using agency credentials | claim |
 | `ASSIGN_BILLING_PROVIDER` | Admin assigned a provider to a billing agency (individual subscription cancelled if active) | user |
-| `ENROLLMENT_SERVICE_CREATED` | Admin created a PCB enrollment service for a provider | user |
+| `ENROLLMENT_SERVICE_CREATED` | Admin created an enrollment service (any stage) for a provider | user |
 | `PCB_CERTIFICATION_COMPLETE` | Admin recorded PCB certificate date; provider's pcb_last_certified_on updated | user |
+| `ENROLLMENT_STAGE2_COMPLETE` | Admin completed Stage 2; provider's promise_last_enrolled_on and liability_insurance_expires_on updated | user |
+| `ENROLLMENT_STAGE3_COMPLETE` | Admin completed Stage 3 MCO contracting | user |
