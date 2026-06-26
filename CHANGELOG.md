@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.39.2] — 2026-06-26
+
+### Fixed
+- **Provider enrollment status page fails to load**: reportlab was imported at module level in `enrollment_provider.py`. If the library was not yet available in a freshly started container, the entire module failed to load — causing `GET /enrollment/me` to 500 for all providers. Moved reportlab imports inside `_build_pcb_prefill_pdf()` so a missing reportlab only breaks the PDF download endpoint, not the rest of the provider enrollment routes.
+
+---
+
 ## [1.39.1] — 2026-06-26
 
 ### Fixed
