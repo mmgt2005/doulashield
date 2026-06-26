@@ -11,6 +11,7 @@ const providerLinks = [
   { href: '/dashboard', label: 'Dashboard' },
   { href: '/clients', label: 'Clients' },
   { href: '/reports', label: 'Reports' },
+  { href: '/enrollment-status', label: 'Enrollment Status' },
   { href: '/settings', label: 'Settings' },
 ]
 

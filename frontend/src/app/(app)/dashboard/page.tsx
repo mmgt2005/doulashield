@@ -6,6 +6,30 @@ import axios from 'axios'
 import { getAccessToken } from '@/lib/auth'
 import { useAuthStore } from '@/store/auth-store'
 
+interface EnrollmentTask {
+  id: string
+  status: 'not_started' | 'in_progress' | 'complete'
+}
+
+interface EnrollmentService {
+  id: string
+  stage: string
+  status: string
+}
+
+interface EnrollmentServiceDetail {
+  service: EnrollmentService
+  tasks: EnrollmentTask[]
+}
+
+const STAGE_ORDER = ['pcb', 'nppes_setup', 'enrollment', 'mco_contracting']
+const STAGE_LABELS: Record<string, string> = {
+  pcb: 'PCB',
+  nppes_setup: 'NPPES / NPI',
+  enrollment: 'Stage 2',
+  mco_contracting: 'Stage 3',
+}
+
 export default function DashboardPage() {
   const { isAuthenticated } = useAuthStore()
   const [caqhDaysRemaining, setCaqhDaysRemaining] = useState<number | null | undefined>(undefined)
@@ -13,6 +37,7 @@ export default function DashboardPage() {
   const [pcbDaysRemaining, setPcbDaysRemaining] = useState<number | null | undefined>(undefined)
   const [liabilityDaysRemaining, setLiabilityDaysRemaining] = useState<number | null | undefined>(undefined)
   const [claimDeadlineSummary, setClaimDeadlineSummary] = useState<{ overdue_count: number; urgent_count: number; unfiled_past_30_days: number } | null>(null)
+  const [enrollmentServices, setEnrollmentServices] = useState<EnrollmentServiceDetail[] | null>(null)
 
   useEffect(() => {
     if (!isAuthenticated) return
@@ -24,6 +49,18 @@ export default function DashboardPage() {
       )
       .then((r) => setClaimDeadlineSummary(r.data.claim_deadline_summary))
       .catch(() => {})
+  }, [isAuthenticated])
+
+  useEffect(() => {
+    if (!isAuthenticated) return
+    const headers = { Authorization: `Bearer ${getAccessToken()}` }
+    axios
+      .get<EnrollmentServiceDetail[]>(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/enrollment/me`,
+        { headers }
+      )
+      .then((r) => setEnrollmentServices(r.data))
+      .catch(() => setEnrollmentServices([]))
   }, [isAuthenticated])
 
   useEffect(() => {
@@ -178,6 +215,68 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+
+      {enrollmentServices && enrollmentServices.length > 0 && (() => {
+        // Find the most recent non-complete service, or fallback to most recent overall
+        const active = enrollmentServices.find((d) => d.service.status !== 'complete') ?? enrollmentServices[0]
+        const allTasks = active.tasks
+        const completedCount = allTasks.filter((t) => t.status === 'complete').length
+
+        // Build per-stage status for the pipeline pills
+        const stageStatus: Record<string, 'complete' | 'in_progress' | 'none'> = {}
+        for (const stage of STAGE_ORDER) {
+          const svc = enrollmentServices.find((d) => d.service.stage === stage)
+          if (!svc) stageStatus[stage] = 'none'
+          else if (svc.service.status === 'complete') stageStatus[stage] = 'complete'
+          else stageStatus[stage] = 'in_progress'
+        }
+
+        return (
+          <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm font-semibold text-gray-900">Credentialing Status</p>
+              <Link href="/enrollment-status" className="text-xs font-medium text-blue-600 hover:underline">
+                View details →
+              </Link>
+            </div>
+            <div className="mb-3">
+              <p className="text-xs text-gray-500">
+                Current stage: <span className="font-medium text-gray-800">{STAGE_LABELS[active.service.stage] ?? active.service.stage}</span>
+                <span className={`ml-2 rounded-full px-2 py-0.5 text-xs font-medium ${
+                  active.service.status === 'complete' ? 'bg-green-100 text-green-700' :
+                  active.service.status === 'in_progress' ? 'bg-blue-100 text-blue-700' :
+                  'bg-gray-100 text-gray-600'
+                }`}>
+                  {active.service.status.replace('_', ' ')}
+                </span>
+              </p>
+              {allTasks.length > 0 && (
+                <p className="mt-1 text-xs text-gray-500">
+                  Tasks: <span className="font-medium text-gray-800">{completedCount} of {allTasks.length} complete</span>
+                </p>
+              )}
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              {STAGE_ORDER.map((stage) => {
+                const s = stageStatus[stage]
+                return (
+                  <span
+                    key={stage}
+                    className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                      s === 'complete' ? 'bg-green-100 text-green-700' :
+                      s === 'in_progress' ? 'bg-blue-100 text-blue-700' :
+                      'bg-gray-100 text-gray-400'
+                    }`}
+                  >
+                    {s === 'complete' ? '✓' : s === 'in_progress' ? '●' : '○'}
+                    {' '}{STAGE_LABELS[stage]}
+                  </span>
+                )
+              })}
+            </div>
+          </div>
+        )
+      })()}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Link
