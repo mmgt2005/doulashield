@@ -71,7 +71,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
       <div className="px-4 py-4 border-b border-gray-200">
         <img src="/logo.png" alt="DoulaShield" className="w-36 h-auto" />
       </div>
-      <nav className="flex-1 px-2 py-4 space-y-1 flex flex-col">
+      <nav className="flex-1 min-h-0 overflow-y-auto px-2 py-4 space-y-1 flex flex-col">
         <div className="space-y-1">
           {links.map(({ href, label }) => (
             <Link
