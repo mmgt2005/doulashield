@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.38.0] — 2026-06-26
+
+### Added
+- **Enrollment Services walkthrough guide**: A "How It Works" button on the Admin → Enrollment Services page opens a visual modal covering the full four-stage pipeline. Each stage section shows its task list, gate prerequisite, and a numbered step-by-step admin action guide. A "Key Rules & Reminders" panel covers stage gating enforcement, provider visibility, NPI bypass, and CAQH re-attestation cadence. The guide is available at any time without leaving the page.
+
+---
+
 ## [1.37.1] — 2026-06-26
 
 ### Fixed

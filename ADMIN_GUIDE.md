@@ -169,7 +169,9 @@ DoulaShield manages the full credentialing pipeline for doula providers across f
 
 Each stage auto-generates a task checklist. Upload documents per task, enter any required data, mark tasks complete, and use the stage-specific "Mark Complete" button when all tasks are done.
 
-For task-by-task instructions (what to collect, what to verify, how to navigate PROMISe™ and CAQH), see **Help → Enrollment Guide** in the sidebar.
+**Walkthrough guide:** Click the **How It Works** button (top-right of the Enrollment Services page) to open a full visual walkthrough of all four stages. It shows each stage's task list, gate prerequisites, step-by-step admin actions, and key rules — useful during onboarding or whenever you need a quick reference without leaving the page.
+
+For task-by-task document instructions (what to collect, what to verify, how to navigate PROMISe™ and CAQH), see **Help → Enrollment Guide** in the sidebar.
 
 ---
 
