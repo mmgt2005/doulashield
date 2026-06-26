@@ -69,6 +69,137 @@ const SERVICE_STATUS_COLORS: Record<string, string> = {
   cancelled: 'bg-gray-100 text-gray-500',
 }
 
+const AGREEMENT_SECTIONS = [
+  {
+    title: '1. Appointment of Agent and Surrogate Authority',
+    body: `By executing this Agreement and opting into the Managed Registration Service, the Provider (hereafter referred to as "Provider," "User," or "Doula") explicitly appoints DoulaShield (hereafter referred to as the "Agency") as their authorized administrative delegate and surrogate clerk for the limited purpose of obtaining, managing, and maintaining professional healthcare identifiers and credentials.
+
+This appointment grants the Agency explicit authority to act on the Provider's behalf within the following federal and state systems:
+
+• The National Plan and Provider Enumeration System (NPPES)
+• The Centers for Medicare & Medicaid Services (CMS) Identity & Access Management (I&A) System
+• The Council for Affordable Quality Healthcare (CAQH) ProView® platform
+• The Pennsylvania Department of Human Services PROMISe™ enrollment portal`,
+  },
+  {
+    title: '2. Scope of Authorized Actions',
+    body: `The Provider authorizes the Agency and its designated personnel to perform the following administrative actions in the Provider's name:
+
+• Establish, register, and configure user accounts and profiles within the NPPES, I&A, and CAQH systems.
+• Select and apply the appropriate healthcare taxonomy codes, including but not limited to Taxonomy Code 374J00000X (Doula).
+• Submit applications for a National Provider Identifier (NPI Type 1) number using the personal data submitted by the Provider to the Agency's onboarding portal.
+• Electronically sign administrative forms, attestations, and compliance renewals solely required for credentialing, NPI generation, and network enrollment pathways.`,
+  },
+  {
+    title: '3. Provider Attestation and Data Accuracy',
+    body: `The Provider acknowledges and agrees that they are legally responsible for the validity, truthfulness, and accuracy of all personal information, identification numbers, tax documents, and certifications uploaded or inputted into the Agency's portal. The Provider understands that the Agency relies entirely on this data to file federal and state applications. Any intentional misrepresentation, omission, or fraudulent data provided by the Provider may constitute a violation of federal law under 18 U.S.C. § 1001 and will result in the immediate termination of this Agreement.`,
+  },
+  {
+    title: '4. Privacy and Security of Sensitive Information',
+    body: `The Agency agrees to process, store, and transmit all highly sensitive personal information—including Social Security Numbers (SSN), Employer Identification Numbers (EIN), and government-issued identification—in strict compliance with industry-standard data protection protocols. The Agency shall use this information solely for the credentialing and registration purposes authorized in Section 2 and will never sell, distribute, or disclose this data to unauthorized third parties.`,
+  },
+  {
+    title: '5. Limitation of Liability and Indemnification',
+    body: `The Provider agrees to indemnify, defend, and hold harmless the Agency, its officers, employees, and tech platforms from any claims, regulatory penalties, loss of income, claim rejections, or liabilities arising out of:
+
+• Delays or rejections by federal or state agencies (including NPPES or CMS) in issuing numbers or credentials.
+• Errors or processing backlogs within external insurance networks or Managed Care Organizations (MCOs).
+• Inaccuracies in documentation provided by the User that cause structural compliance delays.`,
+  },
+  {
+    title: '6. Revocation of Authority',
+    body: `This administrative surrogate authorization shall remain active and in full force until the Provider's onboarding pipeline is complete, or until either party terminates the business relationship. The Provider retains the absolute right to revoke this proxy at any time by submitting a formal written request via email to support@doulashield.com. Upon receipt of a revocation notice, the Agency will cease all surrogate activity within 48 business hours and hand over all primary credentials to the Provider.`,
+  },
+]
+
+function AgreementGate({ onSigned }: { onSigned: () => void }) {
+  const [agreed, setAgreed] = useState(false)
+  const [signing, setSigning] = useState(false)
+  const api = process.env.NEXT_PUBLIC_API_URL
+  const headers = { Authorization: `Bearer ${getAccessToken()}` }
+
+  const handleSign = async () => {
+    setSigning(true)
+    try {
+      await axios.post(`${api}/api/v1/enrollment/me/sign-agreement`, {}, { headers })
+      onSigned()
+    } catch {
+      // if it fails (e.g. already signed), still proceed
+      onSigned()
+    } finally {
+      setSigning(false)
+    }
+  }
+
+  return (
+    <div className="mx-auto max-w-3xl px-4 py-8">
+      <div className="mb-6">
+        <h1 className="text-xl font-semibold text-gray-900">Authorization Agreement Required</h1>
+        <p className="mt-1 text-sm text-gray-500">
+          Before accessing your credentialing services, please read and sign the following
+          Authorized Delegate and NPI Surrogate Authorization Agreement.
+        </p>
+      </div>
+
+      <div className="rounded-lg border border-gray-200 bg-white">
+        <div className="border-b border-gray-200 px-6 py-4">
+          <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
+            Authorized Delegate and NPI Surrogate Authorization Agreement
+          </h2>
+          <p className="mt-1 text-xs text-gray-500">
+            Between DoulaShield ("Agency") and the undersigned Provider ("You")
+          </p>
+        </div>
+
+        <div className="max-h-[56vh] overflow-y-auto px-6 py-5 space-y-5">
+          {AGREEMENT_SECTIONS.map((section) => (
+            <div key={section.title}>
+              <p className="text-xs font-semibold text-gray-800 mb-1.5">{section.title}</p>
+              <p className="text-xs text-gray-600 leading-relaxed whitespace-pre-line">
+                {section.body}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        <div className="border-t border-gray-200 px-6 py-5 space-y-4 bg-gray-50 rounded-b-lg">
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={agreed}
+              onChange={(e) => setAgreed(e.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <span className="text-sm text-gray-700 leading-snug">
+              I have read, understood, and agree to the terms of this Authorized Delegate and NPI
+              Surrogate Authorization Agreement. I authorize DoulaShield to act as my administrative
+              delegate for the purposes described above.
+            </span>
+          </label>
+
+          <button
+            onClick={handleSign}
+            disabled={!agreed || signing}
+            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            {signing ? (
+              <>
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                Signing…
+              </>
+            ) : (
+              'Sign & Continue'
+            )}
+          </button>
+          <p className="text-xs text-gray-400">
+            Your electronic signature and the date/time will be recorded securely.
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function EnrollmentStatusPage() {
   const router = useRouter()
   const { user } = useAuthStore()
@@ -78,6 +209,8 @@ export default function EnrollmentStatusPage() {
   const [uploadingTask, setUploadingTask] = useState<{ serviceId: string; taskId: string } | null>(null)
   const [openingDoc, setOpeningDoc] = useState<string | null>(null)
   const [toast, setToast] = useState<string | null>(null)
+  const [agreementStatus, setAgreementStatus] = useState<'loading' | 'unsigned' | 'signed'>('loading')
+  const [agreementSignedAt, setAgreementSignedAt] = useState<string | null>(null)
 
   const headers = { Authorization: `Bearer ${getAccessToken()}` }
   const api = process.env.NEXT_PUBLIC_API_URL
@@ -92,8 +225,42 @@ export default function EnrollmentStatusPage() {
       router.replace('/dashboard')
       return
     }
-    loadServices()
+    // Admins skip the agreement gate
+    if (user?.role === 'admin') {
+      setAgreementStatus('signed')
+      loadServices()
+      return
+    }
+    checkAgreement()
   }, [user]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const checkAgreement = async () => {
+    try {
+      const res = await axios.get<{ signed: boolean; signed_at: string | null }>(
+        `${api}/api/v1/enrollment/me/agreement`,
+        { headers }
+      )
+      if (res.data.signed) {
+        setAgreementStatus('signed')
+        setAgreementSignedAt(res.data.signed_at)
+        loadServices()
+      } else {
+        setAgreementStatus('unsigned')
+        setLoading(false)
+      }
+    } catch {
+      // On error, show unsigned gate so provider can try signing
+      setAgreementStatus('unsigned')
+      setLoading(false)
+    }
+  }
+
+  const handleAgreementSigned = () => {
+    setAgreementStatus('signed')
+    const now = new Date().toISOString()
+    setAgreementSignedAt(now)
+    loadServices()
+  }
 
   const loadServices = async () => {
     setLoading(true)
@@ -103,7 +270,6 @@ export default function EnrollmentStatusPage() {
         { headers }
       )
       setServices(res.data)
-      // Auto-select the first stage that has a service
       const firstStage = STAGE_ORDER.find((s) => res.data.some((d) => d.service.stage === s))
       if (firstStage) setActiveStage(firstStage)
     } catch {
@@ -165,6 +331,14 @@ export default function EnrollmentStatusPage() {
 
   const activeDetail = services.find((d) => d.service.stage === activeStage) ?? null
 
+  if (agreementStatus === 'loading') {
+    return <div className="p-8 text-sm text-gray-500">Loading…</div>
+  }
+
+  if (agreementStatus === 'unsigned') {
+    return <AgreementGate onSigned={handleAgreementSigned} />
+  }
+
   if (loading) {
     return <div className="p-8 text-sm text-gray-500">Loading…</div>
   }
@@ -182,6 +356,17 @@ export default function EnrollmentStatusPage() {
         <p className="mt-0.5 text-sm text-gray-500">
           Track your credentialing progress and upload required documents for each stage.
         </p>
+        {agreementSignedAt && (
+          <p className="mt-1.5 text-xs text-green-700">
+            Authorization agreement signed{' '}
+            {new Date(agreementSignedAt).toLocaleDateString('en-US', {
+              month: 'long',
+              day: 'numeric',
+              year: 'numeric',
+            })}
+            .
+          </p>
+        )}
       </div>
 
       {services.length === 0 ? (

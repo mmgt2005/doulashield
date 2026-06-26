@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import uuid
+from datetime import datetime, timezone
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Form, HTTPException, UploadFile, status
@@ -10,6 +11,7 @@ from sqlalchemy.future import select
 
 from app.dependencies import CurrentUser, get_db, get_current_user
 from app.models.enrollment import EnrollmentDocument, EnrollmentService, EnrollmentTask
+from app.models.user import User
 from app.schemas.enrollment import (
     EnrollmentDocumentRead,
     EnrollmentServiceDetail,
@@ -131,6 +133,40 @@ async def upload_my_enrollment_document(
     await db.commit()
     await db.refresh(doc)
     return EnrollmentDocumentRead.model_validate(doc)
+
+
+@router.get("/agreement")
+async def get_agreement_status(
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> dict:
+    result = await db.execute(select(User).where(User.id == current_user.id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    signed_at = user.surrogate_auth_signed_at
+    return {
+        "signed": signed_at is not None,
+        "signed_at": signed_at.isoformat() if signed_at else None,
+    }
+
+
+@router.post("/sign-agreement")
+async def sign_surrogate_agreement(
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> dict:
+    result = await db.execute(select(User).where(User.id == current_user.id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    if user.surrogate_auth_signed_at is None:
+        user.surrogate_auth_signed_at = datetime.now(timezone.utc)
+        await db.commit()
+    return {
+        "signed": True,
+        "signed_at": user.surrogate_auth_signed_at.isoformat(),
+    }
 
 
 @router.get("/{service_id}/documents/{doc_id}/url")
