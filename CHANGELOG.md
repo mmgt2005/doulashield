@@ -12,6 +12,15 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.37.0] — 2026-06-26
+
+### Added
+- **Surrogate Authorization Agreement gate**: Providers must read and electronically sign the Authorized Delegate and NPI Surrogate Authorization Agreement before accessing their Enrollment Status page. The agreement covers the agency's authority to act on the provider's behalf in NPPES, CMS I&A, CAQH ProView, and PROMISe™, data accuracy attestation, privacy commitments, limitation of liability, and revocation rights. Signature timestamp is recorded to the database; providers who have already signed see a confirmation note in the page header. Admins bypass the gate.
+- **New endpoints**: `GET /api/v1/enrollment/me/agreement` (check whether the authenticated provider has signed) and `POST /api/v1/enrollment/me/sign-agreement` (record the electronic signature).
+- **DB column** `surrogate_auth_signed_at` (migration 0046): nullable timestamptz on `users` tracking when each provider signed the surrogate authorization.
+
+---
+
 ## [1.36.0] — 2026-06-26
 
 ### Added

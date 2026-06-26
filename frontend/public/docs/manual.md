@@ -140,6 +140,10 @@ Once your agency has started at least one credentialing stage, a **Credentialing
 
 Go to **Sidebar → Enrollment Status** to see your full credentialing checklist.
 
+**Authorization agreement — first visit only**
+
+The first time you open the Enrollment Status page you will be asked to read and sign the **Authorized Delegate and NPI Surrogate Authorization Agreement**. This agreement authorizes DoulaShield to act as your administrative delegate in NPPES, CMS I&A, CAQH ProView, and PROMISe™ so your agency can complete NPI applications, enrollment forms, and attestations on your behalf. Once you check the box and click **Sign & Continue**, your electronic signature is recorded and you will not be asked again. The date of signing appears in the page header on all future visits. To revoke this authorization at any time, contact support@doulashield.com — the agency will cease surrogate activity within 48 business hours and transfer your credentials back to you.
+
 **What you can do on this page:**
 - Read the task list for each stage — each task includes a description of exactly what document to gather and what it must show
 - See which tasks are complete, in progress, or not yet started
