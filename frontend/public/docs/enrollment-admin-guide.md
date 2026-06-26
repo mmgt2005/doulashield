@@ -234,3 +234,198 @@ Note the certificate number in the task notes — it is required when completing
 | Letter of Recommendation #1 | Experienced | Signed by client; within last year |
 | Letter of Recommendation #2 | Experienced | Signed by client; within last year |
 | Letter of Recommendation #3 | Experienced | Signed by client; within last year |
+
+---
+
+## Stage 2: Enrollment (PROMISe™, Liability Insurance, CAQH ProView)
+
+Stage 2 unlocks after the provider's PCB certification date is recorded. Create a Stage 2 service from Admin → Enrollment Services → + New Enrollment Service, select "Enrollment — Stage 2."
+
+Six tasks are auto-created:
+
+### Task 1: W-9 Form
+
+**What to collect:** A completed, signed IRS Form W-9. The provider's legal name and TIN (SSN or EIN) must exactly match what will be submitted to PROMISe™ and CAQH.
+
+**What to verify:**
+- Provider's legal name matches their government ID
+- TIN is entered correctly (no blank fields)
+- Signed and dated
+
+**If the provider needs a W-9 form:** Download from IRS.gov — search "Form W-9". Sole proprietors use their SSN; those with an EIN should use it.
+
+---
+
+### Task 2: Government-Issued Photo ID
+
+**What to collect:** A clear, unexpired government-issued photo ID. Acceptable: driver's license, state ID card, or passport.
+
+**What to verify:**
+- Not expired
+- Photo clearly visible
+- For a driver's license or state ID: include both front AND back
+
+---
+
+### Task 3: Liability Insurance Face Sheet
+
+**What to collect:** The declarations page (face sheet) from a professional liability insurance policy. DoulaShield carries a group professional liability policy that covers all enrolled providers — contact the agency director to obtain the face sheet for the provider.
+
+**What to verify the face sheet shows:**
+- Insured name (provider or agency as named insured)
+- Policy number
+- Effective and expiration dates (must be current)
+- Coverage limits: at minimum $1,000,000 per occurrence / $3,000,000 aggregate
+
+**After uploading:** Record the policy expiration date in the notes field. DoulaShield will flag this for renewal.
+
+---
+
+### Task 4: PROMISe™ Type 13 Application (Medicaid)
+
+**What PROMISe™ Type 13 is:** Pennsylvania's Medicaid provider enrollment application for individual providers billing under a fee-for-service (FFS) or MCO arrangement. Required to obtain a PROMISe™ Provider ID and bill any PA Medicaid MCO.
+
+**How to apply:**
+1. Go to PROMISe™ Provider Enrollment at provider.ipx.pa.gov (DHS provider portal)
+2. Create or log in to a provider account
+3. Select "Enroll as a Provider" → Type 13 (Individual Provider)
+4. Enter the provider's NPI, PCB certification number, SSN/EIN, and address
+5. Complete the credential section with PCB certification date and certificate number (from task notes in Stage 1)
+6. Submit — you will receive an ATN (Application Tracking Number) immediately
+
+**What to upload:** Screenshot of the submission confirmation page showing the ATN, or the confirmation email from DHS.
+
+**What to record in notes:** The ATN (Application Tracking Number) and submission date. The PROMISe™ Provider ID is issued separately after approval (typically 2–4 weeks) — record it when received and enter it in the "Mark Enrollment Complete" modal.
+
+---
+
+### Task 5: PROMISe™ Type 130 Application (CHIP)
+
+**What PROMISe™ Type 130 is:** The CHIP (Children's Health Insurance Program) provider enrollment application. A separate enrollment from Type 13 but uses the same PROMISe™ portal. Required to bill CHIP-enrolled children under Keystone First CHIP, UPMC for You CHIP, and other CHIP MCOs.
+
+**How to apply:** Same process as Type 13 — return to the PROMISe™ portal and select Type 130. The provider's existing PROMISe™ account is reused; you're adding a new enrollment type.
+
+**What to upload:** Confirmation of Type 130 submission (screenshot or ATN email).
+
+---
+
+### Task 6: CAQH ProView Enrollment
+
+**What CAQH ProView is:** The Council for Affordable Quality Healthcare (CAQH) ProView is a centralized credentialing database that all PA Medicaid MCOs use to verify provider credentials. Each provider must have an active, attested CAQH ProView profile. Attestation expires every 120 days and must be renewed.
+
+**How to enroll:**
+1. Go to proview.caqh.org and create a new provider account
+2. Enter the provider's NPI, PCB certification date, license/credential information, malpractice insurance (use the liability policy details from Task 3), and practice information
+3. Upload all supporting documents (PCB certificate, liability face sheet, CPR cert) directly in CAQH
+4. Complete all sections and click "Attest" — this notifies all participating MCOs that the profile is complete
+
+**What to upload:** A screenshot of the CAQH ProView dashboard showing "Attested" status and the attestation date.
+
+**What to record in notes:** The CAQH ProView ID (8-digit number shown on the dashboard). Enter this ID in the "Mark Enrollment Complete" modal — it is referenced in every MCO credentialing application in Stage 3.
+
+**Attestation renewal reminder:** DoulaShield tracks the `caqh_last_attested_on` date on the provider's profile and alerts when renewal is approaching.
+
+---
+
+### Completing Stage 2
+
+Once all 6 tasks are marked complete:
+1. Click **Mark Enrollment Complete**
+2. Enter the PROMISe™ enrollment date (date the application was submitted — actual approval arrives later but start the MCO process as soon as you have the ATN)
+3. Enter the PROMISe™ Provider ID/ATN and CAQH ProView ID
+4. Enter the liability insurance expiry date (from the face sheet)
+5. Click **Complete Stage 2** — the provider's profile is updated and Stage 3 is unlocked
+
+---
+
+## Stage 3: MCO Contracting
+
+Stage 3 unlocks after a Stage 2 enrollment service is marked complete for the provider. Create a Stage 3 service from Admin → Enrollment Services → + New Enrollment Service, select "MCO Contracting — Stage 3."
+
+Ten tasks are auto-created: 2 shared documents and 1 task per MCO.
+
+### Task 1: 5-Year Work History
+
+**What to collect:** A document listing the provider's employment and self-employment history for the past 5 years.
+
+**Required format:**
+- Employer/agency name and address
+- Start and end date (month and year)
+- Position/role
+- Reason for leaving (required for each position)
+- For self-employment: describe as "Independent Doula — Self-employed"
+- Gaps of 6+ months must be explained (e.g., "Parental leave," "Relocation")
+
+Submit this document with every MCO credentialing application.
+
+---
+
+### Task 2: Resume / CV
+
+**What to collect:** The provider's current resume or curriculum vitae, highlighting doula-related experience, trainings, and certifications.
+
+**What it should include:**
+- Full name and contact information
+- Doula certifications (PCB, DONA, CAPPA, etc.)
+- Training program completions with dates and hours
+- Employment/contract work history as a doula
+- Any relevant continuing education
+
+---
+
+### Tasks 3–10: MCO-Specific Applications + LOI
+
+Each of the 8 MCOs has its own credentialing and contracting application. The process for each is similar:
+
+**Letter of Intent (LOI) guidance:**
+The LOI is a brief letter (1–2 paragraphs) from the agency stating:
+- The provider's name, NPI, and CAQH ID
+- Intent to contract as a rendering provider under the agency's billing NPI/Group NPI
+- Services to be rendered (perinatal doula services — CPT T1032)
+- The provider's service area (counties served)
+
+Most MCOs accept a standard LOI template — draft one per MCO using the MCO's name and contracting department address.
+
+**What to upload for each MCO task:**
+- Completed credentialing application (PDF from the MCO's provider portal or mailed form)
+- Signed LOI
+- After contract is returned: the signed contract or approval letter
+
+**Contract date field:** When you receive and sign the MCO contract, enter the contract signing date in the "Contract signed" field on the task row, then mark the task complete.
+
+**MCO-specific notes:**
+
+| MCO | Notes |
+|---|---|
+| AmeriHealth Caritas | Applications via AmeriHealth provider portal or PA CHIP/Medicaid provider relations |
+| Keystone First | Submit through the Keystone First provider credentialing portal; include CHIP enrollment if applicable |
+| UPMC For You | UPMC Medicaid provider enrollment via UPMC Health Plan's provider portal |
+| Geisinger Health Plan | Geisinger Medical Management credentialing — request packet from provider relations |
+| Highmark Wholecare | Highmark BCBS provider credentialing department — online portal or mail |
+| UnitedHealthcare Community Plan | UHC Community Plan PA provider credentialing — submit via UHC provider portal |
+| Aetna Better Health | Aetna Better Health PA — submit credentialing application via Availity portal (payer ID 23228) |
+| Health Partners Plans | Health Partners Plans PA — contact provider relations for current credentialing packet |
+
+**Expected timeline:** MCO credentialing typically takes 60–120 days per MCO. Submit all applications simultaneously to minimize total calendar time.
+
+---
+
+### Completing Stage 3
+
+Once all 10 tasks are marked complete:
+1. Click **Mark MCO Contracting Complete**
+2. Enter the date the last MCO contract was finalized
+3. Click **Complete Stage 3**
+
+Individual MCO contract dates are preserved in each task's "Contract signed" field for reference.
+
+---
+
+## Provider Credential Status Summary
+
+After all 3 stages are complete, the provider's Settings page shows:
+- `pcb_last_certified_on` — PCB certification date (from Stage 1)
+- `promise_last_enrolled_on` — PROMISe™ enrollment date (from Stage 2)
+- `caqh_last_attested_on` — CAQH ProView attestation date (updated by provider in Settings)
+- `liability_insurance_expires_on` — Liability insurance expiry (from Stage 2)
+- `mco_contracts` — List of contracted MCOs with contract dates (managed in provider Settings)

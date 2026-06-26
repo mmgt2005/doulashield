@@ -20,6 +20,7 @@ class EnrollmentService(Base):
     created_by: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("public.users.id"), nullable=True
     )
+    stage: Mapped[str] = mapped_column(String(30), nullable=False, default="pcb")
     pcb_pathway: Mapped[str | None] = mapped_column(String(30), nullable=True)
     status: Mapped[str] = mapped_column(String(30), nullable=False, default="in_progress")
     intake_data: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)

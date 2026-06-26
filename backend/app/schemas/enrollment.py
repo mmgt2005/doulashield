@@ -5,13 +5,15 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict
 
 PathwayLiteral = Literal["education_training", "experienced"]
+StageLiteral = Literal["pcb", "enrollment", "mco_contracting"]
 TaskStatusLiteral = Literal["not_started", "in_progress", "complete"]
 ServiceStatusLiteral = Literal["in_progress", "submitted", "complete", "cancelled"]
 
 
 class EnrollmentServiceCreate(BaseModel):
     provider_id: uuid.UUID
-    pcb_pathway: PathwayLiteral
+    stage: StageLiteral = "pcb"
+    pcb_pathway: PathwayLiteral | None = None
     intake_data: dict[str, Any] | None = None
 
 
@@ -21,6 +23,7 @@ class EnrollmentServiceRead(BaseModel):
     id: uuid.UUID
     provider_id: uuid.UUID
     created_by: uuid.UUID | None
+    stage: str
     pcb_pathway: str | None
     status: str
     intake_data: dict[str, Any] | None
@@ -74,3 +77,14 @@ class EnrollmentServiceDetail(BaseModel):
 
 class CompletePcbRequest(BaseModel):
     cert_date: date
+
+
+class CompleteEnrollmentRequest(BaseModel):
+    promise_enrolled_on: date
+    promise_id: str | None = None
+    caqh_id: str | None = None
+    liability_insurance_expires_on: date | None = None
+
+
+class CompleteMcoContractingRequest(BaseModel):
+    contracted_on: date

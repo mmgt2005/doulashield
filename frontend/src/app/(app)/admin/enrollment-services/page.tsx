@@ -10,6 +10,7 @@ interface EnrollmentService {
   id: string
   provider_id: string
   created_by: string | null
+  stage: string
   pcb_pathway: 'education_training' | 'experienced' | null
   status: string
   intake_data: Record<string, unknown> | null
@@ -63,6 +64,18 @@ const PATHWAY_LABELS: Record<string, string> = {
   experienced: 'Experienced',
 }
 
+const STAGE_LABELS: Record<string, string> = {
+  pcb: 'PCB',
+  enrollment: 'Stage 2',
+  mco_contracting: 'Stage 3',
+}
+
+const STAGE_BADGE_COLORS: Record<string, string> = {
+  pcb: 'bg-gray-100 text-gray-600',
+  enrollment: 'bg-blue-100 text-blue-700',
+  mco_contracting: 'bg-purple-100 text-purple-700',
+}
+
 const STATUS_COLORS: Record<string, string> = {
   not_started: 'bg-gray-100 text-gray-600',
   in_progress: 'bg-yellow-100 text-yellow-700',
@@ -84,9 +97,13 @@ export default function EnrollmentServicesPage() {
   const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState<string | null>(null)
 
+  // Stage filter
+  const [activeStage, setActiveStage] = useState<'pcb' | 'enrollment' | 'mco_contracting'>('pcb')
+
   // New service form
   const [showNew, setShowNew] = useState(false)
   const [newProviderId, setNewProviderId] = useState('')
+  const [newStage, setNewStage] = useState<'pcb' | 'enrollment' | 'mco_contracting'>('pcb')
   const [newPathway, setNewPathway] = useState<'education_training' | 'experienced'>('education_training')
   const [creating, setCreating] = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
@@ -100,12 +117,26 @@ export default function EnrollmentServicesPage() {
   const [taskNotes, setTaskNotes] = useState<Record<string, string>>({})
   const [taskHours, setTaskHours] = useState<Record<string, string>>({})
   const [taskHipaaHours, setTaskHipaaHours] = useState<Record<string, string>>({})
+  const [taskContractDates, setTaskContractDates] = useState<Record<string, string>>({})
   const [taskSaving, setTaskSaving] = useState<Record<string, boolean>>({})
 
   // PCB complete modal
   const [pcbCompleteModal, setPcbCompleteModal] = useState<{ serviceId: string } | null>(null)
   const [pcbCertDate, setPcbCertDate] = useState('')
   const [pcbSaving, setPcbSaving] = useState(false)
+
+  // Stage 2 complete modal
+  const [stage2Modal, setStage2Modal] = useState<{ serviceId: string } | null>(null)
+  const [stage2PromiseDate, setStage2PromiseDate] = useState('')
+  const [stage2PromiseId, setStage2PromiseId] = useState('')
+  const [stage2CaqhId, setStage2CaqhId] = useState('')
+  const [stage2LiabilityExpiry, setStage2LiabilityExpiry] = useState('')
+  const [stage2Saving, setStage2Saving] = useState(false)
+
+  // Stage 3 complete modal
+  const [stage3Modal, setStage3Modal] = useState<{ serviceId: string } | null>(null)
+  const [stage3ContractedOn, setStage3ContractedOn] = useState('')
+  const [stage3Saving, setStage3Saving] = useState(false)
 
   // Document upload
   const [uploadingTask, setUploadingTask] = useState<{ serviceId: string; taskId: string } | null>(null)
@@ -166,17 +197,21 @@ export default function EnrollmentServicesPage() {
 
   const handleCreate = async () => {
     if (!newProviderId) { setCreateError('Select a provider'); return }
+    if (newStage === 'pcb' && !newPathway) { setCreateError('Select a pathway'); return }
     setCreating(true)
     setCreateError(null)
     try {
+      const body: Record<string, unknown> = { provider_id: newProviderId, stage: newStage }
+      if (newStage === 'pcb') body.pcb_pathway = newPathway
       const res = await axios.post<EnrollmentServiceDetail>(
         `${api}/api/v1/admin/enrollment/services`,
-        { provider_id: newProviderId, pcb_pathway: newPathway },
+        body,
         { headers },
       )
       setServices((prev) => [res.data.service, ...prev])
       setDetailCache((prev) => ({ ...prev, [res.data.service.id]: res.data }))
       setExpandedId(res.data.service.id)
+      setActiveStage(newStage)
       setShowNew(false)
       setNewProviderId('')
       showToast('Enrollment service created')
@@ -204,6 +239,8 @@ export default function EnrollmentServicesPage() {
       } else if (task.task_key === 'pcb_hipaa_cert') {
         const h = parseInt(taskHipaaHours[task.id] ?? '0', 10)
         task_data = { ...(task.task_data ?? {}), hours: h }
+      } else if (taskContractDates[task.id] !== undefined) {
+        task_data = { ...(task.task_data ?? {}), contract_date: taskContractDates[task.id] }
       }
 
       await axios.patch(
@@ -260,6 +297,65 @@ export default function EnrollmentServicesPage() {
     }
   }
 
+  const handleCompleteEnrollment = async () => {
+    if (!stage2Modal || !stage2PromiseDate) return
+    setStage2Saving(true)
+    try {
+      const body: Record<string, unknown> = { promise_enrolled_on: stage2PromiseDate }
+      if (stage2PromiseId) body.promise_id = stage2PromiseId
+      if (stage2CaqhId) body.caqh_id = stage2CaqhId
+      if (stage2LiabilityExpiry) body.liability_insurance_expires_on = stage2LiabilityExpiry
+      const res = await axios.post<EnrollmentService>(
+        `${api}/api/v1/admin/enrollment/services/${stage2Modal.serviceId}/complete-enrollment`,
+        body,
+        { headers },
+      )
+      setServices((prev) => prev.map((s) => (s.id === res.data.id ? res.data : s)))
+      setDetailCache((prev) => {
+        const detail = prev[stage2Modal.serviceId]
+        if (!detail) return prev
+        return { ...prev, [stage2Modal.serviceId]: { ...detail, service: res.data } }
+      })
+      setStage2Modal(null)
+      setStage2PromiseDate('')
+      setStage2PromiseId('')
+      setStage2CaqhId('')
+      setStage2LiabilityExpiry('')
+      showToast('Stage 2 enrollment complete — provider profile updated')
+    } catch (e: unknown) {
+      const msg = axios.isAxiosError(e) ? e.response?.data?.detail : 'Failed to save'
+      showToast(typeof msg === 'string' ? msg : 'Failed to save')
+    } finally {
+      setStage2Saving(false)
+    }
+  }
+
+  const handleCompleteMcoContracting = async () => {
+    if (!stage3Modal || !stage3ContractedOn) return
+    setStage3Saving(true)
+    try {
+      const res = await axios.post<EnrollmentService>(
+        `${api}/api/v1/admin/enrollment/services/${stage3Modal.serviceId}/complete-mco-contracting`,
+        { contracted_on: stage3ContractedOn },
+        { headers },
+      )
+      setServices((prev) => prev.map((s) => (s.id === res.data.id ? res.data : s)))
+      setDetailCache((prev) => {
+        const detail = prev[stage3Modal.serviceId]
+        if (!detail) return prev
+        return { ...prev, [stage3Modal.serviceId]: { ...detail, service: res.data } }
+      })
+      setStage3Modal(null)
+      setStage3ContractedOn('')
+      showToast('MCO contracting marked complete')
+    } catch (e: unknown) {
+      const msg = axios.isAxiosError(e) ? e.response?.data?.detail : 'Failed to save'
+      showToast(typeof msg === 'string' ? msg : 'Failed to save')
+    } finally {
+      setStage3Saving(false)
+    }
+  }
+
   const handleUploadDocument = async (
     serviceId: string,
     taskId: string,
@@ -282,7 +378,19 @@ export default function EnrollmentServicesPage() {
         return { ...prev, [serviceId]: { ...detail, documents: [...detail.documents, res.data] } }
       })
       // Refresh task status (upload auto-transitions not_started → in_progress)
-      loadDetail(serviceId)
+      const refreshed = detailCache[serviceId]
+      if (refreshed) {
+        setDetailCache((prev) => ({
+          ...prev,
+          [serviceId]: {
+            ...refreshed,
+            documents: [...refreshed.documents, res.data],
+            tasks: refreshed.tasks.map((t) =>
+              t.id === taskId && t.status === 'not_started' ? { ...t, status: 'in_progress' } : t,
+            ),
+          },
+        }))
+      }
       showToast(`${file.name} uploaded`)
     } catch (e: unknown) {
       const msg = axios.isAxiosError(e) ? e.response?.data?.detail : 'Upload failed'
@@ -297,6 +405,14 @@ export default function EnrollmentServicesPage() {
 
   const allComplete = (tasks: EnrollmentTask[]) =>
     tasks.length > 0 && tasks.every((t) => t.status === 'complete')
+
+  const filteredServices = services.filter((s) => (s.stage || 'pcb') === activeStage)
+
+  const STAGE_TABS: Array<{ key: 'pcb' | 'enrollment' | 'mco_contracting'; label: string }> = [
+    { key: 'pcb', label: 'PCB Certification' },
+    { key: 'enrollment', label: 'Enrollment — Stage 2' },
+    { key: 'mco_contracting', label: 'MCO Contracting — Stage 3' },
+  ]
 
   if (loading) {
     return <div className="p-8 text-sm text-gray-500">Loading…</div>
@@ -313,9 +429,9 @@ export default function EnrollmentServicesPage() {
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900">PCB Enrollment Services</h1>
+          <h1 className="text-xl font-semibold text-gray-900">Enrollment Services</h1>
           <p className="mt-0.5 text-sm text-gray-500">
-            Manage PCB certification applications for provider accounts.
+            Manage PCB certification, Medicaid enrollment, and MCO contracting for providers.
           </p>
         </div>
         <button
@@ -329,7 +445,27 @@ export default function EnrollmentServicesPage() {
       {/* New service form */}
       {showNew && (
         <div className="mb-6 rounded-lg border border-blue-200 bg-blue-50 p-5">
-          <h2 className="mb-4 text-sm font-semibold text-blue-900">New PCB Enrollment Service</h2>
+          <h2 className="mb-4 text-sm font-semibold text-blue-900">New Enrollment Service</h2>
+
+          {/* Stage selection */}
+          <div className="mb-4">
+            <label className="mb-2 block text-xs font-medium text-gray-700">Stage</label>
+            <div className="flex flex-wrap gap-3">
+              {STAGE_TABS.map((tab) => (
+                <label key={tab.key} className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="newStage"
+                    value={tab.key}
+                    checked={newStage === tab.key}
+                    onChange={() => setNewStage(tab.key)}
+                  />
+                  <span className="text-sm font-medium text-gray-800">{tab.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label className="mb-1 block text-xs font-medium text-gray-700">Provider</label>
@@ -346,40 +482,62 @@ export default function EnrollmentServicesPage() {
                 ))}
               </select>
             </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-gray-700">PCB Pathway</label>
-              <div className="mt-1 space-y-2">
-                <label className="flex items-start gap-3 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="pathway"
-                    value="education_training"
-                    checked={newPathway === 'education_training'}
-                    onChange={() => setNewPathway('education_training')}
-                    className="mt-0.5"
-                  />
-                  <span className="text-sm">
-                    <span className="font-medium text-gray-900">Education/Training</span>
-                    <span className="block text-xs text-gray-500">Newly trained doula — no experience requirement</span>
-                  </span>
-                </label>
-                <label className="flex items-start gap-3 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="pathway"
-                    value="experienced"
-                    checked={newPathway === 'experienced'}
-                    onChange={() => setNewPathway('experienced')}
-                    className="mt-0.5"
-                  />
-                  <span className="text-sm">
-                    <span className="font-medium text-gray-900">Experienced</span>
-                    <span className="block text-xs text-gray-500">Currently practicing doula</span>
-                  </span>
-                </label>
+
+            {newStage === 'pcb' && (
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-700">PCB Pathway</label>
+                <div className="mt-1 space-y-2">
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="pathway"
+                      value="education_training"
+                      checked={newPathway === 'education_training'}
+                      onChange={() => setNewPathway('education_training')}
+                      className="mt-0.5"
+                    />
+                    <span className="text-sm">
+                      <span className="font-medium text-gray-900">Education/Training</span>
+                      <span className="block text-xs text-gray-500">Newly trained doula — no experience requirement</span>
+                    </span>
+                  </label>
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="pathway"
+                      value="experienced"
+                      checked={newPathway === 'experienced'}
+                      onChange={() => setNewPathway('experienced')}
+                      className="mt-0.5"
+                    />
+                    <span className="text-sm">
+                      <span className="font-medium text-gray-900">Experienced</span>
+                      <span className="block text-xs text-gray-500">Currently practicing doula</span>
+                    </span>
+                  </label>
+                </div>
               </div>
-            </div>
+            )}
+
+            {newStage === 'enrollment' && (
+              <div className="flex items-start">
+                <p className="mt-3 text-xs text-gray-500">
+                  Creates a Stage 2 checklist: W-9, Govt ID, Liability face sheet, PROMISe™ Type 13 &amp; 130 applications, and CAQH ProView enrollment.
+                  Requires provider to have a PCB certification date on record.
+                </p>
+              </div>
+            )}
+
+            {newStage === 'mco_contracting' && (
+              <div className="flex items-start">
+                <p className="mt-3 text-xs text-gray-500">
+                  Creates a Stage 3 checklist: 5-year work history, resume/CV, and individual applications for all 8 MCOs.
+                  Requires a completed Stage 2 enrollment service for this provider.
+                </p>
+              </div>
+            )}
           </div>
+
           {createError && <p className="mt-2 text-xs text-red-600">{createError}</p>}
           <div className="mt-4 flex gap-3">
             <button
@@ -399,17 +557,44 @@ export default function EnrollmentServicesPage() {
         </div>
       )}
 
+      {/* Stage filter tabs */}
+      <div className="mb-4 flex gap-1 border-b border-gray-200">
+        {STAGE_TABS.map((tab) => {
+          const count = services.filter((s) => (s.stage || 'pcb') === tab.key).length
+          return (
+            <button
+              key={tab.key}
+              onClick={() => setActiveStage(tab.key)}
+              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                activeStage === tab.key
+                  ? 'border-blue-600 text-blue-700'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {tab.label}
+              {count > 0 && (
+                <span className="ml-1.5 rounded-full bg-gray-100 px-1.5 py-0.5 text-xs text-gray-500">
+                  {count}
+                </span>
+              )}
+            </button>
+          )
+        })}
+      </div>
+
       {/* Services list */}
-      {services.length === 0 ? (
+      {filteredServices.length === 0 ? (
         <div className="rounded-lg border border-dashed border-gray-300 py-12 text-center text-sm text-gray-500">
-          No enrollment services yet. Click &ldquo;+ New Enrollment Service&rdquo; to get started.
+          No {STAGE_TABS.find((t) => t.key === activeStage)?.label.toLowerCase()} services yet.{' '}
+          Click &ldquo;+ New Enrollment Service&rdquo; to get started.
         </div>
       ) : (
         <div className="space-y-3">
-          {services.map((svc) => {
+          {filteredServices.map((svc) => {
             const detail = detailCache[svc.id]
             const isExpanded = expandedId === svc.id
             const isLoading = detailLoading[svc.id]
+            const stage = svc.stage || 'pcb'
 
             return (
               <div key={svc.id} className="rounded-lg border border-gray-200 bg-white shadow-sm">
@@ -429,12 +614,15 @@ export default function EnrollmentServicesPage() {
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
                     {detail && (
                       <span className="text-xs text-gray-500">
                         {detail.tasks.filter((t) => t.status === 'complete').length}/{detail.tasks.length} tasks
                       </span>
                     )}
+                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STAGE_BADGE_COLORS[stage] ?? 'bg-gray-100 text-gray-600'}`}>
+                      {STAGE_LABELS[stage] ?? stage}
+                    </span>
                     <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${SERVICE_STATUS_COLORS[svc.status] ?? 'bg-gray-100 text-gray-600'}`}>
                       {svc.status.replace('_', ' ')}
                     </span>
@@ -459,10 +647,15 @@ export default function EnrollmentServicesPage() {
                               const docs = taskDocsFor(detail, task.id)
                               const isHours = task.task_key === 'pcb_training_hours'
                               const isHipaa = task.task_key === 'pcb_hipaa_cert'
+                              const isMcoTask = task.task_key.startsWith('mco_') &&
+                                task.task_key !== 'mco_work_history' &&
+                                task.task_key !== 'mco_resume_cv'
                               const currentHours = taskHours[task.id] ??
                                 String((task.task_data as Record<string, unknown> | null)?.hours ?? '')
                               const currentHipaaHours = taskHipaaHours[task.id] ??
                                 String((task.task_data as Record<string, unknown> | null)?.hours ?? '')
+                              const currentContractDate = taskContractDates[task.id] ??
+                                String((task.task_data as Record<string, unknown> | null)?.contract_date ?? '')
 
                               return (
                                 <div key={task.id} className="rounded border border-gray-100 bg-gray-50 p-3">
@@ -515,6 +708,19 @@ export default function EnrollmentServicesPage() {
                                       {parseInt(currentHipaaHours || '0', 10) >= 1 && (
                                         <span className="text-xs text-green-600 font-medium">✓ Meets minimum</span>
                                       )}
+                                    </div>
+                                  )}
+
+                                  {/* MCO contract date */}
+                                  {isMcoTask && (
+                                    <div className="mt-2 flex items-center gap-2">
+                                      <label className="text-xs text-gray-600 whitespace-nowrap">Contract signed:</label>
+                                      <input
+                                        type="date"
+                                        value={currentContractDate}
+                                        onChange={(e) => setTaskContractDates((prev) => ({ ...prev, [task.id]: e.target.value }))}
+                                        className="rounded border border-gray-300 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none"
+                                      />
                                     </div>
                                   )}
 
@@ -592,12 +798,12 @@ export default function EnrollmentServicesPage() {
                           </div>
                         </div>
 
-                        {/* Mark PCB Complete */}
-                        {svc.status !== 'complete' && allComplete(detail.tasks) && (
+                        {/* Stage-specific "Mark Complete" section */}
+                        {svc.status !== 'complete' && allComplete(detail.tasks) && stage === 'pcb' && (
                           <div className="rounded-lg border border-green-200 bg-green-50 p-4">
                             <p className="text-sm font-medium text-green-800">All tasks complete</p>
                             <p className="mt-0.5 text-xs text-green-700">
-                              Once you have received the PCB certificate, record the issue date below to
+                              Once you have received the PCB certificate, record the issue date to
                               update the provider&apos;s credentialing profile.
                             </p>
                             <button
@@ -609,9 +815,53 @@ export default function EnrollmentServicesPage() {
                           </div>
                         )}
 
-                        {svc.status === 'complete' && svc.pcb_cert_date && (
+                        {svc.status !== 'complete' && allComplete(detail.tasks) && stage === 'enrollment' && (
+                          <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+                            <p className="text-sm font-medium text-blue-800">All tasks complete</p>
+                            <p className="mt-0.5 text-xs text-blue-700">
+                              Record the PROMISe™ enrollment date and IDs to complete Stage 2 and unlock Stage 3.
+                            </p>
+                            <button
+                              onClick={() => setStage2Modal({ serviceId: svc.id })}
+                              className="mt-3 rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                            >
+                              Mark Enrollment Complete
+                            </button>
+                          </div>
+                        )}
+
+                        {svc.status !== 'complete' && allComplete(detail.tasks) && stage === 'mco_contracting' && (
+                          <div className="rounded-lg border border-purple-200 bg-purple-50 p-4">
+                            <p className="text-sm font-medium text-purple-800">All tasks complete</p>
+                            <p className="mt-0.5 text-xs text-purple-700">
+                              Record the final contracting completion date to close out Stage 3.
+                            </p>
+                            <button
+                              onClick={() => setStage3Modal({ serviceId: svc.id })}
+                              className="mt-3 rounded bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700"
+                            >
+                              Mark MCO Contracting Complete
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Completion banners */}
+                        {svc.status === 'complete' && stage === 'pcb' && svc.pcb_cert_date && (
                           <div className="rounded bg-green-50 px-3 py-2 text-xs text-green-700">
                             PCB certified on {svc.pcb_cert_date} — provider profile updated.
+                          </div>
+                        )}
+                        {svc.status === 'complete' && stage === 'enrollment' && (
+                          <div className="rounded bg-blue-50 px-3 py-2 text-xs text-blue-700">
+                            Stage 2 enrollment complete
+                            {svc.intake_data?.promise_id ? ` · PROMISe ID: ${svc.intake_data.promise_id}` : ''}
+                            {svc.intake_data?.caqh_id ? ` · CAQH ID: ${svc.intake_data.caqh_id}` : ''}
+                          </div>
+                        )}
+                        {svc.status === 'complete' && stage === 'mco_contracting' && (
+                          <div className="rounded bg-purple-50 px-3 py-2 text-xs text-purple-700">
+                            MCO contracting complete
+                            {svc.intake_data?.contracted_on ? ` · Contracted on ${svc.intake_data.contracted_on}` : ''}
                           </div>
                         )}
                       </div>
@@ -655,6 +905,117 @@ export default function EnrollmentServicesPage() {
                 className="rounded bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
               >
                 {pcbSaving ? 'Saving…' : 'Save & Complete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Stage 2 Complete modal */}
+      {stage2Modal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+            <h3 className="text-base font-semibold text-gray-900">Complete Stage 2 — Enrollment</h3>
+            <p className="mt-1 text-sm text-gray-500">
+              Record the PROMISe™ enrollment date and IDs. This updates the provider&apos;s profile
+              and unlocks Stage 3 (MCO Contracting).
+            </p>
+            <div className="mt-4 space-y-3">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-700">PROMISe™ Enrollment Date <span className="text-red-500">*</span></label>
+                <input
+                  type="date"
+                  value={stage2PromiseDate}
+                  onChange={(e) => setStage2PromiseDate(e.target.value)}
+                  className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-700">PROMISe™ Provider ID / ATN <span className="text-gray-400">(optional)</span></label>
+                <input
+                  type="text"
+                  placeholder="e.g. 1234567890 or ATN-XXXXXXXX"
+                  value={stage2PromiseId}
+                  onChange={(e) => setStage2PromiseId(e.target.value)}
+                  className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-700">CAQH ProView ID <span className="text-gray-400">(optional)</span></label>
+                <input
+                  type="text"
+                  placeholder="e.g. 12345678"
+                  value={stage2CaqhId}
+                  onChange={(e) => setStage2CaqhId(e.target.value)}
+                  className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-700">Liability Insurance Expiry <span className="text-gray-400">(optional)</span></label>
+                <input
+                  type="date"
+                  value={stage2LiabilityExpiry}
+                  onChange={(e) => setStage2LiabilityExpiry(e.target.value)}
+                  className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                />
+              </div>
+            </div>
+            <div className="mt-5 flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setStage2Modal(null)
+                  setStage2PromiseDate('')
+                  setStage2PromiseId('')
+                  setStage2CaqhId('')
+                  setStage2LiabilityExpiry('')
+                }}
+                className="rounded border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCompleteEnrollment}
+                disabled={stage2Saving || !stage2PromiseDate}
+                className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+              >
+                {stage2Saving ? 'Saving…' : 'Complete Stage 2'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Stage 3 Complete modal */}
+      {stage3Modal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+            <h3 className="text-base font-semibold text-gray-900">Complete Stage 3 — MCO Contracting</h3>
+            <p className="mt-1 text-sm text-gray-500">
+              Record the date all MCO contracting was finalized. Individual MCO contract dates
+              are tracked in each task&apos;s &ldquo;Contract signed&rdquo; field.
+            </p>
+            <div className="mt-4">
+              <label className="mb-1 block text-xs font-medium text-gray-700">Contracting Completion Date <span className="text-red-500">*</span></label>
+              <input
+                type="date"
+                value={stage3ContractedOn}
+                onChange={(e) => setStage3ContractedOn(e.target.value)}
+                className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+              />
+            </div>
+            <div className="mt-4 flex justify-end gap-3">
+              <button
+                onClick={() => { setStage3Modal(null); setStage3ContractedOn('') }}
+                className="rounded border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCompleteMcoContracting}
+                disabled={stage3Saving || !stage3ContractedOn}
+                className="rounded bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700 disabled:opacity-50"
+              >
+                {stage3Saving ? 'Saving…' : 'Complete Stage 3'}
               </button>
             </div>
           </div>
