@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.39.3] — 2026-06-26
+
+### Fixed
+- **Provider enrollment status page crashes with AttributeError**: `CurrentUser` in this codebase only exposes `.id` and `.role` — not `.email` or `.full_name`. Two endpoints in `enrollment_provider.py` referenced `current_user.email` and `current_user.full_name` directly, causing an `AttributeError` whenever a provider (or admin impersonating a provider) loaded the enrollment status page or downloaded the PCB pre-fill PDF. Fixed by querying the `User` model from the database using `current_user.id` before constructing the response, following the same pattern already used by the agreement endpoints.
+
+---
+
 ## [1.39.2] — 2026-06-26
 
 ### Fixed

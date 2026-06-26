@@ -44,6 +44,9 @@ async def get_my_enrollment_services(
     )
     services = services_result.scalars().all()
 
+    user_result = await db.execute(select(User).where(User.id == current_user.id))
+    user = user_result.scalar_one_or_none()
+
     out: list[EnrollmentServiceDetail] = []
     for service in services:
         tasks_result = await db.execute(
@@ -65,8 +68,8 @@ async def get_my_enrollment_services(
                 service=EnrollmentServiceRead.model_validate(service),
                 tasks=[EnrollmentTaskRead.model_validate(t) for t in tasks],
                 documents=[EnrollmentDocumentRead.model_validate(d) for d in docs],
-                provider_email=current_user.email,
-                provider_name=current_user.full_name,
+                provider_email=user.email if user else None,
+                provider_name=user.full_name if user else None,
             )
         )
     return out
@@ -268,12 +271,15 @@ async def download_pcb_prefill(
     form_task = next((t for t in tasks if t.task_key == "pcb_application_form"), None)
     form_data: dict = dict(form_task.task_data or {}) if form_task else {}
 
+    user_result = await db.execute(select(User).where(User.id == current_user.id))
+    user = user_result.scalar_one_or_none()
+
     pdf_bytes = _build_pcb_prefill_pdf(
         form_data=form_data,
         tasks=list(tasks),
         service=service,
-        provider_name=current_user.full_name,
-        provider_email=current_user.email,
+        provider_name=user.full_name if user else None,
+        provider_email=user.email if user else "",
     )
 
     return Response(
