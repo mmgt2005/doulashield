@@ -184,6 +184,9 @@ A link to the blank official PCB application is also available on the page if yo
 - **Notarized Acknowledgements & Release** — page 14 must be signed in front of a notary public. Electronic notarization is not accepted.
 - **Submit Application + Pay $50 Fee** — email the complete PDF to info@pacertboard.org with a $50 check or payment per PCB's current instructions. Note your submission date in the task notes.
 
+**Downloadable forms on task cards:**
+Each client evaluation task shows a **Download PCB Client Evaluation Form →** link so you can print the official form and give it to your client to complete. Each letter of recommendation task (experienced pathway) shows a **Download Recommendation Letter Template →** link — a fill-in PDF you can hand to clients to guide them in writing their letter. Both links open the document in a new tab.
+
 ---
 
 ## Managing Clients
