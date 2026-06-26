@@ -1,6 +1,6 @@
 # DoulaShield Admin Guide
 
-**v1.31.0 · Last updated 2026-06-24**
+**v1.33.0 · Last updated 2026-06-26**
 
 This guide covers everything admins can do that providers cannot. For day-to-day provider features (documenting visits, submitting claims, etc.) refer to `MANUAL.md`.
 
@@ -11,11 +11,12 @@ This guide covers everything admins can do that providers cannot. For day-to-day
 1. [Introduction](#introduction)
 2. [Managing Provider Accounts](#managing-provider-accounts)
    - [Onboarding New Providers (Demo Mode)](#onboarding-new-providers-demo-mode)
-3. [Billing & Escrow](#billing--escrow)
-4. [Billing Providers (Group NPIs)](#billing-providers-group-npis)
-5. [Admin-Only Settings](#admin-only-settings)
-6. [Audit Logs](#audit-logs)
-7. [Reference: Audit Action Types](#reference-audit-action-types)
+3. [PCB Enrollment Services](#pcb-enrollment-services)
+4. [Billing & Escrow](#billing--escrow)
+5. [Billing Providers (Group NPIs)](#billing-providers-group-npis)
+6. [Admin-Only Settings](#admin-only-settings)
+7. [Audit Logs](#audit-logs)
+8. [Reference: Audit Action Types](#reference-audit-action-types)
 
 ---
 
@@ -159,6 +160,49 @@ You can also open the guide yourself at any time by clicking **Walkthrough Guide
 The provider enters this data into the real UI themselves — walking through the entry process is part of the training.
 
 The same guide is available to the provider directly: a green **Walkthrough Guide** link appears in their sidebar under the Help section while demo mode is on. They can open it at any time without needing to contact you.
+
+---
+
+## PCB Enrollment Services
+
+DoulaShield can manage the full Pennsylvania Certification Board (PCB) credentialing process for a doula provider on behalf of the agency. Go to **Admin → Enrollment Services** to start and track credentialing applications.
+
+### Choosing a Pathway
+
+PCB offers two pathways. Select the one that fits the provider:
+
+| Pathway | Who it's for | Requirements |
+|---|---|---|
+| **Education/Training** | Newly trained doulas | 24+ training hours, 1+ HIPAA hr, CPR cert, 3 client evals |
+| **Experienced** | Currently practicing doulas | Proof of active practice, CPR cert, 3 client evals (last year), 3 recommendation letters (last year) |
+
+When in doubt, use Education/Training — it is available to all applicants regardless of experience.
+
+### Creating an Enrollment Service
+
+1. Click **+ New Enrollment Service**.
+2. Select the provider from the dropdown.
+3. Choose the pathway (Education/Training or Experienced).
+4. Click **Create Service** — the task checklist is generated automatically.
+
+### Working Through the Tasks
+
+Each task has an upload slot and an optional notes field. Click the task row to expand it:
+
+- **Upload Document** — attach the relevant certificate or form (PDF, JPEG, PNG, up to 20 MB). Uploading a document automatically advances the task from "not started" to "in progress."
+- **Training hours field** (Education/Training only) — enter the total documented hours when uploading training certificates. DoulaShield prevents the task from being marked complete if the total is under 24. A badge shows how many more hours are needed.
+- **HIPAA hours field** (Education/Training only) — enter hours covering HIPAA/confidentiality specifically. Must be ≥ 1.
+- **Mark Complete** — once a document is uploaded and any required hour counts are met, click this to mark the task done.
+
+For step-by-step guidance on what to collect and verify for each task, see **Help → Enrollment Guide** in the sidebar.
+
+### Submitting to PCB and Recording the Certificate
+
+PCB has no API — once all tasks are complete, submit the application packet at **pacertboard.org/doula**. When the certificate arrives (typically 4–6 weeks):
+
+1. Upload the certificate file as a document on the service.
+2. Click **Mark PCB Certification Complete** and enter the issue date.
+3. DoulaShield writes the certification date to the provider's profile (`pcb_last_certified_on`). The date appears in the provider's Settings page and is used as proof of credentials for subsequent steps (CAQH setup, MCO contracting).
 
 ---
 
@@ -415,3 +459,5 @@ HIPAA requires an immutable audit trail. The database has a rule that blocks UPD
 | `UPDATE_AGENCY_AVAILITY` | Billing admin saved agency Availity credentials | user |
 | `SUBMIT_AGENCY_CLAIM` | Billing admin submitted a queued claim to Availity using agency credentials | claim |
 | `ASSIGN_BILLING_PROVIDER` | Admin assigned a provider to a billing agency (individual subscription cancelled if active) | user |
+| `ENROLLMENT_SERVICE_CREATED` | Admin created a PCB enrollment service for a provider | user |
+| `PCB_CERTIFICATION_COMPLETE` | Admin recorded PCB certificate date; provider's pcb_last_certified_on updated | user |
