@@ -12,6 +12,16 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.36.0] — 2026-06-26
+
+### Added
+- **Enrollment Status page** (`/enrollment-status`): Providers can now see their full credentialing checklist for every stage. Each task shows its label, full description, status badge, and any already-uploaded documents. Providers can upload documents (PDF/JPEG/PNG, up to 20 MB) directly to any incomplete task — uploading auto-advances a task from "not started" to "in progress". Admins retain sole control over marking tasks complete.
+- **Credentialing Status dashboard card**: When a provider has at least one active enrollment service, a compact status card appears on the Dashboard showing the current stage, task completion count, and a four-stage pipeline pill row (✓ complete · ● in progress · ○ not started), with a link to the Enrollment Status page.
+- **Enrollment Status sidebar link**: "Enrollment Status" now appears in the provider sidebar navigation between Reports and Settings.
+- **Provider-facing API** (`GET /api/v1/enrollment/me`, `POST /api/v1/enrollment/me/{service_id}/tasks/{task_id}/documents`, `GET /api/v1/enrollment/me/{service_id}/documents/{doc_id}/url`): New endpoints scoped to the authenticated provider's own services. Document uploads reuse the same `store_image` / `get_signed_url` utilities as the admin enrollment upload.
+
+---
+
 ## [1.35.0] — 2026-06-26
 
 ### Added

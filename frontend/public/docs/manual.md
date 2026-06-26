@@ -10,7 +10,8 @@ This manual covers every provider-facing feature in DoulaShield. Read it start t
 
 1. [Getting Started](#getting-started)
    - [Demo Mode — Practice Walkthrough](#demo-mode--practice-walkthrough)
-2. [Managing Clients](#managing-clients)
+2. [Credentialing Status](#credentialing-status)
+3. [Managing Clients](#managing-clients)
 3. [Documenting Visits](#documenting-visits)
 4. [MA 91 Patient Signatures](#ma-91-patient-signatures)
 5. [Claims & Billing](#claims--billing)
@@ -118,6 +119,45 @@ The main Dashboard (first page after login) shows alert banners at the top whene
 Banners clear automatically once the date is updated in Settings (for credential banners) or the claim is filed/paid (for deadline banners). There is no dismiss button — the only resolution is completing the underlying action.
 
 The **Reports Dashboard** (sidebar → Reports) is a separate page showing billing pipeline statistics, revenue, and MCO breakdown. It is not the same as the main Dashboard.
+
+If your agency has started your credentialing process, the dashboard also shows a **Credentialing Status** card — see [Credentialing Status](#credentialing-status) below.
+
+---
+
+## Credentialing Status
+
+DoulaShield tracks your four-stage Medicaid credentialing process: **PCB Certification → NPPES / NPI Setup → Enrollment (Stage 2) → MCO Contracting (Stage 3)**. Your agency sets up and manages each stage on your behalf; you can view your progress and upload required documents at any time.
+
+### Dashboard Card
+
+Once your agency has started at least one credentialing stage, a **Credentialing Status** card appears on your main Dashboard showing:
+- Your current active stage and its status (in progress / complete)
+- How many tasks are complete out of the total for that stage
+- Stage pipeline pills (✓ complete · ● in progress · ○ not started)
+- A **View details →** link to the full Enrollment Status page
+
+### Enrollment Status Page
+
+Go to **Sidebar → Enrollment Status** to see your full credentialing checklist.
+
+**What you can do on this page:**
+- Read the task list for each stage — each task includes a description of exactly what document to gather and what it must show
+- See which tasks are complete, in progress, or not yet started
+- Upload documents for any task that isn't yet complete (PDF, JPEG, or PNG, up to 20 MB per file)
+- View documents you've already uploaded by clicking the filename chip under each task
+
+**What only your agency can do:**
+- Mark tasks as complete
+- Advance you to the next stage
+- Record completion dates (PCB certificate date, NPI number, PROMISe™ enrollment date, etc.)
+
+**Uploading a document:**
+1. Click **+ Upload Document** under the relevant task
+2. Select a PDF, JPEG, or PNG file (max 20 MB)
+3. The file uploads immediately and appears as a chip under the task
+4. The task status automatically changes from "not started" to "in progress" on your first upload
+
+Tabs at the top of the page (PCB Certification · NPPES / NPI Setup · Enrollment — Stage 2 · MCO Contracting — Stage 3) are enabled only for stages your agency has opened for you. Disabled tabs mean that stage hasn't been started yet.
 
 ---
 
