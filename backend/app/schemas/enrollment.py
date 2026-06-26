@@ -5,7 +5,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict
 
 PathwayLiteral = Literal["education_training", "experienced"]
-StageLiteral = Literal["pcb", "enrollment", "mco_contracting"]
+StageLiteral = Literal["pcb", "nppes_setup", "enrollment", "mco_contracting"]
 TaskStatusLiteral = Literal["not_started", "in_progress", "complete"]
 ServiceStatusLiteral = Literal["in_progress", "submitted", "complete", "cancelled"]
 
@@ -88,3 +88,7 @@ class CompleteEnrollmentRequest(BaseModel):
 
 class CompleteMcoContractingRequest(BaseModel):
     contracted_on: date
+
+
+class CompleteNppesRequest(BaseModel):
+    npi: str

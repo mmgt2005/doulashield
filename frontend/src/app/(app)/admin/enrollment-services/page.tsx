@@ -66,12 +66,14 @@ const PATHWAY_LABELS: Record<string, string> = {
 
 const STAGE_LABELS: Record<string, string> = {
   pcb: 'PCB',
+  nppes_setup: 'NPPES / NPI',
   enrollment: 'Stage 2',
   mco_contracting: 'Stage 3',
 }
 
 const STAGE_BADGE_COLORS: Record<string, string> = {
   pcb: 'bg-gray-100 text-gray-600',
+  nppes_setup: 'bg-indigo-100 text-indigo-700',
   enrollment: 'bg-blue-100 text-blue-700',
   mco_contracting: 'bg-purple-100 text-purple-700',
 }
@@ -98,12 +100,12 @@ export default function EnrollmentServicesPage() {
   const [toast, setToast] = useState<string | null>(null)
 
   // Stage filter
-  const [activeStage, setActiveStage] = useState<'pcb' | 'enrollment' | 'mco_contracting'>('pcb')
+  const [activeStage, setActiveStage] = useState<'pcb' | 'nppes_setup' | 'enrollment' | 'mco_contracting'>('pcb')
 
   // New service form
   const [showNew, setShowNew] = useState(false)
   const [newProviderId, setNewProviderId] = useState('')
-  const [newStage, setNewStage] = useState<'pcb' | 'enrollment' | 'mco_contracting'>('pcb')
+  const [newStage, setNewStage] = useState<'pcb' | 'nppes_setup' | 'enrollment' | 'mco_contracting'>('pcb')
   const [newPathway, setNewPathway] = useState<'education_training' | 'experienced'>('education_training')
   const [creating, setCreating] = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
@@ -137,6 +139,11 @@ export default function EnrollmentServicesPage() {
   const [stage3Modal, setStage3Modal] = useState<{ serviceId: string } | null>(null)
   const [stage3ContractedOn, setStage3ContractedOn] = useState('')
   const [stage3Saving, setStage3Saving] = useState(false)
+
+  // NPPES complete modal
+  const [npesModal, setNpesModal] = useState<{ serviceId: string } | null>(null)
+  const [npesNpi, setNpesNpi] = useState('')
+  const [npesSaving, setNpesSaving] = useState(false)
 
   // Document upload
   const [uploadingTask, setUploadingTask] = useState<{ serviceId: string; taskId: string } | null>(null)
@@ -356,6 +363,37 @@ export default function EnrollmentServicesPage() {
     }
   }
 
+  const handleCompleteNppes = async () => {
+    if (!npesModal || !npesNpi) return
+    const trimmed = npesNpi.trim()
+    if (!/^\d{10}$/.test(trimmed)) {
+      showToast('NPI must be exactly 10 digits')
+      return
+    }
+    setNpesSaving(true)
+    try {
+      const res = await axios.post<EnrollmentService>(
+        `${api}/api/v1/admin/enrollment/services/${npesModal.serviceId}/complete-nppes`,
+        { npi: trimmed },
+        { headers },
+      )
+      setServices((prev) => prev.map((s) => (s.id === res.data.id ? res.data : s)))
+      setDetailCache((prev) => {
+        const detail = prev[npesModal.serviceId]
+        if (!detail) return prev
+        return { ...prev, [npesModal.serviceId]: { ...detail, service: res.data } }
+      })
+      setNpesModal(null)
+      setNpesNpi('')
+      showToast('NPI recorded — provider profile updated')
+    } catch (e: unknown) {
+      const msg = axios.isAxiosError(e) ? e.response?.data?.detail : 'Failed to save'
+      showToast(typeof msg === 'string' ? msg : 'Failed to save')
+    } finally {
+      setNpesSaving(false)
+    }
+  }
+
   const handleUploadDocument = async (
     serviceId: string,
     taskId: string,
@@ -408,8 +446,9 @@ export default function EnrollmentServicesPage() {
 
   const filteredServices = services.filter((s) => (s.stage || 'pcb') === activeStage)
 
-  const STAGE_TABS: Array<{ key: 'pcb' | 'enrollment' | 'mco_contracting'; label: string }> = [
+  const STAGE_TABS: Array<{ key: 'pcb' | 'nppes_setup' | 'enrollment' | 'mco_contracting'; label: string }> = [
     { key: 'pcb', label: 'PCB Certification' },
+    { key: 'nppes_setup', label: 'NPPES / NPI Setup' },
     { key: 'enrollment', label: 'Enrollment — Stage 2' },
     { key: 'mco_contracting', label: 'MCO Contracting — Stage 3' },
   ]
@@ -458,7 +497,7 @@ export default function EnrollmentServicesPage() {
                     name="newStage"
                     value={tab.key}
                     checked={newStage === tab.key}
-                    onChange={() => setNewStage(tab.key)}
+                    onChange={() => setNewStage(tab.key as typeof newStage)}
                   />
                   <span className="text-sm font-medium text-gray-800">{tab.label}</span>
                 </label>
@@ -519,11 +558,21 @@ export default function EnrollmentServicesPage() {
               </div>
             )}
 
+            {newStage === 'nppes_setup' && (
+              <div className="flex items-start">
+                <p className="mt-3 text-xs text-gray-500">
+                  Creates a 7-step NPPES checklist: I&amp;A account setup, NPI application, provider profile, business addresses,
+                  taxonomy code (374J00000X), contact person, and attestation/submission.
+                  Requires PCB certification to be on file. The issued NPI is recorded on completion.
+                </p>
+              </div>
+            )}
+
             {newStage === 'enrollment' && (
               <div className="flex items-start">
                 <p className="mt-3 text-xs text-gray-500">
                   Creates a Stage 2 checklist: W-9, Govt ID, Liability face sheet, PROMISe™ Type 13 &amp; 130 applications, and CAQH ProView enrollment.
-                  Requires provider to have a PCB certification date on record.
+                  Requires provider to have a PCB certification date and NPI on record.
                 </p>
               </div>
             )}
@@ -799,6 +848,22 @@ export default function EnrollmentServicesPage() {
                         </div>
 
                         {/* Stage-specific "Mark Complete" section */}
+                        {svc.status !== 'complete' && allComplete(detail.tasks) && stage === 'nppes_setup' && (
+                          <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-4">
+                            <p className="text-sm font-medium text-indigo-800">All tasks complete</p>
+                            <p className="mt-0.5 text-xs text-indigo-700">
+                              Once the NPI has been issued via email, record it here to update the provider&apos;s
+                              profile and unlock Stage 2 enrollment.
+                            </p>
+                            <button
+                              onClick={() => setNpesModal({ serviceId: svc.id })}
+                              className="mt-3 rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+                            >
+                              Mark NPI Setup Complete
+                            </button>
+                          </div>
+                        )}
+
                         {svc.status !== 'complete' && allComplete(detail.tasks) && stage === 'pcb' && (
                           <div className="rounded-lg border border-green-200 bg-green-50 p-4">
                             <p className="text-sm font-medium text-green-800">All tasks complete</p>
@@ -846,6 +911,13 @@ export default function EnrollmentServicesPage() {
                         )}
 
                         {/* Completion banners */}
+                        {svc.status === 'complete' && stage === 'nppes_setup' && (
+                          <div className="rounded bg-indigo-50 px-3 py-2 text-xs text-indigo-700">
+                            NPI setup complete
+                            {svc.intake_data?.npi ? ` · NPI: ${svc.intake_data.npi}` : ''} — provider profile updated.
+                          </div>
+                        )}
+
                         {svc.status === 'complete' && stage === 'pcb' && svc.pcb_cert_date && (
                           <div className="rounded bg-green-50 px-3 py-2 text-xs text-green-700">
                             PCB certified on {svc.pcb_cert_date} — provider profile updated.
@@ -871,6 +943,51 @@ export default function EnrollmentServicesPage() {
               </div>
             )
           })}
+        </div>
+      )}
+
+      {/* NPPES Complete modal */}
+      {npesModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+            <h3 className="text-base font-semibold text-gray-900">Record NPI Number</h3>
+            <p className="mt-1 text-sm text-gray-500">
+              Enter the 10-digit NPI issued by NPPES. This will be saved to the provider&apos;s
+              profile and unlock Stage 2 enrollment.
+            </p>
+            <div className="mt-4">
+              <label className="mb-1 block text-xs font-medium text-gray-700">
+                National Provider Identifier (NPI)
+              </label>
+              <input
+                type="text"
+                inputMode="numeric"
+                maxLength={10}
+                placeholder="10-digit NPI"
+                value={npesNpi}
+                onChange={(e) => setNpesNpi(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
+              />
+              {npesNpi.length > 0 && npesNpi.length < 10 && (
+                <p className="mt-1 text-xs text-amber-600">{10 - npesNpi.length} more digit{10 - npesNpi.length !== 1 ? 's' : ''} needed</p>
+              )}
+            </div>
+            <div className="mt-4 flex justify-end gap-3">
+              <button
+                onClick={() => { setNpesModal(null); setNpesNpi('') }}
+                className="rounded border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCompleteNppes}
+                disabled={npesSaving || npesNpi.length !== 10}
+                className="rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+              >
+                {npesSaving ? 'Saving…' : 'Save & Complete'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

@@ -16,6 +16,7 @@ from app.models.user import User
 from app.schemas.enrollment import (
     CompleteMcoContractingRequest,
     CompleteEnrollmentRequest,
+    CompleteNppesRequest,
     CompletePcbRequest,
     EnrollmentDocumentRead,
     EnrollmentServiceCreate,
@@ -363,6 +364,94 @@ _STAGE3_TASKS: list[dict] = [
     },
 ]
 
+_NPPES_TASKS: list[dict] = [
+    {
+        "task_key": "nppes_ia_account",
+        "required_pathway": "all",
+        "label": "Create I&A System Account",
+        "description": (
+            "Go to nppes.cms.hhs.gov → click 'Create or Manage an Account'. "
+            "Enter the doula's name, SSN, date of birth, and primary email. Set up Multi-Factor Authentication (MFA). "
+            "Surrogate tip: If your agency already has an I&A account, log in and select 'Add Surrogate' to apply "
+            "on the doula's behalf — do not create a new I&A login for every doula."
+        ),
+        "sort_order": 1,
+    },
+    {
+        "task_key": "nppes_application_start",
+        "required_pathway": "all",
+        "label": "Start NPI Application",
+        "description": (
+            "Log in to NPPES using the I&A credentials → select 'Submit New NPI Application'. "
+            "Choose entity type: Type 1 (Individual). "
+            "Type 2 is strictly for organizational entities such as LLCs or group practices — do not select it."
+        ),
+        "sort_order": 2,
+    },
+    {
+        "task_key": "nppes_provider_profile",
+        "required_pathway": "all",
+        "label": "Complete Provider Profile",
+        "description": (
+            "Enter the doula's exact legal name as it appears on their Social Security card. "
+            "Any mismatch causes immediate federal rejection. "
+            "Enter date of birth, state of birth, and country of birth. "
+            "Answer 'No' to the Sole Proprietor question unless the doula has explicitly established "
+            "a registered sole proprietorship with its own EIN."
+        ),
+        "sort_order": 3,
+    },
+    {
+        "task_key": "nppes_business_addresses",
+        "required_pathway": "all",
+        "label": "Enter Business Addresses",
+        "description": (
+            "Two addresses are required (they can be the same). "
+            "Business Mailing Address: where administrative mail and checks are sent — P.O. Boxes are allowed. "
+            "Practice Location Address: the physical location where services are rendered — "
+            "P.O. Boxes are strictly forbidden here. "
+            "For doulas who provide in-home services, enter their home office address."
+        ),
+        "sort_order": 4,
+    },
+    {
+        "task_key": "nppes_taxonomy_code",
+        "required_pathway": "all",
+        "label": "Assign Taxonomy Code",
+        "description": (
+            "Click 'Add Taxonomy' and enter the 10-character code 374J00000X (Doula). "
+            "Do not enter a State License Number — Pennsylvania does not issue traditional medical "
+            "licenses for doulas. PCB certification is used instead for Type 13 provider enrollment."
+        ),
+        "sort_order": 5,
+    },
+    {
+        "task_key": "nppes_contact_identifiers",
+        "required_pathway": "all",
+        "label": "Contact Person & Identifiers",
+        "description": (
+            "Other Identifiers: leave blank for new doulas (this is for legacy Medicaid/Medicare IDs). "
+            "Endpoint: leave blank (refers to Health Information Exchange networks). "
+            "Contact Person: enter the agency's credentialing manager. "
+            "If NPPES finds an error with the SSN or address, they will contact this person to resolve it."
+        ),
+        "sort_order": 6,
+    },
+    {
+        "task_key": "nppes_attest_submit",
+        "required_pathway": "all",
+        "label": "Attest and Submit",
+        "description": (
+            "Read the legal Certification Statement. Check the box to electronically sign the application. "
+            "Click Submit. "
+            "A clean application without an SSN mismatch is typically approved and the 10-digit NPI "
+            "issued via email within 1 to 5 business days — often within hours. "
+            "Record the NPI number in the notes field below when it arrives."
+        ),
+        "sort_order": 7,
+    },
+]
+
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -410,11 +499,23 @@ async def create_enrollment_service(
                 detail="pcb_pathway is required for PCB enrollment services.",
             )
 
+    if stage == "nppes_setup":
+        if not provider.pcb_last_certified_on:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="PCB Certification must be complete before starting NPPES/NPI Setup.",
+            )
+
     if stage == "enrollment":
         if not provider.pcb_last_certified_on:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail="Stage 1 (PCB certification) must be complete before starting Stage 2 enrollment.",
+            )
+        if not provider.npi:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="NPPES/NPI Setup must be complete (NPI on file) before starting Stage 2 enrollment.",
             )
 
     if stage == "mco_contracting":
@@ -444,6 +545,8 @@ async def create_enrollment_service(
 
     if stage == "pcb":
         task_seeds = _TASK_SEEDS.get(body.pcb_pathway, [])
+    elif stage == "nppes_setup":
+        task_seeds = _NPPES_TASKS
     elif stage == "enrollment":
         task_seeds = _STAGE2_TASKS
     else:
@@ -596,6 +699,56 @@ async def complete_pcb_certification(
             "service_id": str(service_id),
             "provider_id": str(service.provider_id),
             "cert_date": str(body.cert_date),
+        },
+        request=request,
+    )
+
+    return EnrollmentServiceRead.model_validate(service)
+
+
+@router.post("/services/{service_id}/complete-nppes", response_model=EnrollmentServiceRead)
+async def complete_nppes_setup(
+    service_id: uuid.UUID,
+    body: CompleteNppesRequest,
+    current_user: Annotated[CurrentUser, Depends(require_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    audit: Annotated[AuditLogger, Depends(get_audit)],
+    request: Request,
+) -> EnrollmentServiceRead:
+    service = await _get_service_or_404(service_id, db)
+    if service.stage != "nppes_setup":
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="This endpoint is only for NPPES/NPI Setup services.",
+        )
+
+    npi = body.npi.strip()
+    if not npi.isdigit() or len(npi) != 10:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="NPI must be exactly 10 digits.",
+        )
+
+    service.status = "complete"
+    intake = dict(service.intake_data or {})
+    intake["npi"] = npi
+    service.intake_data = intake
+
+    provider_result = await db.execute(select(User).where(User.id == service.provider_id))
+    provider = provider_result.scalar_one_or_none()
+    if provider:
+        provider.npi = npi
+
+    await db.commit()
+    await db.refresh(service)
+
+    await audit.log(
+        action="NPPES_SETUP_COMPLETE",
+        user_id=current_user.id,
+        details={
+            "service_id": str(service_id),
+            "provider_id": str(service.provider_id),
+            "npi": npi,
         },
         request=request,
     )
