@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.39.1] — 2026-06-26
+
+### Fixed
+- **Enrollment service creation error**: `AuditLogger.log()` was called with incorrect keyword arguments (`details=`, `request=`) across all five enrollment audit calls. Fixed to use the correct signature (`ip_address=`, `user_agent=`, `extra_context=`) and added missing `get_client_ip`/`get_user_agent` imports. Creating an enrollment service now succeeds without a 500 error.
+
+---
+
 ## [1.39.0] — 2026-06-26
 
 ### Added
