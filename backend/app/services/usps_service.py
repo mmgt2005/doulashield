@@ -35,6 +35,7 @@ async def _get_token(client: httpx.AsyncClient) -> str | None:
                 "grant_type": "client_credentials",
                 "client_id": settings.USPS_CLIENT_ID,
                 "client_secret": settings.USPS_CLIENT_SECRET,
+                "scope": "addresses",
             },
             timeout=5.0,
         )

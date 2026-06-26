@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.40.2] — 2026-06-26
+
+### Fixed
+- **USPS Enhanced Addresses API compatibility (July 12 cutover)**: The new USPS Enhanced Addresses API (v3.3.1) requires the `addresses` OAuth2 scope in the client-credentials token request. Added `"scope": "addresses"` to the token POST in `usps_service.py`. The base URL, endpoint path, request parameters, and response fields DoulaShield uses (`address.ZIPCode`, `address.ZIPPlus4`) are unchanged — no other code updates needed. **Account action still required**: sign the new license agreement and set up an Enterprise Payment Account in the USPS Business Portal before June 25.
+
+---
+
 ## [1.40.1] — 2026-06-26
 
 ### Added
