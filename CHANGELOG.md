@@ -12,6 +12,21 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.39.0] — 2026-06-26
+
+### Added
+- **PCB application integration**: Providers can now fill in their PCB application personal info, demographics, and doula type directly in the enrollment status page (task #1 of the PCB stage). Clicking "Download Pre-filled Application" generates a formatted PDF with pages 6–8 pre-populated and a live checklist of task statuses — ready to print, sign, and submit.
+- **PCB application PDF**: The official PCB Certified Perinatal Doula application (January 2024) is hosted at `/docs/pcb-doula-application.pdf` and linked from the enrollment status page for provider reference.
+- **Notarized Acknowledgements & Release task**: Added `pcb_notarized_ar` task (page 14 of the PCB application must be physically notarized before submission) to both PCB pathways. Includes guidance on finding a notary.
+- **Submit Application + $50 Fee task**: Added `pcb_application_submit` task covering PDF assembly, email submission to info@pacertboard.org, and the $50 application fee.
+- **Improved client evaluation guidance**: All three client evaluation tasks now specify the required consent form, the 9 PCB competency dimensions, the within-last-12-months requirement, and the Pennsylvania client rule for non-PA-resident providers.
+- **Improved training certificate guidance**: Training hours and HIPAA certificate tasks now list the exact fields PCB requires on each certificate (name, title, dates, hours, org name) and explicitly state that sign-in sheets are not accepted.
+- **Experienced pathway experience documentation**: Replaced the vague "Proof of Active Practice" task with two specific tasks: `pcb_experience_current` (current position on letterhead with required fields) and `pcb_experience_previous` (previous positions for applicants needing additional hours, letterhead only — no resumes).
+- New backend endpoint `PATCH /enrollment/me/{service_id}/tasks/{task_id}/data` — provider saves form data to task_data without changing task status.
+- New backend endpoint `GET /enrollment/me/{service_id}/pcb-prefill.pdf` — generates a PDF pre-fill sheet using reportlab.
+
+---
+
 ## [1.38.0] — 2026-06-26
 
 ### Added

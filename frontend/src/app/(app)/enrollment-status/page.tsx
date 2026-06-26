@@ -200,6 +200,20 @@ function AgreementGate({ onSigned }: { onSigned: () => void }) {
   )
 }
 
+const PCB_FORM_FIELDS = [
+  { key: 'legal_name', label: 'Full Legal Name (as it should appear on PCB certificate)', type: 'text', placeholder: 'Your name exactly as on certificate', colSpan: 2 },
+  { key: 'dob', label: 'Date of Birth', type: 'date', placeholder: '', colSpan: 1 },
+  { key: 'ssn_last4', label: 'SSN — Last 4 Digits', type: 'text', placeholder: 'XXXX', colSpan: 1, maxLength: 4, pattern: '[0-9]{4}' },
+  { key: 'phone', label: 'Phone', type: 'tel', placeholder: '', colSpan: 1 },
+  { key: 'email', label: 'Email', type: 'email', placeholder: '', colSpan: 1 },
+  { key: 'address_street', label: 'Street Address', type: 'text', placeholder: '', colSpan: 2 },
+  { key: 'address_city', label: 'City', type: 'text', placeholder: '', colSpan: 1 },
+] as const
+
+const GENDER_OPTIONS = ['Female', 'Male', 'Non-binary / Gender non-conforming', 'Transgender female', 'Transgender male', 'Prefer not to say', 'Not listed']
+const RACE_OPTIONS = ['American Indian or Alaska Native', 'Asian', 'Black or African American', 'Hispanic or Latino', 'Native Hawaiian or Other Pacific Islander', 'White', 'Two or more races', 'Prefer not to say']
+const DOULA_TYPE_OPTIONS = ['Birth Doula', 'Postpartum Doula', 'Perinatal Doula', 'Other']
+
 export default function EnrollmentStatusPage() {
   const router = useRouter()
   const { user } = useAuthStore()
@@ -211,6 +225,10 @@ export default function EnrollmentStatusPage() {
   const [toast, setToast] = useState<string | null>(null)
   const [agreementStatus, setAgreementStatus] = useState<'loading' | 'unsigned' | 'signed'>('loading')
   const [agreementSignedAt, setAgreementSignedAt] = useState<string | null>(null)
+  const [pcbForm, setPcbForm] = useState<Record<string, string>>({})
+  const [pcbFormSaving, setPcbFormSaving] = useState(false)
+  const [pcbFormSaved, setPcbFormSaved] = useState(false)
+  const [downloadingPrefill, setDownloadingPrefill] = useState(false)
 
   const headers = { Authorization: `Bearer ${getAccessToken()}` }
   const api = process.env.NEXT_PUBLIC_API_URL
@@ -233,6 +251,20 @@ export default function EnrollmentStatusPage() {
     }
     checkAgreement()
   }, [user]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Sync PCB form data from task_data when the active PCB service changes
+  useEffect(() => {
+    const pcbDetail = services.find((d) => d.service.stage === 'pcb' && d.service.stage === activeStage)
+    if (!pcbDetail) return
+    const appFormTask = pcbDetail.tasks.find((t) => t.task_key === 'pcb_application_form')
+    if (appFormTask?.task_data) {
+      setPcbForm(
+        Object.fromEntries(
+          Object.entries(appFormTask.task_data).map(([k, v]) => [k, String(v ?? '')])
+        )
+      )
+    }
+  }, [services, activeStage])
 
   const checkAgreement = async () => {
     try {
@@ -260,6 +292,59 @@ export default function EnrollmentStatusPage() {
     const now = new Date().toISOString()
     setAgreementSignedAt(now)
     loadServices()
+  }
+
+  const handleSavePcbForm = async (serviceId: string, taskId: string) => {
+    setPcbFormSaving(true)
+    setPcbFormSaved(false)
+    try {
+      await axios.patch(
+        `${api}/api/v1/enrollment/me/${serviceId}/tasks/${taskId}/data`,
+        { task_data: pcbForm },
+        { headers }
+      )
+      setServices((prev) =>
+        prev.map((d) => {
+          if (d.service.id !== serviceId) return d
+          return {
+            ...d,
+            tasks: d.tasks.map((t) =>
+              t.id === taskId
+                ? { ...t, task_data: pcbForm, status: t.status === 'not_started' ? 'in_progress' : t.status }
+                : t
+            ),
+          }
+        })
+      )
+      setPcbFormSaved(true)
+      setTimeout(() => setPcbFormSaved(false), 3000)
+    } catch {
+      showToast('Failed to save application info')
+    } finally {
+      setPcbFormSaving(false)
+    }
+  }
+
+  const handleDownloadPrefill = async (serviceId: string) => {
+    setDownloadingPrefill(true)
+    try {
+      const res = await axios.get(`${api}/api/v1/enrollment/me/${serviceId}/pcb-prefill.pdf`, {
+        headers,
+        responseType: 'blob',
+      })
+      const url = URL.createObjectURL(res.data as Blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'pcb-application-prefill.pdf'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    } catch {
+      showToast('Could not generate pre-filled application')
+    } finally {
+      setDownloadingPrefill(false)
+    }
   }
 
   const loadServices = async () => {
@@ -443,6 +528,126 @@ export default function EnrollmentStatusPage() {
                         </span>
                       </div>
 
+                      {/* PCB Application Info form — only for pcb_application_form task */}
+                      {task.task_key === 'pcb_application_form' && activeDetail.service.stage === 'pcb' && (
+                        <div className="mt-4 space-y-3 border-t border-gray-100 pt-4">
+                          <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Your PCB Application Info</p>
+                          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                            {PCB_FORM_FIELDS.map((f) => (
+                              <div key={f.key} className={f.colSpan === 2 ? 'sm:col-span-2' : ''}>
+                                <label className="block text-xs text-gray-500 mb-1">{f.label}</label>
+                                <input
+                                  type={f.type}
+                                  value={pcbForm[f.key] ?? ''}
+                                  maxLength={'maxLength' in f ? f.maxLength : undefined}
+                                  placeholder={f.placeholder}
+                                  onChange={(e) => {
+                                    let val = e.target.value
+                                    if (f.key === 'ssn_last4') val = val.replace(/\D/g, '')
+                                    setPcbForm((prev) => ({ ...prev, [f.key]: val }))
+                                  }}
+                                  className="w-full rounded border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                              </div>
+                            ))}
+                            {/* State + Zip on one row */}
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <label className="block text-xs text-gray-500 mb-1">State</label>
+                                <input
+                                  type="text"
+                                  maxLength={2}
+                                  value={pcbForm.address_state ?? ''}
+                                  placeholder="PA"
+                                  onChange={(e) => setPcbForm((prev) => ({ ...prev, address_state: e.target.value.toUpperCase() }))}
+                                  className="w-full rounded border border-gray-200 px-3 py-1.5 text-sm uppercase focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs text-gray-500 mb-1">Zip Code</label>
+                                <input
+                                  type="text"
+                                  maxLength={10}
+                                  value={pcbForm.address_zip ?? ''}
+                                  onChange={(e) => setPcbForm((prev) => ({ ...prev, address_zip: e.target.value }))}
+                                  className="w-full rounded border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-xs text-gray-500 mb-1">Gender</label>
+                              <select
+                                value={pcbForm.gender ?? ''}
+                                onChange={(e) => setPcbForm((prev) => ({ ...prev, gender: e.target.value }))}
+                                className="w-full rounded border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              >
+                                <option value="">Select…</option>
+                                {GENDER_OPTIONS.map((o) => <option key={o}>{o}</option>)}
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-xs text-gray-500 mb-1">Race / Ethnicity</label>
+                              <select
+                                value={pcbForm.race_ethnicity ?? ''}
+                                onChange={(e) => setPcbForm((prev) => ({ ...prev, race_ethnicity: e.target.value }))}
+                                className="w-full rounded border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              >
+                                <option value="">Select…</option>
+                                {RACE_OPTIONS.map((o) => <option key={o}>{o}</option>)}
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-xs text-gray-500 mb-1">Primary Language</label>
+                              <input
+                                type="text"
+                                value={pcbForm.primary_language ?? ''}
+                                placeholder="English"
+                                onChange={(e) => setPcbForm((prev) => ({ ...prev, primary_language: e.target.value }))}
+                                className="w-full rounded border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs text-gray-500 mb-1">Doula Type</label>
+                              <select
+                                value={pcbForm.doula_type ?? ''}
+                                onChange={(e) => setPcbForm((prev) => ({ ...prev, doula_type: e.target.value }))}
+                                className="w-full rounded border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              >
+                                <option value="">Select…</option>
+                                {DOULA_TYPE_OPTIONS.map((o) => <option key={o}>{o}</option>)}
+                              </select>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-3 pt-1">
+                            <button
+                              onClick={() => handleSavePcbForm(activeDetail.service.id, task.id)}
+                              disabled={pcbFormSaving}
+                              className="inline-flex items-center gap-1.5 rounded border border-gray-300 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                            >
+                              {pcbFormSaving ? 'Saving…' : 'Save Info'}
+                            </button>
+                            {pcbFormSaved && <span className="text-xs text-green-600">Saved ✓</span>}
+                            <button
+                              onClick={() => handleDownloadPrefill(activeDetail.service.id)}
+                              disabled={downloadingPrefill}
+                              className="inline-flex items-center gap-1.5 rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                            >
+                              {downloadingPrefill ? 'Generating…' : '↓ Download Pre-filled Application'}
+                            </button>
+                          </div>
+
+                          <a
+                            href="/docs/pcb-doula-application.pdf"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-block text-xs text-blue-600 hover:underline"
+                          >
+                            Download blank official PCB application →
+                          </a>
+                        </div>
+                      )}
+
                       {/* Uploaded documents */}
                       {docs.length > 0 && (
                         <div className="mt-3 flex flex-wrap gap-2">
@@ -462,7 +667,7 @@ export default function EnrollmentStatusPage() {
                       )}
 
                       {/* Upload button — only for incomplete tasks */}
-                      {task.status !== 'complete' && (
+                      {task.status !== 'complete' && task.task_key !== 'pcb_application_form' && (
                         <div className="mt-3">
                           <label className="cursor-pointer">
                             <input

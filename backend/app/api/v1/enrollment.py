@@ -33,13 +33,30 @@ router = APIRouter(tags=["enrollment"], prefix="/admin/enrollment")
 _TASK_SEEDS: dict[str, list[dict]] = {
     "education_training": [
         {
+            "task_key": "pcb_application_form",
+            "required_pathway": "all",
+            "label": "PCB Application Info — Complete in DoulaShield",
+            "description": (
+                "Fill in your personal information, demographics, and doula type using the form on this page. "
+                "When complete, click 'Download Pre-filled Application' to get a printable version of "
+                "pages 6–8 ready to submit. You will still need to sign pages 12–13 and have page 14 "
+                "notarized before mailing. Download the blank official PCB application from your "
+                "enrollment status page."
+            ),
+            "sort_order": 0,
+        },
+        {
             "task_key": "pcb_training_hours",
             "required_pathway": "education_training",
             "label": "Training Certificate(s) — 24 Hours Minimum",
             "description": (
-                "Upload training program certificate(s). Total documented hours across all "
-                "certificates must be ≥ 24. All hours must relate to perinatal doula knowledge "
-                "areas (birth support, postpartum care, breastfeeding, perinatal mood disorders, etc.)."
+                "Upload training program certificate(s) totaling ≥ 24 hours. Each certificate must "
+                "explicitly show: (1) your name, (2) training program title, (3) start and end dates, "
+                "(4) total hours awarded, and (5) training organization name. "
+                "Training sign-in sheets are NOT accepted — only official certificates. "
+                "All hours must relate to perinatal doula knowledge areas (birth support, postpartum "
+                "care, breastfeeding, perinatal mood disorders, etc.). Upload all certificates if "
+                "hours are spread across multiple programs."
             ),
             "sort_order": 1,
         },
@@ -48,9 +65,10 @@ _TASK_SEEDS: dict[str, list[dict]] = {
             "required_pathway": "education_training",
             "label": "HIPAA/Confidentiality Training Certificate — 1 Hour Minimum",
             "description": (
-                "Upload certificate showing ≥ 1 hour of HIPAA or client confidentiality training. "
-                "This can be a standalone online course or a HIPAA module within their training program "
-                "if hours are explicitly listed."
+                "Upload a certificate showing ≥ 1 hour of HIPAA or client confidentiality training. "
+                "Certificate must show your name, training title, dates, hours, and organization name. "
+                "A standalone online HIPAA course is acceptable. If HIPAA is a module within your main "
+                "training program, the certificate must list it separately with its own hour count."
             ),
             "sort_order": 2,
         },
@@ -59,123 +77,225 @@ _TASK_SEEDS: dict[str, list[dict]] = {
             "required_pathway": "all",
             "label": "CPR Certification — Adult + Infant",
             "description": (
-                "Upload current, unexpired CPR certificate explicitly covering adult and infant "
-                "competencies. Accepted: AHA BLS, American Red Cross CPR/AED for Professional Rescuers. "
-                "Online-only certifications without hands-on skills are NOT accepted."
+                "Upload a current, unexpired CPR certificate explicitly covering adult AND infant "
+                "competencies. Accepted issuers: AHA BLS, American Red Cross CPR/AED for Professional "
+                "Rescuers. Online-only certifications without a hands-on skills component are NOT "
+                "accepted by PCB."
             ),
             "sort_order": 3,
-        },
-        {
-            "task_key": "pcb_client_eval_1",
-            "required_pathway": "all",
-            "label": "Client Evaluation #1",
-            "description": (
-                "Upload completed PCB client evaluation form, signed by the family. "
-                "Download the official form at pacertboard.org/doula."
-            ),
-            "sort_order": 4,
-        },
-        {
-            "task_key": "pcb_client_eval_2",
-            "required_pathway": "all",
-            "label": "Client Evaluation #2",
-            "description": (
-                "Upload completed PCB client evaluation form, signed by the family. "
-                "Download the official form at pacertboard.org/doula."
-            ),
-            "sort_order": 5,
-        },
-        {
-            "task_key": "pcb_client_eval_3",
-            "required_pathway": "all",
-            "label": "Client Evaluation #3",
-            "description": (
-                "Upload completed PCB client evaluation form, signed by the family. "
-                "Download the official form at pacertboard.org/doula."
-            ),
-            "sort_order": 6,
-        },
-    ],
-    "experienced": [
-        {
-            "task_key": "pcb_active_practice",
-            "required_pathway": "experienced",
-            "label": "Proof of Active Practice",
-            "description": (
-                "Upload documentation confirming the provider is currently working as a doula. "
-                "Acceptable: agency letter confirming contractor status, active doula directory listing "
-                "(screenshot with URL), business registration, or signed client statement."
-            ),
-            "sort_order": 1,
-        },
-        {
-            "task_key": "pcb_cpr_cert",
-            "required_pathway": "all",
-            "label": "CPR Certification — Adult + Infant",
-            "description": (
-                "Upload current, unexpired CPR certificate explicitly covering adult and infant "
-                "competencies. Accepted: AHA BLS, American Red Cross CPR/AED for Professional Rescuers. "
-                "Online-only certifications without hands-on skills are NOT accepted."
-            ),
-            "sort_order": 2,
         },
         {
             "task_key": "pcb_client_eval_1",
             "required_pathway": "all",
             "label": "Client Evaluation #1 (within last year)",
             "description": (
-                "Upload completed PCB client evaluation form, signed by the family. "
-                "Must be from a family served within the last 12 months."
+                "Upload two documents as a single PDF: (1) the signed client consent form and "
+                "(2) the completed PCB Client Evaluation form. The evaluation must be rated across "
+                "9 competencies: communication, active listening, comfort measures, emotional support, "
+                "advocacy, information sharing, postpartum support, breastfeeding support, and referrals "
+                "to resources — include your comments for each. Must be from a client served within the "
+                "last 12 months. If you do not reside in Pennsylvania, the client must be PA-based. "
+                "Download the official PCB evaluation form at pacertboard.org/doula."
             ),
-            "sort_order": 3,
+            "sort_order": 4,
         },
         {
             "task_key": "pcb_client_eval_2",
             "required_pathway": "all",
             "label": "Client Evaluation #2 (within last year)",
             "description": (
-                "Upload completed PCB client evaluation form, signed by the family. "
-                "Must be from a family served within the last 12 months."
+                "Upload two documents as a single PDF: (1) the signed client consent form and "
+                "(2) the completed PCB Client Evaluation form rated across all 9 competencies with "
+                "your comments. Must be from a client served within the last 12 months. "
+                "If you do not reside in Pennsylvania, the client must be PA-based."
             ),
-            "sort_order": 4,
+            "sort_order": 5,
         },
         {
             "task_key": "pcb_client_eval_3",
             "required_pathway": "all",
             "label": "Client Evaluation #3 (within last year)",
             "description": (
-                "Upload completed PCB client evaluation form, signed by the family. "
-                "Must be from a family served within the last 12 months."
+                "Upload two documents as a single PDF: (1) the signed client consent form and "
+                "(2) the completed PCB Client Evaluation form rated across all 9 competencies with "
+                "your comments. Must be from a client served within the last 12 months. "
+                "If you do not reside in Pennsylvania, the client must be PA-based."
+            ),
+            "sort_order": 6,
+        },
+        {
+            "task_key": "pcb_notarized_ar",
+            "required_pathway": "all",
+            "label": "Notarized Acknowledgements & Release (Page 14)",
+            "description": (
+                "Complete page 14 of the PCB application in the presence of a notary public. "
+                "The notary must sign, affix their stamp/seal, and date the page. "
+                "Electronic or digital notarization is NOT accepted — must be physical. "
+                "To find a notary: UPS Store locations, bank branches, and many public libraries "
+                "offer free or low-cost notary services. Upload a scan of the completed notarized page."
+            ),
+            "sort_order": 7,
+        },
+        {
+            "task_key": "pcb_application_submit",
+            "required_pathway": "all",
+            "label": "Submit Application + Pay $50 Fee",
+            "description": (
+                "Assemble all completed pages and supporting documents into a single PDF. "
+                "Submit by email to info@pacertboard.org (PDF attachments only — no links or cloud drives). "
+                "The $50 application fee must accompany your submission; pay by check made payable to "
+                "'PCB' or per payment instructions on the application form. "
+                "Record your submission date and any confirmation details in the notes field."
+            ),
+            "sort_order": 8,
+        },
+    ],
+    "experienced": [
+        {
+            "task_key": "pcb_application_form",
+            "required_pathway": "all",
+            "label": "PCB Application Info — Complete in DoulaShield",
+            "description": (
+                "Fill in your personal information, demographics, and doula type using the form on this page. "
+                "When complete, click 'Download Pre-filled Application' to get a printable version of "
+                "pages 6–8 ready to submit. You will still need to sign pages 12–13 and have page 14 "
+                "notarized before mailing. Download the blank official PCB application from your "
+                "enrollment status page."
+            ),
+            "sort_order": 0,
+        },
+        {
+            "task_key": "pcb_experience_current",
+            "required_pathway": "experienced",
+            "label": "Experience Documentation — Current Position",
+            "description": (
+                "Upload a letter on company letterhead (or a signed self-statement if self-employed) "
+                "confirming your active doula practice. Must include: Agency/Organization Name, City, "
+                "State, Zip Code, Your Title, Employment Start Date, Average Hours per Week, and "
+                "Estimated Total Hours served to date. If self-employed, include your business address "
+                "and approximate client volume."
+            ),
+            "sort_order": 1,
+        },
+        {
+            "task_key": "pcb_experience_previous",
+            "required_pathway": "experienced",
+            "label": "Experience Documentation — Previous Position(s) (if needed)",
+            "description": (
+                "If your current position alone does not demonstrate sufficient doula experience, "
+                "upload company letterhead letters for each previous position. Each letter must include: "
+                "Agency/Organization Name, City, State, Zip, Your Title, Start Date, End Date, "
+                "Hours per Week, and Total Hours in that role. Letters must be signed by a supervisor "
+                "or agency director. A resume is NOT a substitute for these letters."
+            ),
+            "sort_order": 2,
+        },
+        {
+            "task_key": "pcb_cpr_cert",
+            "required_pathway": "all",
+            "label": "CPR Certification — Adult + Infant",
+            "description": (
+                "Upload a current, unexpired CPR certificate explicitly covering adult AND infant "
+                "competencies. Accepted issuers: AHA BLS, American Red Cross CPR/AED for Professional "
+                "Rescuers. Online-only certifications without a hands-on skills component are NOT "
+                "accepted by PCB."
+            ),
+            "sort_order": 3,
+        },
+        {
+            "task_key": "pcb_client_eval_1",
+            "required_pathway": "all",
+            "label": "Client Evaluation #1 (within last year)",
+            "description": (
+                "Upload two documents as a single PDF: (1) the signed client consent form and "
+                "(2) the completed PCB Client Evaluation form. The evaluation must be rated across "
+                "9 competencies: communication, active listening, comfort measures, emotional support, "
+                "advocacy, information sharing, postpartum support, breastfeeding support, and referrals "
+                "to resources — include your comments for each. Must be from a client served within the "
+                "last 12 months. If you do not reside in Pennsylvania, the client must be PA-based. "
+                "Download the official PCB evaluation form at pacertboard.org/doula."
+            ),
+            "sort_order": 4,
+        },
+        {
+            "task_key": "pcb_client_eval_2",
+            "required_pathway": "all",
+            "label": "Client Evaluation #2 (within last year)",
+            "description": (
+                "Upload two documents as a single PDF: (1) the signed client consent form and "
+                "(2) the completed PCB Client Evaluation form rated across all 9 competencies with "
+                "your comments. Must be from a client served within the last 12 months. "
+                "If you do not reside in Pennsylvania, the client must be PA-based."
             ),
             "sort_order": 5,
+        },
+        {
+            "task_key": "pcb_client_eval_3",
+            "required_pathway": "all",
+            "label": "Client Evaluation #3 (within last year)",
+            "description": (
+                "Upload two documents as a single PDF: (1) the signed client consent form and "
+                "(2) the completed PCB Client Evaluation form rated across all 9 competencies with "
+                "your comments. Must be from a client served within the last 12 months. "
+                "If you do not reside in Pennsylvania, the client must be PA-based."
+            ),
+            "sort_order": 6,
         },
         {
             "task_key": "pcb_ref_letter_1",
             "required_pathway": "experienced",
             "label": "Letter of Recommendation #1 (within last year)",
             "description": (
-                "Upload signed letter of recommendation from a family served within the last 12 months. "
-                "Free-form letter, not a PCB form. Must be signed and dated by the client."
+                "Upload a signed letter of recommendation from a family you served within the last "
+                "12 months. Free-form letter — not a PCB form. Must be signed and dated by the client."
             ),
-            "sort_order": 6,
+            "sort_order": 7,
         },
         {
             "task_key": "pcb_ref_letter_2",
             "required_pathway": "experienced",
             "label": "Letter of Recommendation #2 (within last year)",
             "description": (
-                "Upload signed letter of recommendation from a family served within the last 12 months."
+                "Upload a signed letter of recommendation from a family you served within the last "
+                "12 months. Free-form letter, signed and dated by the client."
             ),
-            "sort_order": 7,
+            "sort_order": 8,
         },
         {
             "task_key": "pcb_ref_letter_3",
             "required_pathway": "experienced",
             "label": "Letter of Recommendation #3 (within last year)",
             "description": (
-                "Upload signed letter of recommendation from a family served within the last 12 months."
+                "Upload a signed letter of recommendation from a family you served within the last "
+                "12 months. Free-form letter, signed and dated by the client."
             ),
-            "sort_order": 8,
+            "sort_order": 9,
+        },
+        {
+            "task_key": "pcb_notarized_ar",
+            "required_pathway": "all",
+            "label": "Notarized Acknowledgements & Release (Page 14)",
+            "description": (
+                "Complete page 14 of the PCB application in the presence of a notary public. "
+                "The notary must sign, affix their stamp/seal, and date the page. "
+                "Electronic or digital notarization is NOT accepted — must be physical. "
+                "To find a notary: UPS Store locations, bank branches, and many public libraries "
+                "offer free or low-cost notary services. Upload a scan of the completed notarized page."
+            ),
+            "sort_order": 10,
+        },
+        {
+            "task_key": "pcb_application_submit",
+            "required_pathway": "all",
+            "label": "Submit Application + Pay $50 Fee",
+            "description": (
+                "Assemble all completed pages and supporting documents into a single PDF. "
+                "Submit by email to info@pacertboard.org (PDF attachments only — no links or cloud drives). "
+                "The $50 application fee must accompany your submission; pay by check made payable to "
+                "'PCB' or per payment instructions on the application form. "
+                "Record your submission date and any confirmation details in the notes field."
+            ),
+            "sort_order": 11,
         },
     ],
 }
