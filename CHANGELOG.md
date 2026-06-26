@@ -12,6 +12,21 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.33.0] — 2026-06-26
+
+### Added
+- **PCB Enrollment Service (dual-pathway)**: Admins can now manage the full Pennsylvania Certification Board (PCB) credentialing process for doula providers through a new Enrollment Services section in the admin sidebar. Two pathways are supported:
+  - **Education/Training** (newly trained doulas): Collects training certificates (≥ 24 hours), HIPAA/confidentiality training certificate (≥ 1 hour), CPR certification, and 3 client evaluations. DoulaShield validates that training hours meet the 24-hour minimum before a task can be marked complete.
+  - **Experienced** (currently practicing doulas): Collects proof of active practice, CPR certification, 3 client evaluations (within last year), and 3 letters of recommendation (within last year).
+- **Enrollment Admin Guide**: A new reference guide (`/enrollment-admin-guide`) is available in the sidebar under Help for admin users. It covers task-by-task instructions for both pathways — what to collect, what to verify, how to handle common edge cases, and how to submit to PCB. Also includes a pre-submission checklist and guidance for recording the PCB certificate once received.
+- **Automatic task seeding**: When an admin creates an enrollment service and selects a pathway, DoulaShield automatically generates the correct task checklist (6 tasks for Education/Training, 8 tasks for Experienced). No manual setup required.
+- **Document upload per task**: Each task supports document uploads (PDF, JPEG, PNG, up to 20 MB). Uploading a document automatically advances a "not started" task to "in progress."
+- **Profile write-back on completion**: When the admin records the PCB certificate date, DoulaShield writes `pcb_last_certified_on` to the provider's profile — the date that downstream credentialing steps (CAQH setup, MCO contracting) reference.
+- **Hours validation**: Training hours and HIPAA hours are validated server-side — tasks requiring minimum hours cannot be marked complete if the threshold is not met.
+- **New DB tables**: `enrollment_services`, `enrollment_tasks`, `enrollment_documents` (migration 0044).
+
+---
+
 ## [1.32.1] — 2026-06-24
 
 ### Fixed
