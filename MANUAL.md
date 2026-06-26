@@ -1,6 +1,6 @@
 # DoulaShield User Manual
 
-**v1.31.0 · Last updated 2026-06-24**
+**v1.39.0 · Last updated 2026-06-26**
 
 This manual covers every provider-facing feature in DoulaShield. Read it start to finish once, then use the headings as a reference when you need a quick reminder.
 
@@ -147,6 +147,7 @@ The first time you open the Enrollment Status page you will be asked to read and
 **What you can do on this page:**
 - Read the task list for each stage — each task includes a description of exactly what document to gather and what it must show
 - See which tasks are complete, in progress, or not yet started
+- Fill in your PCB application info directly in DoulaShield (see below) and download a pre-filled PDF
 - Upload documents for any task that isn't yet complete (PDF, JPEG, or PNG, up to 20 MB per file)
 - View documents you've already uploaded by clicking the filename chip under each task
 
@@ -162,6 +163,26 @@ The first time you open the Enrollment Status page you will be asked to read and
 4. The task status automatically changes from "not started" to "in progress" on your first upload
 
 Tabs at the top of the page (PCB Certification · NPPES / NPI Setup · Enrollment — Stage 2 · MCO Contracting — Stage 3) are enabled only for stages your agency has opened for you. Disabled tabs mean that stage hasn't been started yet.
+
+### PCB Application Info & Pre-filled Download
+
+The first task on your PCB Certification stage — **PCB Application Info** — has an inline form where you enter your personal details exactly as they should appear on your PCB application:
+
+- Full legal name (as it should appear on your certificate)
+- Date of birth and SSN last 4 digits
+- Mailing address, phone, and email
+- Gender, race/ethnicity, and primary language
+- Doula type (Birth, Postpartum, Perinatal, or Other)
+
+Click **Save Info** to store your answers. Then click **↓ Download Pre-filled Application** to download a PDF with pages 6–8 of the PCB application pre-populated with your info, plus a live checklist of your task statuses. Print the pre-filled sheet, sign pages 12–13, take page 14 to a notary (a UPS Store, bank branch, or public library works), and submit the complete PDF package to PCB.
+
+A link to the blank official PCB application is also available on the page if you need it for reference.
+
+**PCB tasks on both pathways include:**
+- Your application info form (completed above)
+- Training certificates or experience documentation, CPR cert, client evaluations
+- **Notarized Acknowledgements & Release** — page 14 must be signed in front of a notary public. Electronic notarization is not accepted.
+- **Submit Application + Pay $50 Fee** — email the complete PDF to info@pacertboard.org with a $50 check or payment per PCB's current instructions. Note your submission date in the task notes.
 
 ---
 
