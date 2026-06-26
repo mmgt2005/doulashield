@@ -67,17 +67,39 @@ async def start_subscription(provider: User, db: AsyncSession) -> dict:
                 metadata={"billing_provider_id": str(bp.id)},
             )
             bp.stripe_customer_id = customer.id
-        agency_price = settings.STRIPE_AGENCY_MONTHLY_PRICE_ID or settings.STRIPE_MONTHLY_PRICE_ID
-        sub = await asyncio.to_thread(
-            stripe.Subscription.create,
-            customer=bp.stripe_customer_id,
-            items=[{"price": agency_price}],
-            metadata={"billing_provider_id": str(bp.id)},
-        )
+
+        seat_price = settings.STRIPE_BILLING_PROVIDER_SEAT_PRICE_ID
+        if seat_price:
+            from sqlalchemy import func
+            from sqlalchemy.future import select as _select
+            count_result = await db.execute(
+                _select(func.count()).select_from(User).where(User.billing_provider_id == bp.id)
+            )
+            seat_count = count_result.scalar() or 0
+            quantity = max(3, seat_count)
+            sub = await asyncio.to_thread(
+                stripe.Subscription.create,
+                customer=bp.stripe_customer_id,
+                items=[{"price": seat_price, "quantity": quantity}],
+                metadata={"billing_provider_id": str(bp.id)},
+            )
+        else:
+            agency_price = settings.STRIPE_AGENCY_MONTHLY_PRICE_ID or settings.STRIPE_MONTHLY_PRICE_ID
+            sub = await asyncio.to_thread(
+                stripe.Subscription.create,
+                customer=bp.stripe_customer_id,
+                items=[{"price": agency_price}],
+                metadata={"billing_provider_id": str(bp.id)},
+            )
+
         bp.stripe_subscription_id = sub.id
         bp.subscription_status = sub.status
         await db.commit()
-        return {"subscription_id": sub.id, "status": sub.status}
+        result: dict = {"subscription_id": sub.id, "status": sub.status}
+        if seat_price:
+            result["seat_quantity"] = quantity
+            result["monthly_total_cents"] = quantity * 5500
+        return result
 
     customer_id = await get_or_create_customer(provider, db)
     sub = await asyncio.to_thread(
@@ -90,6 +112,27 @@ async def start_subscription(provider: User, db: AsyncSession) -> dict:
     provider.subscription_status = sub.status
     await db.commit()
     return {"subscription_id": sub.id, "status": sub.status}
+
+
+async def update_billing_provider_seat_quantity(
+    bp: BillingProvider, provider_count: int, db: AsyncSession
+) -> dict | None:
+    """Update the subscription seat quantity when providers are assigned or removed.
+    Always enforces a minimum of 3 seats ($165/month floor)."""
+    if not bp.stripe_subscription_id or not _configured():
+        return None
+    if not settings.STRIPE_BILLING_PROVIDER_SEAT_PRICE_ID:
+        return None
+    _init()
+    quantity = max(3, provider_count)
+    sub = await asyncio.to_thread(stripe.Subscription.retrieve, bp.stripe_subscription_id)
+    item_id = sub["items"]["data"][0]["id"]
+    await asyncio.to_thread(
+        stripe.SubscriptionItem.modify,
+        item_id,
+        quantity=quantity,
+    )
+    return {"item_id": item_id, "quantity": quantity, "monthly_total_cents": quantity * 5500}
 
 
 async def cancel_subscription(provider: User, db: AsyncSession) -> dict:

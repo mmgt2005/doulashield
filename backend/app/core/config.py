@@ -44,6 +44,7 @@ class Settings(BaseSettings):
     STRIPE_DEPOSIT_PRICE_ID: str = ""
     STRIPE_MONTHLY_PRICE_ID: str = ""
     STRIPE_AGENCY_MONTHLY_PRICE_ID: str = ""
+    STRIPE_BILLING_PROVIDER_SEAT_PRICE_ID: str = ""
     STRIPE_PARTNER_ACCOUNT_ID: str = ""
     STRIPE_PARTNER_SHARE: float = 0.35
 

@@ -12,6 +12,21 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.40.0] — 2026-06-26
+
+### Added
+- **Per-seat billing for billing providers**: Agency subscriptions now use a quantity-based Stripe price (`STRIPE_BILLING_PROVIDER_SEAT_PRICE_ID`) at $55/seat/month with a 3-seat minimum ($165/month floor). When an admin assigns a provider to an agency that already has an active subscription, the subscription quantity is updated immediately via `stripe.SubscriptionItem.modify`. Stripe handles prorated charges for mid-cycle additions automatically.
+- **Remove provider from billing provider** (`POST /admin/billing-providers/{bp_id}/remove-provider`): New admin endpoint to unassign a doula from an agency. Decrements the subscription seat quantity (flooring at 3) and records the action in the audit log.
+- **`STRIPE_BILLING_PROVIDER_SEAT_PRICE_ID`** config var: set to a Stripe recurring $55/unit price. Falls back to the legacy `STRIPE_AGENCY_MONTHLY_PRICE_ID` flat price if left blank, so existing deployments are unaffected until they opt into per-seat billing.
+
+### How it works
+- **Starting a subscription** for an agency with N providers: Stripe creates the subscription at `max(3, N)` seats → minimum charge $165/month.
+- **Assigning a 4th+ provider**: seat quantity auto-increments; Stripe bills the prorated difference immediately.
+- **Removing a provider**: seat quantity decrements, never below 3.
+- The `monthly_total_cents` (seats × 5500) is returned in the assign/remove/start-subscription API response so the admin UI can display the new monthly total.
+
+---
+
 ## [1.39.4] — 2026-06-26
 
 ### Added

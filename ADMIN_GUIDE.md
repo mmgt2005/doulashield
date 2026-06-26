@@ -342,9 +342,18 @@ DoulaShield uses three Stripe price IDs, set as environment variables on the bac
 |---|---|
 | `STRIPE_DEPOSIT_PRICE_ID` | One-time $99 enrollment deposit for individual providers |
 | `STRIPE_MONTHLY_PRICE_ID` | Recurring monthly subscription for individual providers |
-| `STRIPE_AGENCY_MONTHLY_PRICE_ID` | Recurring monthly subscription for billing agencies (billing providers) |
+| `STRIPE_AGENCY_MONTHLY_PRICE_ID` | Legacy flat-rate agency subscription (superseded by per-seat pricing) |
+| `STRIPE_BILLING_PROVIDER_SEAT_PRICE_ID` | Per-seat agency subscription — $55/seat/month, 3-seat minimum |
 
-Create each product and price in your Stripe Dashboard (Products → Add Product → Add Price), then copy the `price_1…` ID into the matching variable. If `STRIPE_AGENCY_MONTHLY_PRICE_ID` is left blank, agency subscriptions fall back to `STRIPE_MONTHLY_PRICE_ID`.
+Create each product and price in your Stripe Dashboard (Products → Add Product → Add Price), then copy the `price_1…` ID into the matching variable.
+
+**Setting up per-seat billing for agencies ($55/doula, 3-seat minimum = $165/month floor):**
+1. Stripe Dashboard → Products → Create product: "DoulaShield Agency Seat".
+2. Add a recurring price: **$55.00 / month / per unit** (standard per-unit, not metered).
+3. Copy the price ID into `STRIPE_BILLING_PROVIDER_SEAT_PRICE_ID` in your `.env`.
+4. Leave `STRIPE_AGENCY_MONTHLY_PRICE_ID` blank for new deployments.
+
+When `STRIPE_BILLING_PROVIDER_SEAT_PRICE_ID` is set, all new agency subscriptions are created at `max(3, current_provider_count)` seats. Assigning a provider to an agency with an active subscription auto-increments the seat count; removing one auto-decrements (minimum 3 enforced). Stripe handles prorated billing mid-cycle automatically.
 
 ### Admin Billing Exemption
 
@@ -393,7 +402,7 @@ Click **Edit** on any row. All fields are editable. Changes take effect on the n
 
 #### Starting an Agency Subscription
 
-Click **Start Sub** on the row. DoulaShield creates a Stripe subscription billed to the agency using the `STRIPE_AGENCY_MONTHLY_PRICE_ID` price (falls back to `STRIPE_MONTHLY_PRICE_ID` if not set). The Subscription column updates to "Active." The button only appears when the agency does not already have an active or trialing subscription, and requires at least one provider assigned to the agency (so a Stripe customer record can be created).
+Click **Start Sub** on the row. DoulaShield creates a Stripe subscription billed to the agency. If `STRIPE_BILLING_PROVIDER_SEAT_PRICE_ID` is configured, the subscription is created at `max(3, current_provider_count)` seats — so an agency with 1 assigned provider starts at 3 seats ($165/month), and one with 5 starts at 5 seats ($275/month). The Subscription column updates to "Active." The button only appears when the agency does not already have an active or trialing subscription, and requires at least one provider assigned to the agency.
 
 #### Deleting a Billing Provider
 
