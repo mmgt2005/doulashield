@@ -12,6 +12,17 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.35.0] — 2026-06-26
+
+### Added
+- **NPPES / NPI Setup stage**: A new stage between PCB Certification and Stage 2 (Enrollment) that tracks the full 7-step federal NPI application workflow. Auto-generates tasks for: creating an I&A System account (with surrogate tip), starting the NPI application (Type 1 Individual), completing the provider profile (exact legal name match required), entering business addresses (mailing vs. practice location rules), assigning taxonomy code 374J00000X (Doula), filling in the contact person and identifiers, and attesting/submitting. When all tasks are done the admin records the issued 10-digit NPI — DoulaShield writes it to the provider's profile.
+- **NPPES tab**: The Enrollment Services admin page now shows four tabs — PCB Certification, NPPES / NPI Setup, Enrollment (Stage 2), and MCO Contracting (Stage 3).
+- **Stage gate — NPPES requires PCB cert**: Creating an NPPES service is blocked (422) if `pcb_last_certified_on` is not set on the provider.
+- **Stage gate — Stage 2 requires NPI**: Creating a Stage 2 enrollment service is now blocked (422) if the provider does not have an NPI on file. Providers who already have an NPI recorded can proceed without going through the NPPES service.
+- **`complete-nppes` API endpoint**: `POST /admin/enrollment/services/{id}/complete-nppes` validates the NPI is exactly 10 digits, writes it to `user.npi`, and marks the service complete.
+
+---
+
 ## [1.34.0] — 2026-06-26
 
 ### Added

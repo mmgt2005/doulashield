@@ -163,9 +163,9 @@ The same guide is available to the provider directly: a green **Walkthrough Guid
 
 ---
 
-## Enrollment Services (Three-Stage Credentialing)
+## Enrollment Services (Four-Stage Credentialing)
 
-DoulaShield manages the full credentialing pipeline for doula providers across three stages. Go to **Admin → Enrollment Services** to create and track services for each stage. The page shows three tabs — PCB Certification, Enrollment (Stage 2), and MCO Contracting (Stage 3) — each with a count of active services.
+DoulaShield manages the full credentialing pipeline for doula providers across four stages. Go to **Admin → Enrollment Services** to create and track services for each stage. The page shows four tabs — PCB Certification, NPPES / NPI Setup, Enrollment (Stage 2), and MCO Contracting (Stage 3) — each with a count of active services.
 
 Each stage auto-generates a task checklist. Upload documents per task, enter any required data, mark tasks complete, and use the stage-specific "Mark Complete" button when all tasks are done.
 
@@ -204,9 +204,38 @@ When in doubt, use Education/Training — it is available to all applicants rega
 
 ---
 
+### NPPES / NPI Setup
+
+The second stage. Tracks the 7-step federal NPPES application to obtain the doula's 10-digit National Provider Identifier (NPI). DoulaShield acts as **surrogate** — the agency submits the application on the doula's behalf using its own I&A account.
+
+**Prerequisite:** Provider must have a PCB certification date on record.
+
+**Creating an NPPES service:**
+1. Click **+ New Enrollment Service** → select "NPPES / NPI Setup".
+2. Select the provider. Click **Create Service**.
+
+Seven tasks are auto-generated, in order:
+
+| Task | What to do |
+|---|---|
+| Create I&A System Account | Go to nppes.cms.hhs.gov, click "Create or Manage an Account." Enter name, SSN, DOB, email. Set up MFA. Use agency's existing I&A login → "Add Surrogate" to avoid creating a new account per doula. |
+| Start NPI Application | Log in with I&A credentials → "Submit New NPI Application" → Entity type: **Type 1 (Individual)**. |
+| Complete Provider Profile | Enter exact legal name from the doula's Social Security card (mismatch = immediate rejection). Enter DOB, state and country of birth. Answer "No" to Sole Proprietor unless the doula has a registered EIN. |
+| Enter Business Addresses | **Mailing address** (P.O. Boxes allowed) and **Practice Location** (P.O. Boxes forbidden). In-home doulas use their home office address for the practice location. |
+| Assign Taxonomy Code | Click "Add Taxonomy" → enter **374J00000X** (Doula). No state license number needed for PA doulas — PCB certification covers this for Type 13. |
+| Contact Person & Identifiers | Leave Other Identifiers and Endpoint blank. Enter agency's credentialing manager as Contact Person (NPPES calls them if the SSN or address needs correction). |
+| Attest and Submit | Read the Certification Statement, check the box, click Submit. NPI is typically issued via email within 1–5 business days. Record the NPI number in the task notes. |
+
+**Completing NPPES Setup:** Once all 7 tasks are marked complete and the NPI email arrives:
+1. Click **Mark NPI Setup Complete**.
+2. Enter the 10-digit NPI number.
+3. DoulaShield writes the NPI to the provider's profile and unlocks Stage 2.
+
+---
+
 ### Stage 2 — Enrollment (PROMISe™, Liability, CAQH)
 
-**Prerequisite:** Provider must have a PCB certification date on record. The API blocks Stage 2 creation if `pcb_last_certified_on` is not set.
+**Prerequisite:** Provider must have a PCB certification date on record **and** an NPI on file. The API blocks Stage 2 creation if either is missing. Providers who already have an NPI recorded (e.g., from a previous system) can skip the NPPES stage — the gate checks the field, not whether a service was created.
 
 **Creating a Stage 2 service:**
 1. Click **+ New Enrollment Service** → select "Enrollment — Stage 2".
