@@ -225,11 +225,11 @@ export default function EnrollmentStatusPage() {
                 {activeDetail.service.status === 'complete' && activeDetail.service.stage === 'pcb' && activeDetail.service.pcb_cert_date && (
                   <span className="text-xs text-gray-500">Certified {activeDetail.service.pcb_cert_date}</span>
                 )}
-                {activeDetail.service.status === 'complete' && activeDetail.service.stage === 'nppes_setup' && activeDetail.service.intake_data?.npi && (
-                  <span className="text-xs text-gray-500">NPI: {String(activeDetail.service.intake_data.npi)}</span>
+                {activeDetail.service.status === 'complete' && activeDetail.service.stage === 'nppes_setup' && !!activeDetail.service.intake_data?.npi && (
+                  <span className="text-xs text-gray-500">NPI: {String(activeDetail.service.intake_data!.npi)}</span>
                 )}
-                {activeDetail.service.status === 'complete' && activeDetail.service.stage === 'enrollment' && activeDetail.service.intake_data?.promise_id && (
-                  <span className="text-xs text-gray-500">PROMISe™ ID: {String(activeDetail.service.intake_data.promise_id)}</span>
+                {activeDetail.service.status === 'complete' && activeDetail.service.stage === 'enrollment' && !!activeDetail.service.intake_data?.promise_id && (
+                  <span className="text-xs text-gray-500">PROMISe™ ID: {String(activeDetail.service.intake_data!.promise_id)}</span>
                 )}
               </div>
 
