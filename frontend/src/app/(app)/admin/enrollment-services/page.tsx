@@ -148,6 +148,9 @@ export default function EnrollmentServicesPage() {
   // Document upload
   const [uploadingTask, setUploadingTask] = useState<{ serviceId: string; taskId: string } | null>(null)
 
+  // Walkthrough guide
+  const [showGuide, setShowGuide] = useState(false)
+
   const headers = { Authorization: `Bearer ${getAccessToken()}` }
   const api = process.env.NEXT_PUBLIC_API_URL
 
@@ -465,6 +468,301 @@ export default function EnrollmentServicesPage() {
         </div>
       )}
 
+      {/* Walkthrough Guide modal */}
+      {showGuide && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => setShowGuide(false)}
+        >
+          <div
+            className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[92vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal header */}
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-start justify-between rounded-t-xl z-10">
+              <div>
+                <h2 className="text-base font-semibold text-gray-900">Enrollment Services — How It Works</h2>
+                <p className="text-xs text-gray-500 mt-0.5">A four-stage credentialing pipeline. Each stage gates the next. All management is admin-only; providers view status and upload documents.</p>
+              </div>
+              <button onClick={() => setShowGuide(false)} className="text-gray-400 hover:text-gray-600 text-xl leading-none ml-6 mt-0.5">×</button>
+            </div>
+
+            {/* Pipeline overview */}
+            <div className="px-6 pt-5 pb-4">
+              <div className="flex items-center gap-1 overflow-x-auto pb-1">
+                {[
+                  { label: 'PCB Certification', color: 'bg-gray-100 text-gray-700 border-gray-200', dot: 'bg-gray-400' },
+                  { label: 'NPPES / NPI Setup', color: 'bg-indigo-50 text-indigo-700 border-indigo-200', dot: 'bg-indigo-500' },
+                  { label: 'Enrollment — Stage 2', color: 'bg-blue-50 text-blue-700 border-blue-200', dot: 'bg-blue-500' },
+                  { label: 'MCO Contracting — Stage 3', color: 'bg-purple-50 text-purple-700 border-purple-200', dot: 'bg-purple-500' },
+                ].map((s, i) => (
+                  <div key={i} className="flex items-center gap-1 shrink-0">
+                    <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${s.color}`}>
+                      <span className={`h-1.5 w-1.5 rounded-full ${s.dot}`} />
+                      {s.label}
+                    </span>
+                    {i < 3 && <span className="text-gray-300 text-sm">→</span>}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="px-6 pb-6 space-y-5">
+
+              {/* Stage 1: PCB */}
+              <div className="rounded-lg border border-gray-200 overflow-hidden">
+                <div className="flex items-center gap-3 bg-gray-50 px-4 py-3 border-b border-gray-200">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gray-700 text-xs font-bold text-white">1</span>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-gray-900">PCB Certification</p>
+                    <p className="text-xs text-gray-500">Pennsylvania Certification Board — Certified Perinatal Doula</p>
+                  </div>
+                  <span className="text-xs text-gray-400 italic">No gate — start here</span>
+                </div>
+                <div className="p-4 space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="rounded-lg border border-gray-200 p-3">
+                      <p className="text-xs font-semibold text-gray-700 mb-2">Education/Training Pathway (6 tasks)</p>
+                      {[
+                        'Training Certificate(s) — 24+ hours total',
+                        'HIPAA/Confidentiality Training — 1+ hour',
+                        'CPR Certification (adult + infant)',
+                        'Client Evaluation #1',
+                        'Client Evaluation #2',
+                        'Client Evaluation #3',
+                      ].map((t, i) => (
+                        <div key={i} className="flex items-start gap-1.5 mt-1">
+                          <span className="mt-0.5 h-3.5 w-3.5 shrink-0 rounded-full bg-gray-100 text-center text-[9px] font-bold text-gray-500 leading-3.5">{i + 1}</span>
+                          <span className="text-xs text-gray-600">{t}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="rounded-lg border border-gray-200 p-3">
+                      <p className="text-xs font-semibold text-gray-700 mb-2">Experienced Pathway (8 tasks)</p>
+                      {[
+                        'Proof of Active Doula Practice',
+                        'CPR Certification (adult + infant)',
+                        'Client Evaluation #1 (within last year)',
+                        'Client Evaluation #2 (within last year)',
+                        'Client Evaluation #3 (within last year)',
+                        'Letter of Recommendation #1',
+                        'Letter of Recommendation #2',
+                        'Letter of Recommendation #3',
+                      ].map((t, i) => (
+                        <div key={i} className="flex items-start gap-1.5 mt-1">
+                          <span className="mt-0.5 h-3.5 w-3.5 shrink-0 rounded-full bg-gray-100 text-center text-[9px] font-bold text-gray-500 leading-3.5">{i + 1}</span>
+                          <span className="text-xs text-gray-600">{t}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2.5">
+                    <span className="text-amber-500 text-sm shrink-0">⚙</span>
+                    <div>
+                      <p className="text-xs font-semibold text-amber-800">How to complete this stage</p>
+                      <ol className="mt-1 space-y-0.5 text-xs text-amber-700 list-decimal list-inside">
+                        <li>Create a new enrollment service → select provider → select pathway (Education/Training or Experienced)</li>
+                        <li>For each task: upload the document, add notes if needed, then click <strong>Mark Complete</strong></li>
+                        <li>For training tasks: enter total hours — system warns if below 24 hrs (or 1 hr for HIPAA)</li>
+                        <li>When all tasks are complete, click <strong>Mark PCB Certification Complete</strong> → enter the certificate issue date</li>
+                        <li>DoulaShield writes the cert date to the provider's profile (<code>pcb_last_certified_on</code>) — visible in their Settings</li>
+                      </ol>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Stage 2: NPPES */}
+              <div className="rounded-lg border border-indigo-200 overflow-hidden">
+                <div className="flex items-center gap-3 bg-indigo-50 px-4 py-3 border-b border-indigo-200">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-xs font-bold text-white">2</span>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-gray-900">NPPES / NPI Setup</p>
+                    <p className="text-xs text-indigo-600">Federal NPI application — agency acts as surrogate clerk</p>
+                  </div>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-indigo-100 border border-indigo-200 px-2 py-0.5 text-xs text-indigo-700">
+                    🔒 Requires PCB cert date on file
+                  </span>
+                </div>
+                <div className="p-4 space-y-4">
+                  <div className="rounded-lg border border-gray-200 p-3">
+                    <p className="text-xs font-semibold text-gray-700 mb-2">7-Step NPI Application Workflow</p>
+                    {[
+                      ['Create I&A System Account', 'Use agency\'s existing I&A account + "Add Surrogate" — no new login needed per doula'],
+                      ['Start NPI Application', 'Log in → Submit New NPI Application → Entity type: Type 1 (Individual)'],
+                      ['Complete Provider Profile', 'Exact legal name as on SSN card; DOB, State/Country of Birth; Sole Proprietor: No'],
+                      ['Enter Business Addresses', 'Mailing address (P.O. Box OK) + Practice location (P.O. Box not allowed)'],
+                      ['Assign Taxonomy Code', 'Add Taxonomy → enter 374J00000X (Doula) — no PA state license number required'],
+                      ['Contact Person & Identifiers', 'Leave Other Identifiers blank; add agency credentialing manager as Contact Person'],
+                      ['Attest and Submit', 'Sign certification, click Submit — NPI issued via email within 1–5 business days'],
+                    ].map(([label, detail], i) => (
+                      <div key={i} className="flex items-start gap-2 mt-2">
+                        <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-[9px] font-bold text-indigo-700 mt-0.5">{i + 1}</span>
+                        <div>
+                          <span className="text-xs font-medium text-gray-800">{label}</span>
+                          <span className="text-xs text-gray-500"> — {detail}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2.5">
+                    <span className="text-amber-500 text-sm shrink-0">⚙</span>
+                    <div>
+                      <p className="text-xs font-semibold text-amber-800">How to complete this stage</p>
+                      <ol className="mt-1 space-y-0.5 text-xs text-amber-700 list-decimal list-inside">
+                        <li>Create a new enrollment service → select provider → select stage <strong>NPPES / NPI Setup</strong></li>
+                        <li>Work through the 7 tasks in order, uploading screenshots or confirmations as evidence</li>
+                        <li>When the NPI arrives by email (usually within hours), record it in the task notes</li>
+                        <li>When all 7 tasks are complete, click <strong>Mark NPI Setup Complete</strong> → enter the 10-digit NPI</li>
+                        <li>DoulaShield writes the NPI to the provider's profile — visible in their Settings and used in all billing</li>
+                      </ol>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Stage 3: Enrollment */}
+              <div className="rounded-lg border border-blue-200 overflow-hidden">
+                <div className="flex items-center gap-3 bg-blue-50 px-4 py-3 border-b border-blue-200">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">3</span>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-gray-900">Enrollment — Stage 2</p>
+                    <p className="text-xs text-blue-600">PROMISe™ Type 13 & 130 + CAQH ProView enrollment</p>
+                  </div>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 border border-blue-200 px-2 py-0.5 text-xs text-blue-700">
+                    🔒 Requires NPI on file
+                  </span>
+                </div>
+                <div className="p-4 space-y-4">
+                  <div className="rounded-lg border border-gray-200 p-3">
+                    <p className="text-xs font-semibold text-gray-700 mb-2">6 Required Documents & Actions</p>
+                    {[
+                      ['W-9 Form', 'IRS form — verify tax classification; must match provider\'s SSN or EIN'],
+                      ['Government-Issued Photo ID', 'Driver\'s license or passport — name must match NPI application exactly'],
+                      ['Liability Insurance Face Sheet', 'Must show provider name, policy number, coverage dates, and per-occurrence limits'],
+                      ['PROMISe™ Type 13 Application', 'Medicaid FFS enrollment — submitted at promise.dhs.pa.gov using provider\'s NPI'],
+                      ['PROMISe™ Type 130 Application', 'CHIP enrollment — same portal, separate application type'],
+                      ['CAQH ProView Enrollment', 'Complete ProView profile; provider must attest every 120 days — set reminder'],
+                    ].map(([label, detail], i) => (
+                      <div key={i} className="flex items-start gap-2 mt-2">
+                        <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-blue-100 text-[9px] font-bold text-blue-700 mt-0.5">{i + 1}</span>
+                        <div>
+                          <span className="text-xs font-medium text-gray-800">{label}</span>
+                          <span className="text-xs text-gray-500"> — {detail}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2.5">
+                    <span className="text-amber-500 text-sm shrink-0">⚙</span>
+                    <div>
+                      <p className="text-xs font-semibold text-amber-800">How to complete this stage</p>
+                      <ol className="mt-1 space-y-0.5 text-xs text-amber-700 list-decimal list-inside">
+                        <li>Create a new enrollment service → select provider → select stage <strong>Enrollment — Stage 2</strong></li>
+                        <li>Collect W-9, photo ID, and liability face sheet from the provider; upload each to its task</li>
+                        <li>Submit PROMISe™ Type 13 and 130 applications; upload confirmation screenshots</li>
+                        <li>Complete CAQH ProView enrollment; note the CAQH ID in task notes</li>
+                        <li>When all 6 tasks are complete, click <strong>Mark Enrollment Complete</strong> → enter PROMISe enrollment date + optional PROMISe ID and CAQH ID</li>
+                        <li>DoulaShield writes <code>promise_last_enrolled_on</code> and <code>liability_insurance_expires_on</code> to the provider's profile</li>
+                      </ol>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Stage 4: MCO Contracting */}
+              <div className="rounded-lg border border-purple-200 overflow-hidden">
+                <div className="flex items-center gap-3 bg-purple-50 px-4 py-3 border-b border-purple-200">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-purple-600 text-xs font-bold text-white">4</span>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-gray-900">MCO Contracting — Stage 3</p>
+                    <p className="text-xs text-purple-600">Join all 8 PA Medicaid managed care networks</p>
+                  </div>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-purple-100 border border-purple-200 px-2 py-0.5 text-xs text-purple-700">
+                    🔒 Requires Stage 2 complete
+                  </span>
+                </div>
+                <div className="p-4 space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="rounded-lg border border-gray-200 p-3">
+                      <p className="text-xs font-semibold text-gray-700 mb-2">Supporting Documents (2 tasks)</p>
+                      {['5-Year Work History', 'Resume / CV'].map((t, i) => (
+                        <div key={i} className="flex items-start gap-1.5 mt-1">
+                          <span className="mt-0.5 h-3.5 w-3.5 shrink-0 rounded-full bg-gray-100 text-center text-[9px] font-bold text-gray-500 leading-3.5">{i + 1}</span>
+                          <span className="text-xs text-gray-600">{t}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="rounded-lg border border-gray-200 p-3">
+                      <p className="text-xs font-semibold text-gray-700 mb-2">MCO Applications + LOI (8 tasks)</p>
+                      {[
+                        'AmeriHealth Caritas',
+                        'Keystone First',
+                        'UPMC For You',
+                        'Geisinger Health Plan',
+                        'Highmark Wholecare',
+                        'UnitedHealthcare Community Plan',
+                        'Aetna Better Health',
+                        'Health Partners Plans',
+                      ].map((mco, i) => (
+                        <div key={i} className="flex items-start gap-1.5 mt-1">
+                          <span className="mt-0.5 h-3.5 w-3.5 shrink-0 rounded-full bg-purple-100 text-center text-[9px] font-bold text-purple-600 leading-3.5">{i + 3}</span>
+                          <span className="text-xs text-gray-600">{mco} — Application + LOI</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2.5">
+                    <span className="text-amber-500 text-sm shrink-0">⚙</span>
+                    <div>
+                      <p className="text-xs font-semibold text-amber-800">How to complete this stage</p>
+                      <ol className="mt-1 space-y-0.5 text-xs text-amber-700 list-decimal list-inside">
+                        <li>Create a new enrollment service → select provider → select stage <strong>MCO Contracting — Stage 3</strong></li>
+                        <li>Collect the provider's 5-year work history and CV; upload each to its task</li>
+                        <li>For each MCO: submit the credentialing application and Letter of Intent (LOI) through the MCO's provider portal</li>
+                        <li>Note the application reference number and submission date in the task's notes field</li>
+                        <li>Enter the contract date in the task row when a signed contract is returned; click <strong>Mark Complete</strong></li>
+                        <li>When all 10 tasks are done, click <strong>Mark MCO Contracting Complete</strong></li>
+                      </ol>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Key rules */}
+              <div className="rounded-lg bg-gray-50 border border-gray-200 p-4">
+                <p className="text-xs font-semibold text-gray-700 mb-2">Key Rules & Reminders</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5">
+                  {[
+                    ['Stage gates', 'Each stage can only be created once its prerequisite is met — DoulaShield enforces this automatically with a 422 error if you try to skip ahead'],
+                    ['Multiple services', 'A provider can have one service per stage. Re-enrollment in a later stage requires the earlier stage\'s data to still be on file'],
+                    ['Document uploads', 'Providers can upload their own documents from the Enrollment Status page — admins can also upload on their behalf from this page'],
+                    ['Provider visibility', 'Providers see their task checklist and status in real time via Sidebar → Enrollment Status. They cannot mark tasks complete'],
+                    ['NPI gate bypass', 'Providers who already have an NPI recorded in their profile can skip the NPPES Setup stage and go straight to Stage 2'],
+                    ['CAQH re-attestation', 'Remind providers every 120 days. The CAQH Attestation Renewal banner on the Dashboard fires when ≤ 14 days remain'],
+                  ].map(([label, text]) => (
+                    <div key={label} className="flex items-start gap-1.5">
+                      <span className="text-gray-400 mt-0.5 shrink-0">•</span>
+                      <p className="text-xs text-gray-600"><span className="font-medium text-gray-800">{label}: </span>{text}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+
+            <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-3 flex justify-end rounded-b-xl">
+              <button
+                onClick={() => setShowGuide(false)}
+                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
@@ -473,12 +771,20 @@ export default function EnrollmentServicesPage() {
             Manage PCB certification, Medicaid enrollment, and MCO contracting for providers.
           </p>
         </div>
-        <button
-          onClick={() => setShowNew(!showNew)}
-          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-        >
-          + New Enrollment Service
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowGuide(true)}
+            className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          >
+            How It Works
+          </button>
+          <button
+            onClick={() => setShowNew(!showNew)}
+            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          >
+            + New Enrollment Service
+          </button>
+        </div>
       </div>
 
       {/* New service form */}
