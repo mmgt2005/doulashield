@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
 from app.core.audit import AuditLogger
-from app.dependencies import CurrentUser, get_audit, get_db, require_admin
+from app.dependencies import CurrentUser, get_audit, get_client_ip, get_db, get_user_agent, require_admin
 from app.models.enrollment import EnrollmentDocument, EnrollmentService, EnrollmentTask
 from app.models.user import User
 from app.schemas.enrollment import (
@@ -694,13 +694,15 @@ async def create_enrollment_service(
     await audit.log(
         action="ENROLLMENT_SERVICE_CREATED",
         user_id=current_user.id,
-        details={
+        resource_type="user",
+        resource_id=body.provider_id,
+        ip_address=get_client_ip(request),
+        user_agent=get_user_agent(request),
+        extra_context={
             "service_id": str(service.id),
-            "provider_id": str(body.provider_id),
             "stage": stage,
             "pathway": body.pcb_pathway,
         },
-        request=request,
     )
 
     return EnrollmentServiceDetail(
@@ -815,12 +817,14 @@ async def complete_pcb_certification(
     await audit.log(
         action="PCB_CERTIFICATION_COMPLETE",
         user_id=current_user.id,
-        details={
+        resource_type="user",
+        resource_id=service.provider_id,
+        ip_address=get_client_ip(request),
+        user_agent=get_user_agent(request),
+        extra_context={
             "service_id": str(service_id),
-            "provider_id": str(service.provider_id),
             "cert_date": str(body.cert_date),
         },
-        request=request,
     )
 
     return EnrollmentServiceRead.model_validate(service)
@@ -865,12 +869,14 @@ async def complete_nppes_setup(
     await audit.log(
         action="NPPES_SETUP_COMPLETE",
         user_id=current_user.id,
-        details={
+        resource_type="user",
+        resource_id=service.provider_id,
+        ip_address=get_client_ip(request),
+        user_agent=get_user_agent(request),
+        extra_context={
             "service_id": str(service_id),
-            "provider_id": str(service.provider_id),
             "npi": npi,
         },
-        request=request,
     )
 
     return EnrollmentServiceRead.model_validate(service)
@@ -913,12 +919,14 @@ async def complete_enrollment(
     await audit.log(
         action="ENROLLMENT_STAGE2_COMPLETE",
         user_id=current_user.id,
-        details={
+        resource_type="user",
+        resource_id=service.provider_id,
+        ip_address=get_client_ip(request),
+        user_agent=get_user_agent(request),
+        extra_context={
             "service_id": str(service_id),
-            "provider_id": str(service.provider_id),
             "promise_enrolled_on": str(body.promise_enrolled_on),
         },
-        request=request,
     )
 
     return EnrollmentServiceRead.model_validate(service)
@@ -951,12 +959,14 @@ async def complete_mco_contracting(
     await audit.log(
         action="ENROLLMENT_STAGE3_COMPLETE",
         user_id=current_user.id,
-        details={
+        resource_type="user",
+        resource_id=service.provider_id,
+        ip_address=get_client_ip(request),
+        user_agent=get_user_agent(request),
+        extra_context={
             "service_id": str(service_id),
-            "provider_id": str(service.provider_id),
             "contracted_on": str(body.contracted_on),
         },
-        request=request,
     )
 
     return EnrollmentServiceRead.model_validate(service)
