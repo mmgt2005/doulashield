@@ -187,6 +187,29 @@ export interface UserWithBilling {
   subscription_status: string | null
 }
 
+export type LeadSource = 'webinar' | 'quiz' | 'manual' | 'contact_form'
+export type LeadStatus = 'new' | 'contacted' | 'qualified' | 'demo_scheduled' | 'converted' | 'not_interested'
+export type LeadProviderType = 'independent' | 'agency' | 'unknown'
+
+export interface Lead {
+  id: string
+  source: LeadSource
+  status: LeadStatus
+  first_name: string
+  last_name: string
+  email: string
+  phone: string | null
+  organization_name: string | null
+  provider_type: LeadProviderType
+  lead_data: Record<string, unknown> | null
+  notes: string | null
+  follow_up_at: string | null
+  assigned_to: string | null
+  converted_user_id: string | null
+  created_at: string
+  updated_at: string | null
+}
+
 export interface AuditLogEntry {
   id: string
   user_id: string | null

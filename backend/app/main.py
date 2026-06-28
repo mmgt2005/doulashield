@@ -694,9 +694,13 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
+_cors_origins = [settings.FRONTEND_ORIGIN]
+if settings.CORS_EXTRA_ORIGINS:
+    _cors_origins.extend(o.strip() for o in settings.CORS_EXTRA_ORIGINS.split(",") if o.strip())
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[settings.FRONTEND_ORIGIN],
+    allow_origins=_cors_origins,
     allow_credentials=True,
     # DELETE is intentionally omitted — soft-delete via PATCH only
     allow_methods=["GET", "POST", "PATCH", "PUT", "OPTIONS"],

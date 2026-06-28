@@ -12,6 +12,20 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.41.0] — 2026-06-28
+
+### Added
+- **Lead Capture & CRM**: Full lead management system for tracking prospective providers and agencies.
+  - **Backend public API** (`/api/v1/public/leads`): Three no-auth, rate-limited endpoints for capturing leads from the marketing site — `POST /webinar`, `POST /quiz`, `POST /contact`. Each creates a lead in the new `leads` table and fires an admin notification email.
+  - **Backend admin API** (`/api/v1/admin/leads`): Authenticated CRUD endpoints for admin lead management — `GET /` (with filters: source, status, provider_type, search, date range), `POST /` (manual entry), `GET /:id`, `PATCH /:id` (update status, notes, follow-up date, etc.), `POST /:id/convert` (creates provider account via `AdminService.create_user()`, sends welcome + deposit email, links `converted_user_id`), `GET /stats` (total, new this week, converted count, conversion rate).
+  - **Database migration** (`0047_leads.py`): New `leads` table with source, status, contact fields, JSONB `lead_data`, notes, follow-up timestamp, and FK links to `users` for assigned admin and converted user.
+  - **Admin Leads dashboard** (`/admin/leads`): Full-featured React page with stats bar, filterable table (source/status/type/search), inline edit slide-out panel, and "Convert → Create Account" button for qualified/demo-scheduled leads.
+  - **Config additions**: `ADMIN_NOTIFICATION_EMAIL` (receives new-lead notification emails), `CORS_EXTRA_ORIGINS` (comma-separated extra CORS origins for the separate marketing site).
+  - **Sidebar**: Added "Leads" link to the admin navigation.
+- **Landing page integration notes**: The marketing site (plain HTML, hosted separately on Netlify/Vercel/GitHub Pages) submits forms via vanilla `fetch` to `/api/v1/public/leads/*`. Set `CORS_EXTRA_ORIGINS` in `.env` to your marketing site domain once deployed.
+
+---
+
 ## [1.40.2] — 2026-06-26
 
 ### Fixed

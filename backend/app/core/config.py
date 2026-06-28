@@ -59,6 +59,10 @@ class Settings(BaseSettings):
     RESEND_API_KEY: str = ""
     EMAIL_FROM: str = "DoulaShield <noreply@doulashield.com>"
 
+    # Lead capture
+    ADMIN_NOTIFICATION_EMAIL: str = ""  # receives new-lead notifications
+    CORS_EXTRA_ORIGINS: str = ""  # comma-separated extra CORS origins (e.g. marketing site)
+
     # Internal ops
     INTERNAL_SECRET: str = ""  # required for POST /internal/trigger-remittance-sync
 

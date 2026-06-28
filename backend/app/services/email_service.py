@@ -714,6 +714,66 @@ async def send_agency_onboarding_email(
     )
 
 
+async def send_new_lead_notification(lead: object) -> None:
+    """Notify admin when a new public lead submits a form."""
+    if not _configured():
+        return
+    from app.core.config import settings
+    admin_email = getattr(settings, "ADMIN_NOTIFICATION_EMAIL", "")
+    if not admin_email:
+        return
+    resend.api_key = settings.RESEND_API_KEY
+
+    source_labels = {
+        "webinar": "Webinar Registration",
+        "quiz": "Lead Magnet Quiz",
+        "contact_form": "Contact Form",
+        "manual": "Manual Entry",
+    }
+    source = getattr(lead, "source", "unknown")
+    source_label = source_labels.get(source, source.replace("_", " ").title())
+    first = getattr(lead, "first_name", "")
+    last = getattr(lead, "last_name", "")
+    email = getattr(lead, "email", "")
+    phone = getattr(lead, "phone", None) or "—"
+    org = getattr(lead, "organization_name", None) or "—"
+    ptype = getattr(lead, "provider_type", "unknown")
+
+    await asyncio.to_thread(
+        resend.Emails.send,
+        {
+            "from": settings.EMAIL_FROM,
+            "to": [admin_email],
+            "subject": f"New Lead: {first} {last} — {source_label}",
+            "html": f"""
+<!DOCTYPE html>
+<html>
+<body style="font-family: sans-serif; color: #1a1a1a; max-width: 480px; margin: 0 auto; padding: 24px;">
+  <h2 style="font-size:16px;margin:0 0 16px;">New DoulaShield Lead</h2>
+  <table style="border-collapse:collapse;width:100%;">
+    <tr><td style="padding:4px 12px 4px 0;font-size:13px;color:#6b7280;">Source</td><td style="padding:4px 0;font-size:13px;font-weight:600;">{source_label}</td></tr>
+    <tr><td style="padding:4px 12px 4px 0;font-size:13px;color:#6b7280;">Name</td><td style="padding:4px 0;font-size:13px;">{first} {last}</td></tr>
+    <tr><td style="padding:4px 12px 4px 0;font-size:13px;color:#6b7280;">Email</td><td style="padding:4px 0;font-size:13px;">{email}</td></tr>
+    <tr><td style="padding:4px 12px 4px 0;font-size:13px;color:#6b7280;">Phone</td><td style="padding:4px 0;font-size:13px;">{phone}</td></tr>
+    <tr><td style="padding:4px 12px 4px 0;font-size:13px;color:#6b7280;">Organization</td><td style="padding:4px 0;font-size:13px;">{org}</td></tr>
+    <tr><td style="padding:4px 12px 4px 0;font-size:13px;color:#6b7280;">Provider Type</td><td style="padding:4px 0;font-size:13px;">{ptype.replace("_", " ").title()}</td></tr>
+  </table>
+  <p style="margin-top:20px;">
+    <a href="{settings.FRONTEND_ORIGIN}/admin/leads"
+       style="background:#2563eb;color:#fff;padding:10px 20px;border-radius:6px;
+              text-decoration:none;font-weight:600;font-size:14px;display:inline-block;">
+      View in DoulaShield &rarr;
+    </a>
+  </p>
+  <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
+  <p style="color:#9ca3af;font-size:12px;">The DoulaShield Team</p>
+</body>
+</html>
+""",
+        },
+    )
+
+
 async def send_deposit_link(provider_email: str, provider_name: str, checkout_url: str) -> None:
     if not _configured():
         raise RuntimeError("Email not configured — set RESEND_API_KEY")

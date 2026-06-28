@@ -19,6 +19,7 @@ const adminLinks = [
   { href: '/admin/users', label: 'Users' },
   { href: '/admin/billing-providers', label: 'Billing Providers' },
   { href: '/admin/enrollment-services', label: 'Enrollment Services' },
+  { href: '/admin/leads', label: 'Leads' },
   { href: '/admin/audit-logs', label: 'Audit Logs' },
 ]
 
