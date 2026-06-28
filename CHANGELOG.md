@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.41.2] — 2026-06-28
+
+### Fixed
+- **Enrollment status TypeScript build error**: Removed dead `maxLength` property access on `PCB_FORM_FIELDS` map after `ssn_last4` (the only field that carried `maxLength`) was moved to the encrypted Secure Information section. Fixes Vercel build failure introduced in v1.41.1.
+
+---
+
 ## [1.41.1] — 2026-06-28
 
 ### Added
