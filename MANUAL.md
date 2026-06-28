@@ -169,12 +169,23 @@ Tabs at the top of the page (PCB Certification · NPPES / NPI Setup · Enrollmen
 The first task on your PCB Certification stage — **PCB Application Info** — has an inline form where you enter your personal details exactly as they should appear on your PCB application:
 
 - Full legal name (as it should appear on your certificate)
-- Date of birth and SSN last 4 digits
 - Mailing address, phone, and email
 - Gender, race/ethnicity, and primary language
 - Doula type (Birth, Postpartum, Perinatal, or Other)
 
-Click **Save Info** to store your answers. Then click **↓ Download Pre-filled Application** to download a PDF with pages 6–8 of the PCB application pre-populated with your info, plus a live checklist of your task statuses. Print the pre-filled sheet, sign pages 12–13, take page 14 to a notary (a UPS Store, bank branch, or public library works), and submit the complete PDF package to PCB.
+Click **Save Info** to store your answers.
+
+#### Secure Information (SSN, Date of Birth, Tax ID)
+
+Below the standard fields is an amber **Secure Information** section for sensitive identifiers. These are stored encrypted and never written to logs or unencrypted storage:
+
+- **Social Security Number** — enter either your last 4 digits or your full 9-digit SSN. Only the last 4 digits appear on the pre-filled PDF. If a value is already saved, the label shows the last 4 digits on record (e.g. "ending ••••1234") and you can update it at any time.
+- **Date of Birth** — stored encrypted and used to populate the DOB field on the pre-filled PCB application PDF.
+- **Tax ID / EIN** — optional. Agencies may use this for 1099 reporting. Leave blank if not applicable.
+
+Click **Save Secure Info** after entering any of these fields. Because SSN is shown as a password input it is never displayed in plaintext on screen.
+
+Once both sections are saved, click **↓ Download Pre-filled Application** to download a PDF with pages 6–8 of the PCB application pre-populated with your info, plus a live checklist of your task statuses. Print the pre-filled sheet, sign pages 12–13, take page 14 to a notary (a UPS Store, bank branch, or public library works), and submit the complete PDF package to PCB.
 
 A link to the blank official PCB application is also available on the page if you need it for reference.
 
