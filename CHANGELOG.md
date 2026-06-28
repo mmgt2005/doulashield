@@ -12,6 +12,18 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.42.1] — 2026-06-28
+
+### Added
+- **Billing admin enrollment & credential visibility**: The **My Providers** page now shows enrollment stage progress and credential expiry for every assigned provider.
+  - Each provider row shows a compact stage summary (PCB / NPPES / Enrollment / MCO) with color-coded badges and a "Ready to bill / In progress / Not started" pill.
+  - Clicking a row expands it to show full stage cards and credential expiry countdown for PCB cert (2-year cycle), PROMISe™ re-enrollment (5-year), CAQH attestation (90-day), and liability insurance.
+  - Rows with any credential expiring within 60 days show an amber "credential expiring" warning inline.
+  - Deposit-not-paid warning shown in the expanded panel.
+  - Backend: `GET /billing-admin/providers` extended to include `enrollment_stages` and `credentials` fields via a single additional query (no N+1).
+
+---
+
 ## [1.42.0] — 2026-06-28
 
 ### Added

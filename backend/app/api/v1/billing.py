@@ -21,6 +21,7 @@ from app.dependencies import CurrentUser, get_audit, get_current_user, get_db, r
 from app.models.billing_provider import BillingProvider
 from app.models.claim import Claim
 from app.models.claim_document import ClaimDocument
+from app.models.enrollment import EnrollmentService
 from app.models.patient import Patient
 from app.models.user import User
 from app.schemas.admin import (
@@ -953,22 +954,69 @@ async def list_billing_admin_providers(
     db: Annotated[AsyncSession, Depends(get_db)],
     bp_id: uuid.UUID | None = None,
 ) -> list[dict]:
-    """Returns all providers assigned to the billing admin's managed agency.
-    Admins may pass ?bp_id=<uuid> to view any agency's providers."""
+    """Returns all providers assigned to the billing admin's managed agency with
+    enrollment stage summary and credential expiry data."""
+    from datetime import date, timedelta
+
     managed_bp_id = None if current_user.role == "admin" else await _get_managed_bp_id(current_user.id, db)
     effective_bp_id = bp_id if (current_user.role == "admin" and bp_id) else managed_bp_id
     if not effective_bp_id:
         return []
-    result = await db.execute(
+
+    users_result = await db.execute(
         select(User).where(
             User.billing_provider_id == effective_bp_id,
             User.is_active.is_(True),
         ).order_by(User.full_name)
     )
-    return [
-        {"id": str(u.id), "email": u.email, "full_name": u.full_name, "npi": u.npi}
-        for u in result.scalars().all()
-    ]
+    users = users_result.scalars().all()
+    if not users:
+        return []
+
+    provider_ids = [u.id for u in users]
+    services_result = await db.execute(
+        select(EnrollmentService).where(EnrollmentService.provider_id.in_(provider_ids))
+    )
+    services = services_result.scalars().all()
+
+    # Build provider_id → {stage: status} map
+    stage_map: dict[uuid.UUID, dict[str, str]] = {}
+    for svc in services:
+        stage_map.setdefault(svc.provider_id, {})[svc.stage] = svc.status
+
+    today = date.today()
+
+    def _expiry(ref_date: date | None, days: int) -> dict:
+        if not ref_date:
+            return {"expires_on": None, "days_remaining": None}
+        exp = ref_date + timedelta(days=days)
+        return {"expires_on": exp.isoformat(), "days_remaining": (exp - today).days}
+
+    def _direct_expiry(exp_date: date | None) -> dict:
+        if not exp_date:
+            return {"expires_on": None, "days_remaining": None}
+        return {"expires_on": exp_date.isoformat(), "days_remaining": (exp_date - today).days}
+
+    STAGES = ["pcb", "nppes_setup", "enrollment", "mco_contracting"]
+
+    out = []
+    for u in users:
+        stages = stage_map.get(u.id, {})
+        out.append({
+            "id": str(u.id),
+            "email": u.email,
+            "full_name": u.full_name,
+            "npi": u.npi,
+            "deposit_paid": u.deposit_paid,
+            "enrollment_stages": {s: stages.get(s) for s in STAGES},
+            "credentials": {
+                "pcb": _expiry(u.pcb_last_certified_on, 730),
+                "promise": _expiry(u.promise_last_enrolled_on, 1825),
+                "caqh": _expiry(u.caqh_last_attested_on, 90),
+                "liability": _direct_expiry(u.liability_insurance_expires_on),
+            },
+        })
+    return out
 
 
 @router.post("/billing-admin/roster/invite", status_code=status.HTTP_201_CREATED)
