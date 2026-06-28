@@ -538,7 +538,42 @@ When a billing admin logs in, their sidebar shows **My Providers**, **Agency Cla
 
 #### My Providers (`/billing-admin/providers`)
 
-Shows the current provider roster (name, email, NPI) for the billing admin's agency. Below the roster is an **Invite New Providers** form — the same table-row input as the admin bulk invite — that lets the billing admin invite doulas directly without going through DoulaShield admin. The results panel lists created vs. skipped entries with reasons.
+Shows the full provider roster for the billing admin's agency with enrollment progress and credential status.
+
+**Roster table columns:** Name, Email, NPI, Deposit, a "Ready to bill / In progress / Not started" pill, and an expand toggle. Rows with any credential expiring within 60 days show an amber warning inline.
+
+**Expanded row** (click any row to open): shows four stage cards (PCB Certification, NPPES / NPI Setup, PROMISe™ Enrollment, MCO Contracting), each with a ✓ / … / ○ badge, plus a credential expiry grid:
+
+| Credential | Renewal cycle | Warning threshold |
+|---|---|---|
+| PCB Certification | 2 years | < 180 days |
+| PROMISe™ Enrollment | 5 years | < 365 days |
+| CAQH Attestation | 90 days | < 60 days |
+| Liability Insurance | per policy | < 90 days |
+
+Days remaining is color-coded: green (plenty of time), amber (approaching), red (expired or overdue).
+
+**Invite New Providers** — below the roster is a table-row invite form that lets the billing admin add doulas directly without going through DoulaShield admin. The results panel lists created vs. skipped entries with skip reasons.
+
+#### Weekly Compliance Summary Email
+
+Every Monday morning, each billing admin with an active agency receives an automated compliance digest for their roster. The email subject is "Weekly Compliance Summary — Week of [date]" and lists all actionable items sorted by urgency:
+
+- **Red** — credential expired (immediate action required)
+- **Orange** — credential expiring soon (critical threshold: CAQH < 15 days, PCB < 30 days, PROMISe™ < 60 days, liability < 14 days)
+- **Amber** — credential within warning threshold but not yet critical
+- **Blue** — enrollment stage action needed (e.g. "NPI update pending", "PROMISe™ enrollment pending")
+
+If all providers in the agency are fully current, no email is sent that week.
+
+**Manual trigger (admin only):** `POST /admin/jobs/send-weekly-compliance` — available to platform admins for ad-hoc testing. Add `?dry_run=true` to get a count of emails that would be sent without actually sending them.
+
+**Railway cron setup:** Add a cron service in Railway that runs every Monday at 08:00 UTC:
+```
+curl -X POST $BACKEND_URL/api/v1/internal/send-weekly-compliance \
+  -H "X-Internal-Secret: $INTERNAL_SECRET"
+```
+Set `INTERNAL_SECRET` in the Railway environment variables for both the app and the cron service.
 
 #### Agency Settings (`/billing-admin/settings`)
 
