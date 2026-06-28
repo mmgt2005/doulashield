@@ -613,13 +613,8 @@ export default function EnrollmentStatusPage() {
                                 <input
                                   type={f.type}
                                   value={pcbForm[f.key] ?? ''}
-                                  maxLength={'maxLength' in f ? f.maxLength : undefined}
                                   placeholder={f.placeholder}
-                                  onChange={(e) => {
-                                    let val = e.target.value
-                                    if (f.key === 'ssn_last4') val = val.replace(/\D/g, '')
-                                    setPcbForm((prev) => ({ ...prev, [f.key]: val }))
-                                  }}
+                                  onChange={(e) => setPcbForm((prev) => ({ ...prev, [f.key]: e.target.value }))}
                                   className="w-full rounded border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 />
                               </div>
