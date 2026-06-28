@@ -33,6 +33,8 @@ class User(Base):
     provider_address: Mapped[str | None] = mapped_column(Text, nullable=True)
     provider_phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
     provider_ssn_encrypted: Mapped[str | None] = mapped_column(Text, nullable=True)
+    provider_dob_encrypted: Mapped[str | None] = mapped_column(Text, nullable=True)
+    enrollment_tax_id_encrypted: Mapped[str | None] = mapped_column(Text, nullable=True)
     provider_signature_path: Mapped[str | None] = mapped_column(Text, nullable=True)
     billing_provider_name: Mapped[str | None] = mapped_column(Text, nullable=True)  # exact name as registered in PROMISe
     billing_provider_id: Mapped[uuid.UUID | None] = mapped_column(

@@ -6,13 +6,14 @@ from datetime import datetime, timezone
 from io import BytesIO
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, Form, HTTPException, Request, UploadFile, status
 from fastapi.responses import Response
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from app.dependencies import CurrentUser, get_db, get_current_user
+from app.core.audit import AuditLogger
+from app.dependencies import CurrentUser, get_audit, get_client_ip, get_db, get_current_user, get_user_agent
 from app.models.enrollment import EnrollmentDocument, EnrollmentService, EnrollmentTask
 from app.models.user import User
 from app.schemas.enrollment import (
@@ -25,6 +26,12 @@ from app.schemas.enrollment import (
 
 class _TaskDataPatch(BaseModel):
     task_data: dict
+
+
+class _SensitiveProfilePatch(BaseModel):
+    ssn: str | None = None
+    dob: str | None = None
+    tax_id: str | None = None
 
 router = APIRouter(tags=["enrollment-provider"], prefix="/enrollment/me")
 
@@ -243,6 +250,115 @@ async def save_my_task_data(
     return {"ok": True, "status": task.status}
 
 
+@router.get("/sensitive-profile")
+async def get_sensitive_profile(
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    audit: Annotated[AuditLogger, Depends(get_audit)],
+    client_ip: Annotated[str | None, Depends(get_client_ip)],
+    user_agent: Annotated[str, Depends(get_user_agent)],
+) -> dict:
+    from app.core.encryption import decrypt_field
+
+    result = await db.execute(select(User).where(User.id == current_user.id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    has_ssn = bool(user.provider_ssn_encrypted)
+    ssn_last4: str | None = None
+    if has_ssn:
+        try:
+            decrypted_ssn = decrypt_field(user.provider_ssn_encrypted)
+            ssn_last4 = decrypted_ssn[-4:] if len(decrypted_ssn) >= 4 else decrypted_ssn
+        except Exception:
+            has_ssn = False
+
+    has_dob = bool(user.provider_dob_encrypted)
+    dob: str | None = None
+    if has_dob:
+        try:
+            dob = decrypt_field(user.provider_dob_encrypted)
+        except Exception:
+            has_dob = False
+
+    has_tax_id = bool(user.enrollment_tax_id_encrypted)
+
+    await audit.log(
+        action="READ_ENROLLMENT_SENSITIVE",
+        ip_address=client_ip,
+        user_agent=user_agent,
+        user_id=current_user.id,
+        resource_type="user",
+        resource_id=current_user.id,
+    )
+
+    return {
+        "has_ssn": has_ssn,
+        "ssn_last4": ssn_last4,
+        "has_dob": has_dob,
+        "dob": dob,
+        "has_tax_id": has_tax_id,
+    }
+
+
+@router.patch("/sensitive-profile")
+async def update_sensitive_profile(
+    body: _SensitiveProfilePatch,
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    audit: Annotated[AuditLogger, Depends(get_audit)],
+    client_ip: Annotated[str | None, Depends(get_client_ip)],
+    user_agent: Annotated[str, Depends(get_user_agent)],
+) -> dict:
+    from app.core.encryption import encrypt_field
+
+    result = await db.execute(select(User).where(User.id == current_user.id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    updated_fields: list[str] = []
+
+    if body.ssn is not None:
+        ssn_clean = body.ssn.replace("-", "").replace(" ", "")
+        if not ssn_clean.isdigit() or len(ssn_clean) not in (4, 9):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="SSN must be 4 or 9 digits (hyphens are stripped automatically).",
+            )
+        user.provider_ssn_encrypted = encrypt_field(ssn_clean)
+        updated_fields.append("ssn")
+
+    if body.dob is not None:
+        if body.dob and len(body.dob) > 20:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Invalid date of birth.",
+            )
+        user.provider_dob_encrypted = encrypt_field(body.dob)
+        updated_fields.append("dob")
+
+    if body.tax_id is not None:
+        user.enrollment_tax_id_encrypted = encrypt_field(body.tax_id) if body.tax_id else None
+        updated_fields.append("tax_id")
+
+    if updated_fields:
+        await db.commit()
+
+    await audit.log(
+        action="WRITE_ENROLLMENT_SENSITIVE",
+        ip_address=client_ip,
+        user_agent=user_agent,
+        user_id=current_user.id,
+        resource_type="user",
+        resource_id=current_user.id,
+        extra_context={"fields": updated_fields},
+    )
+
+    return {"ok": True, "updated": updated_fields}
+
+
 @router.get("/{service_id}/pcb-prefill.pdf")
 async def download_pcb_prefill(
     service_id: uuid.UUID,
@@ -274,12 +390,31 @@ async def download_pcb_prefill(
     user_result = await db.execute(select(User).where(User.id == current_user.id))
     user = user_result.scalar_one_or_none()
 
+    from app.core.encryption import decrypt_field
+
+    ssn_last4: str = ""
+    if user and user.provider_ssn_encrypted:
+        try:
+            dec = decrypt_field(user.provider_ssn_encrypted)
+            ssn_last4 = dec[-4:] if len(dec) >= 4 else dec
+        except Exception:
+            pass
+
+    dob: str = ""
+    if user and user.provider_dob_encrypted:
+        try:
+            dob = decrypt_field(user.provider_dob_encrypted)
+        except Exception:
+            pass
+
     pdf_bytes = _build_pcb_prefill_pdf(
         form_data=form_data,
         tasks=list(tasks),
         service=service,
         provider_name=user.full_name if user else None,
         provider_email=user.email if user else "",
+        ssn_last4=ssn_last4,
+        dob=dob,
     )
 
     return Response(
@@ -295,6 +430,8 @@ def _build_pcb_prefill_pdf(
     service: object,
     provider_name: str | None,
     provider_email: str,
+    ssn_last4: str = "",
+    dob: str = "",
 ) -> bytes:
     from reportlab.lib import colors
     from reportlab.lib.pagesizes import letter
@@ -360,8 +497,8 @@ def _build_pcb_prefill_pdf(
     # ── Personal Information ───────────────────────────────────────────────────
     story.append(Paragraph("Section 1 — Personal Information (PCB Pages 6–7)", section_s))
     field("Full Name (exactly as it should appear on PCB certificate)", form_data.get("legal_name", ""))
-    field("Date of Birth", form_data.get("dob", ""))
-    field("Last 4 Digits of SSN", form_data.get("ssn_last4", ""))
+    field("Date of Birth", dob)
+    field("Last 4 Digits of SSN", ssn_last4)
     field("Phone Number", form_data.get("phone", ""))
     field("Email Address", form_data.get("email", ""))
     field("Street Address", form_data.get("address_street", ""))

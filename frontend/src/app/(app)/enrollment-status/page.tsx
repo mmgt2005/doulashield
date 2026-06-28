@@ -211,13 +211,19 @@ function AgreementGate({ onSigned }: { onSigned: () => void }) {
 
 const PCB_FORM_FIELDS = [
   { key: 'legal_name', label: 'Full Legal Name (as it should appear on PCB certificate)', type: 'text', placeholder: 'Your name exactly as on certificate', colSpan: 2 },
-  { key: 'dob', label: 'Date of Birth', type: 'date', placeholder: '', colSpan: 1 },
-  { key: 'ssn_last4', label: 'SSN — Last 4 Digits', type: 'text', placeholder: 'XXXX', colSpan: 1, maxLength: 4, pattern: '[0-9]{4}' },
   { key: 'phone', label: 'Phone', type: 'tel', placeholder: '', colSpan: 1 },
   { key: 'email', label: 'Email', type: 'email', placeholder: '', colSpan: 1 },
   { key: 'address_street', label: 'Street Address', type: 'text', placeholder: '', colSpan: 2 },
   { key: 'address_city', label: 'City', type: 'text', placeholder: '', colSpan: 1 },
 ] as const
+
+interface SensitiveProfile {
+  has_ssn: boolean
+  ssn_last4: string | null
+  has_dob: boolean
+  dob: string | null
+  has_tax_id: boolean
+}
 
 const GENDER_OPTIONS = ['Female', 'Male', 'Non-binary / Gender non-conforming', 'Transgender female', 'Transgender male', 'Prefer not to say', 'Not listed']
 const RACE_OPTIONS = ['American Indian or Alaska Native', 'Asian', 'Black or African American', 'Hispanic or Latino', 'Native Hawaiian or Other Pacific Islander', 'White', 'Two or more races', 'Prefer not to say']
@@ -238,6 +244,10 @@ export default function EnrollmentStatusPage() {
   const [pcbFormSaving, setPcbFormSaving] = useState(false)
   const [pcbFormSaved, setPcbFormSaved] = useState(false)
   const [downloadingPrefill, setDownloadingPrefill] = useState(false)
+  const [sensitiveProfile, setSensitiveProfile] = useState<SensitiveProfile | null>(null)
+  const [sensitiveForm, setSensitiveForm] = useState<{ ssn: string; dob: string; tax_id: string }>({ ssn: '', dob: '', tax_id: '' })
+  const [sensitiveFormSaving, setSensitiveFormSaving] = useState(false)
+  const [sensitiveFormSaved, setSensitiveFormSaved] = useState(false)
 
   const headers = { Authorization: `Bearer ${getAccessToken()}` }
   const api = process.env.NEXT_PUBLIC_API_URL
@@ -303,6 +313,48 @@ export default function EnrollmentStatusPage() {
     loadServices()
   }
 
+  const loadSensitiveProfile = async () => {
+    try {
+      const res = await axios.get<SensitiveProfile>(
+        `${api}/api/v1/enrollment/me/sensitive-profile`,
+        { headers }
+      )
+      setSensitiveProfile(res.data)
+      setSensitiveForm({
+        ssn: '',
+        dob: res.data.dob ?? '',
+        tax_id: '',
+      })
+    } catch {
+      // Not critical — profile may not exist yet
+    }
+  }
+
+  const handleSaveSensitiveProfile = async () => {
+    setSensitiveFormSaving(true)
+    setSensitiveFormSaved(false)
+    const payload: { ssn?: string; dob?: string; tax_id?: string } = {}
+    if (sensitiveForm.ssn) payload.ssn = sensitiveForm.ssn.replace(/\D/g, '')
+    if (sensitiveForm.dob) payload.dob = sensitiveForm.dob
+    if (sensitiveForm.tax_id) payload.tax_id = sensitiveForm.tax_id
+    try {
+      await axios.patch(
+        `${api}/api/v1/enrollment/me/sensitive-profile`,
+        payload,
+        { headers }
+      )
+      setSensitiveFormSaved(true)
+      setSensitiveForm((prev) => ({ ...prev, ssn: '' }))
+      loadSensitiveProfile()
+      setTimeout(() => setSensitiveFormSaved(false), 3000)
+    } catch (e: unknown) {
+      const msg = axios.isAxiosError(e) ? e.response?.data?.detail : null
+      showToast(typeof msg === 'string' ? msg : 'Failed to save secure information')
+    } finally {
+      setSensitiveFormSaving(false)
+    }
+  }
+
   const handleSavePcbForm = async (serviceId: string, taskId: string) => {
     setPcbFormSaving(true)
     setPcbFormSaved(false)
@@ -366,6 +418,9 @@ export default function EnrollmentStatusPage() {
       setServices(res.data)
       const firstStage = STAGE_ORDER.find((s) => res.data.some((d) => d.service.stage === s))
       if (firstStage) setActiveStage(firstStage)
+      if (res.data.some((d) => d.service.stage === 'pcb')) {
+        loadSensitiveProfile()
+      }
     } catch {
       showToast('Failed to load enrollment status')
     } finally {
@@ -635,6 +690,76 @@ export default function EnrollmentStatusPage() {
                                 <option value="">Select…</option>
                                 {DOULA_TYPE_OPTIONS.map((o) => <option key={o}>{o}</option>)}
                               </select>
+                            </div>
+                          </div>
+
+                          {/* Secure Information — stored encrypted, separate endpoint */}
+                          <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-3">
+                            <p className="mb-2 text-xs font-semibold text-amber-800 uppercase tracking-wide">
+                              Secure Information (encrypted at rest)
+                            </p>
+                            <p className="mb-3 text-xs text-amber-700">
+                              SSN and date of birth are encrypted before storage and never appear in logs.
+                              Enter your SSN as either the last 4 digits or your full 9-digit SSN — only the last 4 are printed on the pre-fill sheet.
+                            </p>
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                              <div>
+                                <label className="block text-xs text-gray-600 mb-1">
+                                  Social Security Number
+                                  {sensitiveProfile?.has_ssn && (
+                                    <span className="ml-1 font-normal text-green-700">(saved — ending ••••{sensitiveProfile.ssn_last4})</span>
+                                  )}
+                                </label>
+                                <input
+                                  type="password"
+                                  autoComplete="off"
+                                  value={sensitiveForm.ssn}
+                                  placeholder={sensitiveProfile?.has_ssn ? 'Enter to update' : 'Last 4 or full SSN'}
+                                  maxLength={11}
+                                  onChange={(e) => setSensitiveForm((prev) => ({ ...prev, ssn: e.target.value }))}
+                                  className="w-full rounded border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs text-gray-600 mb-1">
+                                  Date of Birth
+                                  {sensitiveProfile?.has_dob && !sensitiveForm.dob && (
+                                    <span className="ml-1 font-normal text-green-700">(saved)</span>
+                                  )}
+                                </label>
+                                <input
+                                  type="date"
+                                  value={sensitiveForm.dob}
+                                  onChange={(e) => setSensitiveForm((prev) => ({ ...prev, dob: e.target.value }))}
+                                  className="w-full rounded border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                              </div>
+                              <div className="sm:col-span-2">
+                                <label className="block text-xs text-gray-600 mb-1">
+                                  Tax ID / EIN (optional — used for agency tax reporting)
+                                  {sensitiveProfile?.has_tax_id && (
+                                    <span className="ml-1 font-normal text-green-700">(saved)</span>
+                                  )}
+                                </label>
+                                <input
+                                  type="password"
+                                  autoComplete="off"
+                                  value={sensitiveForm.tax_id}
+                                  placeholder={sensitiveProfile?.has_tax_id ? 'Enter to update' : 'XX-XXXXXXX'}
+                                  onChange={(e) => setSensitiveForm((prev) => ({ ...prev, tax_id: e.target.value }))}
+                                  className="w-full rounded border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                              </div>
+                            </div>
+                            <div className="mt-2 flex items-center gap-3">
+                              <button
+                                onClick={handleSaveSensitiveProfile}
+                                disabled={sensitiveFormSaving || (!sensitiveForm.ssn && !sensitiveForm.dob && !sensitiveForm.tax_id)}
+                                className="inline-flex items-center gap-1.5 rounded border border-amber-400 bg-white px-3 py-1.5 text-xs font-medium text-amber-800 hover:bg-amber-50 disabled:opacity-50"
+                              >
+                                {sensitiveFormSaving ? 'Saving…' : 'Save Secure Info'}
+                              </button>
+                              {sensitiveFormSaved && <span className="text-xs text-green-600">Saved securely ✓</span>}
                             </div>
                           </div>
 

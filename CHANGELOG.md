@@ -12,6 +12,17 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.41.1] — 2026-06-28
+
+### Added
+- **Encrypted sensitive enrollment data**: SSN, date of birth, and tax ID entered during PCB enrollment are now stored encrypted at rest using Fernet (same key used for CMS 1500 SSN).
+  - **Database migration** (`0048_enrollment_sensitive_fields.py`): Adds `provider_dob_encrypted TEXT` and `enrollment_tax_id_encrypted TEXT` columns to `public.users`.
+  - **Backend endpoints** (`/enrollment/me/sensitive-profile`): `GET` returns masked SSN last-4, DOB, and `has_*` flags. `PATCH` accepts `ssn` (4 or 9 digits), `dob` (YYYY-MM-DD), and `tax_id`; encrypts each before saving. Both actions are audit-logged with actions `READ_ENROLLMENT_SENSITIVE` and `WRITE_ENROLLMENT_SENSITIVE`.
+  - **PCB pre-fill PDF**: Now reads DOB and SSN last-4 from the encrypted user fields instead of plaintext `task_data` JSONB. SSN last-4 is derived at PDF generation time — the raw SSN is never written to logs or unencrypted storage.
+  - **Frontend** (`/enrollment-status`): Removed `dob` and `ssn_last4` from the plaintext PCB application form. Replaced with an amber-highlighted "Secure Information" section using `type="password"` inputs that call the new endpoint separately. Existing `has_*` flags surface confirmation that data is saved without revealing it.
+
+---
+
 ## [1.41.0] — 2026-06-28
 
 ### Added
