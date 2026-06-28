@@ -1,6 +1,6 @@
 # DoulaShield Admin Guide
 
-**v1.33.0 · Last updated 2026-06-26**
+**v1.41.0 · Last updated 2026-06-28**
 
 This guide covers everything admins can do that providers cannot. For day-to-day provider features (documenting visits, submitting claims, etc.) refer to `MANUAL.md`.
 
@@ -9,14 +9,15 @@ This guide covers everything admins can do that providers cannot. For day-to-day
 ## Table of Contents
 
 1. [Introduction](#introduction)
-2. [Managing Provider Accounts](#managing-provider-accounts)
+2. [Leads (CRM)](#leads-crm)
+3. [Managing Provider Accounts](#managing-provider-accounts)
    - [Onboarding New Providers (Demo Mode)](#onboarding-new-providers-demo-mode)
-3. [PCB Enrollment Services](#pcb-enrollment-services)
-4. [Billing & Escrow](#billing--escrow)
-5. [Billing Providers (Group NPIs)](#billing-providers-group-npis)
-6. [Admin-Only Settings](#admin-only-settings)
-7. [Audit Logs](#audit-logs)
-8. [Reference: Audit Action Types](#reference-audit-action-types)
+4. [PCB Enrollment Services](#pcb-enrollment-services)
+5. [Billing & Escrow](#billing--escrow)
+6. [Billing Providers (Group NPIs)](#billing-providers-group-npis)
+7. [Admin-Only Settings](#admin-only-settings)
+8. [Audit Logs](#audit-logs)
+9. [Reference: Audit Action Types](#reference-audit-action-types)
 
 ---
 
@@ -25,6 +26,76 @@ This guide covers everything admins can do that providers cannot. For day-to-day
 Admin users share the provider interface (Clients, Visits, Claims) and have two additional sections in the sidebar: **Users** and **Audit Logs**. Admins are exempt from the $99 enrollment deposit, the $400 deferred balance, and the monthly subscription — their billing status is pre-cleared on account creation.
 
 At the bottom of the sidebar, under the **Help** heading, admins see two documentation links: **User Manual** (provider-facing features) and **Admin Guide** (this document). Providers only see the User Manual link. The Admin Guide page is restricted to admin accounts and redirects anyone else to the dashboard.
+
+---
+
+## Leads (CRM)
+
+Go to **Admin → Leads** to manage prospective providers and agencies. Leads enter the system from three sources and move through a pipeline until they are converted into active DoulaShield accounts.
+
+### Lead Sources
+
+| Source | How it arrives |
+|---|---|
+| **Webinar** | Prospect registers for a demo webinar via the marketing site (`POST /api/v1/public/leads/webinar`) |
+| **Quiz** | Prospect completes the "Are you ready for Medicaid billing?" quiz on the marketing site |
+| **Contact Form** | Prospect submits a general interest form on the marketing site |
+| **Manual** | Admin adds a lead directly from an in-person conversation or referral |
+
+When a public form is submitted, DoulaShield emails a notification to the address in `ADMIN_NOTIFICATION_EMAIL` with the lead's name, email, phone, organization, and a direct link to the Leads dashboard.
+
+### Lead Statuses
+
+Statuses move a lead through the sales pipeline. Update them in the lead edit panel.
+
+| Status | Meaning |
+|---|---|
+| **New** | Just arrived — not yet contacted |
+| **Contacted** | Admin has reached out |
+| **Qualified** | Lead is a good fit and ready for a demo |
+| **Demo Scheduled** | Demo booked |
+| **Converted** | Lead has become an active DoulaShield account |
+| **Not Interested** | Lead has declined or gone cold |
+
+### Leads Table
+
+The table shows all leads, newest first. Columns: Name / Organization, Email, Phone, Source (color badge), Provider Type, Status (color badge), Created date, Follow-up date, and Actions.
+
+**Filtering:** Use the dropdowns and search box at the top to filter by source, status, provider type, or free-text search (name, email, or organization). Click **Apply** or press Enter.
+
+**Stats bar:** Four cards above the table show Total Leads, New This Week, Converted count, and Conversion Rate (converted ÷ total × 100 %).
+
+### Adding a Lead Manually
+
+Click **+ Add Lead** (top-right). Fill in first name, last name, email (required), phone, organization, provider type, and any notes. The lead is created with source = "Manual" and status = "New."
+
+### Editing a Lead
+
+Click **Edit** on any row to open the slide-out panel. You can update:
+
+- **Name fields** and **phone** — in case the prospect provided updated contact information
+- **Organization** and **provider type** — clarified after the first conversation
+- **Status** — advance the lead through the pipeline
+- **Follow-up date** — sets a visible reminder in the table; you will need to check back manually (no automated email is sent for follow-up dates)
+- **Notes** — running log of calls, emails, and next actions
+
+Click **Save Changes** to persist. The panel also shows any source data (quiz answers, webinar topic, contact message) in a read-only JSON block.
+
+### Converting a Lead to a Provider Account
+
+When a lead reaches **Qualified** or **Demo Scheduled**, a green **Convert →** button appears in the table row and in the edit panel.
+
+Clicking Convert:
+
+1. Creates a new provider account using the lead's email and name
+2. Generates a secure temporary password
+3. Creates a Stripe Checkout link for the $99 credentialing deposit (if Stripe is configured)
+4. Sends the welcome email to the lead with login credentials and the deposit button
+5. Sets `converted_user_id` on the lead and advances status to **Converted**
+
+A confirmation dialog shows the new user ID and the deposit URL. After conversion, the lead row shows "Converted" and the Convert button disappears. You can find the new account in **Admin → Users**.
+
+If the lead's email already exists in the system the convert will be blocked with an error — search for the existing account in Users instead.
 
 ---
 
