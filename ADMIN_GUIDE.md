@@ -475,6 +475,19 @@ Click **Edit** on any row. All fields are editable. Changes take effect on the n
 
 Click **Start Sub** on the row. DoulaShield creates a Stripe subscription billed to the agency. If `STRIPE_BILLING_PROVIDER_SEAT_PRICE_ID` is configured, the subscription is created at `max(3, current_provider_count)` seats — so an agency with 1 assigned provider starts at 3 seats ($165/month), and one with 5 starts at 5 seats ($275/month). The Subscription column updates to "Active." The button only appears when the agency does not already have an active or trialing subscription, and requires at least one provider assigned to the agency.
 
+#### Inviting Providers to an Agency (Bulk)
+
+Click **Invite Providers** on any billing provider row. A modal opens with a table where you enter each provider's **Full Name**, **Email**, and **Doula Type**. Click **+ Add another provider** for each additional row. When ready, click **Send Invites**.
+
+For each valid row DoulaShield:
+1. Checks whether the email is already registered — if so, that row is **skipped** and listed in the results.
+2. Creates a provider account with a randomly generated temporary password.
+3. Assigns the account to the agency.
+4. Sends a welcome email with the temporary password and a Stripe deposit link.
+5. Automatically adjusts the agency's Stripe seat quantity if a subscription is active.
+
+The result panel shows which invites were sent and which were skipped, along with the skip reason. Billing admins can also invite providers themselves from the **My Providers** page (see below).
+
 #### Deleting a Billing Provider
 
 Click **Delete** on the row. Any doulas currently assigned to this entity will have `billing_provider_id` set to NULL automatically (ON DELETE SET NULL), reverting them to self-billing. Confirm the deletion in the prompt — it cannot be undone.
@@ -521,7 +534,15 @@ The claim queue is active as soon as a doula is assigned to the agency, regardle
 
 ### Configuring Agency Availity Credentials
 
-When a billing admin logs in, their sidebar shows **Agency Claims** and **Agency Settings**. The **Agency Settings** page (`/billing-admin/settings`) lets the billing admin enter:
+When a billing admin logs in, their sidebar shows **My Providers**, **Agency Claims**, and **Agency Settings**.
+
+#### My Providers (`/billing-admin/providers`)
+
+Shows the current provider roster (name, email, NPI) for the billing admin's agency. Below the roster is an **Invite New Providers** form — the same table-row input as the admin bulk invite — that lets the billing admin invite doulas directly without going through DoulaShield admin. The results panel lists created vs. skipped entries with reasons.
+
+#### Agency Settings (`/billing-admin/settings`)
+
+The **Agency Settings** page lets the billing admin enter:
 
 - **Availity NPI** — the 10-digit NPI used in Box 33a of all agency claims
 - **Client ID** — the agency's Availity OAuth client ID
