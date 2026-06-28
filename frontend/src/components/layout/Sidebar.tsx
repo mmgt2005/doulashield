@@ -24,6 +24,7 @@ const adminLinks = [
 ]
 
 const billingAdminLinks = [
+  { href: '/billing-admin/providers', label: 'My Providers' },
   { href: '/billing-admin/claims', label: 'Agency Claims' },
   { href: '/billing-admin/settings', label: 'Agency Settings' },
 ]

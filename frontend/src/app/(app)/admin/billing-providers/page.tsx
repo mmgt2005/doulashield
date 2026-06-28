@@ -58,6 +58,50 @@ export default function BillingProvidersPage() {
   // Delete confirm
   const [deleteConfirm, setDeleteConfirm] = useState<BillingProvider | null>(null)
 
+  // Bulk invite modal
+  interface InviteRow { name: string; email: string; doula_type: string }
+  const [inviteModal, setInviteModal] = useState<BillingProvider | null>(null)
+  const [inviteRows, setInviteRows] = useState<InviteRow[]>([{ name: '', email: '', doula_type: 'Birth Doula' }])
+  const [inviteResult, setInviteResult] = useState<{ created: { name: string; email: string }[]; skipped: { name: string; email: string; reason: string }[] } | null>(null)
+  const [inviting, setInviting] = useState(false)
+
+  const DOULA_TYPES = ['Birth Doula', 'Postpartum Doula', 'Perinatal Doula', 'Other']
+
+  const openInviteModal = (bp: BillingProvider) => {
+    setInviteModal(bp)
+    setInviteRows([{ name: '', email: '', doula_type: 'Birth Doula' }])
+    setInviteResult(null)
+  }
+
+  const updateInviteRow = (idx: number, field: keyof InviteRow, value: string) =>
+    setInviteRows(rows => rows.map((r, i) => i === idx ? { ...r, [field]: value } : r))
+
+  const addInviteRow = () => setInviteRows(rows => [...rows, { name: '', email: '', doula_type: 'Birth Doula' }])
+
+  const removeInviteRow = (idx: number) => setInviteRows(rows => rows.filter((_, i) => i !== idx))
+
+  const submitInvites = async () => {
+    if (!inviteModal) return
+    const valid = inviteRows.filter(r => r.name.trim() && r.email.trim())
+    if (!valid.length) return
+    setInviting(true)
+    setInviteResult(null)
+    try {
+      const res = await axios.post<{ created: { name: string; email: string }[]; skipped: { name: string; email: string; reason: string }[] }>(
+        `${api}/api/v1/admin/billing-providers/${inviteModal.id}/bulk-invite-providers`,
+        { providers: valid },
+        { headers }
+      )
+      setInviteResult(res.data)
+      await reload()
+    } catch (e: unknown) {
+      const msg = axios.isAxiosError(e) ? e.response?.data?.detail : 'Invite failed'
+      showToast(typeof msg === 'string' ? msg : 'Invite failed')
+    } finally {
+      setInviting(false)
+    }
+  }
+
   const api = process.env.NEXT_PUBLIC_API_URL
   const headers = { Authorization: `Bearer ${getAccessToken()}` }
 
@@ -295,6 +339,12 @@ export default function BillingProvidersPage() {
                           </button>
                         )}
                         <button
+                          onClick={() => openInviteModal(bp)}
+                          className="rounded border border-indigo-200 px-2 py-1 text-xs font-medium text-indigo-700 hover:bg-indigo-50"
+                        >
+                          Invite Providers
+                        </button>
+                        <button
                           onClick={() => setDeleteConfirm(bp)}
                           disabled={bp.provider_count > 0}
                           title={bp.provider_count > 0 ? 'Unassign all providers first' : 'Delete'}
@@ -438,6 +488,109 @@ export default function BillingProvidersPage() {
                 {actionLoading?.startsWith('del-') ? 'Deleting…' : 'Delete'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Invite Providers modal */}
+      {inviteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-2xl rounded-xl bg-white p-6 shadow-xl">
+            <h2 className="mb-1 text-base font-semibold text-gray-900">
+              Invite Providers — {inviteModal.name}
+            </h2>
+            <p className="mb-4 text-xs text-gray-500">
+              Each provider will receive a welcome email with a temporary password and deposit link.
+              Providers already in the system are skipped automatically.
+            </p>
+
+            {!inviteResult ? (
+              <>
+                <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                  {inviteRows.map((row, idx) => (
+                    <div key={idx} className="grid grid-cols-[1fr_1fr_140px_28px] gap-2 items-center">
+                      <input
+                        type="text"
+                        placeholder="Full Name"
+                        value={row.name}
+                        onChange={e => updateInviteRow(idx, 'name', e.target.value)}
+                        className="rounded border border-gray-200 px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      />
+                      <input
+                        type="email"
+                        placeholder="Email address"
+                        value={row.email}
+                        onChange={e => updateInviteRow(idx, 'email', e.target.value)}
+                        className="rounded border border-gray-200 px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      />
+                      <select
+                        value={row.doula_type}
+                        onChange={e => updateInviteRow(idx, 'doula_type', e.target.value)}
+                        className="rounded border border-gray-200 px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      >
+                        {DOULA_TYPES.map(t => <option key={t}>{t}</option>)}
+                      </select>
+                      <button
+                        onClick={() => removeInviteRow(idx)}
+                        disabled={inviteRows.length === 1}
+                        className="text-gray-400 hover:text-red-500 disabled:opacity-30 text-lg leading-none"
+                        title="Remove row"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  onClick={addInviteRow}
+                  className="mt-2 text-xs text-blue-600 hover:underline"
+                >
+                  + Add another provider
+                </button>
+                <div className="mt-5 flex justify-end gap-3">
+                  <button
+                    onClick={() => setInviteModal(null)}
+                    className="rounded border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={submitInvites}
+                    disabled={inviting || !inviteRows.some(r => r.name.trim() && r.email.trim())}
+                    className="rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+                  >
+                    {inviting ? 'Inviting…' : `Send ${inviteRows.filter(r => r.name.trim() && r.email.trim()).length} Invite(s)`}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="space-y-3">
+                {inviteResult.created.length > 0 && (
+                  <div className="rounded-md border border-green-200 bg-green-50 p-3">
+                    <p className="mb-1 text-xs font-semibold text-green-800">{inviteResult.created.length} invite(s) sent</p>
+                    {inviteResult.created.map((c, i) => (
+                      <p key={i} className="text-xs text-green-700">{c.name} — {c.email}</p>
+                    ))}
+                  </div>
+                )}
+                {inviteResult.skipped.length > 0 && (
+                  <div className="rounded-md border border-amber-200 bg-amber-50 p-3">
+                    <p className="mb-1 text-xs font-semibold text-amber-800">{inviteResult.skipped.length} skipped</p>
+                    {inviteResult.skipped.map((s, i) => (
+                      <p key={i} className="text-xs text-amber-700">{s.name || s.email} — {s.reason}</p>
+                    ))}
+                  </div>
+                )}
+                <div className="flex justify-end">
+                  <button
+                    onClick={() => setInviteModal(null)}
+                    className="rounded bg-gray-800 px-4 py-2 text-sm font-medium text-white hover:bg-gray-900"
+                  >
+                    Done
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

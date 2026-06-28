@@ -12,6 +12,16 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.42.0] — 2026-06-28
+
+### Added
+- **Agency provider roster & bulk invite**: Agencies and admins can now invite multiple providers at once rather than creating accounts one-by-one.
+  - **Admin bulk invite** (`POST /admin/billing-providers/{bp_id}/bulk-invite-providers`): Admin opens "Invite Providers" on any billing provider row, enters a table of Name / Email / Doula Type rows, and clicks Send. Each row creates a provider account, assigns it to the agency, and sends a welcome email with a temporary password and deposit link. Rows with an email already in the system are skipped and reported. Stripe seat quantity updates automatically for agencies with an active subscription.
+  - **Billing admin self-service** (`POST /billing-admin/roster/invite`): Billing admins can invite providers directly to their own agency from the new **My Providers** page (`/billing-admin/providers`) without going through DoulaShield admin.
+  - **My Providers page** (`/billing-admin/providers`): Shows the current provider roster (name, email, NPI) and hosts the invite form. Added to the billing admin sidebar as the first navigation item.
+
+---
+
 ## [1.41.2] — 2026-06-28
 
 ### Fixed

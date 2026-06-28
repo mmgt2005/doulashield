@@ -541,6 +541,92 @@ async def _get_managed_bp_id(user_id: uuid.UUID, db: AsyncSession) -> uuid.UUID 
     return result.scalar_one_or_none()
 
 
+class _BulkInviteEntry(BaseModel):
+    name: str
+    email: str
+    doula_type: str = "Birth Doula"
+
+
+class _BulkInviteRequest(BaseModel):
+    providers: list[_BulkInviteEntry]
+
+
+async def _run_bulk_invite(
+    bp: BillingProvider,
+    entries: list[_BulkInviteEntry],
+    requester_id: uuid.UUID,
+    db: AsyncSession,
+    request: Request,
+    audit: AuditLogger,
+) -> dict:
+    """Create provider accounts, assign to BP, and send invite emails."""
+    created: list[dict] = []
+    skipped: list[dict] = []
+
+    for entry in entries:
+        email = entry.email.strip().lower()
+        name = entry.name.strip()
+        if not email or not name:
+            skipped.append({"email": email or "(blank)", "reason": "missing name or email"})
+            continue
+
+        existing = await db.execute(select(User).where(User.email == email))
+        if existing.scalar_one_or_none():
+            skipped.append({"name": name, "email": email, "reason": "email already in use"})
+            continue
+
+        try:
+            temp_password = _generate_temp_password()
+            new_user_read = await AdminService(db).create_user(
+                UserCreate(email=email, password=temp_password, full_name=name, role="provider")
+            )
+            result = await db.execute(select(User).where(User.id == new_user_read.id))
+            new_user = result.scalar_one()
+            new_user.billing_provider_id = bp.id
+            await db.commit()
+
+            checkout_url: str | None = None
+            if stripe_service._configured() and settings.STRIPE_DEPOSIT_PRICE_ID:
+                try:
+                    checkout_url = await stripe_service.create_deposit_checkout_link(new_user, db)
+                except Exception:
+                    pass
+
+            if email_service._configured():
+                await email_service.send_welcome_and_deposit(
+                    provider_email=email,
+                    provider_name=name,
+                    temp_password=temp_password,
+                    checkout_url=checkout_url,
+                    frontend_origin=settings.FRONTEND_ORIGIN,
+                )
+                new_user.welcome_email_sent_at = datetime.now(timezone.utc)
+                await db.commit()
+
+            created.append({"name": name, "email": email, "user_id": str(new_user_read.id)})
+        except Exception as exc:
+            skipped.append({"name": name, "email": email, "reason": str(exc)})
+
+    if created and bp.subscription_status in ("active", "trialing"):
+        count_result = await db.execute(
+            select(func.count()).select_from(User).where(User.billing_provider_id == bp.id)
+        )
+        seat_count = count_result.scalar() or 0
+        await stripe_service.update_billing_provider_seat_quantity(bp, seat_count, db)
+
+    await audit.log(
+        action="BULK_INVITE_PROVIDERS",
+        resource_type="billing_provider",
+        resource_id=bp.id,
+        user_id=requester_id,
+        ip_address=request.headers.get("X-Forwarded-For", request.client.host if request.client else ""),
+        user_agent=request.headers.get("User-Agent", ""),
+        extra_context={"bp_name": bp.name, "created": len(created), "skipped": len(skipped)},
+    )
+
+    return {"created": created, "skipped": skipped}
+
+
 @router.get("/admin/billing-providers", response_model=list[BillingProviderRead])
 async def list_billing_providers(
     _: Annotated[CurrentUser, Depends(require_admin)],
@@ -758,6 +844,19 @@ async def remove_provider_from_billing_provider(
     }
 
 
+@router.post("/admin/billing-providers/{bp_id}/bulk-invite-providers", status_code=status.HTTP_201_CREATED)
+async def admin_bulk_invite_providers(
+    bp_id: uuid.UUID,
+    body: _BulkInviteRequest,
+    current_admin: Annotated[CurrentUser, Depends(require_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    audit: Annotated[AuditLogger, Depends(get_audit)],
+    request: Request,
+) -> dict:
+    bp = await _get_billing_provider(bp_id, db)
+    return await _run_bulk_invite(bp, body.providers, current_admin.id, db, request, audit)
+
+
 @router.post("/admin/billing-providers/{bp_id}/start-subscription")
 async def start_billing_provider_subscription(
     bp_id: uuid.UUID,
@@ -870,6 +969,22 @@ async def list_billing_admin_providers(
         {"id": str(u.id), "email": u.email, "full_name": u.full_name, "npi": u.npi}
         for u in result.scalars().all()
     ]
+
+
+@router.post("/billing-admin/roster/invite", status_code=status.HTTP_201_CREATED)
+async def billing_admin_invite_providers(
+    body: _BulkInviteRequest,
+    current_user: Annotated[CurrentUser, Depends(require_billing_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    audit: Annotated[AuditLogger, Depends(get_audit)],
+    request: Request,
+) -> dict:
+    """Billing admin submits a provider roster for their own agency."""
+    managed_bp_id = await _get_managed_bp_id(current_user.id, db)
+    if not managed_bp_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No agency assigned to this account")
+    bp = await _get_billing_provider(managed_bp_id, db)
+    return await _run_bulk_invite(bp, body.providers, current_user.id, db, request, audit)
 
 
 @router.get("/billing-admin/agency-settings", response_model=BillingProviderRead)
