@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.43.1] — 2026-06-28
+
+### Added
+- **Send Weekly Compliance Email button** on the admin Billing Providers page. Clicking the button runs a dry-run preview (showing how many billing admins will receive an email and how many are skipped), then prompts to confirm before sending. Result panel confirms emails sent and admins skipped. No email is sent during the preview step.
+
+---
+
 ## [1.43.0] — 2026-06-28
 
 ### Added

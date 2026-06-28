@@ -58,6 +58,50 @@ export default function BillingProvidersPage() {
   // Delete confirm
   const [deleteConfirm, setDeleteConfirm] = useState<BillingProvider | null>(null)
 
+  // Weekly compliance email modal
+  const [complianceModal, setComplianceModal] = useState(false)
+  const [complianceStep, setComplianceStep] = useState<'preview' | 'done'>('preview')
+  const [compliancePreview, setCompliancePreview] = useState<{ sent: number; skipped: number; total_admins: number } | null>(null)
+  const [complianceSending, setComplianceSending] = useState(false)
+
+  const openComplianceModal = async () => {
+    setComplianceModal(true)
+    setComplianceStep('preview')
+    setCompliancePreview(null)
+    setComplianceSending(true)
+    try {
+      const res = await axios.post<{ sent: number; skipped: number; total_admins: number }>(
+        `${api}/api/v1/admin/jobs/send-weekly-compliance?dry_run=true`,
+        {},
+        { headers },
+      )
+      setCompliancePreview(res.data)
+    } catch {
+      showToast('Failed to load preview.')
+      setComplianceModal(false)
+    } finally {
+      setComplianceSending(false)
+    }
+  }
+
+  const sendComplianceEmails = async () => {
+    setComplianceSending(true)
+    try {
+      const res = await axios.post<{ sent: number; skipped: number; total_admins: number }>(
+        `${api}/api/v1/admin/jobs/send-weekly-compliance`,
+        {},
+        { headers },
+      )
+      setCompliancePreview(res.data)
+      setComplianceStep('done')
+    } catch (e: unknown) {
+      const msg = axios.isAxiosError(e) ? e.response?.data?.detail : 'Send failed'
+      showToast(typeof msg === 'string' ? msg : 'Send failed')
+    } finally {
+      setComplianceSending(false)
+    }
+  }
+
   // Bulk invite modal
   interface InviteRow { name: string; email: string; doula_type: string }
   const [inviteModal, setInviteModal] = useState<BillingProvider | null>(null)
@@ -214,12 +258,20 @@ export default function BillingProvidersPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-gray-900">Billing Providers</h1>
-        <button
-          onClick={openCreate}
-          className="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
-        >
-          + Add Billing Provider
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={openComplianceModal}
+            className="rounded border border-teal-300 bg-teal-50 px-3 py-1.5 text-sm font-medium text-teal-700 hover:bg-teal-100"
+          >
+            Send Weekly Compliance Email
+          </button>
+          <button
+            onClick={openCreate}
+            className="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
+          >
+            + Add Billing Provider
+          </button>
+        </div>
       </div>
 
       {/* Stats cards */}
@@ -590,6 +642,72 @@ export default function BillingProvidersPage() {
                   </button>
                 </div>
               </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Weekly compliance email modal */}
+      {complianceModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl">
+            {complianceStep === 'preview' ? (
+              <>
+                <h2 className="mb-1 text-base font-semibold text-gray-900">Send Weekly Compliance Email</h2>
+                <p className="mb-4 text-xs text-gray-500">
+                  Sends a compliance digest to every billing admin with at least one credential warning
+                  or enrollment action item. Admins whose roster is fully current are skipped.
+                </p>
+                {complianceSending ? (
+                  <p className="text-sm text-gray-500">Loading preview…</p>
+                ) : compliancePreview && (
+                  <div className="rounded-md border border-gray-200 bg-gray-50 p-3 mb-4 text-sm space-y-1">
+                    <p className="text-gray-700">
+                      <span className="font-semibold text-teal-700">{compliancePreview.sent}</span> billing admin{compliancePreview.sent !== 1 ? 's' : ''} will receive an email
+                    </p>
+                    <p className="text-gray-500 text-xs">
+                      {compliancePreview.skipped} skipped (all providers current) · {compliancePreview.total_admins} total
+                    </p>
+                  </div>
+                )}
+                <div className="flex justify-end gap-3">
+                  <button
+                    onClick={() => setComplianceModal(false)}
+                    className="rounded border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={sendComplianceEmails}
+                    disabled={complianceSending || !compliancePreview || compliancePreview.sent === 0}
+                    className="rounded bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700 disabled:opacity-50"
+                  >
+                    {complianceSending ? 'Sending…' : `Send to ${compliancePreview?.sent ?? '…'}`}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h2 className="mb-1 text-base font-semibold text-gray-900">Emails Sent</h2>
+                <div className="rounded-md border border-green-200 bg-green-50 p-3 my-4 text-sm">
+                  <p className="text-green-800 font-medium">
+                    {compliancePreview?.sent} compliance email{compliancePreview?.sent !== 1 ? 's' : ''} sent successfully
+                  </p>
+                  {(compliancePreview?.skipped ?? 0) > 0 && (
+                    <p className="text-green-700 text-xs mt-1">
+                      {compliancePreview?.skipped} admin{compliancePreview?.skipped !== 1 ? 's' : ''} skipped — all providers current
+                    </p>
+                  )}
+                </div>
+                <div className="flex justify-end">
+                  <button
+                    onClick={() => setComplianceModal(false)}
+                    className="rounded bg-gray-800 px-4 py-2 text-sm font-medium text-white hover:bg-gray-900"
+                  >
+                    Done
+                  </button>
+                </div>
+              </>
             )}
           </div>
         </div>
