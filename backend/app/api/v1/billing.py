@@ -1301,3 +1301,31 @@ async def upload_claim_document(
     )
 
     return ClaimDocumentRead.model_validate(doc)
+
+
+# ── Internal / cron endpoints ────────────────────────────────────────────────
+
+@router.post("/admin/jobs/send-weekly-compliance")
+async def trigger_weekly_compliance(
+    _: Annotated[CurrentUser, Depends(require_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    dry_run: bool = False,
+) -> dict:
+    """Manually trigger the weekly compliance summary email for all billing admins.
+    Pass ?dry_run=true to count without sending."""
+    from app.jobs.weekly_compliance import run_weekly_compliance
+    return await run_weekly_compliance(db, dry_run=dry_run)
+
+
+@router.post("/internal/send-weekly-compliance")
+async def cron_weekly_compliance(
+    request: Request,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    dry_run: bool = False,
+) -> dict:
+    """Cron-triggered weekly compliance email. Requires X-Internal-Secret header."""
+    secret = request.headers.get("X-Internal-Secret", "")
+    if not settings.INTERNAL_SECRET or secret != settings.INTERNAL_SECRET:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Unauthorized")
+    from app.jobs.weekly_compliance import run_weekly_compliance
+    return await run_weekly_compliance(db, dry_run=dry_run)

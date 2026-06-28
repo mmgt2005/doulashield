@@ -12,6 +12,20 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.43.0] — 2026-06-28
+
+### Added
+- **Weekly compliance summary email for billing admins**: Every Monday morning, each billing admin receives a digest of actionable credential and enrollment items across their provider roster.
+  - **Email format**: Subject "Weekly Compliance Summary — Week of [date]" with a color-coded bullet list. Red = expired, orange = critical (< 25% of threshold), amber = warning, blue = action needed. Sorted urgency-first so the most pressing items appear at the top.
+  - **Credential thresholds**: CAQH < 60 days, PCB cert < 180 days, PROMISe™ < 365 days, liability insurance < 90 days. No email is sent if all providers are current.
+  - **Enrollment stage items**: Any stage with a non-complete status ("NPIs update pending", "PCB certification in progress", etc.) appears as an "Action needed" item.
+  - **New function** `send_weekly_compliance_summary()` in `email_service.py` — matches existing 480px HTML template pattern.
+  - **New job module** `backend/app/jobs/weekly_compliance.py` — callable both as `run_weekly_compliance(db)` from an endpoint and standalone via `python -m app.jobs.weekly_compliance [--dry-run]`.
+  - **Manual trigger** `POST /admin/jobs/send-weekly-compliance` (admin auth, `?dry_run=true` supported) for ad-hoc testing from the admin panel.
+  - **Cron trigger** `POST /internal/send-weekly-compliance` (X-Internal-Secret header) for Railway cron: `0 8 * * 1` — Monday 08:00 UTC.
+
+---
+
 ## [1.42.2] — 2026-06-28
 
 ### Fixed

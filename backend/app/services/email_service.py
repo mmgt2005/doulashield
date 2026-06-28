@@ -774,6 +774,81 @@ async def send_new_lead_notification(lead: object) -> None:
     )
 
 
+async def send_weekly_compliance_summary(
+    to_email: str,
+    to_name: str,
+    agency_name: str,
+    week_of: str,
+    items: list[dict],
+) -> None:
+    """Weekly compliance digest for billing admins.
+
+    Each item in `items` is a dict with:
+      - label: str  ("Maria's CAQH: 59 days to renew")
+      - urgency: str  ("expired" | "critical" | "warning" | "action_needed")
+    """
+    if not _configured():
+        return
+    resend.api_key = settings.RESEND_API_KEY
+
+    urgency_color = {
+        "expired": "#dc2626",
+        "critical": "#ea580c",
+        "warning": "#d97706",
+        "action_needed": "#3b82f6",
+    }
+
+    rows_html = ""
+    for item in items:
+        color = urgency_color.get(item.get("urgency", "warning"), "#d97706")
+        rows_html += (
+            f'<li style="padding:7px 0;font-size:14px;border-bottom:1px solid #f3f4f6;">'
+            f'<span style="color:{color};margin-right:8px;font-size:10px;">&#9679;</span>'
+            f'{item["label"]}'
+            f"</li>\n"
+        )
+
+    count = len(items)
+    plural = "item" if count == 1 else "items"
+
+    await asyncio.to_thread(
+        resend.Emails.send,
+        {
+            "from": settings.EMAIL_FROM,
+            "to": [to_email],
+            "subject": f"Weekly Compliance Summary — Week of {week_of}",
+            "html": f"""
+<!DOCTYPE html>
+<html>
+<body style="font-family: sans-serif; color: #1a1a1a; max-width: 480px; margin: 0 auto; padding: 24px;">
+  <p style="font-size: 16px;">Hi {to_name},</p>
+  <p>Here is your weekly compliance summary for <strong>{agency_name}</strong>.
+  There {"is" if count == 1 else "are"} <strong>{count} {plural}</strong> needing attention this week.</p>
+
+  <p style="font-weight:600;color:#374151;margin:20px 0 4px;">Week of {week_of}:</p>
+  <ul style="padding-left:0;list-style:none;margin:0 0 20px;">
+{rows_html}  </ul>
+
+  <p style="margin: 20px 0;">
+    <a href="{settings.FRONTEND_ORIGIN}/billing-admin/providers"
+       style="background:#2563eb;color:#fff;padding:12px 24px;border-radius:6px;
+              text-decoration:none;font-weight:600;font-size:14px;display:inline-block;">
+      View Providers &rarr;
+    </a>
+  </p>
+  <p style="color:#6b7280;font-size:13px;">
+    You receive this summary every Monday. Log in to DoulaShield to update provider credentials
+    or check enrollment progress.
+  </p>
+  <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
+  <p style="color:#9ca3af;font-size:12px;">The DoulaShield Team</p>
+</body>
+</html>
+""",
+        },
+    )
+
+
 async def send_deposit_link(provider_email: str, provider_name: str, checkout_url: str) -> None:
     if not _configured():
         raise RuntimeError("Email not configured — set RESEND_API_KEY")
