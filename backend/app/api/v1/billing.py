@@ -6,6 +6,8 @@ import uuid
 from datetime import datetime, timezone
 from typing import Annotated
 
+from pydantic import BaseModel
+
 import stripe
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy import func
