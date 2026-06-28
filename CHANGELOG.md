@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.42.2] — 2026-06-28
+
+### Fixed
+- **Backend startup crash**: Missing `from pydantic import BaseModel` in `billing.py` caused a `NameError` at module load time when the bulk-invite Pydantic models were added in v1.42.0. The app could not start and all health checks failed.
+
+---
+
 ## [1.42.1] — 2026-06-28
 
 ### Added
