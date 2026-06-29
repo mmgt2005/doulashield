@@ -488,10 +488,11 @@ _NPPES_TASKS: list[dict] = [
         "required_pathway": "all",
         "label": "Create I&A System Account",
         "description": (
-            "Go to nppes.cms.hhs.gov → click 'Create or Manage an Account'. "
+            "Go to nppes.cms.hhs.gov/IAWeb → click 'Create or Manage an Account'. "
             "Enter the doula's name, SSN, date of birth, and primary email. Set up Multi-Factor Authentication (MFA). "
-            "Surrogate tip: If your agency already has an I&A account, log in and select 'Add Surrogate' to apply "
-            "on the doula's behalf — do not create a new I&A login for every doula."
+            "Surrogate tip: DoulaShield can submit this application directly from its own 3rd Party Organization "
+            "I&A account on the doula's behalf — the doula does not need to create their own I&A login unless they "
+            "want direct NPPES portal access in the future."
         ),
         "sort_order": 1,
     },
@@ -501,8 +502,10 @@ _NPPES_TASKS: list[dict] = [
         "label": "Start NPI Application",
         "description": (
             "Log in to NPPES using the I&A credentials → select 'Submit New NPI Application'. "
-            "Choose entity type: Type 1 (Individual). "
-            "Type 2 is strictly for organizational entities such as LLCs or group practices — do not select it."
+            "Choose entity type: Type 1 (Individual) — the doula is an individual healthcare provider. "
+            "Type 2 is reserved for Organizational Providers that physically furnish medical services "
+            "(hospitals, group practices, clinics). It does not apply to individual doulas, and DoulaShield "
+            "as a credentialing firm is not eligible for any NPI."
         ),
         "sort_order": 2,
     },
@@ -573,12 +576,14 @@ _NPPES_TASKS: list[dict] = [
         "required_pathway": "all",
         "label": "Link DoulaShield as CMS Surrogate",
         "description": (
-            "Log into DoulaShield's CMS I&A account at eus.cms.gov. Navigate to the My Connections tab, "
-            "click the + icon next to DoulaShield's agency name, and select Add Provider. "
-            "Search for the provider using the 10-digit NPI issued in the previous step. "
+            "Log into DoulaShield's CMS I&A account at nppes.cms.hhs.gov/IAWeb. Navigate to the My Connections tab, "
+            "click the + icon next to DoulaShield's agency name, and select Add Surrogate. "
+            "Search for the provider using their 10-digit Type 1 NPI issued in the previous step. "
             "When the provider's name appears, check both PECOS (for enrollment/revalidation management) "
             "and NPPES (for NPI file management). Enter your email address for a confirmation copy, then click Submit. "
-            "The connection will show as Pending until the provider approves it. "
+            "The connection will show as Pending until approved. "
+            "Note: DoulaShield is classified as a 3rd Party Organization and has no NPI — the system links "
+            "DoulaShield's EIN-backed account to the provider's clinical profile. "
             "Proceed to the Pathway B task below — the paper form replaces the provider's electronic approval."
         ),
         "sort_order": 8,
