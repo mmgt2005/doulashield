@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.45.1] — 2026-06-29
+
+### Changed
+- **CMS Surrogate Workflow — Pathway A added**: The NPPES enrollment stage now includes an optional Pathway A task (electronic approval) between the surrogate link request and Pathway B. Providers who have an active I&A account can approve the link in 24 hours without any paper. Pathway B task description updated with exact portal steps (Tracking ID → Optional Surrogacy Confirmation → Add a Document). Confirm task shifts to sort order 11. Stage now has 11 tasks total.
+
+---
+
 ## [1.45.0] — 2026-06-29
 
 ### Added
