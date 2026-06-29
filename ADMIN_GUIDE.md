@@ -477,16 +477,35 @@ Click **Start Sub** on the row. DoulaShield creates a Stripe subscription billed
 
 #### Inviting Providers to an Agency (Bulk)
 
-Click **Invite Providers** on any billing provider row. A modal opens with a table where you enter each provider's **Full Name**, **Email**, and **Doula Type**. Click **+ Add another provider** for each additional row. When ready, click **Send Invites**.
+Click **Invite Providers** on any billing provider row. A modal opens with two tabs:
 
-For each valid row DoulaShield:
+**Enter Manually** — type each provider's Full Name, Email, and Doula Type row by row. Click **+ Add another provider** for each additional row, then **Send Invites**.
+
+**Upload CSV** — upload a spreadsheet exported from your existing records. The CSV is parsed in-browser and shown as a preview table before any accounts are created.
+
+CSV columns:
+
+| Column | Required | Notes |
+|---|---|---|
+| `name` | Yes | Provider full name |
+| `email` | Yes | Must be unique in DoulaShield |
+| `npi` | No | 10-digit NPI — pre-fills the provider's Settings |
+| `doula_type` | No | Birth Doula / Postpartum Doula / Perinatal Doula / Other |
+| `mco_1` … `mco_9` | No | MCO name — pre-fills MCO contracts in Settings |
+| `mco_1_date` … `mco_9_date` | No | Contract effective date YYYY-MM-DD |
+
+Click **Show column guide & valid values** in the modal to see the exact MCO name strings and doula type options. Click **Download template CSV** to get a ready-to-fill example file.
+
+The preview table highlights rows with errors (red — missing name or email, excluded from import) and warnings (amber — unrecognised MCO name or malformed NPI, still importable). Review them before clicking **Import N Provider(s)**.
+
+For each importable row DoulaShield:
 1. Checks whether the email is already registered — if so, that row is **skipped** and listed in the results.
 2. Creates a provider account with a randomly generated temporary password.
-3. Assigns the account to the agency.
-4. Sends a welcome email with the temporary password and a Stripe deposit link.
+3. Assigns the account to the agency and pre-populates NPI and MCO contracts from the CSV.
+4. Sends a welcome email with login credentials (no deposit link — agency providers bill through the agency).
 5. Automatically adjusts the agency's Stripe seat quantity if a subscription is active.
 
-The result panel shows which invites were sent and which were skipped, along with the skip reason. Billing admins can also invite providers themselves from the **My Providers** page (see below).
+The result panel shows which providers were added and which were skipped, along with the skip reason. Billing admins can also import or invite providers themselves from the **My Providers** page (see below).
 
 #### Deleting a Billing Provider
 
@@ -553,7 +572,7 @@ Shows the full provider roster for the billing admin's agency with enrollment pr
 
 Days remaining is color-coded: green (plenty of time), amber (approaching), red (expired or overdue).
 
-**Invite New Providers** — below the roster is a table-row invite form that lets the billing admin add doulas directly without going through DoulaShield admin. The results panel lists created vs. skipped entries with skip reasons.
+**Invite New Providers** — below the roster is an invite section with the same two-tab interface (Enter Manually / Upload CSV) as the admin Invite Providers modal. Billing admins can enter providers row by row or upload a CSV with NPI and MCO contract data pre-populated. The results panel lists created vs. skipped entries with skip reasons.
 
 #### Weekly Compliance Summary Email
 
