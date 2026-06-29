@@ -590,6 +590,9 @@ async def _run_bulk_invite(
             result = await db.execute(select(User).where(User.id == new_user_read.id))
             new_user = result.scalar_one()
             new_user.billing_provider_id = bp.id
+            # Agency providers don't pay the individual deposit — clear it on assignment
+            new_user.deposit_paid = True
+            new_user.deposit_paid_at = datetime.now(timezone.utc)
             # Pre-populate fields from the CSV / invite entry
             new_user.billing_provider_name = bp.name
             if entry.npi:
@@ -769,6 +772,10 @@ async def assign_provider_to_billing_provider(
     ):
         cancelled_sub = await stripe_service.cancel_subscription(provider, db)
     provider.billing_provider_id = bp.id
+    # Clear the individual deposit requirement — agency covers billing
+    if not provider.deposit_paid:
+        provider.deposit_paid = True
+        provider.deposit_paid_at = datetime.now(timezone.utc)
     await db.commit()
 
     # Adjust seat quantity on the agency subscription

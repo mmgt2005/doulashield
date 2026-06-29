@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.44.1] — 2026-06-29
+
+### Fixed
+- **Deposit not clearing for agency-assigned providers**: When a provider is assigned to a billing provider (agency), their `deposit_paid` flag is now set to `True` automatically. Previously, agency providers had no path to pay the individual $99 deposit since no deposit link was sent, leaving them permanently locked out. Fix applies to both new providers created via bulk invite / CSV import (`_run_bulk_invite`) and existing providers manually assigned via `POST /admin/billing-providers/{bp_id}/assign-provider`.
+
+---
+
 ## [1.44.0] — 2026-06-29
 
 ### Added
