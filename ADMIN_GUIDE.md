@@ -500,6 +500,8 @@ Click **Edit** on any row. All fields are editable. Changes take effect on the n
 
 Click **Start Sub** on the row. DoulaShield creates a Stripe subscription billed to the agency. If `STRIPE_BILLING_PROVIDER_SEAT_PRICE_ID` is configured, the subscription is created at `max(3, current_provider_count)` seats — so an agency with 1 assigned provider starts at 3 seats ($165/month), and one with 5 starts at 5 seats ($275/month). The Subscription column updates to "Active." The button only appears when the agency does not already have an active or trialing subscription, and requires at least one provider assigned to the agency.
 
+After the subscription is created, DoulaShield automatically sends a branded confirmation email to the agency's billing admin user (or the first assigned provider if no billing admin is set). The email shows the plan, seat count, and monthly total, and includes a **Manage Billing →** button that links directly to the Stripe Customer Portal where the agency can add a payment method and pay the first invoice. Stripe also sends its own invoice email to the same address. No card is required at the time the admin clicks Start Sub — the agency pays from the invoice.
+
 #### Inviting Providers to an Agency (Bulk)
 
 Click **Invite Providers** on any billing provider row. A modal opens with two tabs:
