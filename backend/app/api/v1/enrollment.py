@@ -568,6 +568,55 @@ _NPPES_TASKS: list[dict] = [
         ),
         "sort_order": 7,
     },
+    {
+        "task_key": "nppes_surrogate_link_request",
+        "required_pathway": "all",
+        "label": "Link DoulaShield as CMS Surrogate",
+        "description": (
+            "Log into DoulaShield's CMS I&A account at eus.cms.gov. Navigate to the My Connections tab, "
+            "click the + icon next to DoulaShield's agency name, and select Add Provider. "
+            "Search for the provider using the 10-digit NPI issued in the previous step. "
+            "When the provider's name appears, check both PECOS (for enrollment/revalidation management) "
+            "and NPPES (for NPI file management). Enter your email address for a confirmation copy, then click Submit. "
+            "The connection will show as Pending until the provider approves it. "
+            "Proceed to the Pathway B task below — the paper form replaces the provider's electronic approval."
+        ),
+        "sort_order": 8,
+    },
+    {
+        "task_key": "nppes_surrogate_pathway_b",
+        "required_pathway": "all",
+        "label": "Pathway B — Paper Surrogacy Approval Form",
+        "description": (
+            "Use Pathway B when the provider cannot approve the surrogate link electronically (no I&A account, "
+            "failed identity proofing, or locked out of CMS portals). "
+            "Print the official CMS 'Surrogacy Approval Confirmation for Medicare Individual Providers' form "
+            "from eus.cms.gov. Fill in DoulaShield's agency details and the provider's information including "
+            "their NPI and the functions requested (PECOS + NPPES). "
+            "Both DoulaShield's Authorized Official and the provider must sign the form — physical or "
+            "electronic signatures are accepted. "
+            "Upload the completed, signed form to the EUS help desk portal at eus.cms.gov. "
+            "An EUS agent will manually link the accounts — allow 5–10 business days for processing. "
+            "Upload a scan of the signed form here as your record."
+        ),
+        "sort_order": 9,
+    },
+    {
+        "task_key": "nppes_surrogate_confirmed",
+        "required_pathway": "all",
+        "label": "Confirm Surrogacy Active in CMS",
+        "description": (
+            "After EUS processes the paper form, log back into DoulaShield's CMS I&A account and navigate to "
+            "My Connections. The provider's entry should now show status Linked (not Pending). "
+            "Once confirmed, DoulaShield staff can manage this provider's NPPES record and submit PECOS "
+            "updates on their behalf without the provider logging in. "
+            "Record the confirmed date in the notes field below. "
+            "If the status still shows Pending after 10 business days, contact EUS at 1-855-267-1515. "
+            "Staff delegation: as Authorized Official you can now invite your employees as Staff End Users — "
+            "they inherit access to all linked providers automatically."
+        ),
+        "sort_order": 10,
+    },
 ]
 
 

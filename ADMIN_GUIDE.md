@@ -279,27 +279,51 @@ When in doubt, use Education/Training — it is available to all applicants rega
 
 ### NPPES / NPI Setup
 
-The second stage. Tracks the 7-step federal NPPES application to obtain the doula's 10-digit National Provider Identifier (NPI). DoulaShield acts as **surrogate** — the agency submits the application on the doula's behalf using its own I&A account.
+The second stage. Tracks the 10-step federal NPI application and CMS surrogate link to obtain the doula's 10-digit National Provider Identifier (NPI) and activate DoulaShield's ability to manage the provider's CMS records on their behalf.
 
 **Prerequisite:** Provider must have a PCB certification date on record.
+
+---
+
+#### One-Time Agency Setup (Do This Once for DoulaShield — Not Per Provider)
+
+Before DoulaShield can act as a surrogate for any provider, the agency itself must be registered and verified in the CMS I&A system. These steps are completed once by the Authorized Official (AO) and apply to all providers thereafter.
+
+**Step 1 — Create your personal I&A account and pass RIDP:**
+Go to nppes.cms.hhs.gov/IAWeb and create an individual account. This account belongs to you as a person, not the business. Complete **Remote Identity Proofing (RIDP)** by answering timed, automated security questions based on your personal credit history.
+
+**Step 2 — Register DoulaShield as an employer (business entity):**
+In your personal dashboard → My Profile → scroll to the bottom → **Add an Employer**. Enter DoulaShield's legal business name and Employer Identification Number (EIN). Select **Authorized Official (AO)** as your role.
+
+**Step 3 — Submit the IRS CP575 to EUS:**
+New third-party agencies start in "Pending" status. To activate the agency profile, email or upload DoulaShield's **IRS CP575 letter** (the document that assigned the EIN) to the CMS External User Services (EUS) help desk at eus.cms.gov. Write your I&A Tracking ID on the letter before sending. EUS manually reviews and activates the business profile — allow 5–10 business days. Once activated, DoulaShield becomes an active Third-Party Organization and the per-provider steps below apply to every new provider.
+
+**Staff delegation:** As AO you can invite employees as Staff End Users inside the DoulaShield business profile. They automatically inherit access to all linked provider files in PECOS, so you do not repeat the surrogate setup per team member.
+
+---
+
+#### Per-Provider Steps (Repeat for Each New Provider)
 
 **Creating an NPPES service:**
 1. Click **+ New Enrollment Service** → select "NPPES / NPI Setup".
 2. Select the provider. Click **Create Service**.
 
-Seven tasks are auto-generated, in order:
+Ten tasks are auto-generated, in order:
 
 | Task | What to do |
 |---|---|
-| Create I&A System Account | Go to nppes.cms.hhs.gov, click "Create or Manage an Account." Enter name, SSN, DOB, email. Set up MFA. Use agency's existing I&A login → "Add Surrogate" to avoid creating a new account per doula. |
+| Create I&A System Account | Go to nppes.cms.hhs.gov, click "Create or Manage an Account." Enter the doula's name, SSN, DOB, email. Set up MFA. If the doula cannot access the portal, the surrogate tasks (steps 8–10 below) handle the link via Pathway B without a provider account. |
 | Start NPI Application | Log in with I&A credentials → "Submit New NPI Application" → Entity type: **Type 1 (Individual)**. |
 | Complete Provider Profile | Enter exact legal name from the doula's Social Security card (mismatch = immediate rejection). Enter DOB, state and country of birth. Answer "No" to Sole Proprietor unless the doula has a registered EIN. |
 | Enter Business Addresses | **Mailing address** (P.O. Boxes allowed) and **Practice Location** (P.O. Boxes forbidden). In-home doulas use their home office address for the practice location. |
 | Assign Taxonomy Code | Click "Add Taxonomy" → enter **374J00000X** (Doula). No state license number needed for PA doulas — PCB certification covers this for Type 13. |
 | Contact Person & Identifiers | Leave Other Identifiers and Endpoint blank. Enter agency's credentialing manager as Contact Person (NPPES calls them if the SSN or address needs correction). |
 | Attest and Submit | Read the Certification Statement, check the box, click Submit. NPI is typically issued via email within 1–5 business days. Record the NPI number in the task notes. |
+| Link DoulaShield as CMS Surrogate | Log into DoulaShield's CMS I&A account → My Connections → + → Add Provider. Search by the provider's new NPI. Select **PECOS** and **NPPES** checkboxes. Submit. The connection shows as Pending. |
+| Pathway B — Paper Surrogacy Approval Form | Print the **"Surrogacy Approval Confirmation for Medicare Individual Providers"** form from eus.cms.gov. Fill in DoulaShield's agency details and the provider's NPI. Both DoulaShield's AO and the provider sign. Upload the signed form to EUS at eus.cms.gov. Allow 5–10 business days for manual processing. Upload a scan here as your record. |
+| Confirm Surrogacy Active in CMS | Log back into DoulaShield's I&A account → My Connections. Provider status should show **Linked** (not Pending). DoulaShield can now manage the provider's NPPES and PECOS records without the provider logging in. If still Pending after 10 business days, call EUS at 1-855-267-1515. |
 
-**Completing NPPES Setup:** Once all 7 tasks are marked complete and the NPI email arrives:
+**Completing NPPES Setup:** Once all 10 tasks are marked complete and the NPI email arrives:
 1. Click **Mark NPI Setup Complete**.
 2. Enter the 10-digit NPI number.
 3. DoulaShield writes the NPI to the provider's profile and unlocks Stage 2.
