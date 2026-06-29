@@ -12,6 +12,16 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.47.0] — 2026-06-29
+
+### Added
+- **doxy.me screen-share invite for NPPES I&A account setup**: Admin can now one-click start the recommended 10-minute RIDP screen-share session directly from the "Create I&A System Account" task on the enrollment services page.
+  - **Backend**: `POST /admin/enrollment/tasks/{task_id}/screenshare-invite` looks up the task's service and provider, then sends a branded invitation email (via Resend) containing the admin's personal doxy.me room link.
+  - **`email_service.send_screenshare_invite()`**: New branded HTML email explaining the RIDP session, what to have ready, and a "Join Screen-Share →" button linking to the admin's doxy.me room.
+  - **Frontend**: "Start doxy.me Screen-Share" button on the `nppes_ia_account` task card (hidden once the task is complete). Fetches the admin's own `telehealth_link` from `GET /auth/me/provider-settings`; if unset, prompts the admin to add it in Settings first. On click, sends the invite and opens doxy.me in a new tab — mirroring the existing pattern on the visits page.
+
+---
+
 ## [1.46.0] — 2026-06-29
 
 ### Added

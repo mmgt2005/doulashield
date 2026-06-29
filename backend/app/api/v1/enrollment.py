@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request, UploadFile, status
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
@@ -866,6 +867,38 @@ async def update_enrollment_task(
     await db.commit()
     await db.refresh(task)
     return EnrollmentTaskRead.model_validate(task)
+
+
+class _ScreenshareInviteRequest(BaseModel):
+    doxy_me_url: str
+
+
+@router.post("/tasks/{task_id}/screenshare-invite")
+async def send_screenshare_invite(
+    task_id: uuid.UUID,
+    body: _ScreenshareInviteRequest,
+    _: Annotated[CurrentUser, Depends(require_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> dict:
+    from app.services import email_service
+    result = await db.execute(select(EnrollmentTask).where(EnrollmentTask.id == task_id))
+    task = result.scalar_one_or_none()
+    if not task:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
+    svc_result = await db.execute(select(EnrollmentService).where(EnrollmentService.id == task.service_id))
+    service = svc_result.scalar_one_or_none()
+    if not service:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Service not found")
+    provider_result = await db.execute(select(User).where(User.id == service.provider_id))
+    provider = provider_result.scalar_one_or_none()
+    if not provider or not provider.email:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Provider not found")
+    await email_service.send_screenshare_invite(
+        to_email=provider.email,
+        provider_name=provider.full_name or provider.email,
+        doxy_me_url=body.doxy_me_url,
+    )
+    return {"sent": True, "to": provider.email}
 
 
 @router.post("/services/{service_id}/complete-pcb", response_model=EnrollmentServiceRead)

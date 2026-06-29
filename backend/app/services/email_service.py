@@ -884,3 +884,54 @@ async def send_deposit_link(provider_email: str, provider_name: str, checkout_ur
 """,
         },
     )
+
+
+async def send_screenshare_invite(
+    to_email: str, provider_name: str, doxy_me_url: str
+) -> None:
+    """Sends a doxy.me screen-share invitation to a provider for the NPPES I&A account setup session."""
+    if not _configured():
+        raise RuntimeError("Email not configured — set RESEND_API_KEY")
+    resend.api_key = settings.RESEND_API_KEY
+
+    await asyncio.to_thread(
+        resend.Emails.send,
+        {
+            "from": settings.EMAIL_FROM,
+            "to": [to_email],
+            "subject": "DoulaShield — Screen-Share Invitation",
+            "html": f"""
+<!DOCTYPE html>
+<html>
+<body style="font-family: sans-serif; color: #1a1a1a; max-width: 480px; margin: 0 auto; padding: 24px;">
+  <p style="font-size: 16px;">Hi {provider_name},</p>
+  <p>Your DoulaShield credentialing specialist is ready for a quick <strong>10-minute screen-share session</strong>
+  to help you set up your CMS Identity &amp; Access account.</p>
+  <p>During this call, you will:</p>
+  <ul style="padding-left:20px;line-height:1.8;font-size:14px;color:#374151;">
+    <li>Create your personal CMS I&amp;A login at nppes.cms.hhs.gov/IAWeb</li>
+    <li>Answer a few identity verification questions (RIDP) — based on your credit history</li>
+    <li>Approve the DoulaShield surrogacy link so your NPI can be managed on your behalf</li>
+  </ul>
+  <p style="font-size:14px;color:#374151;">
+    <strong>What to have ready:</strong> your Social Security Number and date of birth.
+    The identity questions are timed, so it helps to answer quickly and confidently.
+  </p>
+  <p style="margin: 28px 0;">
+    <a href="{doxy_me_url}"
+       style="background:#2563eb;color:#fff;padding:12px 24px;border-radius:6px;
+              text-decoration:none;font-weight:600;font-size:15px;">
+      Join Screen-Share &rarr;
+    </a>
+  </p>
+  <p style="color:#6b7280;font-size:13px;">
+    Click the button above to join the video session. Your specialist will walk you through
+    each step while sharing their screen.
+  </p>
+  <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
+  <p style="color:#9ca3af;font-size:12px;">The DoulaShield Team</p>
+</body>
+</html>
+""",
+        },
+    )

@@ -151,6 +151,10 @@ export default function EnrollmentServicesPage() {
   // Walkthrough guide
   const [showGuide, setShowGuide] = useState(false)
 
+  // doxy.me screen-share
+  const [telehealthLink, setTelehealthLink] = useState<string | null>(null)
+  const [screenshareLoading, setScreenshareLoading] = useState<string | null>(null)
+
   const headers = { Authorization: `Bearer ${getAccessToken()}` }
   const api = process.env.NEXT_PUBLIC_API_URL
 
@@ -170,16 +174,39 @@ export default function EnrollmentServicesPage() {
   const loadData = async () => {
     setLoading(true)
     try {
-      const [svcRes, usersRes] = await Promise.all([
+      const [svcRes, usersRes, settingsRes] = await Promise.all([
         axios.get<EnrollmentService[]>(`${api}/api/v1/admin/enrollment/services`, { headers }),
         axios.get<Provider[]>(`${api}/api/v1/admin/users`, { headers }),
+        axios.get<{ telehealth_link: string | null }>(`${api}/api/v1/auth/me/provider-settings`, { headers }).catch(() => ({ data: { telehealth_link: null } })),
       ])
       setServices(svcRes.data)
       setProviders(usersRes.data.filter((u) => u.role === 'provider'))
+      setTelehealthLink(settingsRes.data.telehealth_link)
     } catch {
       showToast('Failed to load data')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const startScreenShare = async (taskId: string, providerName: string | null) => {
+    if (!telehealthLink) {
+      showToast('Please add your doxy.me room link to your Settings page first.')
+      return
+    }
+    setScreenshareLoading(taskId)
+    try {
+      await axios.post(
+        `${api}/api/v1/admin/enrollment/tasks/${taskId}/screenshare-invite`,
+        { doxy_me_url: telehealthLink },
+        { headers },
+      )
+      window.open('https://doxy.me', '_blank', 'noopener')
+      showToast(`Invitation sent to ${providerName ?? 'provider'}. Opening doxy.me…`)
+    } catch {
+      showToast('Failed to send invitation.')
+    } finally {
+      setScreenshareLoading(null)
     }
   }
 
@@ -1144,6 +1171,20 @@ export default function EnrollmentServicesPage() {
                                         className="rounded border border-gray-300 px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-50"
                                       >
                                         {taskSaving[task.id] ? 'Saving…' : 'Reopen'}
+                                      </button>
+                                    )}
+
+                                    {task.task_key === 'nppes_ia_account' && task.status !== 'complete' && (
+                                      <button
+                                        onClick={() => startScreenShare(task.id, detail.provider_name)}
+                                        disabled={screenshareLoading === task.id}
+                                        className="flex items-center gap-1.5 rounded border border-blue-300 bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 hover:bg-blue-100 disabled:opacity-50"
+                                      >
+                                        <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                            d="M15 10l4.553-2.069A1 1 0 0121 8.82v6.36a1 1 0 01-1.447.893L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                        </svg>
+                                        {screenshareLoading === task.id ? 'Sending…' : 'Start doxy.me Screen-Share'}
                                       </button>
                                     )}
                                   </div>
