@@ -30,6 +30,7 @@ from app.schemas.admin import (
     BillingProviderCreate,
     BillingProviderRead,
     BillingProviderUpdate,
+    McoContract,
     UserCreate,
 )
 from app.schemas.claim import ClaimDocumentRead, ClaimRead, ManualClaimUpsert
@@ -548,6 +549,8 @@ class _BulkInviteEntry(BaseModel):
     name: str
     email: str
     doula_type: str = "Birth Doula"
+    npi: str | None = None
+    mco_contracts: list[McoContract] | None = None
 
 
 class _BulkInviteRequest(BaseModel):
@@ -579,6 +582,7 @@ async def _run_bulk_invite(
             continue
 
         try:
+            import json as _json
             temp_password = _generate_temp_password()
             new_user_read = await AdminService(db).create_user(
                 UserCreate(email=email, password=temp_password, full_name=name, role="provider")
@@ -586,21 +590,23 @@ async def _run_bulk_invite(
             result = await db.execute(select(User).where(User.id == new_user_read.id))
             new_user = result.scalar_one()
             new_user.billing_provider_id = bp.id
+            # Pre-populate fields from the CSV / invite entry
+            new_user.billing_provider_name = bp.name
+            if entry.npi:
+                new_user.npi = entry.npi.strip()
+            if entry.mco_contracts:
+                new_user.mco_contracts_json = _json.dumps(
+                    [c.model_dump(mode="json") for c in entry.mco_contracts]
+                )
             await db.commit()
 
-            checkout_url: str | None = None
-            if stripe_service._configured() and settings.STRIPE_DEPOSIT_PRICE_ID:
-                try:
-                    checkout_url = await stripe_service.create_deposit_checkout_link(new_user, db)
-                except Exception:
-                    pass
-
+            # Agency-assigned providers are billed through the agency — no deposit link
             if email_service._configured():
                 await email_service.send_welcome_and_deposit(
                     provider_email=email,
                     provider_name=name,
                     temp_password=temp_password,
-                    checkout_url=checkout_url,
+                    checkout_url=None,
                     frontend_origin=settings.FRONTEND_ORIGIN,
                 )
                 new_user.welcome_email_sent_at = datetime.now(timezone.utc)

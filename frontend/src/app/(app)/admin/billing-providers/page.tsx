@@ -1,10 +1,68 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import axios from 'axios'
+import Papa from 'papaparse'
 import { getAccessToken } from '@/lib/auth'
 import type { BillingProvider } from '@/types/domain'
+
+const DOULA_TYPES = ['Birth Doula', 'Postpartum Doula', 'Perinatal Doula', 'Other']
+const ALL_MCOS = [
+  'AmeriHealth Caritas',
+  'Keystone First',
+  'UPMC For You',
+  'Geisinger Health Plan',
+  'Health Partners Plans',
+  'Aetna Better Health',
+  'UnitedHealthcare Community Plan',
+  'Highmark Wholecare',
+  'FFS',
+]
+
+interface McoContract { mco: string; contract_date: string | null }
+interface CsvRow {
+  name: string; email: string; npi?: string; doula_type?: string
+  mco_contracts?: McoContract[]
+  _errors: string[]; _warnings: string[]
+}
+
+function parseCsvRows(raw: Record<string, string>[]): CsvRow[] {
+  return raw.map(r => {
+    const errors: string[] = []
+    const warnings: string[] = []
+    const name = r.name?.trim() ?? ''
+    const email = r.email?.trim().toLowerCase() ?? ''
+    if (!name) errors.push('Name required')
+    if (!email || !email.includes('@')) errors.push('Valid email required')
+    const npi = r.npi?.trim()
+    if (npi && !/^\d{10}$/.test(npi)) warnings.push('NPI must be 10 digits')
+    const rawType = r.doula_type?.trim()
+    const doula_type = DOULA_TYPES.includes(rawType ?? '') ? rawType : 'Birth Doula'
+    const mco_contracts: McoContract[] = []
+    for (let i = 1; i <= 9; i++) {
+      const mco = r[`mco_${i}`]?.trim()
+      if (!mco) break
+      const normalized = ALL_MCOS.find(m => m.toLowerCase() === mco.toLowerCase())
+      if (!normalized) { warnings.push(`Unknown MCO: "${mco}"`); continue }
+      mco_contracts.push({ mco: normalized, contract_date: r[`mco_${i}_date`]?.trim() || null })
+    }
+    return { name, email, npi: npi || undefined, doula_type, mco_contracts: mco_contracts.length ? mco_contracts : undefined, _errors: errors, _warnings: warnings }
+  })
+}
+
+function downloadTemplate() {
+  const lines = [
+    'name,email,npi,doula_type,mco_1,mco_1_date,mco_2,mco_2_date',
+    'Maria Gonzalez,maria@example.com,1234567890,Birth Doula,AmeriHealth Caritas,2024-01-15,Keystone First,',
+  ]
+  const blob = new Blob([lines.join('\n')], { type: 'text/csv' })
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(blob)
+  a.download = 'doulashield-provider-import-template.csv'
+  a.click()
+  URL.revokeObjectURL(a.href)
+}
 
 interface Stats {
   billing_provider_id: string
@@ -105,16 +163,29 @@ export default function BillingProvidersPage() {
   // Bulk invite modal
   interface InviteRow { name: string; email: string; doula_type: string }
   const [inviteModal, setInviteModal] = useState<BillingProvider | null>(null)
+  const [inviteTab, setInviteTab] = useState<'manual' | 'csv'>('manual')
   const [inviteRows, setInviteRows] = useState<InviteRow[]>([{ name: '', email: '', doula_type: 'Birth Doula' }])
   const [inviteResult, setInviteResult] = useState<{ created: { name: string; email: string }[]; skipped: { name: string; email: string; reason: string }[] } | null>(null)
   const [inviting, setInviting] = useState(false)
-
-  const DOULA_TYPES = ['Birth Doula', 'Postpartum Doula', 'Perinatal Doula', 'Other']
+  const [csvRows, setCsvRows] = useState<CsvRow[]>([])
+  const [csvShowGuide, setCsvShowGuide] = useState(false)
+  const csvInputRef = useRef<HTMLInputElement>(null)
 
   const openInviteModal = (bp: BillingProvider) => {
     setInviteModal(bp)
+    setInviteTab('manual')
     setInviteRows([{ name: '', email: '', doula_type: 'Birth Doula' }])
     setInviteResult(null)
+    setCsvRows([])
+    setCsvShowGuide(false)
+  }
+
+  const handleCsvFile = (file: File) => {
+    Papa.parse<Record<string, string>>(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: (result) => setCsvRows(parseCsvRows(result.data)),
+    })
   }
 
   const updateInviteRow = (idx: number, field: keyof InviteRow, value: string) =>
@@ -141,6 +212,28 @@ export default function BillingProvidersPage() {
     } catch (e: unknown) {
       const msg = axios.isAxiosError(e) ? e.response?.data?.detail : 'Invite failed'
       showToast(typeof msg === 'string' ? msg : 'Invite failed')
+    } finally {
+      setInviting(false)
+    }
+  }
+
+  const submitCsvInvites = async () => {
+    if (!inviteModal) return
+    const importable = csvRows.filter(r => r._errors.length === 0)
+    if (!importable.length) return
+    setInviting(true)
+    setInviteResult(null)
+    try {
+      const res = await axios.post<{ created: { name: string; email: string }[]; skipped: { name: string; email: string; reason: string }[] }>(
+        `${api}/api/v1/admin/billing-providers/${inviteModal.id}/bulk-invite-providers`,
+        { providers: importable.map(({ _errors: _e, _warnings: _w, ...rest }) => rest) },
+        { headers }
+      )
+      setInviteResult(res.data)
+      await reload()
+    } catch (e: unknown) {
+      const msg = axios.isAxiosError(e) ? e.response?.data?.detail : 'Import failed'
+      showToast(typeof msg === 'string' ? msg : 'Import failed')
     } finally {
       setInviting(false)
     }
@@ -544,82 +637,187 @@ export default function BillingProvidersPage() {
         </div>
       )}
 
-      {/* Bulk Invite Providers modal */}
+      {/* Bulk Invite / Import Providers modal */}
       {inviteModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="w-full max-w-2xl rounded-xl bg-white p-6 shadow-xl">
             <h2 className="mb-1 text-base font-semibold text-gray-900">
               Invite Providers — {inviteModal.name}
             </h2>
-            <p className="mb-4 text-xs text-gray-500">
-              Each provider will receive a welcome email with a temporary password and deposit link.
+            <p className="mb-3 text-xs text-gray-500">
+              Each provider receives a welcome email with login credentials.
               Providers already in the system are skipped automatically.
             </p>
 
             {!inviteResult ? (
               <>
-                <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
-                  {inviteRows.map((row, idx) => (
-                    <div key={idx} className="grid grid-cols-[1fr_1fr_140px_28px] gap-2 items-center">
-                      <input
-                        type="text"
-                        placeholder="Full Name"
-                        value={row.name}
-                        onChange={e => updateInviteRow(idx, 'name', e.target.value)}
-                        className="rounded border border-gray-200 px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-                      />
-                      <input
-                        type="email"
-                        placeholder="Email address"
-                        value={row.email}
-                        onChange={e => updateInviteRow(idx, 'email', e.target.value)}
-                        className="rounded border border-gray-200 px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-                      />
-                      <select
-                        value={row.doula_type}
-                        onChange={e => updateInviteRow(idx, 'doula_type', e.target.value)}
-                        className="rounded border border-gray-200 px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-                      >
-                        {DOULA_TYPES.map(t => <option key={t}>{t}</option>)}
-                      </select>
-                      <button
-                        onClick={() => removeInviteRow(idx)}
-                        disabled={inviteRows.length === 1}
-                        className="text-gray-400 hover:text-red-500 disabled:opacity-30 text-lg leading-none"
-                        title="Remove row"
-                      >
-                        ×
-                      </button>
-                    </div>
+                {/* Tab switcher */}
+                <div className="mb-4 flex gap-1 rounded-lg bg-gray-100 p-1 w-fit">
+                  {(['manual', 'csv'] as const).map(tab => (
+                    <button
+                      key={tab}
+                      onClick={() => setInviteTab(tab)}
+                      className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${inviteTab === tab ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                    >
+                      {tab === 'manual' ? 'Enter Manually' : 'Upload CSV'}
+                    </button>
                   ))}
                 </div>
-                <button
-                  onClick={addInviteRow}
-                  className="mt-2 text-xs text-blue-600 hover:underline"
-                >
-                  + Add another provider
-                </button>
-                <div className="mt-5 flex justify-end gap-3">
-                  <button
-                    onClick={() => setInviteModal(null)}
-                    className="rounded border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={submitInvites}
-                    disabled={inviting || !inviteRows.some(r => r.name.trim() && r.email.trim())}
-                    className="rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
-                  >
-                    {inviting ? 'Inviting…' : `Send ${inviteRows.filter(r => r.name.trim() && r.email.trim()).length} Invite(s)`}
-                  </button>
-                </div>
+
+                {inviteTab === 'manual' ? (
+                  <>
+                    <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                      {inviteRows.map((row, idx) => (
+                        <div key={idx} className="grid grid-cols-[1fr_1fr_140px_28px] gap-2 items-center">
+                          <input type="text" placeholder="Full Name" value={row.name}
+                            onChange={e => updateInviteRow(idx, 'name', e.target.value)}
+                            className="rounded border border-gray-200 px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                          <input type="email" placeholder="Email address" value={row.email}
+                            onChange={e => updateInviteRow(idx, 'email', e.target.value)}
+                            className="rounded border border-gray-200 px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                          <select value={row.doula_type}
+                            onChange={e => updateInviteRow(idx, 'doula_type', e.target.value)}
+                            className="rounded border border-gray-200 px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500">
+                            {DOULA_TYPES.map(t => <option key={t}>{t}</option>)}
+                          </select>
+                          <button onClick={() => removeInviteRow(idx)} disabled={inviteRows.length === 1}
+                            className="text-gray-400 hover:text-red-500 disabled:opacity-30 text-lg leading-none" title="Remove row">×</button>
+                        </div>
+                      ))}
+                    </div>
+                    <button onClick={addInviteRow} className="mt-2 text-xs text-blue-600 hover:underline">+ Add another provider</button>
+                    <div className="mt-5 flex justify-end gap-3">
+                      <button onClick={() => setInviteModal(null)}
+                        className="rounded border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
+                      <button onClick={submitInvites}
+                        disabled={inviting || !inviteRows.some(r => r.name.trim() && r.email.trim())}
+                        className="rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50">
+                        {inviting ? 'Inviting…' : `Send ${inviteRows.filter(r => r.name.trim() && r.email.trim()).length} Invite(s)`}
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {/* Column guide */}
+                    <div className="mb-3">
+                      <button onClick={() => setCsvShowGuide(g => !g)}
+                        className="text-xs text-blue-600 hover:underline">
+                        {csvShowGuide ? '▲ Hide column guide' : '▼ Show column guide & valid values'}
+                      </button>
+                      {csvShowGuide && (
+                        <div className="mt-2 rounded-md border border-gray-200 bg-gray-50 p-3 text-xs space-y-2">
+                          <p className="font-medium text-gray-700">CSV columns (first row must be a header):</p>
+                          <table className="w-full text-xs">
+                            <thead><tr className="text-gray-500"><th className="text-left pr-3 pb-1">Column</th><th className="text-left pb-1">Notes</th></tr></thead>
+                            <tbody className="text-gray-700">
+                              <tr><td className="pr-3 font-mono py-0.5">name</td><td>Required. Provider full name.</td></tr>
+                              <tr><td className="pr-3 font-mono py-0.5">email</td><td>Required. Must be unique.</td></tr>
+                              <tr><td className="pr-3 font-mono py-0.5">npi</td><td>Optional. 10-digit NPI number.</td></tr>
+                              <tr><td className="pr-3 font-mono py-0.5">doula_type</td><td>Optional. See valid values below.</td></tr>
+                              <tr><td className="pr-3 font-mono py-0.5">mco_1 … mco_9</td><td>Optional. MCO name (see list below).</td></tr>
+                              <tr><td className="pr-3 font-mono py-0.5">mco_1_date … mco_9_date</td><td>Optional. Contract date YYYY-MM-DD.</td></tr>
+                            </tbody>
+                          </table>
+                          <div className="grid grid-cols-2 gap-2 pt-1">
+                            <div>
+                              <p className="font-medium text-gray-600 mb-1">Doula types</p>
+                              {DOULA_TYPES.map(t => <p key={t} className="font-mono text-gray-700">{t}</p>)}
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-600 mb-1">MCO names</p>
+                              {ALL_MCOS.map(m => <p key={m} className="font-mono text-gray-700">{m}</p>)}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* File picker */}
+                    {csvRows.length === 0 ? (
+                      <div
+                        className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 py-8 cursor-pointer hover:border-indigo-400 hover:bg-indigo-50 transition-colors"
+                        onClick={() => csvInputRef.current?.click()}
+                        onDragOver={e => e.preventDefault()}
+                        onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handleCsvFile(f) }}
+                      >
+                        <p className="text-sm font-medium text-gray-700">Drop CSV here or click to browse</p>
+                        <p className="mt-1 text-xs text-gray-400">One provider per row · .csv files only</p>
+                        <input ref={csvInputRef} type="file" accept=".csv" className="hidden"
+                          onChange={e => { const f = e.target.files?.[0]; if (f) handleCsvFile(f) }} />
+                        <button onClick={e => { e.stopPropagation(); downloadTemplate() }}
+                          className="mt-3 text-xs text-indigo-600 hover:underline">
+                          Download template CSV →
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        {/* Preview table */}
+                        <div className="max-h-64 overflow-y-auto rounded border border-gray-200 text-xs">
+                          <table className="min-w-full">
+                            <thead className="bg-gray-50 sticky top-0">
+                              <tr className="text-gray-500 text-left">
+                                <th className="px-2 py-1.5">Name</th>
+                                <th className="px-2 py-1.5">Email</th>
+                                <th className="px-2 py-1.5">NPI</th>
+                                <th className="px-2 py-1.5">Type</th>
+                                <th className="px-2 py-1.5">MCOs</th>
+                                <th className="px-2 py-1.5">Status</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                              {csvRows.map((row, i) => (
+                                <tr key={i} className={row._errors.length ? 'bg-red-50' : row._warnings.length ? 'bg-amber-50' : ''}>
+                                  <td className="px-2 py-1.5">{row.name || <span className="text-red-400">—</span>}</td>
+                                  <td className="px-2 py-1.5">{row.email || <span className="text-red-400">—</span>}</td>
+                                  <td className="px-2 py-1.5 font-mono">{row.npi || <span className="text-gray-300">—</span>}</td>
+                                  <td className="px-2 py-1.5">{row.doula_type}</td>
+                                  <td className="px-2 py-1.5">{row.mco_contracts?.map(c => c.mco).join(', ') || <span className="text-gray-300">—</span>}</td>
+                                  <td className="px-2 py-1.5">
+                                    {row._errors.length ? (
+                                      <span className="text-red-600" title={row._errors.join('; ')}>✗ {row._errors[0]}</span>
+                                    ) : row._warnings.length ? (
+                                      <span className="text-amber-600" title={row._warnings.join('; ')}>⚠ {row._warnings[0]}</span>
+                                    ) : (
+                                      <span className="text-green-600">✓</span>
+                                    )}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                        <div className="mt-2 flex items-center gap-3 text-xs text-gray-500">
+                          <span>{csvRows.filter(r => r._errors.length === 0).length} importable</span>
+                          {csvRows.some(r => r._errors.length > 0) && <span className="text-red-500">{csvRows.filter(r => r._errors.length > 0).length} with errors (skipped)</span>}
+                          {csvRows.some(r => r._warnings.length > 0 && r._errors.length === 0) && <span className="text-amber-500">{csvRows.filter(r => r._warnings.length > 0 && r._errors.length === 0).length} with warnings</span>}
+                          <button onClick={() => { setCsvRows([]); if (csvInputRef.current) csvInputRef.current.value = '' }}
+                            className="ml-auto text-gray-400 hover:text-gray-600">Choose different file</button>
+                        </div>
+                        <div className="mt-4 flex justify-end gap-3">
+                          <button onClick={() => setInviteModal(null)}
+                            className="rounded border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
+                          <button onClick={submitCsvInvites}
+                            disabled={inviting || csvRows.filter(r => r._errors.length === 0).length === 0}
+                            className="rounded bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50">
+                            {inviting ? 'Importing…' : `Import ${csvRows.filter(r => r._errors.length === 0).length} Provider(s)`}
+                          </button>
+                        </div>
+                      </>
+                    )}
+                    {csvRows.length === 0 && (
+                      <div className="mt-4 flex justify-end">
+                        <button onClick={() => setInviteModal(null)}
+                          className="rounded border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
+                      </div>
+                    )}
+                  </>
+                )}
               </>
             ) : (
               <div className="space-y-3">
                 {inviteResult.created.length > 0 && (
                   <div className="rounded-md border border-green-200 bg-green-50 p-3">
-                    <p className="mb-1 text-xs font-semibold text-green-800">{inviteResult.created.length} invite(s) sent</p>
+                    <p className="mb-1 text-xs font-semibold text-green-800">{inviteResult.created.length} provider(s) added</p>
                     {inviteResult.created.map((c, i) => (
                       <p key={i} className="text-xs text-green-700">{c.name} — {c.email}</p>
                     ))}
@@ -634,12 +832,8 @@ export default function BillingProvidersPage() {
                   </div>
                 )}
                 <div className="flex justify-end">
-                  <button
-                    onClick={() => setInviteModal(null)}
-                    className="rounded bg-gray-800 px-4 py-2 text-sm font-medium text-white hover:bg-gray-900"
-                  >
-                    Done
-                  </button>
+                  <button onClick={() => setInviteModal(null)}
+                    className="rounded bg-gray-800 px-4 py-2 text-sm font-medium text-white hover:bg-gray-900">Done</button>
                 </div>
               </div>
             )}

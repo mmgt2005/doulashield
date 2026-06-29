@@ -12,6 +12,23 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.44.0] — 2026-06-29
+
+### Added
+- **Import provider list from CSV**: Agency directors can upload a spreadsheet of provider data instead of entering it row by row.
+  - **"Upload CSV" tab** added to the Invite Providers modal (admin Billing Providers page) and to the Invite New Providers section (billing admin My Providers page). The existing manual row-entry form is unchanged under the "Enter Manually" tab.
+  - **CSV columns**: `name` (required), `email` (required), `npi`, `doula_type`, `mco_1`–`mco_9`, `mco_1_date`–`mco_9_date`. Extra columns are ignored.
+  - **Client-side parsing** with Papa Parse — no file upload to the server; the CSV is read in-browser and displayed as a preview table before any accounts are created.
+  - **Preview table** shows Name, Email, NPI, Doula Type, MCOs, and a per-row status: ✓ ready / ⚠ warning (invalid NPI format or unrecognised MCO name) / ✗ error (missing name or email). Rows with errors are excluded from the import; rows with warnings are importable.
+  - **Expandable column guide** lists all valid doula types and MCO names directly in the UI — no need to look them up separately.
+  - **Download template CSV** button generates a ready-to-fill template in-browser.
+  - **Backend**: `_BulkInviteEntry` extended with `npi` and `mco_contracts` (optional). `_run_bulk_invite` pre-populates `npi`, `billing_provider_name` (set to the agency name automatically), and `mco_contracts_json` on each created account so provider Settings are pre-filled on first login.
+
+### Changed
+- **Welcome email for agency-assigned providers**: Providers created via bulk invite or CSV import no longer receive a deposit link — their billing is handled through the agency. Subject line is now "Welcome to DoulaShield — Your Account Details" (was "Your Account & Deposit Link") whenever no checkout URL is present.
+
+---
+
 ## [1.43.1] — 2026-06-28
 
 ### Added

@@ -27,7 +27,7 @@ async def send_welcome_and_deposit(
     is_admin = role == "admin"
     subject = (
         "Welcome to DoulaShield — Your Account Details"
-        if is_admin
+        if is_admin or not checkout_url
         else "Welcome to DoulaShield — Your Account & Deposit Link"
     )
     account_label = "account" if is_admin else "provider account"
