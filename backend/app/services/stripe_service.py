@@ -81,6 +81,8 @@ async def start_subscription(provider: User, db: AsyncSession) -> dict:
                 stripe.Subscription.create,
                 customer=bp.stripe_customer_id,
                 items=[{"price": seat_price, "quantity": quantity}],
+                collection_method="send_invoice",
+                days_until_due=30,
                 metadata={"billing_provider_id": str(bp.id)},
             )
         else:
@@ -89,6 +91,8 @@ async def start_subscription(provider: User, db: AsyncSession) -> dict:
                 stripe.Subscription.create,
                 customer=bp.stripe_customer_id,
                 items=[{"price": agency_price}],
+                collection_method="send_invoice",
+                days_until_due=30,
                 metadata={"billing_provider_id": str(bp.id)},
             )
 

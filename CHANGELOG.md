@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.47.1] — 2026-06-29
+
+### Fixed
+- **Billing provider "Start Sub" crash**: Stripe rejected subscription creation with 400 `resource_missing` when the agency customer had no attached payment method. Fixed by switching billing provider subscriptions to `collection_method='send_invoice'` with `days_until_due=30` — Stripe now emails the invoice directly to the agency and no card is required at subscription creation time.
+
+---
+
 ## [1.47.0] — 2026-06-29
 
 ### Added
