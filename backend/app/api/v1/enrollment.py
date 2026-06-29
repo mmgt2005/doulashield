@@ -489,10 +489,16 @@ _NPPES_TASKS: list[dict] = [
         "label": "Create I&A System Account",
         "description": (
             "Go to nppes.cms.hhs.gov/IAWeb → click 'Create or Manage an Account'. "
-            "Enter the doula's name, SSN, date of birth, and primary email. Set up Multi-Factor Authentication (MFA). "
-            "Surrogate tip: DoulaShield can submit this application directly from its own 3rd Party Organization "
-            "I&A account on the doula's behalf — the doula does not need to create their own I&A login unless they "
-            "want direct NPPES portal access in the future."
+            "Enter the doula's legal name, SSN, date of birth, and primary email, then set up Multi-Factor Authentication (MFA). "
+            "RIDP requirement: The system triggers Remote Identity Proofing (RIDP) — timed, automated questions drawn "
+            "from the provider's personal credit history (e.g., 'Which bank holds your auto loan?', 'Which of these "
+            "is a past address?'). The provider must answer these themselves; DoulaShield cannot complete RIDP on their behalf. "
+            "Recommended approach — 10-minute screen-share: Schedule a quick call with the provider. Have them open "
+            "the portal and share their screen (or walk them through by phone). They enter their basic info, answer the "
+            "RIDP questions, and complete MFA setup. Once they pass RIDP and receive a username, DoulaShield's pending "
+            "surrogacy invitation appears immediately on their My Connections dashboard — they can click Approve while "
+            "you are still on the call. This activates the link within 24 hours with no paper needed. "
+            "If the provider cannot be reached for a screen-share or fails RIDP, proceed to Pathway B after the NPI is issued."
         ),
         "sort_order": 1,
     },
@@ -593,12 +599,14 @@ _NPPES_TASKS: list[dict] = [
         "required_pathway": "all",
         "label": "Pathway A — Electronic Approval (Optional, Fastest)",
         "description": (
-            "If the provider has an active I&A account and can pass identity proofing, this is the fastest route — "
-            "the link goes live within 24 hours and no paper is needed. "
-            "Ask the provider to log into nppes.cms.hhs.gov/IAWeb. On their home dashboard under My Connections "
-            "they will see DoulaShield's pending request. They click Approve next to both PECOS and NPPES. "
-            "Once approved, skip Pathway B and proceed directly to Confirm Surrogacy Active. "
-            "If the provider cannot log in, has never set up an I&A account, or fails identity proofing, "
+            "Pathway A activates the surrogacy link within 24 hours with no paper. "
+            "Use this if the provider completed their I&A account setup in the first task (screen-share session). "
+            "If they approved the invitation during the screen-share call: mark this task complete — no further action needed. "
+            "If they created their account but did not approve yet: ask the provider to log into nppes.cms.hhs.gov/IAWeb. "
+            "On their home dashboard under My Connections they will see DoulaShield's pending request. "
+            "They click Approve next to both PECOS and NPPES. "
+            "Once approved via either route, skip Pathway B and proceed directly to Confirm Surrogacy Active. "
+            "If the provider has no I&A account, could not schedule a screen-share, or failed RIDP, "
             "leave this task incomplete and proceed to Pathway B instead."
         ),
         "sort_order": 9,
