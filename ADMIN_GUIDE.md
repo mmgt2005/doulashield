@@ -308,22 +308,23 @@ New third-party agencies start in "Pending" status. To activate the agency profi
 1. Click **+ New Enrollment Service** → select "NPPES / NPI Setup".
 2. Select the provider. Click **Create Service**.
 
-Ten tasks are auto-generated, in order:
+Eleven tasks are auto-generated, in order:
 
 | Task | What to do |
 |---|---|
-| Create I&A System Account | Go to nppes.cms.hhs.gov, click "Create or Manage an Account." Enter the doula's name, SSN, DOB, email. Set up MFA. If the doula cannot access the portal, the surrogate tasks (steps 8–10 below) handle the link via Pathway B without a provider account. |
+| Create I&A System Account | Go to nppes.cms.hhs.gov, click "Create or Manage an Account." Enter the doula's name, SSN, DOB, email. Set up MFA. If the doula cannot access the portal, the surrogate tasks (steps 8–11 below) handle the link via Pathway B without a provider account. |
 | Start NPI Application | Log in with I&A credentials → "Submit New NPI Application" → Entity type: **Type 1 (Individual)**. |
 | Complete Provider Profile | Enter exact legal name from the doula's Social Security card (mismatch = immediate rejection). Enter DOB, state and country of birth. Answer "No" to Sole Proprietor unless the doula has a registered EIN. |
 | Enter Business Addresses | **Mailing address** (P.O. Boxes allowed) and **Practice Location** (P.O. Boxes forbidden). In-home doulas use their home office address for the practice location. |
 | Assign Taxonomy Code | Click "Add Taxonomy" → enter **374J00000X** (Doula). No state license number needed for PA doulas — PCB certification covers this for Type 13. |
 | Contact Person & Identifiers | Leave Other Identifiers and Endpoint blank. Enter agency's credentialing manager as Contact Person (NPPES calls them if the SSN or address needs correction). |
 | Attest and Submit | Read the Certification Statement, check the box, click Submit. NPI is typically issued via email within 1–5 business days. Record the NPI number in the task notes. |
-| Link DoulaShield as CMS Surrogate | Log into DoulaShield's CMS I&A account → My Connections → + → Add Provider. Search by the provider's new NPI. Select **PECOS** and **NPPES** checkboxes. Submit. The connection shows as Pending. |
-| Pathway B — Paper Surrogacy Approval Form | Print the **"Surrogacy Approval Confirmation for Medicare Individual Providers"** form from eus.cms.gov. Fill in DoulaShield's agency details and the provider's NPI. Both DoulaShield's AO and the provider sign. Upload the signed form to EUS at eus.cms.gov. Allow 5–10 business days for manual processing. Upload a scan here as your record. |
-| Confirm Surrogacy Active in CMS | Log back into DoulaShield's I&A account → My Connections. Provider status should show **Linked** (not Pending). DoulaShield can now manage the provider's NPPES and PECOS records without the provider logging in. If still Pending after 10 business days, call EUS at 1-855-267-1515. |
+| Link DoulaShield as CMS Surrogate | Log into DoulaShield's CMS I&A account at nppes.cms.hhs.gov/IAWeb → My Connections → + → Add Provider. Search by the provider's new NPI. Select **PECOS** and **NPPES** checkboxes. Submit. The connection shows as Pending. |
+| **Pathway A — Electronic Approval** *(optional, fastest)* | Ask the provider to log into nppes.cms.hhs.gov/IAWeb → My Connections → click **Approve** next to DoulaShield's request. Goes live within 24 hours. **If complete, skip Pathway B.** If the provider has no I&A account or cannot log in, leave this incomplete and proceed to Pathway B. |
+| **Pathway B — Paper Surrogacy Approval Form** *(use if Pathway A not possible)* | In DoulaShield's I&A account → My Connections → click the provider's **Tracking ID** link → select **Optional Surrogacy Confirmation** → print the form. Provider signs the top box; DoulaShield's AO signs the second box. Back in I&A → **Add a Document** → upload the signed form → select document type → submit. Allow 5–10 business days for EUS to manually link the accounts. Upload a scan here as your record. |
+| Confirm Surrogacy Active in CMS | Log into DoulaShield's I&A → My Connections. Provider status should show **Linked** (not Pending). Pathway A activates within 24 h; Pathway B takes 5–10 business days. If still Pending after 10 days, call EUS at 1-855-267-1515. |
 
-**Completing NPPES Setup:** Once all 10 tasks are marked complete and the NPI email arrives:
+**Completing NPPES Setup:** Once all 11 tasks are marked complete and the NPI email arrives:
 1. Click **Mark NPI Setup Complete**.
 2. Enter the 10-digit NPI number.
 3. DoulaShield writes the NPI to the provider's profile and unlocks Stage 2.

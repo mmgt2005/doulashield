@@ -15,11 +15,12 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 ## [1.45.0] — 2026-06-29
 
 ### Added
-- **CMS Surrogate Workflow — Pathway B**: Three new tasks added to the NPPES / NPI Setup enrollment stage covering the CMS I&A surrogate connection process.
+- **CMS Surrogate Workflow — Pathway A & B**: Four new tasks added to the NPPES / NPI Setup enrollment stage covering the CMS I&A surrogate connection process.
   - **Link DoulaShield as CMS Surrogate** (sort 8): Admin logs into DoulaShield's CMS I&A account → My Connections → Add Provider, selects PECOS + NPPES functions, and submits the link request.
-  - **Pathway B — Paper Surrogacy Approval Form** (sort 9): For providers who cannot approve the surrogate link electronically — admin prints the CMS "Surrogacy Approval Confirmation for Medicare Individual Providers" form, both DoulaShield's AO and the provider sign, and the signed form is uploaded to EUS for manual processing (5–10 business days).
-  - **Confirm Surrogacy Active in CMS** (sort 10): Admin verifies the My Connections status shows Linked (not Pending) after EUS processing, enabling DoulaShield to manage the provider's NPPES record and PECOS submissions without provider portal access.
-- **ADMIN_GUIDE.md**: Added one-time agency setup section for NPPES / NPI Setup stage — steps to create the DoulaShield I&A account, register the business entity with EIN, and submit the IRS CP575 to EUS. Updated the per-provider task table from 7 to 10 tasks.
+  - **Pathway A — Electronic Approval** (sort 9, optional): Provider logs into their own I&A account and clicks Approve — fastest route, activates within 24 hours. Skip Pathway B if complete.
+  - **Pathway B — Paper Surrogacy Approval Form** (sort 10): For providers who cannot approve electronically — admin opens the provider's Tracking ID in My Connections → prints the "Optional Surrogacy Confirmation" form → both AO and provider sign → admin uploads via "Add a Document" in the I&A portal. EUS manual processing 5–10 business days.
+  - **Confirm Surrogacy Active in CMS** (sort 11): Admin verifies the My Connections status shows Linked (not Pending), enabling DoulaShield to manage the provider's NPPES record and PECOS submissions without provider portal access.
+- **ADMIN_GUIDE.md**: Added one-time agency setup section for NPPES / NPI Setup stage — steps to create the DoulaShield I&A account, register the business entity with EIN, and submit the IRS CP575 to EUS. Updated the per-provider task table from 7 to 11 tasks.
 
 ---
 

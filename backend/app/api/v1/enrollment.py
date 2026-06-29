@@ -584,38 +584,54 @@ _NPPES_TASKS: list[dict] = [
         "sort_order": 8,
     },
     {
+        "task_key": "nppes_surrogate_pathway_a",
+        "required_pathway": "all",
+        "label": "Pathway A — Electronic Approval (Optional, Fastest)",
+        "description": (
+            "If the provider has an active I&A account and can pass identity proofing, this is the fastest route — "
+            "the link goes live within 24 hours and no paper is needed. "
+            "Ask the provider to log into nppes.cms.hhs.gov/IAWeb. On their home dashboard under My Connections "
+            "they will see DoulaShield's pending request. They click Approve next to both PECOS and NPPES. "
+            "Once approved, skip Pathway B and proceed directly to Confirm Surrogacy Active. "
+            "If the provider cannot log in, has never set up an I&A account, or fails identity proofing, "
+            "leave this task incomplete and proceed to Pathway B instead."
+        ),
+        "sort_order": 9,
+    },
+    {
         "task_key": "nppes_surrogate_pathway_b",
         "required_pathway": "all",
         "label": "Pathway B — Paper Surrogacy Approval Form",
         "description": (
-            "Use Pathway B when the provider cannot approve the surrogate link electronically (no I&A account, "
-            "failed identity proofing, or locked out of CMS portals). "
-            "Print the official CMS 'Surrogacy Approval Confirmation for Medicare Individual Providers' form "
-            "from eus.cms.gov. Fill in DoulaShield's agency details and the provider's information including "
-            "their NPI and the functions requested (PECOS + NPPES). "
-            "Both DoulaShield's Authorized Official and the provider must sign the form — physical or "
-            "electronic signatures are accepted. "
-            "Upload the completed, signed form to the EUS help desk portal at eus.cms.gov. "
-            "An EUS agent will manually link the accounts — allow 5–10 business days for processing. "
+            "Use this only when Pathway A is not possible (provider has no I&A account, failed identity proofing, "
+            "or is locked out of CMS portals). "
+            "1. Log into DoulaShield's I&A account at nppes.cms.hhs.gov/IAWeb → My Connections tab. "
+            "2. Find the provider and click the Tracking ID link for their pending request. "
+            "3. Select 'Optional Surrogacy Confirmation' to open and print the form. "
+            "4. The provider signs the top box; DoulaShield's Authorized Official signs the second box. "
+            "5. Back in I&A, select 'Add a Document', choose the signed file, and select the document type. "
+            "6. After the upload completes and you receive the confirmation message, submit the surrogacy request. "
+            "An EUS agent will manually link the accounts — allow 5–10 business days. "
             "Upload a scan of the signed form here as your record."
         ),
-        "sort_order": 9,
+        "sort_order": 10,
     },
     {
         "task_key": "nppes_surrogate_confirmed",
         "required_pathway": "all",
         "label": "Confirm Surrogacy Active in CMS",
         "description": (
-            "After EUS processes the paper form, log back into DoulaShield's CMS I&A account and navigate to "
-            "My Connections. The provider's entry should now show status Linked (not Pending). "
+            "Log into DoulaShield's CMS I&A account → My Connections. The provider's entry should now show "
+            "status Linked (not Pending). Pathway A links typically activate within 24 hours; "
+            "Pathway B paper forms take 5–10 business days. "
             "Once confirmed, DoulaShield staff can manage this provider's NPPES record and submit PECOS "
             "updates on their behalf without the provider logging in. "
             "Record the confirmed date in the notes field below. "
             "If the status still shows Pending after 10 business days, contact EUS at 1-855-267-1515. "
-            "Staff delegation: as Authorized Official you can now invite your employees as Staff End Users — "
-            "they inherit access to all linked providers automatically."
+            "Staff delegation: as Authorized Official you can invite your employees as Staff End Users — "
+            "they automatically inherit access to all linked providers in PECOS."
         ),
-        "sort_order": 10,
+        "sort_order": 11,
     },
 ]
 
