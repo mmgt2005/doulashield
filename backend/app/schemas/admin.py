@@ -36,6 +36,7 @@ class BillingProviderRead(BillingProviderCreate):
     provider_count: int = 0
     availity_connected: bool = False
     availity_npi: str | None = None
+    enrollment_tier_enabled: bool = False
 
     model_config = {"from_attributes": True}
 

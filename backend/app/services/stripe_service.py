@@ -118,7 +118,8 @@ async def update_billing_provider_seat_quantity(
     bp: BillingProvider, provider_count: int, db: AsyncSession
 ) -> dict | None:
     """Update the subscription seat quantity when providers are assigned or removed.
-    Always enforces a minimum of 3 seats ($165/month floor)."""
+    Always enforces a minimum of 3 seats ($165/month floor). Also syncs the
+    enrollment tier item if active so both lines stay at the same quantity."""
     if not bp.stripe_subscription_id or not _configured():
         return None
     if not settings.STRIPE_BILLING_PROVIDER_SEAT_PRICE_ID:
@@ -126,13 +127,53 @@ async def update_billing_provider_seat_quantity(
     _init()
     quantity = max(3, provider_count)
     sub = await asyncio.to_thread(stripe.Subscription.retrieve, bp.stripe_subscription_id)
-    item_id = sub["items"]["data"][0]["id"]
-    await asyncio.to_thread(
-        stripe.SubscriptionItem.modify,
-        item_id,
+    # Find the seat item by price ID — do not use positional index since the enrollment
+    # tier item may also be present on the same subscription.
+    seat_item = next(
+        (i for i in sub["items"]["data"]
+         if i["price"]["id"] == settings.STRIPE_BILLING_PROVIDER_SEAT_PRICE_ID),
+        None,
+    )
+    if not seat_item:
+        return None
+    await asyncio.to_thread(stripe.SubscriptionItem.modify, seat_item["id"], quantity=quantity)
+    if bp.enrollment_tier_stripe_item_id:
+        await asyncio.to_thread(
+            stripe.SubscriptionItem.modify,
+            bp.enrollment_tier_stripe_item_id,
+            quantity=quantity,
+        )
+    return {"item_id": seat_item["id"], "quantity": quantity, "monthly_total_cents": quantity * 5500}
+
+
+async def enable_enrollment_tier(bp: BillingProvider, provider_count: int, db: AsyncSession) -> dict:
+    """Add the enrollment tier as a second subscription item at the current seat quantity."""
+    _init()
+    quantity = max(3, provider_count)
+    item = await asyncio.to_thread(
+        stripe.SubscriptionItem.create,
+        subscription=bp.stripe_subscription_id,
+        price=settings.STRIPE_ENROLLMENT_TIER_PRICE_ID,
         quantity=quantity,
     )
-    return {"item_id": item_id, "quantity": quantity, "monthly_total_cents": quantity * 5500}
+    bp.enrollment_tier_enabled = True
+    bp.enrollment_tier_stripe_item_id = item["id"]
+    await db.commit()
+    return {"enrollment_tier_item_id": item["id"], "quantity": quantity}
+
+
+async def disable_enrollment_tier(bp: BillingProvider, db: AsyncSession) -> dict:
+    """Remove the enrollment tier subscription item with proration credit."""
+    _init()
+    await asyncio.to_thread(
+        stripe.SubscriptionItem.delete,
+        bp.enrollment_tier_stripe_item_id,
+        proration_behavior="create_prorations",
+    )
+    bp.enrollment_tier_enabled = False
+    bp.enrollment_tier_stripe_item_id = None
+    await db.commit()
+    return {"enrollment_tier_disabled": True}
 
 
 async def cancel_subscription(provider: User, db: AsyncSession) -> dict:

@@ -345,6 +345,21 @@ export default function BillingProvidersPage() {
     }
   }
 
+  const toggleEnrollmentTier = async (bp: BillingProvider) => {
+    const action = bp.enrollment_tier_enabled ? 'disable' : 'enable'
+    setActionLoading(`tier-${bp.id}`)
+    try {
+      await axios.post(`${api}/api/v1/admin/billing-providers/${bp.id}/${action}-enrollment-tier`, {}, { headers })
+      showToast(`Enrollment tier ${action}d.`)
+      await reload()
+    } catch (e: unknown) {
+      const msg = axios.isAxiosError(e) ? e.response?.data?.detail : 'Failed'
+      showToast(`Error: ${typeof msg === 'string' ? msg : 'Failed'}`)
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
   const statsMap = new Map(stats.map(s => [s.billing_provider_id, s]))
 
   return (
@@ -481,6 +496,19 @@ export default function BillingProvidersPage() {
                             className="rounded border border-green-300 px-2 py-1 text-xs font-medium text-green-700 hover:bg-green-50 disabled:opacity-50"
                           >
                             {actionLoading === `sub-${bp.id}` ? '…' : 'Start Sub'}
+                          </button>
+                        )}
+                        {['active', 'trialing'].includes(bp.subscription_status ?? '') && (
+                          <button
+                            onClick={() => toggleEnrollmentTier(bp)}
+                            disabled={actionLoading === `tier-${bp.id}`}
+                            className={`rounded border px-2 py-1 text-xs font-medium disabled:opacity-50 ${
+                              bp.enrollment_tier_enabled
+                                ? 'border-amber-200 text-amber-700 hover:bg-amber-50'
+                                : 'border-purple-200 text-purple-700 hover:bg-purple-50'
+                            }`}
+                          >
+                            {actionLoading === `tier-${bp.id}` ? '…' : bp.enrollment_tier_enabled ? 'Disable Enroll Tier' : 'Enable Enroll Tier'}
                           </button>
                         )}
                         <button

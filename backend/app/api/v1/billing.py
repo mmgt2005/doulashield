@@ -902,6 +902,62 @@ async def start_billing_provider_subscription(
     return result
 
 
+@router.post("/admin/billing-providers/{bp_id}/enable-enrollment-tier")
+async def enable_enrollment_tier(
+    bp_id: uuid.UUID,
+    _: Annotated[CurrentUser, Depends(require_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    audit: Annotated[AuditLogger, Depends(get_audit)],
+    request: Request,
+) -> dict:
+    _require_stripe()
+    if not settings.STRIPE_ENROLLMENT_TIER_PRICE_ID:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Enrollment tier price not configured")
+    bp = await _get_billing_provider(bp_id, db)
+    if bp.subscription_status not in ("active", "trialing"):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Active subscription required to enable enrollment tier")
+    if bp.enrollment_tier_enabled:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Enrollment tier already active")
+    count_result = await db.execute(select(func.count()).select_from(User).where(User.billing_provider_id == bp.id))
+    seat_count = count_result.scalar() or 0
+    result = await stripe_service.enable_enrollment_tier(bp, seat_count, db)
+    await audit.log(
+        action="ENABLE_ENROLLMENT_TIER",
+        resource_type="billing_provider",
+        resource_id=bp.id,
+        ip_address=request.headers.get("X-Forwarded-For", request.client.host if request.client else ""),
+        user_agent=request.headers.get("User-Agent", ""),
+        extra_context=result,
+    )
+    return result
+
+
+@router.post("/admin/billing-providers/{bp_id}/disable-enrollment-tier")
+async def disable_enrollment_tier(
+    bp_id: uuid.UUID,
+    _: Annotated[CurrentUser, Depends(require_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    audit: Annotated[AuditLogger, Depends(get_audit)],
+    request: Request,
+) -> dict:
+    _require_stripe()
+    bp = await _get_billing_provider(bp_id, db)
+    if not bp.enrollment_tier_enabled:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Enrollment tier not active")
+    if not bp.enrollment_tier_stripe_item_id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Enrollment tier item ID missing — contact support")
+    result = await stripe_service.disable_enrollment_tier(bp, db)
+    await audit.log(
+        action="DISABLE_ENROLLMENT_TIER",
+        resource_type="billing_provider",
+        resource_id=bp.id,
+        ip_address=request.headers.get("X-Forwarded-For", request.client.host if request.client else ""),
+        user_agent=request.headers.get("User-Agent", ""),
+        extra_context=result,
+    )
+    return result
+
+
 @router.get("/admin/stats/billing-providers")
 async def billing_provider_stats(
     _: Annotated[CurrentUser, Depends(require_admin)],

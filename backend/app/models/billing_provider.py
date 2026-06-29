@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, String, Text, func
+from sqlalchemy import Boolean, DateTime, String, Text, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -23,6 +23,8 @@ class BillingProvider(Base):
     stripe_customer_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     stripe_subscription_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     subscription_status: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    enrollment_tier_enabled: Mapped[bool] = mapped_column(Boolean, server_default="false", nullable=False, default=False)
+    enrollment_tier_stripe_item_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     availity_client_id_encrypted: Mapped[str | None] = mapped_column(Text, nullable=True)
     availity_client_secret_encrypted: Mapped[str | None] = mapped_column(Text, nullable=True)
     availity_npi: Mapped[str | None] = mapped_column(String(10), nullable=True)

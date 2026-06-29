@@ -26,6 +26,7 @@ export interface BillingProvider {
   phone: string | null
   stripe_subscription_id: string | null
   subscription_status: string | null
+  enrollment_tier_enabled: boolean
   created_at: string
   provider_count: number
 }

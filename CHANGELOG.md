@@ -12,6 +12,20 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.46.0] — 2026-06-29
+
+### Added
+- **Enrollment Tier add-on for billing providers**: DoulaShield admin can now enable a per-seat monthly enrollment tier on any billing provider's subscription, giving that agency self-service access to the credentialing workflow for their assigned providers.
+  - **Stripe**: Enrollment tier is a second `SubscriptionItem` on the agency's existing subscription (`STRIPE_ENROLLMENT_TIER_PRICE_ID`), priced per unit at the same quantity as the seat line. Both items scale together when providers are added or removed. Disabling removes the item with a prorated credit.
+  - **Database migration** (`0049`): Two new columns on `billing_providers` — `enrollment_tier_enabled` (boolean, default false) and `enrollment_tier_stripe_item_id` (text, stores the Stripe item ID for syncing).
+  - **Backend**: `POST /admin/billing-providers/{bp_id}/enable-enrollment-tier` and `POST .../disable-enrollment-tier` — require active subscription, audit-logged.
+  - **Stripe service fix**: `update_billing_provider_seat_quantity` now finds the seat item by price ID instead of positional index, preventing incorrect item modification when the enrollment tier item is also present. Also syncs the enrollment tier item quantity on every provider add/remove.
+  - **Frontend**: "Enable Enroll Tier" / "Disable Enroll Tier" button on each billing provider row (visible only when subscription is active). Purple when off, amber when on.
+  - **`BillingProviderRead` schema** and **`BillingProvider` TypeScript interface** updated with `enrollment_tier_enabled`.
+  - **`.env.example`**: Documents `STRIPE_ENROLLMENT_TIER_PRICE_ID`.
+
+---
+
 ## [1.45.1] — 2026-06-29
 
 ### Changed
