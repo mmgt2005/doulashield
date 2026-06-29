@@ -166,6 +166,21 @@ async def enable_enrollment_tier(bp: BillingProvider, provider_count: int, db: A
     return {"enrollment_tier_item_id": item["id"], "quantity": quantity}
 
 
+async def create_customer_portal_session(stripe_customer_id: str) -> str | None:
+    """Return a Stripe Billing Portal URL for the customer to manage their subscription.
+    Returns None if the portal is not configured in Stripe."""
+    _init()
+    try:
+        session = await asyncio.to_thread(
+            stripe.billing_portal.Session.create,
+            customer=stripe_customer_id,
+            return_url=f"{settings.FRONTEND_ORIGIN}/billing-admin/settings",
+        )
+        return session.url
+    except stripe.InvalidRequestError:
+        return None
+
+
 async def disable_enrollment_tier(bp: BillingProvider, db: AsyncSession) -> dict:
     """Remove the enrollment tier subscription item with proration credit."""
     _init()

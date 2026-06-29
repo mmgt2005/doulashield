@@ -899,6 +899,26 @@ async def start_billing_provider_subscription(
         user_agent=request.headers.get("User-Agent", ""),
         extra_context=result,
     )
+
+    # Send branded subscription confirmation to the billing admin(s)
+    await db.refresh(bp)
+    admins_result = await db.execute(select(User).where(User.managed_billing_provider_id == bp.id))
+    billing_admins = admins_result.scalars().all()
+    recipients = billing_admins if billing_admins else [representative]
+    portal_url = None
+    if bp.stripe_customer_id:
+        portal_url = await stripe_service.create_customer_portal_session(bp.stripe_customer_id)
+    for contact in recipients:
+        if contact.email:
+            await email_service.send_billing_subscription_started(
+                admin_email=contact.email,
+                admin_name=contact.full_name or contact.email,
+                agency_name=bp.name,
+                seat_quantity=result.get("seat_quantity"),
+                monthly_total_cents=result.get("monthly_total_cents"),
+                portal_url=portal_url,
+            )
+
     return result
 
 

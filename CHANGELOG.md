@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.47.2] — 2026-06-29
+
+### Added
+- **Subscription confirmation email to billing agencies**: When an admin clicks "Start Sub", DoulaShield now sends a branded email to the agency's billing admin(s) (falling back to the first assigned provider if no billing admin is set) confirming the subscription, showing seat count and monthly total, and including a "Manage Billing →" button linking to the Stripe Customer Portal where they can add a payment method and pay the first invoice. If the Stripe portal is not yet configured, the email instructs them to follow the Stripe invoice email instead.
+
+---
+
 ## [1.47.1] — 2026-06-29
 
 ### Fixed

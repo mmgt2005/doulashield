@@ -886,6 +886,86 @@ async def send_deposit_link(provider_email: str, provider_name: str, checkout_ur
     )
 
 
+async def send_billing_subscription_started(
+    admin_email: str,
+    admin_name: str,
+    agency_name: str,
+    seat_quantity: int | None,
+    monthly_total_cents: int | None,
+    portal_url: str | None,
+) -> None:
+    """Notify the billing agency contact that their DoulaShield subscription has been started."""
+    if not _configured():
+        return
+    resend.api_key = settings.RESEND_API_KEY
+
+    seat_row = ""
+    if seat_quantity is not None:
+        monthly_dollars = f"${monthly_total_cents / 100:,.2f}" if monthly_total_cents else "—"
+        seat_row = f"""
+    <tr>
+      <td style="padding:6px 12px 6px 0;font-size:13px;color:#6b7280;white-space:nowrap;">Seats</td>
+      <td style="padding:6px 0;font-size:13px;font-weight:600;">{seat_quantity} providers</td>
+    </tr>
+    <tr>
+      <td style="padding:6px 12px 6px 0;font-size:13px;color:#6b7280;white-space:nowrap;">Monthly Total</td>
+      <td style="padding:6px 0;font-size:13px;font-weight:600;">{monthly_dollars} / month</td>
+    </tr>"""
+
+    portal_section = ""
+    if portal_url:
+        portal_section = f"""
+  <p style="margin: 28px 0;">
+    <a href="{portal_url}"
+       style="background:#2563eb;color:#fff;padding:12px 24px;border-radius:6px;
+              text-decoration:none;font-weight:600;font-size:15px;">
+      Manage Billing &rarr;
+    </a>
+  </p>
+  <p style="color:#6b7280;font-size:13px;">
+    Use the button above to add a payment method and pay your first invoice.
+    Stripe will also email your invoice to this address shortly.
+  </p>"""
+    else:
+        portal_section = """
+  <p style="color:#374151;font-size:14px;">
+    Stripe will email your first invoice to this address shortly.
+    Follow the payment link in that email to activate your subscription.
+  </p>"""
+
+    await asyncio.to_thread(
+        resend.Emails.send,
+        {
+            "from": settings.EMAIL_FROM,
+            "to": [admin_email],
+            "subject": f"DoulaShield subscription started — {agency_name}",
+            "html": f"""
+<!DOCTYPE html>
+<html>
+<body style="font-family: sans-serif; color: #1a1a1a; max-width: 480px; margin: 0 auto; padding: 24px;">
+  <p style="font-size: 16px;">Hi {admin_name},</p>
+  <p>Your DoulaShield subscription for <strong>{agency_name}</strong> has been started.
+  Here's a summary:</p>
+  <table style="margin:16px 0;border-collapse:collapse;width:100%;">
+    <tr>
+      <td style="padding:6px 12px 6px 0;font-size:13px;color:#6b7280;white-space:nowrap;">Agency</td>
+      <td style="padding:6px 0;font-size:13px;font-weight:600;">{agency_name}</td>
+    </tr>
+    <tr>
+      <td style="padding:6px 12px 6px 0;font-size:13px;color:#6b7280;white-space:nowrap;">Plan</td>
+      <td style="padding:6px 0;font-size:13px;font-weight:600;">Agency Seat — $55 / provider / month</td>
+    </tr>{seat_row}
+  </table>
+  {portal_section}
+  <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
+  <p style="color:#9ca3af;font-size:12px;">The DoulaShield Team</p>
+</body>
+</html>
+""",
+        },
+    )
+
+
 async def send_screenshare_invite(
     to_email: str, provider_name: str, doxy_me_url: str
 ) -> None:
