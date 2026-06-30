@@ -865,6 +865,7 @@ async def create_enrollment_service(
         documents=[],
         provider_email=provider.email,
         provider_name=provider.full_name,
+        provider_npi=provider.npi,
     )
 
 
@@ -899,6 +900,7 @@ async def get_enrollment_service(
         documents=[EnrollmentDocumentRead.model_validate(d) for d in docs],
         provider_email=provider.email if provider else None,
         provider_name=provider.full_name if provider else None,
+        provider_npi=provider.npi if provider else None,
     )
 
 

@@ -74,6 +74,7 @@ class EnrollmentServiceDetail(BaseModel):
     documents: list[EnrollmentDocumentRead]
     provider_email: str | None = None
     provider_name: str | None = None
+    provider_npi: str | None = None
 
 
 class CompletePcbRequest(BaseModel):

@@ -12,6 +12,16 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.50.5] — 2026-06-30
+
+### Added
+- **Document download buttons on admin enrollment services**: Documents uploaded by providers now appear as clickable links in each task card. Clicking fetches a signed URL from the backend and opens the file — admins can download and re-upload to CMS, CAQH, or PROMISe™ without navigating to Supabase.
+- **Provider info copy bar on enrollment detail**: When a service is expanded, a compact bar shows the provider's name, email, and NPI (if on file) as one-click copy buttons. Clicking any chip copies the value to the clipboard — useful when filling in external portals without switching tabs.
+- **Copy button on task notes**: Each task's notes field now shows a small clipboard icon when a value is present. Clicking copies the recorded value (ATN, CAQH ID, NPI, etc.) directly to the clipboard.
+- **NPI included in enrollment service detail API response**: `GET /admin/enrollment/services/{id}` now returns `provider_npi` alongside `provider_name` and `provider_email`.
+
+---
+
 ## [1.50.4] — 2026-06-30
 
 ### Changed

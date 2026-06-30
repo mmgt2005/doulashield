@@ -51,6 +51,7 @@ interface EnrollmentServiceDetail {
   documents: EnrollmentDocument[]
   provider_email: string | null
   provider_name: string | null
+  provider_npi: string | null
 }
 
 interface Provider {
@@ -234,6 +235,27 @@ export default function EnrollmentServicesPage() {
       showToast('Failed to send invitation.')
     } finally {
       setScreenshareLoading(null)
+    }
+  }
+
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text).then(() => showToast(`${label} copied`)).catch(() => showToast('Copy failed'))
+  }
+
+  const downloadDocument = async (serviceId: string, docId: string, fileName: string) => {
+    try {
+      const res = await axios.get<{ url: string; file_name: string }>(
+        `${api}/api/v1/admin/enrollment/services/${serviceId}/documents/${docId}/url`,
+        { headers },
+      )
+      const a = document.createElement('a')
+      a.href = res.data.url
+      a.download = fileName
+      a.target = '_blank'
+      a.rel = 'noopener'
+      a.click()
+    } catch {
+      showToast('Failed to get download link')
     }
   }
 
@@ -1068,6 +1090,42 @@ export default function EnrollmentServicesPage() {
                       <p className="text-sm text-gray-400">Loading…</p>
                     ) : detail ? (
                       <div className="space-y-4">
+                        {/* Provider info copy bar */}
+                        {(detail.provider_name || detail.provider_email || detail.provider_npi) && (
+                          <div className="flex flex-wrap gap-2 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2">
+                            {detail.provider_name && (
+                              <button
+                                onClick={() => copyToClipboard(detail.provider_name!, 'Name')}
+                                title="Copy provider name"
+                                className="flex items-center gap-1.5 rounded border border-gray-200 bg-white px-2 py-1 text-xs text-gray-700 hover:bg-gray-100"
+                              >
+                                <svg className="h-3 w-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                                {detail.provider_name}
+                              </button>
+                            )}
+                            {detail.provider_email && (
+                              <button
+                                onClick={() => copyToClipboard(detail.provider_email!, 'Email')}
+                                title="Copy email"
+                                className="flex items-center gap-1.5 rounded border border-gray-200 bg-white px-2 py-1 text-xs text-gray-700 hover:bg-gray-100"
+                              >
+                                <svg className="h-3 w-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                                {detail.provider_email}
+                              </button>
+                            )}
+                            {detail.provider_npi && (
+                              <button
+                                onClick={() => copyToClipboard(detail.provider_npi!, 'NPI')}
+                                title="Copy NPI"
+                                className="flex items-center gap-1.5 rounded border border-gray-200 bg-white px-2 py-1 text-xs font-mono text-gray-700 hover:bg-gray-100"
+                              >
+                                <svg className="h-3 w-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                                NPI {detail.provider_npi}
+                              </button>
+                            )}
+                          </div>
+                        )}
+
                         {/* Tasks */}
                         <div>
                           <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
@@ -1156,14 +1214,23 @@ export default function EnrollmentServicesPage() {
                                   )}
 
                                   {/* Notes */}
-                                  <div className="mt-2">
+                                  <div className="mt-2 flex items-center gap-1">
                                     <input
                                       type="text"
                                       placeholder="Notes (optional)"
                                       value={taskNotes[task.id] ?? task.notes ?? ''}
                                       onChange={(e) => setTaskNotes((prev) => ({ ...prev, [task.id]: e.target.value }))}
-                                      className="w-full rounded border border-gray-200 px-2 py-1 text-xs text-gray-700 placeholder-gray-400 focus:border-blue-500 focus:outline-none"
+                                      className="flex-1 rounded border border-gray-200 px-2 py-1 text-xs text-gray-700 placeholder-gray-400 focus:border-blue-500 focus:outline-none"
                                     />
+                                    {(taskNotes[task.id] || task.notes) && (
+                                      <button
+                                        onClick={() => copyToClipboard(taskNotes[task.id] ?? task.notes ?? '', 'Notes')}
+                                        title="Copy notes"
+                                        className="shrink-0 rounded border border-gray-200 p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                                      >
+                                        <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                                      </button>
+                                    )}
                                   </div>
 
                                   {/* Documents */}
@@ -1172,7 +1239,13 @@ export default function EnrollmentServicesPage() {
                                       {docs.map((doc) => (
                                         <div key={doc.id} className="flex items-center gap-2 text-xs text-gray-600">
                                           <span className="text-gray-400">📎</span>
-                                          <span>{doc.file_name}</span>
+                                          <button
+                                            onClick={() => downloadDocument(svc.id, doc.id, doc.file_name)}
+                                            className="text-blue-600 hover:underline text-left"
+                                            title="Download document"
+                                          >
+                                            {doc.file_name}
+                                          </button>
                                           {doc.document_type && (
                                             <span className="rounded bg-gray-200 px-1 py-0.5 text-gray-500">
                                               {doc.document_type}
