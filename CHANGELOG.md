@@ -12,6 +12,14 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.49.0] — 2026-06-30
+
+### Added
+- **Assign enrollment service to billing agency**: Platform admins can now hand off an enrollment service they created to the provider's billing agency with one click. On the admin Enrollment Services page, each service row has an "Assign to Agency" button (outside the expand toggle to avoid accidental clicks). Clicking it sets `assigned_to_billing_admin = true` on the service and shows a filled indigo "✓ Assigned to Agency" badge. Clicking again unassigns. The backend validates that the provider is actually assigned to a billing agency before toggling. On the billing-admin My Providers page, assigned-by-DoulaShield services now show an "Assigned by DoulaShield" indigo badge in their service row, making the handoff visible to the billing admin.
+- **Migration 0050**: Adds `assigned_to_billing_admin BOOLEAN NOT NULL DEFAULT false` to `enrollment_services`.
+
+---
+
 ## [1.48.1] — 2026-06-30
 
 ### Fixed

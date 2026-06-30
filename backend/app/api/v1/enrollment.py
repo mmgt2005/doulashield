@@ -1168,3 +1168,47 @@ async def get_enrollment_document_url(
 
     url = await get_signed_url(doc.file_path, expires_in=300)
     return {"url": url, "file_name": doc.file_name}
+
+
+@router.post("/services/{service_id}/assign-to-billing-admin", response_model=EnrollmentServiceRead)
+async def assign_enrollment_to_billing_admin(
+    service_id: uuid.UUID,
+    current_user: Annotated[CurrentUser, Depends(require_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    audit: Annotated[AuditLogger, Depends(get_audit)],
+    request: Request,
+) -> EnrollmentServiceRead:
+    """Toggle assignment of an enrollment service to the provider's billing admin agency.
+
+    Assigning lets the billing admin see and manage this service from their My Providers
+    panel without creating a duplicate. Toggling again removes the assignment flag.
+    """
+    service = await _get_service_or_404(service_id, db)
+
+    provider_result = await db.execute(select(User).where(User.id == service.provider_id))
+    provider = provider_result.scalar_one_or_none()
+    if not provider or not provider.billing_provider_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Provider is not assigned to a billing agency. Assign the provider to an agency first.",
+        )
+
+    service.assigned_to_billing_admin = not service.assigned_to_billing_admin
+    await db.commit()
+    await db.refresh(service)
+
+    await audit.log(
+        action="ENROLLMENT_SERVICE_ASSIGNED_TO_BILLING_ADMIN" if service.assigned_to_billing_admin else "ENROLLMENT_SERVICE_UNASSIGNED_FROM_BILLING_ADMIN",
+        user_id=current_user.id,
+        resource_type="enrollment_service",
+        resource_id=service_id,
+        ip_address=get_client_ip(request),
+        user_agent=get_user_agent(request),
+        extra_context={
+            "provider_id": str(service.provider_id),
+            "billing_provider_id": str(provider.billing_provider_id),
+            "assigned": service.assigned_to_billing_admin,
+        },
+    )
+
+    return EnrollmentServiceRead.model_validate(service)

@@ -28,6 +28,7 @@ class EnrollmentServiceRead(BaseModel):
     status: str
     intake_data: dict[str, Any] | None
     pcb_cert_date: date | None
+    assigned_to_billing_admin: bool = False
     created_at: datetime
     updated_at: datetime
 

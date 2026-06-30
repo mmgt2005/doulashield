@@ -15,6 +15,7 @@ interface EnrollmentService {
   status: string
   intake_data: Record<string, unknown> | null
   pcb_cert_date: string | null
+  assigned_to_billing_admin: boolean
   created_at: string
   updated_at: string
 }
@@ -151,6 +152,9 @@ export default function EnrollmentServicesPage() {
   // Walkthrough guide
   const [showGuide, setShowGuide] = useState(false)
 
+  // Assign to billing admin
+  const [assignLoading, setAssignLoading] = useState<string | null>(null)
+
   // doxy.me screen-share
   const [telehealthLink, setTelehealthLink] = useState<string | null>(null)
   const [screenshareLoading, setScreenshareLoading] = useState<string | null>(null)
@@ -186,6 +190,24 @@ export default function EnrollmentServicesPage() {
       showToast('Failed to load data')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleAssign = async (serviceId: string) => {
+    setAssignLoading(serviceId)
+    try {
+      const res = await axios.post<EnrollmentService>(
+        `${api}/api/v1/admin/enrollment/services/${serviceId}/assign-to-billing-admin`,
+        {},
+        { headers },
+      )
+      setServices(prev => prev.map(s => s.id === serviceId ? { ...s, assigned_to_billing_admin: res.data.assigned_to_billing_admin } : s))
+      showToast(res.data.assigned_to_billing_admin ? 'Assigned to billing agency.' : 'Unassigned from billing agency.')
+    } catch (e: unknown) {
+      const msg = axios.isAxiosError(e) ? e.response?.data?.detail : 'Failed'
+      showToast(typeof msg === 'string' ? msg : 'Failed')
+    } finally {
+      setAssignLoading(null)
     }
   }
 
@@ -981,36 +1003,58 @@ export default function EnrollmentServicesPage() {
             return (
               <div key={svc.id} className="rounded-lg border border-gray-200 bg-white shadow-sm">
                 {/* Row header */}
-                <button
-                  onClick={() => toggleExpand(svc.id)}
-                  className="flex w-full items-center justify-between px-4 py-3 text-left hover:bg-gray-50"
-                >
-                  <div className="flex items-center gap-3">
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">
-                        {detail?.provider_name || detail?.provider_email || svc.provider_id.slice(0, 8) + '…'}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {detail?.provider_email || ''}
-                        {svc.pcb_pathway ? ` · ${PATHWAY_LABELS[svc.pcb_pathway] ?? svc.pcb_pathway} pathway` : ''}
-                      </p>
+                <div className="flex items-stretch">
+                  <button
+                    onClick={() => toggleExpand(svc.id)}
+                    className="flex flex-1 min-w-0 items-center justify-between px-4 py-3 text-left hover:bg-gray-50"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-900">
+                          {detail?.provider_name || detail?.provider_email || svc.provider_id.slice(0, 8) + '…'}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {detail?.provider_email || ''}
+                          {svc.pcb_pathway ? ` · ${PATHWAY_LABELS[svc.pcb_pathway] ?? svc.pcb_pathway} pathway` : ''}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {detail && (
-                      <span className="text-xs text-gray-500">
-                        {detail.tasks.filter((t) => t.status === 'complete').length}/{detail.tasks.length} tasks
+                    <div className="flex items-center gap-2 ml-3">
+                      {svc.assigned_to_billing_admin && (
+                        <span className="rounded-full px-2 py-0.5 text-xs font-medium bg-indigo-100 text-indigo-700">
+                          Agency
+                        </span>
+                      )}
+                      {detail && (
+                        <span className="text-xs text-gray-500">
+                          {detail.tasks.filter((t) => t.status === 'complete').length}/{detail.tasks.length} tasks
+                        </span>
+                      )}
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STAGE_BADGE_COLORS[stage] ?? 'bg-gray-100 text-gray-600'}`}>
+                        {STAGE_LABELS[stage] ?? stage}
                       </span>
-                    )}
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STAGE_BADGE_COLORS[stage] ?? 'bg-gray-100 text-gray-600'}`}>
-                      {STAGE_LABELS[stage] ?? stage}
-                    </span>
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${SERVICE_STATUS_COLORS[svc.status] ?? 'bg-gray-100 text-gray-600'}`}>
-                      {svc.status.replace('_', ' ')}
-                    </span>
-                    <span className="text-gray-400">{isExpanded ? '▲' : '▼'}</span>
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${SERVICE_STATUS_COLORS[svc.status] ?? 'bg-gray-100 text-gray-600'}`}>
+                        {svc.status.replace('_', ' ')}
+                      </span>
+                      <span className="text-gray-400">{isExpanded ? '▲' : '▼'}</span>
+                    </div>
+                  </button>
+                  {/* Assign to billing admin — separate from expand trigger */}
+                  <div className="flex items-center border-l border-gray-100 px-3">
+                    <button
+                      onClick={() => handleAssign(svc.id)}
+                      disabled={assignLoading === svc.id}
+                      title={svc.assigned_to_billing_admin ? 'Click to unassign from billing agency' : 'Hand this service off to the billing agency'}
+                      className={`whitespace-nowrap rounded px-2 py-1 text-xs font-medium transition-colors disabled:opacity-50 ${
+                        svc.assigned_to_billing_admin
+                          ? 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200'
+                          : 'border border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-indigo-600'
+                      }`}
+                    >
+                      {assignLoading === svc.id ? '…' : svc.assigned_to_billing_admin ? '✓ Assigned to Agency' : 'Assign to Agency'}
+                    </button>
                   </div>
-                </button>
+                </div>
 
                 {/* Expanded detail */}
                 {isExpanded && (

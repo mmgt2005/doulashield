@@ -87,6 +87,7 @@ interface EnrollmentService {
   stage: string
   pcb_pathway: string | null
   status: string
+  assigned_to_billing_admin: boolean
   created_at: string
 }
 
@@ -579,6 +580,11 @@ export default function BillingAdminProvidersPage() {
                                           {svc.pcb_pathway && (
                                             <span className="text-[10px] text-gray-500">
                                               ({svc.pcb_pathway === 'education_training' ? 'Educ. & Training' : 'Experienced'})
+                                            </span>
+                                          )}
+                                          {svc.assigned_to_billing_admin && (
+                                            <span className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium bg-indigo-50 text-indigo-600 border border-indigo-200">
+                                              Assigned by DoulaShield
                                             </span>
                                           )}
                                         </div>

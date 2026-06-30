@@ -2,7 +2,7 @@ import uuid
 from datetime import date, datetime
 from typing import Any
 
-from sqlalchemy import Date, DateTime, ForeignKey, Integer, String, Text, func
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Integer, String, Text, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -25,6 +25,7 @@ class EnrollmentService(Base):
     status: Mapped[str] = mapped_column(String(30), nullable=False, default="in_progress")
     intake_data: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
     pcb_cert_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    assigned_to_billing_admin: Mapped[bool] = mapped_column(Boolean, server_default="false", nullable=False, default=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
