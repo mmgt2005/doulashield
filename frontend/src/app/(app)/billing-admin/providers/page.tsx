@@ -106,7 +106,7 @@ interface EnrollmentTask {
 interface EnrollmentServiceDetail {
   service: EnrollmentService
   tasks: EnrollmentTask[]
-  documents: { id: string; file_name: string; created_at: string }[]
+  documents: { id: string; task_id: string | null; file_name: string; document_type: string | null; created_at: string }[]
   provider_name: string | null
   provider_email: string | null
 }
@@ -318,6 +318,44 @@ export default function BillingAdminProvidersPage() {
       showToast('Failed to save notes')
     } finally {
       setTaskSaving(null)
+    }
+  }
+
+  const taskDocsFor = (detail: EnrollmentServiceDetail, taskId: string) =>
+    detail.documents.filter((d) => d.task_id === taskId)
+
+  const downloadDocument = async (serviceId: string, docId: string, fileName: string) => {
+    try {
+      const res = await axios.get<{ url: string; file_name: string }>(
+        `${api}/api/v1/billing-admin/enrollment/services/${serviceId}/documents/${docId}/url`,
+        { headers },
+      )
+      const a = document.createElement('a')
+      a.href = res.data.url
+      a.download = fileName
+      a.target = '_blank'
+      a.rel = 'noopener'
+      a.click()
+    } catch {
+      showToast('Failed to get download link')
+    }
+  }
+
+  const handleDeleteDocument = async (serviceId: string, docId: string, fileName: string) => {
+    if (!window.confirm(`Remove "${fileName}" from this task? This cannot be undone.`)) return
+    try {
+      await axios.delete(
+        `${api}/api/v1/billing-admin/enrollment/services/${serviceId}/documents/${docId}`,
+        { headers },
+      )
+      setServiceDetails((prev) => {
+        const detail = prev[serviceId]
+        if (!detail) return prev
+        return { ...prev, [serviceId]: { ...detail, documents: detail.documents.filter((d) => d.id !== docId) } }
+      })
+      showToast(`${fileName} removed`)
+    } catch {
+      showToast('Failed to remove document')
     }
   }
 
@@ -667,6 +705,32 @@ export default function BillingAdminProvidersPage() {
                                                         {isComplete && task.notes && (
                                                           <p className="mt-0.5 text-[11px] text-gray-500">Note: {task.notes}</p>
                                                         )}
+                                                        {(() => {
+                                                          const docs = taskDocsFor(detail, task.id)
+                                                          return docs.length > 0 ? (
+                                                            <div className="mt-1.5 space-y-1">
+                                                              {docs.map((doc) => (
+                                                                <div key={doc.id} className="flex items-center gap-2 text-[11px] text-gray-600">
+                                                                  <span className="text-gray-400">📎</span>
+                                                                  <button
+                                                                    onClick={() => downloadDocument(svc.id, doc.id, doc.file_name)}
+                                                                    className="text-blue-600 hover:underline text-left"
+                                                                    title="Download document"
+                                                                  >
+                                                                    {doc.file_name}
+                                                                  </button>
+                                                                  <button
+                                                                    onClick={() => handleDeleteDocument(svc.id, doc.id, doc.file_name)}
+                                                                    title="Remove document"
+                                                                    className="ml-auto rounded px-1.5 py-0.5 text-[10px] font-medium text-red-400 hover:bg-red-50 hover:text-red-600 border border-red-200 hover:border-red-400"
+                                                                  >
+                                                                    Remove
+                                                                  </button>
+                                                                </div>
+                                                              ))}
+                                                            </div>
+                                                          ) : null
+                                                        })()}
                                                       </div>
                                                     </div>
                                                   </div>

@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.51.0] — 2026-06-30
+
+### Added
+- **Billing admin can download and remove enrollment documents**: Agencies using the Enrollment Tier can now download provider-uploaded documents directly from My Providers, and remove incorrectly uploaded files. Two new backend endpoints mirror the admin equivalents: `GET /billing-admin/enrollment/services/{id}/documents/{doc_id}/url` for signed download links and `DELETE /billing-admin/enrollment/services/{id}/documents/{doc_id}` for removal. Each task card in the enrollment panel shows uploaded documents as clickable download links with a "Remove" button alongside.
+
+---
+
 ## [1.50.9] — 2026-06-30
 
 ### Fixed

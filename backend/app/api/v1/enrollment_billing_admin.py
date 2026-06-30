@@ -12,6 +12,7 @@ from datetime import datetime, timezone
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
@@ -292,3 +293,55 @@ async def update_agency_enrollment_task(
     await db.commit()
     await db.refresh(task)
     return EnrollmentTaskRead.model_validate(task)
+
+
+@router.get("/billing-admin/enrollment/services/{service_id}/documents/{doc_id}/url")
+async def get_agency_enrollment_document_url(
+    service_id: uuid.UUID,
+    doc_id: uuid.UUID,
+    bp: Annotated[BillingProvider, Depends(get_managed_billing_provider)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> dict:
+    await _get_service_in_agency(service_id, bp.id, db)
+    doc_result = await db.execute(
+        select(EnrollmentDocument).where(
+            EnrollmentDocument.id == doc_id,
+            EnrollmentDocument.service_id == service_id,
+        )
+    )
+    doc = doc_result.scalar_one_or_none()
+    if not doc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+    from app.services.ocr_service import get_signed_url
+    url = await get_signed_url(doc.file_path, expires_in=300)
+    return {"url": url, "file_name": doc.file_name}
+
+
+@router.delete(
+    "/billing-admin/enrollment/services/{service_id}/documents/{doc_id}",
+    status_code=204,
+    response_class=Response,
+)
+async def delete_agency_enrollment_document(
+    service_id: uuid.UUID,
+    doc_id: uuid.UUID,
+    bp: Annotated[BillingProvider, Depends(get_managed_billing_provider)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+):
+    await _get_service_in_agency(service_id, bp.id, db)
+    doc_result = await db.execute(
+        select(EnrollmentDocument).where(
+            EnrollmentDocument.id == doc_id,
+            EnrollmentDocument.service_id == service_id,
+        )
+    )
+    doc = doc_result.scalar_one_or_none()
+    if not doc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+    try:
+        from app.services.ocr_service import delete_file
+        await delete_file(doc.file_path)
+    except Exception:
+        pass
+    await db.delete(doc)
+    await db.commit()
