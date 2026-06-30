@@ -601,6 +601,15 @@ Days remaining is color-coded: green (plenty of time), amber (approaching), red 
 
 **Invite New Providers** — below the roster is an invite section with the same two-tab interface (Enter Manually / Upload CSV) as the admin Invite Providers modal. Billing admins can enter providers row by row or upload a CSV with NPI and MCO contract data pre-populated. The results panel lists created vs. skipped entries with skip reasons.
 
+**Enrollment Services (Enrollment Tier only)** — when the agency's Enrollment Tier is enabled, each expanded provider row also shows a full enrollment management panel. Billing admins can:
+
+- **Start a new enrollment service** — click "+ Start Service" to choose a stage (PCB Certification, NPPES/NPI Setup, PROMISe™ Enrollment, or MCO Contracting) and, if PCB, the pathway (Education & Training or Experienced). The same prerequisite checks as the admin workflow apply: PCB must be complete before NPPES Setup can start, an NPI must be on file before Stage 2, and so on.
+- **Expand a service** — click any service row to load its task list. Tasks are fetched on demand (lazy-loaded) to keep the page fast.
+- **Mark tasks complete** — each task has a checkbox. Clicking it toggles between `complete` and `not_started`. The same validation rules apply as in the admin panel (e.g. training hours must be ≥ 24 before the `pcb_training_hours` task can be marked complete).
+- **Save notes** — each incomplete task has a notes field and a Save button for tracking per-task context (surrogate dates, submission confirmations, etc.).
+
+All enrollment actions are scoped to the billing admin's own agency — they cannot view or modify services belonging to providers in a different agency. The platform admin must enable the Enrollment Tier on the agency's billing provider record before this panel appears (see [Enrollment Tier](#enrollment-tier-add-on)).
+
 #### Weekly Compliance Summary Email
 
 Every Monday morning, each billing admin with an active agency receives an automated compliance digest for their roster. The email subject is "Weekly Compliance Summary — Week of [date]" and lists all actionable items sorted by urgency:
