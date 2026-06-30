@@ -341,7 +341,7 @@ Eleven tasks are auto-generated, in order:
 1. Click **+ New Enrollment Service** → select "Enrollment — Stage 2".
 2. Select the provider. Click **Create Service**.
 
-Six tasks are auto-generated:
+Eight tasks are auto-generated:
 
 | Task | What it collects |
 |---|---|
@@ -350,7 +350,22 @@ Six tasks are auto-generated:
 | Liability Insurance Face Sheet | Declarations page showing coverage limits and dates |
 | PROMISe™ Type 13 Application | Medicaid provider enrollment — ATN from DHS portal |
 | PROMISe™ Type 130 Application | CHIP provider enrollment — separate ATN |
-| CAQH ProView Enrollment | Screenshot of attested CAQH profile; record CAQH ID in notes |
+| Request Practice Manager Access in CAQH | Submit access request by provider NPI in CAQH Practice Manager |
+| Provider Authorizes DoulaShield in CAQH | Provider logs into CAQH and checks DoulaShield in their Authorizations tab |
+| Complete CAQH Profile & Provider Attests | Admin fills 12-section profile; provider clicks Attest; record CAQH ID + attestation date |
+
+**CAQH Practice Manager — one-time agency setup (do once before any Stage 2 services):**
+
+Before you can add providers in CAQH, DoulaShield must have an active Practice Manager account:
+1. Go to proview.caqh.org and register an organization account using DoulaShield's agency NPI and EIN.
+2. Under organization settings, register DoulaShield as the employer/business entity.
+3. Submit the IRS CP575 (EIN confirmation letter) to CAQH if requested to verify the business entity.
+
+This account is shared — one login manages all providers. Store the credentials in the admin password manager.
+
+**CAQH per-provider workflow:**
+
+The three CAQH tasks must be completed in order. The authorization step (task 2) is the key blocker — without it, searching for the provider by NPI returns no results in Practice Manager. Use the **Start doxy.me Screen-Share** button on the authorization task to schedule a 2-minute call and walk the provider through it. Once the provider authorizes, admin fills the 12-section profile (task 3). Admin edits are saved as "Suggested Import" and are not live until the provider logs in and clicks **Attest**. Attestation expires every 120 days; CAQH emails the provider a reminder before expiry.
 
 **Completing Stage 2:** Click **Mark Enrollment Complete** when all tasks are done. Enter:
 - PROMISe™ enrollment date (required)
@@ -596,7 +611,7 @@ Shows the full provider roster for the billing admin's agency with enrollment pr
 |---|---|---|
 | PCB Certification | 2 years | < 180 days |
 | PROMISe™ Enrollment | 5 years | < 365 days |
-| CAQH Attestation | 90 days | < 60 days |
+| CAQH Attestation | 120 days | < 60 days |
 | Liability Insurance | per policy | < 90 days |
 
 Days remaining is color-coded: green (plenty of time), amber (approaching), red (expired or overdue).

@@ -966,6 +966,56 @@ async def send_billing_subscription_started(
     )
 
 
+async def send_caqh_screenshare_invite(
+    to_email: str, provider_name: str, doxy_me_url: str
+) -> None:
+    """Sends a doxy.me screen-share invitation to a provider for the CAQH ProView authorization step."""
+    if not _configured():
+        raise RuntimeError("Email not configured — set RESEND_API_KEY")
+    resend.api_key = settings.RESEND_API_KEY
+
+    await asyncio.to_thread(
+        resend.Emails.send,
+        {
+            "from": settings.EMAIL_FROM,
+            "to": [to_email],
+            "subject": "DoulaShield — CAQH Authorization Assistance",
+            "html": f"""
+<!DOCTYPE html>
+<html>
+<body style="font-family: sans-serif; color: #1a1a1a; max-width: 480px; margin: 0 auto; padding: 24px;">
+  <p style="font-size: 16px;">Hi {provider_name},</p>
+  <p>Your DoulaShield credentialing specialist is ready for a quick screen-share session to help you
+  authorize DoulaShield in your <strong>CAQH ProView account</strong>.</p>
+  <p>During this call, you will:</p>
+  <ul style="padding-left:20px;line-height:1.8;font-size:14px;color:#374151;">
+    <li>Log into your CAQH ProView account at <strong>proview.caqh.org</strong></li>
+    <li>Click the <strong>Authorize</strong> or <strong>Authorizations</strong> tab</li>
+    <li>Check the box next to <strong>DoulaShield</strong> and click <strong>Authorize</strong></li>
+  </ul>
+  <p style="font-size:14px;color:#374151;">
+    This one-time authorization lets DoulaShield fill in your credentialing profile on your behalf.
+    The whole process takes about 2 minutes.
+  </p>
+  <p style="margin: 28px 0;">
+    <a href="{doxy_me_url}"
+       style="background:#2563eb;color:#fff;padding:12px 24px;border-radius:6px;
+              text-decoration:none;font-weight:600;font-size:15px;">
+      Join Screen-Share &rarr;
+    </a>
+  </p>
+  <p style="color:#6b7280;font-size:13px;">
+    Click the button above to join the video session. Your specialist will guide you through each step.
+  </p>
+  <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
+  <p style="color:#9ca3af;font-size:12px;">The DoulaShield Team</p>
+</body>
+</html>
+""",
+        },
+    )
+
+
 async def send_screenshare_invite(
     to_email: str, provider_name: str, doxy_me_url: str
 ) -> None:

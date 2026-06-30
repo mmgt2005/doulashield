@@ -12,6 +12,16 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.50.3] — 2026-06-30
+
+### Changed
+- **CAQH enrollment redesigned — 3-task Practice Manager workflow**: The single `caqh_pv_enrollment` task has been replaced with three tasks reflecting the actual CAQH DataSpring/Practice Manager workflow: (1) **Request Practice Manager Access** — admin searches provider by NPI and submits an access request; (2) **Provider Authorizes DoulaShield** — provider logs into their CAQH account and approves DoulaShield under the Authorizations tab; (3) **Complete CAQH Profile & Provider Attests** — admin fills the 12-section profile via Practice Manager and provider attests. New Stage 2 services will have 8 tasks (was 6).
+- **CAQH authorization task has a doxy.me screen-share button**: The "Provider Authorizes DoulaShield in CAQH" task card now shows a **Start doxy.me Screen-Share** button (same pattern as the NPPES I&A task). Clicking it sends the provider a CAQH-specific invitation email explaining the authorization steps and opens doxy.me for the admin.
+- **CAQH attestation expiry corrected to 120 days**: The billing admin roster credential chip was calculating CAQH expiry at 90 days; corrected to 120 days (the actual CAQH attestation cycle). Providers will no longer show premature credential warnings.
+- **Admin Guide updated**: Stage 2 section now reflects 8 tasks, documents the one-time CAQH Practice Manager agency setup steps, and explains the per-provider CAQH workflow including the authorization blocker. Credential monitoring table updated to show 120 days for CAQH Attestation.
+
+---
+
 ## [1.50.2] — 2026-06-30
 
 ### Changed

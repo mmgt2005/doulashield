@@ -1223,7 +1223,7 @@ export default function EnrollmentServicesPage() {
                                       </button>
                                     )}
 
-                                    {task.task_key === 'nppes_ia_account' && task.status !== 'complete' && (
+                                    {(task.task_key === 'nppes_ia_account' || task.task_key === 'caqh_provider_authorization') && task.status !== 'complete' && (
                                       <button
                                         onClick={() => startScreenShare(task.id, detail.provider_name)}
                                         disabled={screenshareLoading === task.id}

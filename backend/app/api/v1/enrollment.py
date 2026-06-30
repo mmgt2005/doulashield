@@ -362,16 +362,55 @@ _STAGE2_TASKS: list[dict] = [
         "sort_order": 5,
     },
     {
-        "task_key": "caqh_pv_enrollment",
+        "task_key": "caqh_request_access",
         "required_pathway": "all",
-        "label": "CAQH ProView Enrollment",
+        "label": "Request Practice Manager Access in CAQH",
         "description": (
-            "Upload a screenshot or PDF confirming the provider's CAQH ProView profile is complete "
-            "and attested. Record the CAQH ID in the notes field below. "
-            "All MCOs require an active, attested CAQH ProView profile before processing credentialing. "
-            "Attestation must be renewed every 120 days."
+            "Sign in to DoulaShield's CAQH Practice Manager account at proview.caqh.org "
+            "(see Admin Guide for one-time agency setup steps — this is a single shared account that "
+            "manages all providers). Under the Providers tab, click 'Add Provider' and search by the "
+            "provider's NPI. Submit the access request. CAQH will notify the provider by email. "
+            "Note: the provider must already have an active CAQH ProView profile; if they are not yet "
+            "in the system, they must create an account at proview.caqh.org before you can add them. "
+            "Record the request date in the notes field below."
         ),
         "sort_order": 6,
+    },
+    {
+        "task_key": "caqh_provider_authorization",
+        "required_pathway": "all",
+        "label": "Provider Authorizes DoulaShield in CAQH",
+        "description": (
+            "The provider must log into their own CAQH ProView account at proview.caqh.org. "
+            "Under the 'Authorize' or 'Authorizations' tab, they will see a pending request from "
+            "DoulaShield. They must check the box next to DoulaShield and click Authorize. "
+            "This step is required before the admin can view or edit the provider's profile in "
+            "Practice Manager — without authorization the search returns no results. "
+            "The provider cannot delegate this step; they must do it themselves. "
+            "Use the 'Start doxy.me Screen-Share' button to schedule a quick call and walk them through it. "
+            "Once authorized, the provider's profile becomes accessible in Practice Manager."
+        ),
+        "sort_order": 7,
+    },
+    {
+        "task_key": "caqh_profile_attested",
+        "required_pathway": "all",
+        "label": "Complete CAQH Profile & Provider Attests",
+        "description": (
+            "Once the provider has authorized access, log into CAQH Practice Manager and select the "
+            "provider. Fill in all 12 sections of their CAQH ProView profile: Personal Info, Address, "
+            "Education, Postgraduate Training, Work History, Hospital Affiliations, Malpractice "
+            "Insurance, Liability Insurance, References, Board Certifications, DEA/CDS, and Disclosure "
+            "Questions. Your edits are saved as 'Suggested Import' — they are NOT live until the "
+            "provider attests. The provider must log into their own CAQH ProView account and click "
+            "'Attest' to legally certify the data. "
+            "Attestation expires every 120 days; CAQH will email the provider a reminder before expiry. "
+            "Record the provider's CAQH ID and the attestation date in the notes field below. "
+            "Upload a screenshot of the 'Attestation Complete' confirmation. "
+            "All MCOs require an active, attested CAQH ProView profile before processing credentialing. "
+            "When the 120-day renewal cycle approaches, notify the provider to re-attest."
+        ),
+        "sort_order": 8,
     },
 ]
 
@@ -894,11 +933,18 @@ async def send_screenshare_invite(
     provider = provider_result.scalar_one_or_none()
     if not provider or not provider.email:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Provider not found")
-    await email_service.send_screenshare_invite(
-        to_email=provider.email,
-        provider_name=provider.full_name or provider.email,
-        doxy_me_url=body.doxy_me_url,
-    )
+    if task.task_key == "caqh_provider_authorization":
+        await email_service.send_caqh_screenshare_invite(
+            to_email=provider.email,
+            provider_name=provider.full_name or provider.email,
+            doxy_me_url=body.doxy_me_url,
+        )
+    else:
+        await email_service.send_screenshare_invite(
+            to_email=provider.email,
+            provider_name=provider.full_name or provider.email,
+            doxy_me_url=body.doxy_me_url,
+        )
     return {"sent": True, "to": provider.email}
 
 

@@ -1103,7 +1103,7 @@ async def list_billing_admin_providers(
             "credentials": {
                 "pcb": _expiry(u.pcb_last_certified_on, 730),
                 "promise": _expiry(u.promise_last_enrolled_on, 1825),
-                "caqh": _expiry(u.caqh_last_attested_on, 90),
+                "caqh": _expiry(u.caqh_last_attested_on, 120),
                 "liability": _direct_expiry(u.liability_insurance_expires_on),
             },
         })
