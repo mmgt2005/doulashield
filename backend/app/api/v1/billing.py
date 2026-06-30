@@ -1126,6 +1126,62 @@ async def billing_admin_invite_providers(
     return await _run_bulk_invite(bp, body.providers, current_user.id, db, request, audit)
 
 
+@router.post("/billing-admin/roster/remove-provider")
+async def billing_admin_remove_provider(
+    body: dict,
+    current_user: Annotated[CurrentUser, Depends(require_billing_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    audit: Annotated[AuditLogger, Depends(get_audit)],
+    request: Request,
+) -> dict:
+    """Remove a provider from the billing admin's own agency roster."""
+    managed_bp_id = await _get_managed_bp_id(current_user.id, db)
+    if not managed_bp_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No agency assigned to this account")
+    bp = await _get_billing_provider(managed_bp_id, db)
+
+    provider_user_id = body.get("provider_user_id")
+    if not provider_user_id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="provider_user_id required")
+    try:
+        uid = uuid.UUID(str(provider_user_id))
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid provider_user_id")
+
+    provider = await _get_provider(uid, db)
+    if provider.billing_provider_id != bp.id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Provider is not assigned to your agency")
+
+    provider.billing_provider_id = None
+    await db.commit()
+
+    seat_update: dict | None = None
+    if bp.subscription_status in ("active", "trialing"):
+        count_result = await db.execute(
+            select(func.count()).select_from(User).where(User.billing_provider_id == bp.id)
+        )
+        seat_count = count_result.scalar() or 0
+        seat_update = await stripe_service.update_billing_provider_seat_quantity(bp, seat_count, db)
+
+    await audit.log(
+        action="BILLING_ADMIN_REMOVE_PROVIDER",
+        resource_type="user",
+        resource_id=provider.id,
+        ip_address=request.headers.get("X-Forwarded-For", request.client.host if request.client else ""),
+        user_agent=request.headers.get("User-Agent", ""),
+        extra_context={
+            "billing_provider_id": str(bp.id),
+            "billing_provider_name": bp.name,
+            **({"seat_update": seat_update} if seat_update else {}),
+        },
+    )
+    return {
+        "provider_user_id": str(provider.id),
+        "removed_from_billing_provider_id": str(bp.id),
+        **({"seat_quantity": seat_update["quantity"]} if seat_update else {}),
+    }
+
+
 @router.get("/billing-admin/agency-settings", response_model=BillingProviderRead)
 async def get_agency_settings(
     current_user: Annotated[CurrentUser, Depends(require_billing_admin)],

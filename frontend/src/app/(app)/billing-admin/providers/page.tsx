@@ -194,6 +194,8 @@ export default function BillingAdminProvidersPage() {
   // Enrollment tier
   const [enrollmentTierEnabled, setEnrollmentTierEnabled] = useState(false)
   const [showGuide, setShowGuide] = useState(false)
+  const [removeConfirm, setRemoveConfirm] = useState<string | null>(null)
+  const [removeLoading, setRemoveLoading] = useState(false)
   const [allServices, setAllServices] = useState<EnrollmentService[]>([])
   const [serviceDetails, setServiceDetails] = useState<Record<string, EnrollmentServiceDetail>>({})
   const [expandedService, setExpandedService] = useState<string | null>(null)
@@ -357,6 +359,22 @@ export default function BillingAdminProvidersPage() {
       showToast(`${fileName} removed`)
     } catch {
       showToast('Failed to remove document')
+    }
+  }
+
+  const handleRemoveProvider = async (providerId: string) => {
+    setRemoveLoading(true)
+    try {
+      await axios.post(`${api}/api/v1/billing-admin/roster/remove-provider`, { provider_user_id: providerId }, { headers })
+      setProviders(prev => prev.filter(p => p.id !== providerId))
+      setExpanded(prev => { const next = new Set(prev); next.delete(providerId); return next })
+      showToast('Provider removed from roster.')
+    } catch (e: unknown) {
+      const msg = axios.isAxiosError(e) ? e.response?.data?.detail : 'Failed to remove provider'
+      showToast(typeof msg === 'string' ? msg : 'Failed to remove provider')
+    } finally {
+      setRemoveLoading(false)
+      setRemoveConfirm(null)
     }
   }
 
@@ -755,6 +773,36 @@ export default function BillingAdminProvidersPage() {
                               </div>
                             )
                         })()}
+                      </div>
+
+                      {/* Remove from roster */}
+                      <div className="pt-2 border-t border-gray-200">
+                        {removeConfirm === p.id ? (
+                          <div className="flex items-center gap-2">
+                            <p className="text-xs text-red-700 flex-1">Remove <strong>{p.full_name ?? p.email}</strong> from your agency roster? Their account will remain active but they will lose agency access.</p>
+                            <button
+                              onClick={() => handleRemoveProvider(p.id)}
+                              disabled={removeLoading}
+                              className="rounded bg-red-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50"
+                            >
+                              {removeLoading ? 'Removing…' : 'Confirm Remove'}
+                            </button>
+                            <button
+                              onClick={() => setRemoveConfirm(null)}
+                              disabled={removeLoading}
+                              className="rounded border border-gray-300 px-2.5 py-1 text-xs text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setRemoveConfirm(p.id)}
+                            className="text-xs text-red-500 hover:text-red-700 hover:underline"
+                          >
+                            Remove from roster
+                          </button>
+                        )}
                       </div>
                     </div>
                   )}

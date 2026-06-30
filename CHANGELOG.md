@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.52.1] — 2026-06-30
+
+### Added
+- **Billing admin can remove a provider from their roster**: Expanding a provider row in My Providers now shows a "Remove from roster" link at the bottom. Clicking it reveals a confirmation prompt with a description of what happens (account stays active, agency access removed). Confirming calls the new `POST /billing-admin/roster/remove-provider` endpoint, removes the provider from the list, and decrements the Stripe seat count. Account deactivation and deletion remain admin-only.
+
+---
+
 ## [1.52.0] — 2026-06-30
 
 ### Added
