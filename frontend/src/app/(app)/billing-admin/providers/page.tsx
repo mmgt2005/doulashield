@@ -226,28 +226,28 @@ export default function BillingAdminProvidersPage() {
       setProviders(providersRes.data)
       const tierEnabled = settingsRes.data.enrollment_tier_enabled ?? false
       setEnrollmentTierEnabled(tierEnabled)
-      if (tierEnabled) {
-        const svcRes = await axios.get<EnrollmentService[]>(`${api}/api/v1/billing-admin/enrollment/services`, { headers }).catch(() => ({ data: [] as EnrollmentService[] }))
-        setAllServices(svcRes.data)
-        // Pre-load task details for services assigned to this agency by DoulaShield
-        const assignedSvcs = svcRes.data.filter((s: EnrollmentService) => s.assigned_to_billing_admin)
-        if (assignedSvcs.length > 0) {
-          const detailResults = await Promise.all(
-            assignedSvcs.map((s: EnrollmentService) =>
-              axios.get<EnrollmentServiceDetail>(`${api}/api/v1/billing-admin/enrollment/services/${s.id}`, { headers }).catch(() => null)
-            )
+
+      // Always fetch enrollment services — assigned services visible without enrollment tier
+      const svcRes = await axios.get<EnrollmentService[]>(`${api}/api/v1/billing-admin/enrollment/services`, { headers }).catch(() => ({ data: [] as EnrollmentService[] }))
+      setAllServices(svcRes.data)
+      // Pre-load task details for services assigned to this agency by DoulaShield
+      const assignedSvcs = svcRes.data.filter((s: EnrollmentService) => s.assigned_to_billing_admin)
+      if (assignedSvcs.length > 0) {
+        const detailResults = await Promise.all(
+          assignedSvcs.map((s: EnrollmentService) =>
+            axios.get<EnrollmentServiceDetail>(`${api}/api/v1/billing-admin/enrollment/services/${s.id}`, { headers }).catch(() => null)
           )
-          const preloaded: Record<string, EnrollmentServiceDetail> = {}
-          const preloadedNotes: Record<string, string> = {}
-          detailResults.forEach((res, i) => {
-            if (res) {
-              preloaded[assignedSvcs[i].id] = res.data
-              res.data.tasks.forEach((t: EnrollmentTask) => { if (t.notes) preloadedNotes[t.id] = t.notes })
-            }
-          })
-          setServiceDetails(preloaded)
-          setTaskNotes(prev => ({ ...prev, ...preloadedNotes }))
-        }
+        )
+        const preloaded: Record<string, EnrollmentServiceDetail> = {}
+        const preloadedNotes: Record<string, string> = {}
+        detailResults.forEach((res, i) => {
+          if (res) {
+            preloaded[assignedSvcs[i].id] = res.data
+            res.data.tasks.forEach((t: EnrollmentTask) => { if (t.notes) preloadedNotes[t.id] = t.notes })
+          }
+        })
+        setServiceDetails(preloaded)
+        setTaskNotes(prev => ({ ...prev, ...preloadedNotes }))
       }
     } catch {
       showToast('Failed to load provider roster')
@@ -360,7 +360,7 @@ export default function BillingAdminProvidersPage() {
       next.has(id) ? next.delete(id) : next.add(id)
       return next
     })
-    if (isOpening && enrollmentTierEnabled) {
+    if (isOpening) {
       const assignedSvc = allServices.find(s => s.provider_id === id && s.assigned_to_billing_admin)
       if (assignedSvc) {
         setExpandedService(assignedSvc.id)
@@ -536,49 +536,50 @@ export default function BillingAdminProvidersPage() {
                         </p>
                       )}
 
-                      {/* Enrollment management (enrollment tier only) */}
-                      {enrollmentTierEnabled && (
-                        <div>
-                          <div className="mb-2 flex items-center justify-between">
-                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Enrollment Services</p>
+                      {/* Enrollment services — assigned services always visible; Start Service requires enrollment tier */}
+                      <div>
+                        <div className="mb-2 flex items-center justify-between">
+                          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Enrollment Services</p>
+                          {enrollmentTierEnabled && (
                             <button
                               onClick={() => { setShowStartService(showStartService === p.id ? null : p.id); setStartStage('pcb'); setStartPathway('education_training') }}
                               className="text-xs text-indigo-600 hover:underline"
                             >
                               + Start Service
                             </button>
-                          </div>
-
-                          {showStartService === p.id && (
-                            <div className="mb-3 rounded-md border border-indigo-200 bg-indigo-50 p-3 space-y-2">
-                              <p className="text-xs font-medium text-indigo-800">New Enrollment Service</p>
-                              <div className="flex gap-2 flex-wrap">
-                                <select value={startStage} onChange={e => setStartStage(e.target.value)}
-                                  className="rounded border border-gray-200 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400">
-                                  <option value="pcb">PCB Certification</option>
-                                  <option value="nppes_setup">NPPES / NPI Setup</option>
-                                  <option value="enrollment">PROMISe Enrollment</option>
-                                  <option value="mco_contracting">MCO Contracting</option>
-                                </select>
-                                {startStage === 'pcb' && (
-                                  <select value={startPathway} onChange={e => setStartPathway(e.target.value)}
-                                    className="rounded border border-gray-200 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400">
-                                    <option value="education_training">Education &amp; Training Pathway</option>
-                                    <option value="experienced">Experienced Pathway</option>
-                                  </select>
-                                )}
-                              </div>
-                              <div className="flex gap-2">
-                                <button onClick={() => startEnrollmentService(p.id)} disabled={startServiceLoading}
-                                  className="rounded bg-indigo-600 px-3 py-1 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-50">
-                                  {startServiceLoading ? 'Starting…' : 'Start'}
-                                </button>
-                                <button onClick={() => setShowStartService(null)} className="text-xs text-gray-500 hover:text-gray-700">Cancel</button>
-                              </div>
-                            </div>
                           )}
+                        </div>
 
-                          {(() => {
+                        {enrollmentTierEnabled && showStartService === p.id && (
+                          <div className="mb-3 rounded-md border border-indigo-200 bg-indigo-50 p-3 space-y-2">
+                            <p className="text-xs font-medium text-indigo-800">New Enrollment Service</p>
+                            <div className="flex gap-2 flex-wrap">
+                              <select value={startStage} onChange={e => setStartStage(e.target.value)}
+                                className="rounded border border-gray-200 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400">
+                                <option value="pcb">PCB Certification</option>
+                                <option value="nppes_setup">NPPES / NPI Setup</option>
+                                <option value="enrollment">PROMISe Enrollment</option>
+                                <option value="mco_contracting">MCO Contracting</option>
+                              </select>
+                              {startStage === 'pcb' && (
+                                <select value={startPathway} onChange={e => setStartPathway(e.target.value)}
+                                  className="rounded border border-gray-200 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400">
+                                  <option value="education_training">Education &amp; Training Pathway</option>
+                                  <option value="experienced">Experienced Pathway</option>
+                                </select>
+                              )}
+                            </div>
+                            <div className="flex gap-2">
+                              <button onClick={() => startEnrollmentService(p.id)} disabled={startServiceLoading}
+                                className="rounded bg-indigo-600 px-3 py-1 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-50">
+                                {startServiceLoading ? 'Starting…' : 'Start'}
+                              </button>
+                              <button onClick={() => setShowStartService(null)} className="text-xs text-gray-500 hover:text-gray-700">Cancel</button>
+                            </div>
+                          </div>
+                        )}
+
+                        {(() => {
                             const providerServices = allServices.filter(s => s.provider_id === p.id)
                             if (providerServices.length === 0) {
                               return <p className="text-xs text-gray-400">No enrollment services yet.</p>
@@ -680,9 +681,8 @@ export default function BillingAdminProvidersPage() {
                                 })}
                               </div>
                             )
-                          })()}
-                        </div>
-                      )}
+                        })()}
+                      </div>
                     </div>
                   )}
                 </div>

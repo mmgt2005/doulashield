@@ -22,7 +22,9 @@ from app.dependencies import (
     get_client_ip,
     get_current_user,
     get_db,
+    get_managed_billing_provider,
     get_user_agent,
+    require_billing_admin,
     require_billing_enrollment_tier,
 )
 from app.models.billing_provider import BillingProvider
@@ -79,7 +81,7 @@ async def _get_service_in_agency(
 
 @router.get("/billing-admin/enrollment/services", response_model=list[EnrollmentServiceRead])
 async def list_agency_enrollment_services(
-    bp: Annotated[BillingProvider, Depends(require_billing_enrollment_tier)],
+    bp: Annotated[BillingProvider, Depends(get_managed_billing_provider)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> list[EnrollmentServiceRead]:
     """List all enrollment services for every provider in the billing admin's agency."""
@@ -221,7 +223,7 @@ async def create_agency_enrollment_service(
 )
 async def get_agency_enrollment_service(
     service_id: uuid.UUID,
-    bp: Annotated[BillingProvider, Depends(require_billing_enrollment_tier)],
+    bp: Annotated[BillingProvider, Depends(get_managed_billing_provider)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> EnrollmentServiceDetail:
     """Fetch tasks and documents for one enrollment service (must belong to this agency)."""
@@ -254,7 +256,7 @@ async def get_agency_enrollment_service(
 async def update_agency_enrollment_task(
     task_id: uuid.UUID,
     body: EnrollmentTaskUpdate,
-    bp: Annotated[BillingProvider, Depends(require_billing_enrollment_tier)],
+    bp: Annotated[BillingProvider, Depends(get_managed_billing_provider)],
     current_user: Annotated[CurrentUser, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ) -> EnrollmentTaskRead:

@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.50.1] — 2026-06-30
+
+### Fixed
+- **Enrollment services visible without enrollment tier**: Assigned enrollment services (flagged `assigned_to_billing_admin = true` by a DoulaShield admin) are now always visible to billing admins regardless of whether the agency has the paid Enrollment Tier enabled. Previously, the entire Enrollment Services section was hidden when the tier was off, so billing admins could not see tasks the admin had assigned to them. Now: the section always renders and shows assigned services; the `+ Start Service` button and new-service form still require the Enrollment Tier. Backend `GET/billing-admin/enrollment/services`, `GET /billing-admin/enrollment/services/{id}`, and `PATCH /billing-admin/enrollment/tasks/{id}` are now gated by `get_managed_billing_provider` (billing admin identity check) rather than `require_billing_enrollment_tier`; only `POST /billing-admin/enrollment/services` (creating new services) retains the tier gate.
+
+---
+
 ## [1.50.0] — 2026-06-30
 
 ### Added
