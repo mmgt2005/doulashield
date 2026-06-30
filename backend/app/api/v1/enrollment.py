@@ -342,10 +342,40 @@ _STAGE2_TASKS: list[dict] = [
         "required_pathway": "all",
         "label": "PROMISe™ Type 13 Application (Medicaid)",
         "description": (
-            "Upload confirmation of PROMISe™ Type 13 (Medicaid) provider enrollment submission. "
-            "This can be a screenshot of the online application confirmation page or the ATN "
-            "(Application Tracking Number) email from DHS. "
-            "The provider's PCB certification number should be entered in the 'Credentials' section."
+            "Use the 'Stage & Share' method: build the entire application ahead of time, then bring "
+            "the provider in at the end for legal attestation. The provider must personally read the "
+            "state compliance terms, check the acknowledgment boxes, type their legal name as their "
+            "electronic signature, and click Submit — you cannot legally click Submit on their behalf "
+            "for an initial enrollment.\n\n"
+            "Prerequisite: Confirm the provider's Type 1 NPI is active in NPPES and carries taxonomy "
+            "code 374J00000X (Doula). The PROMISe™ portal cross-checks the federal database in real "
+            "time — a missing or mismatched taxonomy will stall progress on screen one.\n\n"
+            "Step-by-step:\n"
+            "1. Navigate to provider.ipx.pa.gov. If the provider is new to the system, create an "
+            "application account. Select 'Enroll as a New Provider' to open a fresh application.\n"
+            "2. Select Provider Type 13 (Non-Traditional Provider) from the primary dropdown, then "
+            "assign Specialty Code 130 (Certified Doula) directly below it.\n"
+            "3. Enter the provider's SSN or EIN exactly as it appears on their IRS documentation. "
+            "For the primary service address, look up the exact ZIP+4 code at usps.com/zip4 before "
+            "entering it — the 9-digit code ensures the state-assigned 4-digit Service Location Code "
+            "(0001) aligns correctly with future MCO claims.\n"
+            "4. On the credentials page, enter the PCB Certified Perinatal Doula (CPD) certificate "
+            "number and the exact date of issuance. Upload a high-resolution PDF scan of the "
+            "certificate. The name on the PCB certificate must match the NPI registration exactly.\n"
+            "5. On the 'Legal Billing Entity' screen, enter the name exactly as it appears on Line 1 "
+            "of the provider's W-9. A mismatch with the IRS automated match routine forces a manual "
+            "review and adds weeks to processing time.\n"
+            "6. If the provider has any employment gaps of 30 days or more in the past 5 years, "
+            "paste a one-sentence explanation into the system notes field before advancing — "
+            "unexplained gaps generate a 'Request for Information' kickback from DHS.\n"
+            "7. Advance to the final legal attestation page and bring the provider onto a screen-share "
+            "session. Have them read the compliance terms, check the boxes, type their legal name, "
+            "and click Submit.\n"
+            "8. The moment Submit is clicked, copy the Application Tracking Number (ATN) that appears "
+            "on screen into the notes field below. This is your only token for checking status via the "
+            "public portal without calling the DHS provider helpline. Processing takes roughly "
+            "30–60 days.\n\n"
+            "Upload a screenshot of the ATN confirmation page as your document for this task."
         ),
         "sort_order": 4,
     },
@@ -354,10 +384,17 @@ _STAGE2_TASKS: list[dict] = [
         "required_pathway": "all",
         "label": "PROMISe™ Type 130 Application (CHIP)",
         "description": (
-            "Upload confirmation of PROMISe™ Type 130 (CHIP) provider enrollment submission. "
-            "Separate application from Type 13. Required to bill CHIP MCOs (Keystone First CHIP, "
-            "UPMC for You CHIP, etc.). Process is the same as Type 13 but select Type 130 in the "
-            "PROMISe™ portal."
+            "Required to bill CHIP MCOs (Keystone First CHIP, UPMC for You CHIP, etc.). "
+            "This is a separate application from Type 13 — complete Type 13 first.\n\n"
+            "Follow the same Stage & Share process as Type 13: build the application in advance, "
+            "then bring the provider in for live attestation and submit. The provider must personally "
+            "sign and submit; you cannot do it on their behalf.\n\n"
+            "At provider.ipx.pa.gov, select 'Enroll as a New Provider' again for a fresh application "
+            "instance. All classification, demographic, credential, and W-9 name entries follow "
+            "the same steps as Type 13 — the only difference is selecting Provider Type 130 (CHIP) "
+            "instead of Type 13 in the primary dropdown.\n\n"
+            "Record the Type 130 ATN in the notes field below and upload a screenshot of the "
+            "ATN confirmation page. Processing also takes 30–60 days."
         ),
         "sort_order": 5,
     },

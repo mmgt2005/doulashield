@@ -348,11 +348,29 @@ Eight tasks are auto-generated:
 | W-9 Form | IRS W-9 with provider's legal name and TIN |
 | Government-Issued Photo ID | Driver's license, state ID, or passport (front + back) |
 | Liability Insurance Face Sheet | Declarations page showing coverage limits and dates |
-| PROMISe™ Type 13 Application | Medicaid provider enrollment — ATN from DHS portal |
-| PROMISe™ Type 130 Application | CHIP provider enrollment — separate ATN |
+| PROMISe™ Type 13 Application | Medicaid provider enrollment — ATN from DHS portal; provider must personally attest and submit |
+| PROMISe™ Type 130 Application | CHIP provider enrollment — same process, separate ATN |
 | Request Practice Manager Access in CAQH | Submit access request by provider NPI in CAQH Practice Manager |
 | Provider Authorizes DoulaShield in CAQH | Provider logs into CAQH and checks DoulaShield in their Authorizations tab |
 | Complete CAQH Profile & Provider Attests | Admin fills 12-section profile; provider clicks Attest; record CAQH ID + attestation date |
+
+**PROMISe™ — Stage & Share method:**
+
+You cannot legally click Submit on an initial state enrollment on behalf of a provider. The correct approach is to build the entire application ahead of time, then bring the provider in at the very end for legal attestation.
+
+Key rules before opening the portal:
+- Confirm the provider's NPI is active in NPPES and carries taxonomy code **374J00000X** (Doula). PROMISe™ cross-checks the federal registry in real time — a missing taxonomy stalls progress on screen one.
+- Gather the ZIP+4 of the service address from usps.com/zip4 before starting. The 9-digit code locks the state-assigned Service Location Code (0001) so it matches future MCO claims.
+
+At **provider.ipx.pa.gov**: select "Enroll as a New Provider" → Provider Type 13 (Non-Traditional Provider) → Specialty Code 130 (Certified Doula). Enter SSN or EIN exactly as it appears on the IRS W-9. On the credentials page, enter the PCB certificate number and exact issuance date, and upload the certificate PDF.
+
+Two common kickback causes to avoid:
+- **W-9 name mismatch**: the "Legal Billing Entity" field must match Line 1 of the W-9 exactly. Any discrepancy fails the automated IRS match and forces a manual review adding weeks to processing.
+- **Employment gaps**: any gap of 30+ days in the past 5 years requires a one-sentence explanation typed into the system notes before advancing — unexplained gaps generate a Request for Information from DHS.
+
+When the application is complete, bring the provider onto a screen-share. They read the compliance terms, check the boxes, type their legal name, and click Submit. **Copy the ATN (Application Tracking Number) that flashes on screen immediately** — it is the only way to check status via the public portal without calling the DHS helpline. Record the ATN in the task notes field and upload a screenshot of the confirmation page. Processing takes 30–60 days.
+
+Type 130 (CHIP) follows the identical process — run it as a separate application selecting Type 130 in the primary dropdown.
 
 **CAQH Practice Manager — one-time agency setup (do once before any Stage 2 services):**
 

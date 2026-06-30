@@ -12,6 +12,14 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.50.4] — 2026-06-30
+
+### Changed
+- **PROMISe™ task descriptions rewritten with Stage & Share workflow**: Both `promise_type13` and `promise_type130` task descriptions now document the complete operational process: NPI taxonomy prerequisite (374J00000X must be active in NPPES before starting), portal URL (provider.ipx.pa.gov), Type 13/Specialty 130 classification, ZIP+4 lookup for service location code accuracy, PCB credential entry requirements, W-9 legal entity name matching rule, employment gap explanation requirement, and the critical legal constraint that the provider must personally attest and click Submit. Admin builds the full application then does a live screen-share hand-off for attestation. ATN capture instructions and 30–60 day processing timeline added.
+- **Admin Guide Stage 2 PROMISe™ section expanded**: Added "Stage & Share method" subsection covering all key rules, common kickback causes (W-9 mismatch, employment gaps), and the live hand-off attestation requirement.
+
+---
+
 ## [1.50.3] — 2026-06-30
 
 ### Changed
