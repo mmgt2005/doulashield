@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.50.8] — 2026-06-30
+
+### Fixed
+- **App startup crash on Railway**: FastAPI raises an `AssertionError` at import time when a `DELETE` endpoint declares `status_code=204` alongside a `-> None` return annotation — HTTP 204 forbids a response body, but FastAPI's internal validation treats the combination as ambiguous and aborts. Fixed by adding `response_class=Response` to the decorator and removing the return annotation. This was the root cause of the healthcheck never receiving a response.
+
+---
+
 ## [1.50.7] — 2026-06-30
 
 ### Fixed
