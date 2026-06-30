@@ -248,6 +248,7 @@ export default function EnrollmentStatusPage() {
   const [sensitiveForm, setSensitiveForm] = useState<{ ssn: string; dob: string; tax_id: string }>({ ssn: '', dob: '', tax_id: '' })
   const [sensitiveFormSaving, setSensitiveFormSaving] = useState(false)
   const [sensitiveFormSaved, setSensitiveFormSaved] = useState(false)
+  const [showGuide, setShowGuide] = useState(false)
 
   const headers = { Authorization: `Bearer ${getAccessToken()}` }
   const api = process.env.NEXT_PUBLIC_API_URL
@@ -501,10 +502,20 @@ export default function EnrollmentStatusPage() {
       )}
 
       <div className="mb-6">
-        <h1 className="text-xl font-semibold text-gray-900">My Credentialing Status</h1>
-        <p className="mt-0.5 text-sm text-gray-500">
-          Track your credentialing progress and upload required documents for each stage.
-        </p>
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-xl font-semibold text-gray-900">My Credentialing Status</h1>
+            <p className="mt-0.5 text-sm text-gray-500">
+              Track your credentialing progress and upload required documents for each stage.
+            </p>
+          </div>
+          <button
+            onClick={() => setShowGuide(true)}
+            className="rounded border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 flex-shrink-0 ml-4"
+          >
+            How It Works
+          </button>
+        </div>
         {agreementSignedAt && (
           <p className="mt-1.5 text-xs text-green-700">
             Authorization agreement signed{' '}
@@ -846,6 +857,101 @@ export default function EnrollmentStatusPage() {
             </div>
           )}
         </>
+      )}
+
+      {/* How It Works guide */}
+      {showGuide && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => setShowGuide(false)}
+        >
+          <div
+            className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[92vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-start justify-between rounded-t-xl z-10">
+              <div>
+                <h2 className="text-base font-semibold text-gray-900">My Credentialing Status — How It Works</h2>
+                <p className="text-xs text-gray-500 mt-0.5">A step-by-step guide to your four-stage credentialing and enrollment pipeline.</p>
+              </div>
+              <button onClick={() => setShowGuide(false)} className="text-gray-400 hover:text-gray-600 text-xl leading-none ml-6 mt-0.5">×</button>
+            </div>
+            <div className="px-6 py-5 space-y-6">
+              <div className="rounded-lg border border-amber-100 bg-amber-50 p-4">
+                <h3 className="text-sm font-semibold text-amber-800 mb-2">Step 0 — Authorization Agreement</h3>
+                <ul className="space-y-1 text-xs text-amber-700 list-disc list-inside">
+                  <li>Before enrollment begins, you must read and electronically sign the DoulaShield authorization agreement</li>
+                  <li>This allows DoulaShield to act as your administrative delegate with CMS, CAQH, MCOs, and insurance carriers</li>
+                  <li>You can revoke authorization at any time by contacting DoulaShield — this will pause all credentialing activity</li>
+                </ul>
+              </div>
+              <div className="rounded-lg border border-blue-100 bg-blue-50 p-4">
+                <h3 className="text-sm font-semibold text-blue-800 mb-2">Four-Stage Pipeline</h3>
+                <div className="flex flex-wrap items-center gap-2 mb-3">
+                  {[
+                    { label: 'PCB Certification', color: 'bg-gray-100 text-gray-700 border-gray-300' },
+                    { label: 'NPPES / NPI Setup', color: 'bg-indigo-100 text-indigo-700 border-indigo-300' },
+                    { label: 'Enrollment — Stage 2', color: 'bg-blue-100 text-blue-700 border-blue-300' },
+                    { label: 'MCO Contracting', color: 'bg-purple-100 text-purple-700 border-purple-300' },
+                  ].map((s, i, arr) => (
+                    <span key={s.label} className="flex items-center gap-2">
+                      <span className={`rounded border px-2 py-0.5 text-xs font-medium ${s.color}`}>{s.label}</span>
+                      {i < arr.length - 1 && <span className="text-blue-400">→</span>}
+                    </span>
+                  ))}
+                </div>
+                <p className="text-xs text-blue-700">Stages must complete in order. Each stage is set up and managed by DoulaShield or your billing admin — grayed-out tabs mean that stage hasn't been started for you yet.</p>
+              </div>
+              <div className="rounded-lg border border-green-100 bg-green-50 p-4">
+                <h3 className="text-sm font-semibold text-green-800 mb-2">Task Status Indicators</h3>
+                <div className="flex gap-4 text-xs text-green-700 mb-2">
+                  <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-gray-300 inline-block"></span> Not Started</span>
+                  <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-yellow-400 inline-block"></span> In Progress</span>
+                  <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-green-500 inline-block"></span> Complete</span>
+                </div>
+                <p className="text-xs text-green-700">DoulaShield or your billing admin marks tasks complete as credentials are processed — you do not mark them yourself. Your role is to upload documents and provide information.</p>
+              </div>
+              <div className="rounded-lg border border-gray-100 bg-gray-50 p-4">
+                <h3 className="text-sm font-semibold text-gray-800 mb-2">Uploading Documents</h3>
+                <ul className="space-y-1 text-xs text-gray-700 list-disc list-inside">
+                  <li>Each task has an <strong>Upload Document</strong> button — click to attach a PDF or image file</li>
+                  <li>Accepted formats: PDF, JPG, JPEG, PNG</li>
+                  <li>Your billing admin or DoulaShield can also upload on your behalf</li>
+                  <li>If you uploaded the wrong file, contact DoulaShield to remove it</li>
+                </ul>
+              </div>
+              <div className="rounded-lg border border-indigo-100 bg-indigo-50 p-4">
+                <h3 className="text-sm font-semibold text-indigo-800 mb-2">Secure Information Storage</h3>
+                <ul className="space-y-1 text-xs text-indigo-700 list-disc list-inside">
+                  <li>Your SSN, date of birth, and tax ID are stored encrypted and never appear in logs</li>
+                  <li>Enter them once in the <strong>Secure Info</strong> section — DoulaShield uses them to complete government forms (NPPES, PROMISe™, PECOS) without asking repeatedly</li>
+                  <li>Only the last 4 digits of your SSN are displayed after saving</li>
+                </ul>
+              </div>
+              <div className="rounded-lg border border-purple-100 bg-purple-50 p-4">
+                <h3 className="text-sm font-semibold text-purple-800 mb-2">PCB Application Form</h3>
+                <ol className="space-y-1 text-xs text-purple-700 list-decimal list-inside">
+                  <li>Fill in your legal name, address, contact details, and demographic info on the first PCB task</li>
+                  <li>Click <strong>Download Pre-filled Application</strong> to get a print-ready version of pages 6–8</li>
+                  <li>You still need to sign pages 12–13 and have page 14 notarized before mailing the application to PCB</li>
+                  <li>Mail the complete packet with a $50 check payable to "PCB" to info@pacertboard.org</li>
+                </ol>
+              </div>
+              <div className="rounded-lg bg-gray-50 border border-gray-200 p-4">
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-3">Key Rules & Reminders</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-gray-700">
+                  <div><strong>Stage gates:</strong> Each stage unlocks only after the prior stage is fully complete — you cannot skip ahead.</div>
+                  <div><strong>CAQH re-attestation:</strong> Due every 120 days; DoulaShield sends you a reminder email before it expires.</div>
+                  <div><strong>PROMISe™ re-enrollment:</strong> Required every 5 years; DoulaShield tracks your enrollment date and reminds you in advance.</div>
+                  <div><strong>PCB renewal:</strong> PCB certification renews every 2 years; reminders are sent starting 60 days before expiry.</div>
+                </div>
+              </div>
+            </div>
+            <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-3 flex justify-end rounded-b-xl">
+              <button onClick={() => setShowGuide(false)} className="rounded border border-gray-300 px-4 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50">Close</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

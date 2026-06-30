@@ -86,6 +86,7 @@ export default function AdminLeadsPage() {
     provider_type: 'unknown' as LeadProviderType, notes: '',
   })
   const [addSaving, setAddSaving] = useState(false)
+  const [showGuide, setShowGuide] = useState(false)
 
   const fetchAll = async () => {
     setLoading(true)
@@ -205,12 +206,20 @@ export default function AdminLeadsPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-gray-900">Leads</h1>
-        <button
-          onClick={() => setShowAdd(true)}
-          className="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
-        >
-          + Add Lead
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowGuide(true)}
+            className="rounded border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50"
+          >
+            How It Works
+          </button>
+          <button
+            onClick={() => setShowAdd(true)}
+            className="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
+          >
+            + Add Lead
+          </button>
+        </div>
       </div>
 
       {/* Stats bar */}
@@ -598,6 +607,88 @@ export default function AdminLeadsPage() {
               >
                 Cancel
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* How It Works guide */}
+      {showGuide && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => setShowGuide(false)}
+        >
+          <div
+            className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[92vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-start justify-between rounded-t-xl z-10">
+              <div>
+                <h2 className="text-base font-semibold text-gray-900">Leads — How It Works</h2>
+                <p className="text-xs text-gray-500 mt-0.5">Track prospective providers from first contact through conversion to a DoulaShield account.</p>
+              </div>
+              <button onClick={() => setShowGuide(false)} className="text-gray-400 hover:text-gray-600 text-xl leading-none ml-6 mt-0.5">×</button>
+            </div>
+            <div className="px-6 py-5 space-y-6">
+              <div className="rounded-lg border border-blue-100 bg-blue-50 p-4">
+                <h3 className="text-sm font-semibold text-blue-800 mb-2">What Are Leads?</h3>
+                <ul className="space-y-1 text-xs text-blue-700 list-disc list-inside">
+                  <li>Prospective doula providers who have expressed interest in joining DoulaShield</li>
+                  <li>Captured automatically from webinar registrations, quiz submissions, and contact forms — or entered manually by admin staff</li>
+                  <li>Source-specific data (quiz answers, webinar topic) is stored on the lead and visible in the edit panel</li>
+                </ul>
+              </div>
+              <div className="rounded-lg border border-gray-100 bg-gray-50 p-4">
+                <h3 className="text-sm font-semibold text-gray-800 mb-2">Lead Sources</h3>
+                <div className="grid grid-cols-2 gap-2 text-xs text-gray-700">
+                  <div><span className="inline-block rounded-full bg-blue-100 px-2 py-0.5 text-blue-700 font-medium mr-1">Webinar</span> Demo or informational webinar registration</div>
+                  <div><span className="inline-block rounded-full bg-green-100 px-2 py-0.5 text-green-700 font-medium mr-1">Quiz</span> "Are you ready for Medicaid billing?" lead magnet</div>
+                  <div><span className="inline-block rounded-full bg-gray-200 px-2 py-0.5 text-gray-700 font-medium mr-1">Contact Form</span> General interest form from the marketing site</div>
+                  <div><span className="inline-block rounded-full bg-purple-100 px-2 py-0.5 text-purple-700 font-medium mr-1">Manual</span> In-person or direct outreach entered by admin</div>
+                </div>
+              </div>
+              <div className="rounded-lg border border-amber-100 bg-amber-50 p-4">
+                <h3 className="text-sm font-semibold text-amber-800 mb-2">Status Pipeline</h3>
+                <div className="flex flex-wrap items-center gap-1 text-xs text-amber-700 mb-2">
+                  {['New', 'Contacted', 'Qualified', 'Demo Scheduled', 'Converted', 'Not Interested'].map((s, i, arr) => (
+                    <span key={s} className="flex items-center gap-1">
+                      <span className="rounded bg-amber-100 border border-amber-300 px-2 py-0.5 font-medium">{s}</span>
+                      {i < arr.length - 1 && <span>→</span>}
+                    </span>
+                  ))}
+                </div>
+                <p className="text-xs text-amber-700">Update status via the edit slide-out panel. Only <strong>Qualified</strong> and <strong>Demo Scheduled</strong> leads show the Convert button.</p>
+              </div>
+              <div className="rounded-lg border border-green-100 bg-green-50 p-4">
+                <h3 className="text-sm font-semibold text-green-800 mb-2">Follow-Up & Notes</h3>
+                <ul className="space-y-1 text-xs text-green-700 list-disc list-inside">
+                  <li>Set a follow-up date in the edit panel — it shows in the table so nothing slips</li>
+                  <li>Add notes to track calls, emails, and next steps; notes are internal only</li>
+                  <li>Provider type (Independent / Agency / Unknown) helps prioritize outreach</li>
+                </ul>
+              </div>
+              <div className="rounded-lg border border-purple-100 bg-purple-50 p-4">
+                <h3 className="text-sm font-semibold text-purple-800 mb-2">Converting a Lead</h3>
+                <ol className="space-y-1 text-xs text-purple-700 list-decimal list-inside">
+                  <li>Move the lead to <strong>Qualified</strong> or <strong>Demo Scheduled</strong> status</li>
+                  <li>Click <strong>Convert → Create Account</strong> in the edit panel</li>
+                  <li>System creates a DoulaShield provider account and sends a welcome + deposit email</li>
+                  <li>Lead is marked <strong>Converted</strong> with a link to the new user record</li>
+                  <li>Cannot be undone — but the provider account can be deactivated separately if needed</li>
+                </ol>
+              </div>
+              <div className="rounded-lg bg-gray-50 border border-gray-200 p-4">
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-3">Key Rules & Reminders</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-gray-700">
+                  <div><strong>Conversion is irreversible:</strong> Once a lead is converted, the provider account exists and must be managed from the Users page.</div>
+                  <div><strong>Duplicate emails:</strong> The system prevents converting a lead whose email already exists as a DoulaShield user.</div>
+                  <div><strong>Search:</strong> The search bar matches against name, email, and organization name simultaneously.</div>
+                  <div><strong>Conversion rate:</strong> Calculated as converted leads ÷ total leads; updates in real time as statuses change.</div>
+                </div>
+              </div>
+            </div>
+            <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-3 flex justify-end rounded-b-xl">
+              <button onClick={() => setShowGuide(false)} className="rounded border border-gray-300 px-4 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50">Close</button>
             </div>
           </div>
         </div>

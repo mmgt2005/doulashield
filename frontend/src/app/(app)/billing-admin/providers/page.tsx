@@ -193,6 +193,7 @@ export default function BillingAdminProvidersPage() {
 
   // Enrollment tier
   const [enrollmentTierEnabled, setEnrollmentTierEnabled] = useState(false)
+  const [showGuide, setShowGuide] = useState(false)
   const [allServices, setAllServices] = useState<EnrollmentService[]>([])
   const [serviceDetails, setServiceDetails] = useState<Record<string, EnrollmentServiceDetail>>({})
   const [expandedService, setExpandedService] = useState<string | null>(null)
@@ -469,11 +470,19 @@ export default function BillingAdminProvidersPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-bold text-gray-900">My Providers</h1>
-        <p className="mt-0.5 text-sm text-gray-500">
-          Provider roster, enrollment progress, and credential expiry reminders.
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-gray-900">My Providers</h1>
+          <p className="mt-0.5 text-sm text-gray-500">
+            Provider roster, enrollment progress, and credential expiry reminders.
+          </p>
+        </div>
+        <button
+          onClick={() => setShowGuide(true)}
+          className="rounded border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 flex-shrink-0"
+        >
+          How It Works
+        </button>
       </div>
 
       {/* Roster table */}
@@ -926,6 +935,91 @@ export default function BillingAdminProvidersPage() {
       {toast && (
         <div className="fixed bottom-6 right-6 z-50 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-800 shadow-lg">
           {toast}
+        </div>
+      )}
+
+      {/* How It Works guide */}
+      {showGuide && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => setShowGuide(false)}
+        >
+          <div
+            className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[92vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-start justify-between rounded-t-xl z-10">
+              <div>
+                <h2 className="text-base font-semibold text-gray-900">My Providers — How It Works</h2>
+                <p className="text-xs text-gray-500 mt-0.5">Manage your agency's doula roster, credentialing tasks, and document access.</p>
+              </div>
+              <button onClick={() => setShowGuide(false)} className="text-gray-400 hover:text-gray-600 text-xl leading-none ml-6 mt-0.5">×</button>
+            </div>
+            <div className="px-6 py-5 space-y-6">
+              <div className="rounded-lg border border-blue-100 bg-blue-50 p-4">
+                <h3 className="text-sm font-semibold text-blue-800 mb-2">Your Roster</h3>
+                <ul className="space-y-1 text-xs text-blue-700 list-disc list-inside">
+                  <li>Lists all doula providers assigned to your agency</li>
+                  <li>Click any provider row to expand their credentials, enrollment progress, and tasks</li>
+                  <li>Credential chips (NPI, CAQH, PROMISe™, PCB, liability) show expiry status — amber = expiring soon, red = expired</li>
+                </ul>
+              </div>
+              <div className="rounded-lg border border-purple-100 bg-purple-50 p-4">
+                <h3 className="text-sm font-semibold text-purple-800 mb-2">Enrollment Tier</h3>
+                <ul className="space-y-1 text-xs text-purple-700 list-disc list-inside">
+                  <li>If enabled by DoulaShield admin, you can manage credentialing tasks directly from this page</li>
+                  <li>Enrollment services appear under each provider row when a stage has been started</li>
+                  <li>If the enrollment tier is not yet enabled for your agency, contact DoulaShield admin</li>
+                </ul>
+              </div>
+              <div className="rounded-lg border border-amber-100 bg-amber-50 p-4">
+                <h3 className="text-sm font-semibold text-amber-800 mb-2">Assigned by DoulaShield</h3>
+                <ul className="space-y-1 text-xs text-amber-700 list-disc list-inside">
+                  <li>When DoulaShield assigns a specific enrollment service to your agency, it is badged <strong>"Assigned by DoulaShield"</strong></li>
+                  <li>Opening that provider's row automatically expands the assigned service's task list — no extra clicks needed</li>
+                  <li>You can still manually expand other services for that provider</li>
+                </ul>
+              </div>
+              <div className="rounded-lg border border-green-100 bg-green-50 p-4">
+                <h3 className="text-sm font-semibold text-green-800 mb-2">Task Management</h3>
+                <ol className="space-y-1 text-xs text-green-700 list-decimal list-inside">
+                  <li>Expand a provider row, then click the enrollment service to see its tasks</li>
+                  <li>Check the checkbox on each task to mark it complete (or uncheck to revert)</li>
+                  <li>Add notes to any task — ATN numbers, CAQH IDs, submission dates, confirmation codes</li>
+                  <li>Click <strong>Save</strong> next to the notes field; notes are visible to DoulaShield admin</li>
+                </ol>
+              </div>
+              <div className="rounded-lg border border-gray-100 bg-gray-50 p-4">
+                <h3 className="text-sm font-semibold text-gray-800 mb-2">Document Access</h3>
+                <ul className="space-y-1 text-xs text-gray-700 list-disc list-inside">
+                  <li>Documents uploaded by the provider appear as clickable download links on each task card</li>
+                  <li>Click the file name to download — useful for re-uploading into CMS, CAQH, or PROMISe™ portals</li>
+                  <li>Click <strong>Remove</strong> to delete a wrongly uploaded file (confirmation required, action is permanent)</li>
+                </ul>
+              </div>
+              <div className="rounded-lg border border-teal-100 bg-teal-50 p-4">
+                <h3 className="text-sm font-semibold text-teal-800 mb-2">Inviting New Providers & Billing</h3>
+                <ul className="space-y-1 text-xs text-teal-700 list-disc list-inside">
+                  <li>Use <strong>Invite New Providers</strong> at the bottom of the page to add providers manually or via CSV upload</li>
+                  <li>New providers receive a welcome email and deposit link automatically</li>
+                  <li>Seat count in your Stripe subscription updates automatically as providers are added or removed</li>
+                  <li>Minimum 3 seats are always billed regardless of current roster size</li>
+                </ul>
+              </div>
+              <div className="rounded-lg bg-gray-50 border border-gray-200 p-4">
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-3">Key Rules & Reminders</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-gray-700">
+                  <div><strong>Task completion:</strong> Only your agency and DoulaShield admin can mark tasks complete — providers cannot mark their own tasks.</div>
+                  <div><strong>Document removal is permanent:</strong> Removed files are deleted from storage and cannot be recovered — the provider must re-upload.</div>
+                  <div><strong>Credential expiry:</strong> CAQH re-attestation is due every 120 days; PROMISe™ re-enrollment every 5 years — reminders are sent by DoulaShield automatically.</div>
+                  <div><strong>CSV import:</strong> The CSV Upload tab in the invite form pre-populates each provider's NPI, billing provider name, and MCO contracts on first login.</div>
+                </div>
+              </div>
+            </div>
+            <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-3 flex justify-end rounded-b-xl">
+              <button onClick={() => setShowGuide(false)} className="rounded border border-gray-300 px-4 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50">Close</button>
+            </div>
+          </div>
         </div>
       )}
     </div>

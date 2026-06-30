@@ -121,6 +121,7 @@ export default function BillingProvidersPage() {
   const [complianceStep, setComplianceStep] = useState<'preview' | 'done'>('preview')
   const [compliancePreview, setCompliancePreview] = useState<{ sent: number; skipped: number; total_admins: number } | null>(null)
   const [complianceSending, setComplianceSending] = useState(false)
+  const [showGuide, setShowGuide] = useState(false)
 
   const openComplianceModal = async () => {
     setComplianceModal(true)
@@ -367,6 +368,12 @@ export default function BillingProvidersPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-gray-900">Billing Providers</h1>
         <div className="flex gap-2">
+          <button
+            onClick={() => setShowGuide(true)}
+            className="rounded border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50"
+          >
+            How It Works
+          </button>
           <button
             onClick={openComplianceModal}
             className="rounded border border-teal-300 bg-teal-50 px-3 py-1.5 text-sm font-medium text-teal-700 hover:bg-teal-100"
@@ -939,6 +946,101 @@ export default function BillingProvidersPage() {
       {toast && (
         <div className="fixed bottom-6 right-6 z-50 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-800 shadow-lg">
           {toast}
+        </div>
+      )}
+
+      {/* How It Works guide */}
+      {showGuide && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => setShowGuide(false)}
+        >
+          <div
+            className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[92vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-start justify-between rounded-t-xl z-10">
+              <div>
+                <h2 className="text-base font-semibold text-gray-900">Billing Providers — How It Works</h2>
+                <p className="text-xs text-gray-500 mt-0.5">Manage agencies, subscriptions, enrollment tiers, and their provider rosters.</p>
+              </div>
+              <button onClick={() => setShowGuide(false)} className="text-gray-400 hover:text-gray-600 text-xl leading-none ml-6 mt-0.5">×</button>
+            </div>
+            <div className="px-6 py-5 space-y-6">
+              {/* Section 1 */}
+              <div className="rounded-lg border border-indigo-100 bg-indigo-50 p-4">
+                <h3 className="text-sm font-semibold text-indigo-800 mb-2">What Are Billing Providers?</h3>
+                <ul className="space-y-1 text-xs text-indigo-700 list-disc list-inside">
+                  <li>Agencies or organizations that manage a roster of doula providers and bill insurance on their behalf</li>
+                  <li>Each agency has its own billing admin login — they see only their own providers and claims</li>
+                  <li>DoulaShield admin creates the agency profile; the billing admin manages day-to-day operations</li>
+                </ul>
+              </div>
+              {/* Section 2 */}
+              <div className="rounded-lg border border-blue-100 bg-blue-50 p-4">
+                <h3 className="text-sm font-semibold text-blue-800 mb-2">Subscription Model</h3>
+                <ul className="space-y-1 text-xs text-blue-700 list-disc list-inside">
+                  <li>$55 / seat / month with a 3-seat minimum ($165/month base)</li>
+                  <li>Seat count scales automatically in Stripe as providers are assigned or removed</li>
+                  <li>Use <strong>Start Subscription</strong> after creating an agency; use <strong>Remove Provider</strong> to trigger a seat decrease</li>
+                  <li>Stripe applies prorated credits when seats decrease mid-cycle</li>
+                </ul>
+              </div>
+              {/* Section 3 */}
+              <div className="rounded-lg border border-amber-100 bg-amber-50 p-4">
+                <h3 className="text-sm font-semibold text-amber-800 mb-2">Enrollment Tier Add-On</h3>
+                <ul className="space-y-1 text-xs text-amber-700 list-disc list-inside">
+                  <li>Optional per-agency add-on that gives the billing admin access to the credentialing task workflow</li>
+                  <li>Requires an active or trialing subscription before it can be enabled</li>
+                  <li>Use <strong>Enable Enroll Tier</strong> / <strong>Disable Enroll Tier</strong> buttons on the agency row</li>
+                  <li>Adds a second Stripe line item (same quantity as seats) — billed at the enrollment tier price</li>
+                </ul>
+              </div>
+              {/* Section 4 */}
+              <div className="rounded-lg border border-green-100 bg-green-50 p-4">
+                <h3 className="text-sm font-semibold text-green-800 mb-2">Adding & Assigning Providers</h3>
+                <ol className="space-y-1 text-xs text-green-700 list-decimal list-inside">
+                  <li>Create the billing provider agency profile with <strong>+ Add Billing Provider</strong></li>
+                  <li>Start a subscription on the agency</li>
+                  <li>Click <strong>Assign Provider</strong> to link an existing DoulaShield user to the agency</li>
+                  <li>Or use <strong>Invite Providers</strong> to create new accounts and link them in one step</li>
+                  <li>Each assignment increments the Stripe seat count automatically</li>
+                </ol>
+              </div>
+              {/* Section 5 */}
+              <div className="rounded-lg border border-gray-100 bg-gray-50 p-4">
+                <h3 className="text-sm font-semibold text-gray-800 mb-2">CSV Bulk Import</h3>
+                <ul className="space-y-1 text-xs text-gray-700 list-disc list-inside">
+                  <li>Upload a CSV in the Invite Providers modal to onboard multiple providers at once</li>
+                  <li>Required columns: <code className="bg-gray-200 px-1 rounded">name</code>, <code className="bg-gray-200 px-1 rounded">email</code> — optional: <code className="bg-gray-200 px-1 rounded">npi</code>, <code className="bg-gray-200 px-1 rounded">doula_type</code>, <code className="bg-gray-200 px-1 rounded">billing_provider_name</code>, <code className="bg-gray-200 px-1 rounded">mco_1…mco_9</code> + date columns</li>
+                  <li>Pre-populates the provider's Settings page (NPI, MCO contracts) on first login</li>
+                  <li>Duplicate emails are skipped, not duplicated</li>
+                </ul>
+              </div>
+              {/* Section 6 */}
+              <div className="rounded-lg border border-teal-100 bg-teal-50 p-4">
+                <h3 className="text-sm font-semibold text-teal-800 mb-2">Claims & Compliance</h3>
+                <ul className="space-y-1 text-xs text-teal-700 list-disc list-inside">
+                  <li><strong>View Claims</strong> on any agency row opens the billing admin claims view filtered to that agency</li>
+                  <li>Summary cards show total billed and paid amounts per agency</li>
+                  <li><strong>Send Weekly Compliance Email</strong> delivers credential expiry warnings and enrollment action items to every billing admin — preview before sending</li>
+                </ul>
+              </div>
+              {/* Key rules */}
+              <div className="rounded-lg bg-gray-50 border border-gray-200 p-4">
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-3">Key Rules & Reminders</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-gray-700">
+                  <div><strong>Minimum 3 seats:</strong> Stripe quantity never drops below 3 regardless of how few providers are assigned.</div>
+                  <div><strong>Subscription required first:</strong> Enrollment tier cannot be enabled until the subscription is active or trialing.</div>
+                  <div><strong>Billing admin login:</strong> The agency's billing admin logs in at the same URL — their role restricts them to their own data.</div>
+                  <div><strong>Remove provider:</strong> Unassigning a provider decrements seats; the provider account is not deleted.</div>
+                </div>
+              </div>
+            </div>
+            <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-3 flex justify-end rounded-b-xl">
+              <button onClick={() => setShowGuide(false)} className="rounded border border-gray-300 px-4 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50">Close</button>
+            </div>
+          </div>
         </div>
       )}
     </div>

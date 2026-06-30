@@ -112,6 +112,7 @@ export default function BillingAdminClaimsPage() {
   const [manualFormDenial, setManualFormDenial] = useState('')
   const [manualFormNotes, setManualFormNotes] = useState('')
   const [manualSaving, setManualSaving] = useState(false)
+  const [showGuide, setShowGuide] = useState(false)
   const [reviewData, setReviewData] = useState<Record<string, ClaimReviewDetail | null>>({})
   const [reviewLoading, setReviewLoading] = useState<Record<string, boolean>>({})
   const [docUploading, setDocUploading] = useState<Record<string, boolean>>({})
@@ -317,11 +318,19 @@ export default function BillingAdminClaimsPage() {
             </p>
           )}
         </div>
-        {pendingReviewCount > 0 && (
-          <span className="rounded-full bg-orange-100 px-3 py-1 text-xs font-semibold text-orange-700">
-            {pendingReviewCount} pending review
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowGuide(true)}
+            className="rounded border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50"
+          >
+            How It Works
+          </button>
+          {pendingReviewCount > 0 && (
+            <span className="rounded-full bg-orange-100 px-3 py-1 text-xs font-semibold text-orange-700">
+              {pendingReviewCount} pending review
+            </span>
+          )}
+        </div>
       </div>
 
       {submitError && (
@@ -708,6 +717,103 @@ export default function BillingAdminClaimsPage() {
               })}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* How It Works guide */}
+      {showGuide && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => setShowGuide(false)}
+        >
+          <div
+            className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[92vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-start justify-between rounded-t-xl z-10">
+              <div>
+                <h2 className="text-base font-semibold text-gray-900">Agency Claims — How It Works</h2>
+                <p className="text-xs text-gray-500 mt-0.5">Review, submit, and track insurance claims on behalf of your agency's providers.</p>
+              </div>
+              <button onClick={() => setShowGuide(false)} className="text-gray-400 hover:text-gray-600 text-xl leading-none ml-6 mt-0.5">×</button>
+            </div>
+            <div className="px-6 py-5 space-y-6">
+              <div className="rounded-lg border border-blue-100 bg-blue-50 p-4">
+                <h3 className="text-sm font-semibold text-blue-800 mb-2">What This Page Shows</h3>
+                <ul className="space-y-1 text-xs text-blue-700 list-disc list-inside">
+                  <li>All insurance claims submitted on behalf of your agency's providers</li>
+                  <li>Claims are created automatically when providers complete and submit a visit in DoulaShield</li>
+                  <li>Use the provider and status filters to narrow the list; click any row to expand details</li>
+                </ul>
+              </div>
+              <div className="rounded-lg border border-amber-100 bg-amber-50 p-4">
+                <h3 className="text-sm font-semibold text-amber-800 mb-2">Claim Status Flow</h3>
+                <div className="flex flex-wrap items-center gap-1 text-xs text-amber-800 mb-2">
+                  {[
+                    { label: 'Pending Review', color: 'bg-orange-100 text-orange-700 border-orange-300' },
+                    { label: 'Submitted', color: 'bg-amber-100 text-amber-700 border-amber-300' },
+                    { label: 'Processing', color: 'bg-blue-100 text-blue-700 border-blue-300' },
+                    { label: 'Paid', color: 'bg-green-100 text-green-700 border-green-300' },
+                    { label: 'Denied', color: 'bg-red-100 text-red-700 border-red-300' },
+                  ].map((s, i, arr) => (
+                    <span key={s.label} className="flex items-center gap-1">
+                      <span className={`rounded border px-2 py-0.5 font-medium text-xs ${s.color}`}>{s.label}</span>
+                      {i < arr.length - 1 && i !== 2 && <span className="text-amber-600">→</span>}
+                      {i === 2 && <span className="text-amber-600">→</span>}
+                    </span>
+                  ))}
+                </div>
+                <p className="text-xs text-amber-700">Paid and Denied are terminal states. Denied claims can be corrected and resubmitted (resubmit count tracks attempts).</p>
+              </div>
+              <div className="rounded-lg border border-green-100 bg-green-50 p-4">
+                <h3 className="text-sm font-semibold text-green-800 mb-2">Expanding a Claim</h3>
+                <ul className="space-y-1 text-xs text-green-700 list-disc list-inside">
+                  <li>Click any claim row to expand full billing details</li>
+                  <li>Shows: procedure code, diagnosis code, billed/paid amounts, resubmit count, Availity tracking ID</li>
+                  <li>Visit notes (SOAP format: Subjective, Objective, Assessment, Plan) are pulled from the provider's visit record</li>
+                  <li>MA 91 signature status and prior authorization info appear when applicable</li>
+                </ul>
+              </div>
+              <div className="rounded-lg border border-indigo-100 bg-indigo-50 p-4">
+                <h3 className="text-sm font-semibold text-indigo-800 mb-2">Submitting to Availity</h3>
+                <ol className="space-y-1 text-xs text-indigo-700 list-decimal list-inside">
+                  <li>Claims arrive in <strong>Pending Review</strong> — verify billing codes and visit notes are correct</li>
+                  <li>Click <strong>Submit to Availity</strong> to post the claim electronically</li>
+                  <li>The system records the Availity tracking ID automatically</li>
+                  <li>Status moves to <strong>Submitted</strong> then advances as the carrier responds</li>
+                </ol>
+              </div>
+              <div className="rounded-lg border border-gray-100 bg-gray-50 p-4">
+                <h3 className="text-sm font-semibold text-gray-800 mb-2">Logging Manual Status</h3>
+                <ul className="space-y-1 text-xs text-gray-700 list-disc list-inside">
+                  <li>If Availity isn't syncing, use the <strong>Log Claim Status</strong> form in the expanded row</li>
+                  <li>Mark <strong>Paid</strong> and enter the reimbursed amount, or mark <strong>Denied</strong> and enter the denial reason</li>
+                  <li>Manual entries update the claim record and provider's remittance history</li>
+                </ul>
+              </div>
+              <div className="rounded-lg border border-teal-100 bg-teal-50 p-4">
+                <h3 className="text-sm font-semibold text-teal-800 mb-2">Documents & Audit Packet</h3>
+                <ul className="space-y-1 text-xs text-teal-700 list-disc list-inside">
+                  <li>View supporting documents uploaded by the provider (prior auth, eligibility, EOB)</li>
+                  <li>Upload additional files directly to a claim for payer disputes or audit purposes</li>
+                  <li><strong>CMS 1500 Preview</strong> shows the electronic claim form as it was submitted</li>
+                  <li><strong>Download Audit Packet</strong> bundles all claim documents into a single PDF</li>
+                </ul>
+              </div>
+              <div className="rounded-lg bg-gray-50 border border-gray-200 p-4">
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-3">Key Rules & Reminders</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-gray-700">
+                  <div><strong>180-day filing deadline:</strong> PA Medicaid requires claims to be filed within 180 days of the date of service; DoulaShield sends deadline reminders to providers.</div>
+                  <div><strong>Resubmissions:</strong> Corrected claims have a 365-day deadline from the service date; resubmit count tracks how many times a claim has been sent.</div>
+                  <div><strong>Secondary claims:</strong> Providers with other insurance must file a secondary claim within 60 days of the EOB payment date.</div>
+                  <div><strong>SOAP notes:</strong> Availity requires complete visit notes at submission; providers should complete SOAP notes before you submit.</div>
+                </div>
+              </div>
+            </div>
+            <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-3 flex justify-end rounded-b-xl">
+              <button onClick={() => setShowGuide(false)} className="rounded border border-gray-300 px-4 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50">Close</button>
+            </div>
+          </div>
         </div>
       )}
     </div>

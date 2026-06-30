@@ -12,6 +12,18 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.52.0] — 2026-06-30
+
+### Added
+- **"How It Works" guide on all major screens**: A consistent modal guide — matching the pattern on the admin Enrollment Services page — now appears on five additional pages via a "How It Works" button in each page header:
+  - **Admin › Billing Providers**: Explains agency setup, subscription model, enrollment tier, CSV bulk import, and compliance emails
+  - **Admin › Leads**: Covers lead sources, the New → Converted status pipeline, follow-up scheduling, and the lead conversion workflow
+  - **Billing Admin › My Providers**: Documents the roster, enrollment tier tasks, auto-expand for assigned services, document download/remove, and seat billing
+  - **Billing Admin › Agency Claims**: Explains the claim status flow, Availity submission, manual status logging, and audit packet downloads
+  - **Provider › My Credentialing Status**: Walks providers through the authorization agreement, four-stage pipeline, task indicators, document uploads, secure info storage, and the PCB application form
+
+---
+
 ## [1.51.0] — 2026-06-30
 
 ### Added
