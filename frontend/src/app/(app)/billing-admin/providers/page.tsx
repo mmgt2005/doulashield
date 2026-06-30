@@ -227,8 +227,27 @@ export default function BillingAdminProvidersPage() {
       const tierEnabled = settingsRes.data.enrollment_tier_enabled ?? false
       setEnrollmentTierEnabled(tierEnabled)
       if (tierEnabled) {
-        const svcRes = await axios.get<EnrollmentService[]>(`${api}/api/v1/billing-admin/enrollment/services`, { headers }).catch(() => ({ data: [] }))
+        const svcRes = await axios.get<EnrollmentService[]>(`${api}/api/v1/billing-admin/enrollment/services`, { headers }).catch(() => ({ data: [] as EnrollmentService[] }))
         setAllServices(svcRes.data)
+        // Pre-load task details for services assigned to this agency by DoulaShield
+        const assignedSvcs = svcRes.data.filter((s: EnrollmentService) => s.assigned_to_billing_admin)
+        if (assignedSvcs.length > 0) {
+          const detailResults = await Promise.all(
+            assignedSvcs.map((s: EnrollmentService) =>
+              axios.get<EnrollmentServiceDetail>(`${api}/api/v1/billing-admin/enrollment/services/${s.id}`, { headers }).catch(() => null)
+            )
+          )
+          const preloaded: Record<string, EnrollmentServiceDetail> = {}
+          const preloadedNotes: Record<string, string> = {}
+          detailResults.forEach((res, i) => {
+            if (res) {
+              preloaded[assignedSvcs[i].id] = res.data
+              res.data.tasks.forEach((t: EnrollmentTask) => { if (t.notes) preloadedNotes[t.id] = t.notes })
+            }
+          })
+          setServiceDetails(preloaded)
+          setTaskNotes(prev => ({ ...prev, ...preloadedNotes }))
+        }
       }
     } catch {
       showToast('Failed to load provider roster')
@@ -334,12 +353,21 @@ export default function BillingAdminProvidersPage() {
 
   useEffect(() => { loadProviders() }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const toggleExpand = (id: string) =>
+  const toggleExpand = (id: string) => {
+    const isOpening = !expanded.has(id)
     setExpanded(prev => {
       const next = new Set(prev)
       next.has(id) ? next.delete(id) : next.add(id)
       return next
     })
+    if (isOpening && enrollmentTierEnabled) {
+      const assignedSvc = allServices.find(s => s.provider_id === id && s.assigned_to_billing_admin)
+      if (assignedSvc) {
+        setExpandedService(assignedSvc.id)
+        loadServiceDetail(assignedSvc.id) // no-op if pre-loaded; fallback if pre-load failed
+      }
+    }
+  }
 
   const updateRow = (idx: number, field: keyof InviteRow, value: string) =>
     setRows(rs => rs.map((r, i) => i === idx ? { ...r, [field]: value } : r))
