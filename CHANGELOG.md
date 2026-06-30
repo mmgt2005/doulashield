@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.50.9] — 2026-06-30
+
+### Fixed
+- **Remove document button now clearly visible**: The × delete button on document rows was rendered in `text-gray-300` (nearly white), making it invisible against the light background. Replaced with a labelled "Remove" button using red border and text so it is immediately findable.
+
+---
+
 ## [1.50.8] — 2026-06-30
 
 ### Fixed

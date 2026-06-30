@@ -1255,7 +1255,7 @@ export default function EnrollmentServicesPage() {
                                   {docs.length > 0 && (
                                     <div className="mt-2 space-y-1">
                                       {docs.map((doc) => (
-                                        <div key={doc.id} className="flex items-center gap-2 text-xs text-gray-600">
+                                        <div key={doc.id} className="group flex items-center gap-2 text-xs text-gray-600">
                                           <span className="text-gray-400">📎</span>
                                           <button
                                             onClick={() => downloadDocument(svc.id, doc.id, doc.file_name)}
@@ -1272,9 +1272,9 @@ export default function EnrollmentServicesPage() {
                                           <button
                                             onClick={() => handleDeleteDocument(svc.id, doc.id, doc.file_name)}
                                             title="Remove document"
-                                            className="ml-auto rounded p-0.5 text-gray-300 hover:bg-red-50 hover:text-red-500"
+                                            className="ml-auto rounded px-1.5 py-0.5 text-xs font-medium text-red-400 hover:bg-red-50 hover:text-red-600 border border-red-200 hover:border-red-400"
                                           >
-                                            ×
+                                            Remove
                                           </button>
                                         </div>
                                       ))}
