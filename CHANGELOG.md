@@ -12,6 +12,14 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.48.1] — 2026-06-30
+
+### Fixed
+- **Duplicate enrollment service guard**: Starting an enrollment service from the billing-admin My Providers panel now returns a clear 409 error ("An active PCB Certification service already exists for this provider…") instead of silently creating a second service at the same stage. This was the cause of "Failed to start service" errors when a platform admin had already started the same stage via the admin enrollment panel.
+- **Enrollment error messages**: Pydantic 422 validation errors (e.g. "pcb_pathway is required") now surface in the toast notification instead of showing the generic "Failed to start service" fallback. Same fix applied to the task toggle error handler.
+
+---
+
 ## [1.48.0] — 2026-06-30
 
 ### Added
