@@ -240,6 +240,12 @@ DoulaShield manages the full credentialing pipeline for doula providers across f
 
 Each stage auto-generates a task checklist. Upload documents per task, enter any required data, mark tasks complete, and use the stage-specific "Mark Complete" button when all tasks are done.
 
+**Provider info copy bar:** When you expand a service, a compact bar appears at the top showing the provider's name, email, and NPI (if on file) as clickable chips. Click any chip to copy the value to your clipboard — useful when filling in NPPES, PROMISe™, CAQH, or MCO portal fields without switching tabs or retyping.
+
+**Document download:** Each document uploaded by a provider appears as a clickable link in the task card. Clicking it fetches a secure download link and opens the file so you can save it locally and upload it to an external portal (CMS, CAQH, PROMISe™, etc.).
+
+**Notes copy button:** When a task's notes field has a recorded value (ATN, CAQH ID, contract number, etc.), a small clipboard icon appears next to the field. Click it to copy the value directly to your clipboard.
+
 **Walkthrough guide:** Click the **How It Works** button (top-right of the Enrollment Services page) to open a full visual walkthrough of all four stages. It shows each stage's task list, gate prerequisites, step-by-step admin actions, and key rules — useful during onboarding or whenever you need a quick reference without leaving the page.
 
 For task-by-task document instructions (what to collect, what to verify, how to navigate PROMISe™ and CAQH), see **Help → Enrollment Guide** in the sidebar.
