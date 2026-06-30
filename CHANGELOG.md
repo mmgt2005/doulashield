@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.49.1] — 2026-06-30
+
+### Fixed
+- **Auto-expand after Assign to Agency**: Clicking "Assign to Agency" on the admin Enrollment Services page now immediately expands the service row and loads the task list, so the admin can see the PCB (or other stage) tasks without needing a second click.
+
+---
+
 ## [1.49.0] — 2026-06-30
 
 ### Added
