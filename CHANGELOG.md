@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.48.0] — 2026-06-30
+
+### Added
+- **Billing-admin enrollment management**: Agencies with the Enrollment Tier enabled now see a full enrollment panel on each provider row in "My Providers". Billing admins can start new enrollment services (PCB Certification, NPPES/NPI Setup, PROMISe Enrollment, MCO Contracting), expand services to view their task list, mark tasks complete/incomplete with a checkbox, and save per-task notes — all scoped to their own agency's providers. Backend: new `enrollment_billing_admin` router with 4 endpoints (`GET/POST /billing-admin/enrollment/services`, `GET /billing-admin/enrollment/services/{id}`, `PATCH /billing-admin/enrollment/tasks/{id}`) gated by `require_billing_enrollment_tier` dependency which verifies both billing_admin role and `enrollment_tier_enabled` on the agency's BillingProvider record.
+
+---
+
 ## [1.47.2] — 2026-06-29
 
 ### Added

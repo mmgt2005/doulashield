@@ -81,6 +81,35 @@ interface Provider {
   }
 }
 
+interface EnrollmentService {
+  id: string
+  provider_id: string
+  stage: string
+  pcb_pathway: string | null
+  status: string
+  created_at: string
+}
+
+interface EnrollmentTask {
+  id: string
+  service_id: string
+  task_key: string
+  label: string
+  description: string | null
+  status: string
+  notes: string | null
+  sort_order: number
+  completed_at: string | null
+}
+
+interface EnrollmentServiceDetail {
+  service: EnrollmentService
+  tasks: EnrollmentTask[]
+  documents: { id: string; file_name: string; created_at: string }[]
+  provider_name: string | null
+  provider_email: string | null
+}
+
 interface InviteRow { name: string; email: string; doula_type: string }
 interface InviteResult {
   created: { name: string; email: string }[]
@@ -89,6 +118,13 @@ interface InviteResult {
 
 const DOULA_TYPES = ['Birth Doula', 'Postpartum Doula', 'Perinatal Doula', 'Other']
 const EMPTY_ROW: InviteRow = { name: '', email: '', doula_type: 'Birth Doula' }
+
+const STAGE_DISPLAY: Record<string, string> = {
+  pcb: 'PCB Certification',
+  nppes_setup: 'NPPES / NPI Setup',
+  enrollment: 'PROMISe Enrollment',
+  mco_contracting: 'MCO Contracting',
+}
 
 const STAGE_LABELS: Record<string, string> = {
   pcb: 'PCB',
@@ -154,6 +190,18 @@ export default function BillingAdminProvidersPage() {
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [toast, setToast] = useState<string | null>(null)
 
+  // Enrollment tier
+  const [enrollmentTierEnabled, setEnrollmentTierEnabled] = useState(false)
+  const [allServices, setAllServices] = useState<EnrollmentService[]>([])
+  const [serviceDetails, setServiceDetails] = useState<Record<string, EnrollmentServiceDetail>>({})
+  const [expandedService, setExpandedService] = useState<string | null>(null)
+  const [taskSaving, setTaskSaving] = useState<string | null>(null)
+  const [taskNotes, setTaskNotes] = useState<Record<string, string>>({})
+  const [showStartService, setShowStartService] = useState<string | null>(null)
+  const [startStage, setStartStage] = useState('pcb')
+  const [startPathway, setStartPathway] = useState('education_training')
+  const [startServiceLoading, setStartServiceLoading] = useState(false)
+
   const [inviteTab, setInviteTab] = useState<'manual' | 'csv'>('manual')
   const [rows, setRows] = useState<InviteRow[]>([{ ...EMPTY_ROW }])
   const [submitting, setSubmitting] = useState(false)
@@ -170,12 +218,98 @@ export default function BillingAdminProvidersPage() {
   const loadProviders = async () => {
     setLoading(true)
     try {
-      const res = await axios.get<Provider[]>(`${api}/api/v1/billing-admin/providers`, { headers })
-      setProviders(res.data)
+      const [providersRes, settingsRes] = await Promise.all([
+        axios.get<Provider[]>(`${api}/api/v1/billing-admin/providers`, { headers }),
+        axios.get<{ enrollment_tier_enabled: boolean }>(`${api}/api/v1/billing-admin/agency-settings`, { headers }).catch(() => ({ data: { enrollment_tier_enabled: false } })),
+      ])
+      setProviders(providersRes.data)
+      const tierEnabled = settingsRes.data.enrollment_tier_enabled ?? false
+      setEnrollmentTierEnabled(tierEnabled)
+      if (tierEnabled) {
+        const svcRes = await axios.get<EnrollmentService[]>(`${api}/api/v1/billing-admin/enrollment/services`, { headers }).catch(() => ({ data: [] }))
+        setAllServices(svcRes.data)
+      }
     } catch {
       showToast('Failed to load provider roster')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadServiceDetail = async (serviceId: string) => {
+    if (serviceDetails[serviceId]) return
+    try {
+      const res = await axios.get<EnrollmentServiceDetail>(`${api}/api/v1/billing-admin/enrollment/services/${serviceId}`, { headers })
+      setServiceDetails(prev => ({ ...prev, [serviceId]: res.data }))
+      const notes: Record<string, string> = {}
+      res.data.tasks.forEach(t => { if (t.notes) notes[t.id] = t.notes })
+      setTaskNotes(prev => ({ ...prev, ...notes }))
+    } catch {
+      showToast('Failed to load service tasks')
+    }
+  }
+
+  const toggleTask = async (task: EnrollmentTask) => {
+    const next = task.status === 'complete' ? 'not_started' : 'complete'
+    setTaskSaving(task.id)
+    try {
+      const res = await axios.patch<EnrollmentTask>(
+        `${api}/api/v1/billing-admin/enrollment/tasks/${task.id}`,
+        { status: next, notes: taskNotes[task.id] ?? null },
+        { headers },
+      )
+      setServiceDetails(prev => {
+        const detail = prev[task.service_id]
+        if (!detail) return prev
+        return { ...prev, [task.service_id]: { ...detail, tasks: detail.tasks.map(t => t.id === task.id ? res.data : t) } }
+      })
+    } catch (e: unknown) {
+      const msg = axios.isAxiosError(e) ? e.response?.data?.detail : 'Failed'
+      showToast(typeof msg === 'string' ? msg : 'Failed to update task')
+    } finally {
+      setTaskSaving(null)
+    }
+  }
+
+  const saveTaskNotes = async (task: EnrollmentTask) => {
+    setTaskSaving(task.id)
+    try {
+      const res = await axios.patch<EnrollmentTask>(
+        `${api}/api/v1/billing-admin/enrollment/tasks/${task.id}`,
+        { notes: taskNotes[task.id] ?? '' },
+        { headers },
+      )
+      setServiceDetails(prev => {
+        const detail = prev[task.service_id]
+        if (!detail) return prev
+        return { ...prev, [task.service_id]: { ...detail, tasks: detail.tasks.map(t => t.id === task.id ? res.data : t) } }
+      })
+      showToast('Notes saved.')
+    } catch {
+      showToast('Failed to save notes')
+    } finally {
+      setTaskSaving(null)
+    }
+  }
+
+  const startEnrollmentService = async (providerId: string) => {
+    setStartServiceLoading(true)
+    try {
+      const res = await axios.post<EnrollmentServiceDetail>(
+        `${api}/api/v1/billing-admin/enrollment/services`,
+        { provider_id: providerId, stage: startStage, pcb_pathway: startStage === 'pcb' ? startPathway : null },
+        { headers },
+      )
+      setAllServices(prev => [res.data.service, ...prev])
+      setServiceDetails(prev => ({ ...prev, [res.data.service.id]: res.data }))
+      setExpandedService(res.data.service.id)
+      setShowStartService(null)
+      showToast('Enrollment service started.')
+    } catch (e: unknown) {
+      const msg = axios.isAxiosError(e) ? e.response?.data?.detail : 'Failed'
+      showToast(typeof msg === 'string' ? msg : 'Failed to start service')
+    } finally {
+      setStartServiceLoading(false)
     }
   }
 
@@ -353,6 +487,149 @@ export default function BillingAdminProvidersPage() {
                         <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2.5 py-1.5">
                           Deposit not yet paid — provider cannot be billed until the $99 deposit is collected.
                         </p>
+                      )}
+
+                      {/* Enrollment management (enrollment tier only) */}
+                      {enrollmentTierEnabled && (
+                        <div>
+                          <div className="mb-2 flex items-center justify-between">
+                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Enrollment Services</p>
+                            <button
+                              onClick={() => { setShowStartService(showStartService === p.id ? null : p.id); setStartStage('pcb'); setStartPathway('education_training') }}
+                              className="text-xs text-indigo-600 hover:underline"
+                            >
+                              + Start Service
+                            </button>
+                          </div>
+
+                          {showStartService === p.id && (
+                            <div className="mb-3 rounded-md border border-indigo-200 bg-indigo-50 p-3 space-y-2">
+                              <p className="text-xs font-medium text-indigo-800">New Enrollment Service</p>
+                              <div className="flex gap-2 flex-wrap">
+                                <select value={startStage} onChange={e => setStartStage(e.target.value)}
+                                  className="rounded border border-gray-200 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400">
+                                  <option value="pcb">PCB Certification</option>
+                                  <option value="nppes_setup">NPPES / NPI Setup</option>
+                                  <option value="enrollment">PROMISe Enrollment</option>
+                                  <option value="mco_contracting">MCO Contracting</option>
+                                </select>
+                                {startStage === 'pcb' && (
+                                  <select value={startPathway} onChange={e => setStartPathway(e.target.value)}
+                                    className="rounded border border-gray-200 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400">
+                                    <option value="education_training">Education &amp; Training Pathway</option>
+                                    <option value="experienced">Experienced Pathway</option>
+                                  </select>
+                                )}
+                              </div>
+                              <div className="flex gap-2">
+                                <button onClick={() => startEnrollmentService(p.id)} disabled={startServiceLoading}
+                                  className="rounded bg-indigo-600 px-3 py-1 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-50">
+                                  {startServiceLoading ? 'Starting…' : 'Start'}
+                                </button>
+                                <button onClick={() => setShowStartService(null)} className="text-xs text-gray-500 hover:text-gray-700">Cancel</button>
+                              </div>
+                            </div>
+                          )}
+
+                          {(() => {
+                            const providerServices = allServices.filter(s => s.provider_id === p.id)
+                            if (providerServices.length === 0) {
+                              return <p className="text-xs text-gray-400">No enrollment services yet.</p>
+                            }
+                            return (
+                              <div className="space-y-2">
+                                {providerServices.map(svc => {
+                                  const isExpanded = expandedService === svc.id
+                                  const detail = serviceDetails[svc.id]
+                                  const statusColor = svc.status === 'complete'
+                                    ? 'text-green-600 bg-green-50 border-green-200'
+                                    : svc.status === 'in_progress'
+                                    ? 'text-yellow-700 bg-yellow-50 border-yellow-200'
+                                    : 'text-gray-500 bg-gray-50 border-gray-200'
+                                  return (
+                                    <div key={svc.id} className="rounded-md border border-gray-200 bg-white overflow-hidden">
+                                      <button
+                                        onClick={() => {
+                                          if (!isExpanded) loadServiceDetail(svc.id)
+                                          setExpandedService(isExpanded ? null : svc.id)
+                                        }}
+                                        className="w-full flex items-center justify-between px-3 py-2 text-left hover:bg-gray-50"
+                                      >
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-gray-400 text-[10px]">{isExpanded ? '▼' : '▶'}</span>
+                                          <span className="text-xs font-medium text-gray-800">{STAGE_DISPLAY[svc.stage] ?? svc.stage}</span>
+                                          {svc.pcb_pathway && (
+                                            <span className="text-[10px] text-gray-500">
+                                              ({svc.pcb_pathway === 'education_training' ? 'Educ. & Training' : 'Experienced'})
+                                            </span>
+                                          )}
+                                        </div>
+                                        <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium border ${statusColor}`}>
+                                          {svc.status === 'complete' ? 'Complete' : svc.status === 'in_progress' ? 'In Progress' : svc.status}
+                                        </span>
+                                      </button>
+                                      {isExpanded && (
+                                        <div className="border-t border-gray-100 px-3 py-2">
+                                          {!detail ? (
+                                            <p className="text-xs text-gray-400">Loading tasks…</p>
+                                          ) : detail.tasks.length === 0 ? (
+                                            <p className="text-xs text-gray-400">No tasks.</p>
+                                          ) : (
+                                            <div className="space-y-2">
+                                              {detail.tasks.map(task => {
+                                                const isComplete = task.status === 'complete'
+                                                return (
+                                                  <div key={task.id} className={`rounded border p-2 ${isComplete ? 'border-green-100 bg-green-50' : 'border-gray-100 bg-white'}`}>
+                                                    <div className="flex items-start gap-2">
+                                                      <button
+                                                        onClick={() => toggleTask(task)}
+                                                        disabled={taskSaving === task.id}
+                                                        className={`mt-0.5 flex-shrink-0 h-4 w-4 rounded border flex items-center justify-center text-[10px] transition-colors disabled:opacity-50 ${isComplete ? 'bg-green-500 border-green-500 text-white' : 'border-gray-300 bg-white hover:border-green-400'}`}
+                                                      >
+                                                        {isComplete && '✓'}
+                                                      </button>
+                                                      <div className="flex-1 min-w-0">
+                                                        <p className={`text-xs font-medium ${isComplete ? 'text-green-700 line-through' : 'text-gray-800'}`}>{task.label}</p>
+                                                        {task.description && !isComplete && (
+                                                          <p className="mt-0.5 text-[11px] text-gray-500 leading-relaxed">{task.description}</p>
+                                                        )}
+                                                        {!isComplete && (
+                                                          <div className="mt-1 flex gap-1">
+                                                            <input
+                                                              type="text"
+                                                              placeholder="Notes…"
+                                                              value={taskNotes[task.id] ?? ''}
+                                                              onChange={e => setTaskNotes(prev => ({ ...prev, [task.id]: e.target.value }))}
+                                                              className="flex-1 rounded border border-gray-200 px-1.5 py-0.5 text-[11px] focus:outline-none focus:ring-1 focus:ring-blue-400"
+                                                            />
+                                                            <button
+                                                              onClick={() => saveTaskNotes(task)}
+                                                              disabled={taskSaving === task.id}
+                                                              className="rounded border border-gray-200 px-1.5 py-0.5 text-[10px] text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+                                                            >
+                                                              Save
+                                                            </button>
+                                                          </div>
+                                                        )}
+                                                        {isComplete && task.notes && (
+                                                          <p className="mt-0.5 text-[11px] text-gray-500">Note: {task.notes}</p>
+                                                        )}
+                                                      </div>
+                                                    </div>
+                                                  </div>
+                                                )
+                                              })}
+                                            </div>
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>
+                                  )
+                                })}
+                              </div>
+                            )
+                          })()}
+                        </div>
                       )}
                     </div>
                   )}

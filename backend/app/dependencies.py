@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from typing import Annotated
+from typing import TYPE_CHECKING, Annotated
 
 from fastapi import Cookie, Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -13,6 +13,9 @@ from app.core.audit import AuditLogger
 from app.core.config import settings
 from app.core.security import decode_token
 from supabase._async.client import AsyncClient, create_client
+
+if TYPE_CHECKING:
+    from app.models.billing_provider import BillingProvider
 
 # ── Database ──────────────────────────────────────────────────────────────────
 
@@ -77,6 +80,38 @@ async def require_billing_admin(user: Annotated[CurrentUser, Depends(get_current
     if user.role not in ("admin", "billing_admin"):
         raise _FORBIDDEN
     return user
+
+
+async def get_managed_billing_provider(
+    user: Annotated[CurrentUser, Depends(require_billing_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> "BillingProvider":
+    """Return the BillingProvider managed by the current billing_admin user."""
+    from sqlalchemy.future import select
+    from app.models.user import User as _User
+    from app.models.billing_provider import BillingProvider as _BP
+
+    row = await db.execute(select(_User.managed_billing_provider_id).where(_User.id == user.id))
+    bp_id = row.scalar_one_or_none()
+    if not bp_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No billing agency assigned to this account")
+    bp_result = await db.execute(select(_BP).where(_BP.id == bp_id))
+    bp = bp_result.scalar_one_or_none()
+    if not bp:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Billing agency not found")
+    return bp
+
+
+async def require_billing_enrollment_tier(
+    bp: Annotated["BillingProvider", Depends(get_managed_billing_provider)],
+) -> "BillingProvider":
+    """Gate access to enrollment features; requires enrollment_tier_enabled on the agency."""
+    if not bp.enrollment_tier_enabled:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Enrollment tier is not enabled for your agency. Contact DoulaShield to enable it.",
+        )
+    return bp
 
 
 def get_client_ip(request: Request) -> str | None:
