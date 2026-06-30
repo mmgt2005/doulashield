@@ -244,6 +244,8 @@ Each stage auto-generates a task checklist. Upload documents per task, enter any
 
 For task-by-task document instructions (what to collect, what to verify, how to navigate PROMISe™ and CAQH), see **Help → Enrollment Guide** in the sidebar.
 
+**Assigning a service to the billing agency:** When a provider belongs to a billing agency with Enrollment Tier enabled, click **Assign to Agency** on the right side of any service row to hand that service off to the agency's billing admin. The button turns into a filled **✓ Assigned to Agency** badge and the service gains an "Assigned by DoulaShield" label in the billing admin's My Providers panel. The billing admin can then manage tasks and notes directly from their interface. Click the button again to unassign. The button only works if the provider is already linked to a billing agency — assign the provider first if needed. Use this when you have created a service to get the enrollment started and want the billing admin to take over day-to-day task tracking.
+
 ---
 
 ### Stage 1 — PCB Certification
