@@ -264,8 +264,17 @@ export default function BillingAdminProvidersPage() {
         return { ...prev, [task.service_id]: { ...detail, tasks: detail.tasks.map(t => t.id === task.id ? res.data : t) } }
       })
     } catch (e: unknown) {
-      const msg = axios.isAxiosError(e) ? e.response?.data?.detail : 'Failed'
-      showToast(typeof msg === 'string' ? msg : 'Failed to update task')
+      if (axios.isAxiosError(e)) {
+        const detail = e.response?.data?.detail
+        const msg = typeof detail === 'string'
+          ? detail
+          : Array.isArray(detail)
+          ? detail.map((d: { msg?: string }) => d.msg ?? String(d)).join('; ')
+          : 'Failed to update task'
+        showToast(msg)
+      } else {
+        showToast('Failed to update task')
+      }
     } finally {
       setTaskSaving(null)
     }
@@ -306,8 +315,17 @@ export default function BillingAdminProvidersPage() {
       setShowStartService(null)
       showToast('Enrollment service started.')
     } catch (e: unknown) {
-      const msg = axios.isAxiosError(e) ? e.response?.data?.detail : 'Failed'
-      showToast(typeof msg === 'string' ? msg : 'Failed to start service')
+      if (axios.isAxiosError(e)) {
+        const detail = e.response?.data?.detail
+        const msg = typeof detail === 'string'
+          ? detail
+          : Array.isArray(detail)
+          ? detail.map((d: { msg?: string }) => d.msg ?? String(d)).join('; ')
+          : 'Failed to start service'
+        showToast(msg)
+      } else {
+        showToast('Failed to start service')
+      }
     } finally {
       setStartServiceLoading(false)
     }

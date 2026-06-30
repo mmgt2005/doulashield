@@ -112,6 +112,26 @@ async def create_agency_enrollment_service(
     provider = await _assert_provider_in_agency(body.provider_id, bp.id, db)
     stage = body.stage or "pcb"
 
+    # Block duplicate active service at the same stage
+    _stage_labels = {
+        "pcb": "PCB Certification",
+        "nppes_setup": "NPPES/NPI Setup",
+        "enrollment": "PROMISe Enrollment",
+        "mco_contracting": "MCO Contracting",
+    }
+    dup_result = await db.execute(
+        select(EnrollmentService).where(
+            EnrollmentService.provider_id == body.provider_id,
+            EnrollmentService.stage == stage,
+            EnrollmentService.status.in_(["in_progress", "submitted"]),
+        )
+    )
+    if dup_result.scalar_one_or_none():
+        raise HTTPException(
+            status_code=409,
+            detail=f"An active {_stage_labels.get(stage, stage)} service already exists for this provider. Complete or cancel it before starting a new one.",
+        )
+
     if stage == "pcb" and not body.pcb_pathway:
         raise HTTPException(status_code=422, detail="pcb_pathway is required for PCB enrollment services.")
     if stage == "nppes_setup" and not provider.pcb_last_certified_on:
