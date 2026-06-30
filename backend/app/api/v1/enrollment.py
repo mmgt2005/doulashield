@@ -1256,6 +1256,34 @@ async def get_enrollment_document_url(
     return {"url": url, "file_name": doc.file_name}
 
 
+@router.delete("/services/{service_id}/documents/{doc_id}", status_code=204)
+async def delete_enrollment_document(
+    service_id: uuid.UUID,
+    doc_id: uuid.UUID,
+    current_user: Annotated[CurrentUser, Depends(require_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> None:
+    from app.services.ocr_service import delete_file
+
+    doc_result = await db.execute(
+        select(EnrollmentDocument).where(
+            EnrollmentDocument.id == doc_id,
+            EnrollmentDocument.service_id == service_id,
+        )
+    )
+    doc = doc_result.scalar_one_or_none()
+    if not doc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+
+    try:
+        await delete_file(doc.file_path)
+    except Exception:
+        pass  # Storage delete failure doesn't block DB cleanup
+
+    await db.delete(doc)
+    await db.commit()
+
+
 @router.post("/services/{service_id}/assign-to-billing-admin", response_model=EnrollmentServiceRead)
 async def assign_enrollment_to_billing_admin(
     service_id: uuid.UUID,

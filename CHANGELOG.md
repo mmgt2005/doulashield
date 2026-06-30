@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.50.6] — 2026-06-30
+
+### Added
+- **Remove document from enrollment task**: Admins can now delete a wrongly uploaded document. Each document row shows a × button that prompts for confirmation, deletes the file from Supabase Storage, and removes the record from the database. The task card updates immediately without a page reload.
+
+---
+
 ## [1.50.5] — 2026-06-30
 
 ### Added

@@ -278,6 +278,21 @@ async def store_image(
     return path
 
 
+async def delete_file(path: str) -> None:
+    """Delete a file from Supabase Storage."""
+    delete_url = (
+        f"{settings.SUPABASE_URL}/storage/v1/object/"
+        f"{settings.SUPABASE_STORAGE_BUCKET}/{path}"
+    )
+    async with httpx.AsyncClient(timeout=10) as client:
+        resp = await client.delete(
+            delete_url,
+            headers={"Authorization": f"Bearer {settings.SUPABASE_SERVICE_ROLE_KEY}"},
+        )
+        if resp.status_code not in (200, 204):
+            raise RuntimeError(f"Storage delete failed ({resp.status_code}): {resp.text}")
+
+
 async def get_signed_url(path: str, expires_in: int = 60) -> str:
     """Return a short-lived signed URL for a stored image."""
     sign_url = (

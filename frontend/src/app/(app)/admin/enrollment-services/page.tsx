@@ -242,6 +242,24 @@ export default function EnrollmentServicesPage() {
     navigator.clipboard.writeText(text).then(() => showToast(`${label} copied`)).catch(() => showToast('Copy failed'))
   }
 
+  const handleDeleteDocument = async (serviceId: string, docId: string, fileName: string) => {
+    if (!window.confirm(`Remove "${fileName}" from this task? This cannot be undone.`)) return
+    try {
+      await axios.delete(
+        `${api}/api/v1/admin/enrollment/services/${serviceId}/documents/${docId}`,
+        { headers },
+      )
+      setDetailCache((prev) => {
+        const detail = prev[serviceId]
+        if (!detail) return prev
+        return { ...prev, [serviceId]: { ...detail, documents: detail.documents.filter((d) => d.id !== docId) } }
+      })
+      showToast(`${fileName} removed`)
+    } catch {
+      showToast('Failed to remove document')
+    }
+  }
+
   const downloadDocument = async (serviceId: string, docId: string, fileName: string) => {
     try {
       const res = await axios.get<{ url: string; file_name: string }>(
@@ -1251,6 +1269,13 @@ export default function EnrollmentServicesPage() {
                                               {doc.document_type}
                                             </span>
                                           )}
+                                          <button
+                                            onClick={() => handleDeleteDocument(svc.id, doc.id, doc.file_name)}
+                                            title="Remove document"
+                                            className="ml-auto rounded p-0.5 text-gray-300 hover:bg-red-50 hover:text-red-500"
+                                          >
+                                            ×
+                                          </button>
                                         </div>
                                       ))}
                                     </div>
