@@ -12,6 +12,14 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.50.7] — 2026-06-30
+
+### Fixed
+- **CORS now permits DELETE requests**: The CORS middleware was explicitly blocking DELETE — the document-deletion endpoint added in 1.50.6 would have been rejected by browsers with a preflight 403. `DELETE` is now included in `allow_methods`.
+- **CAQH re-attestation reminder emails now use the correct 120-day cycle**: The scheduled job was computing expiry at 90 days (matching the old billing roster bug fixed earlier), causing reminders to fire a month early. Now consistent with the CAQH 120-day attestation cycle.
+
+---
+
 ## [1.50.6] — 2026-06-30
 
 ### Added

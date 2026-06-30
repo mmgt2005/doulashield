@@ -117,7 +117,7 @@ async def _run_caqh_reminder_check() -> None:
     sent = 0
     for provider in providers:
         try:
-            expiry = provider.caqh_last_attested_on + timedelta(days=90)
+            expiry = provider.caqh_last_attested_on + timedelta(days=120)
             days_remaining = (expiry - today).days
             if days_remaining not in _CAQH_REMINDER_DAYS:
                 continue
@@ -702,8 +702,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins,
     allow_credentials=True,
-    # DELETE is intentionally omitted — soft-delete via PATCH only
-    allow_methods=["GET", "POST", "PATCH", "PUT", "OPTIONS"],
+    allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type"],
 )
 
