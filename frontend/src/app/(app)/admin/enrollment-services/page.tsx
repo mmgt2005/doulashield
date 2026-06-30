@@ -203,6 +203,11 @@ export default function EnrollmentServicesPage() {
       )
       setServices(prev => prev.map(s => s.id === serviceId ? { ...s, assigned_to_billing_admin: res.data.assigned_to_billing_admin } : s))
       showToast(res.data.assigned_to_billing_admin ? 'Assigned to billing agency.' : 'Unassigned from billing agency.')
+      // Expand the service so the admin can see the task list immediately after assigning
+      if (res.data.assigned_to_billing_admin && expandedId !== serviceId) {
+        setExpandedId(serviceId)
+        loadDetail(serviceId)
+      }
     } catch (e: unknown) {
       const msg = axios.isAxiosError(e) ? e.response?.data?.detail : 'Failed'
       showToast(typeof msg === 'string' ? msg : 'Failed')
