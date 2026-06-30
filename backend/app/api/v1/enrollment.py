@@ -12,6 +12,7 @@ from sqlalchemy.future import select
 
 from app.core.audit import AuditLogger
 from app.dependencies import CurrentUser, get_audit, get_client_ip, get_db, get_user_agent, require_admin
+from app.models.billing_provider import BillingProvider
 from app.models.enrollment import EnrollmentDocument, EnrollmentService, EnrollmentTask
 from app.models.user import User
 from app.schemas.enrollment import (
@@ -1194,6 +1195,19 @@ async def assign_enrollment_to_billing_admin(
         )
 
     service.assigned_to_billing_admin = not service.assigned_to_billing_admin
+
+    tier_newly_enabled = False
+    if service.assigned_to_billing_admin:
+        # Auto-enable the enrollment tier so the billing admin can immediately
+        # see and manage this service from My Providers without a separate step.
+        bp_result = await db.execute(
+            select(BillingProvider).where(BillingProvider.id == provider.billing_provider_id)
+        )
+        bp = bp_result.scalar_one_or_none()
+        if bp and not bp.enrollment_tier_enabled:
+            bp.enrollment_tier_enabled = True
+            tier_newly_enabled = True
+
     await db.commit()
     await db.refresh(service)
 
@@ -1208,6 +1222,7 @@ async def assign_enrollment_to_billing_admin(
             "provider_id": str(service.provider_id),
             "billing_provider_id": str(provider.billing_provider_id),
             "assigned": service.assigned_to_billing_admin,
+            "enrollment_tier_newly_enabled": tier_newly_enabled,
         },
     )
 

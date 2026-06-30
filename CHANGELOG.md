@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.50.2] — 2026-06-30
+
+### Changed
+- **Assign to Agency auto-enables enrollment tier**: Clicking **Assign to Agency** on an enrollment service now automatically sets `enrollment_tier_enabled = true` on the billing provider if it is not already enabled. This means the billing admin gains immediate access to the assigned service in their My Providers panel without requiring a separate admin step to enable the tier. Unassigning does not disable the tier. The audit log records whether the tier was newly enabled as part of the assignment.
+
+---
+
 ## [1.50.1] — 2026-06-30
 
 ### Fixed
