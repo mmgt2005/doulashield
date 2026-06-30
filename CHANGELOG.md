@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.50.0] — 2026-06-30
+
+### Added
+- **Auto-expand assigned enrollment tasks on My Providers**: When DoulaShield assigns an enrollment service to a billing agency (`assigned_to_billing_admin = true`), the billing admin no longer needs three clicks to reach the task list. Opening the provider row now automatically expands the assigned service and shows all tasks immediately. Task details for assigned services are pre-fetched in parallel on page load so there is no loading spinner on first open. Providers with no assigned services are unaffected.
+
+---
+
 ## [1.49.1] — 2026-06-30
 
 ### Fixed
