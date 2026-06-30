@@ -244,7 +244,7 @@ Each stage auto-generates a task checklist. Upload documents per task, enter any
 
 For task-by-task document instructions (what to collect, what to verify, how to navigate PROMISe™ and CAQH), see **Help → Enrollment Guide** in the sidebar.
 
-**Assigning a service to the billing agency:** When a provider belongs to a billing agency with Enrollment Tier enabled, click **Assign to Agency** on the right side of any service row to hand that service off to the agency's billing admin. The button turns into a filled **✓ Assigned to Agency** badge and the service gains an "Assigned by DoulaShield" label in the billing admin's My Providers panel. The billing admin can then manage tasks and notes directly from their interface. Click the button again to unassign. The button only works if the provider is already linked to a billing agency — assign the provider first if needed. Use this when you have created a service to get the enrollment started and want the billing admin to take over day-to-day task tracking.
+**Assigning a service to the billing agency:** Click **Assign to Agency** on the right side of any service row to hand that service off to the agency's billing admin. The provider must already be linked to a billing agency — assign the provider first if needed. Once assigned, the button becomes a filled **✓ Assigned to Agency** badge and the service gains an "Assigned by DoulaShield" label in the billing admin's My Providers panel. The billing admin can see and manage tasks on assigned services regardless of whether their agency has the Enrollment Tier enabled. Click the button again to unassign. Use this when you have started a service to get enrollment underway and want the billing admin to take over day-to-day task tracking.
 
 ---
 
@@ -603,14 +603,14 @@ Days remaining is color-coded: green (plenty of time), amber (approaching), red 
 
 **Invite New Providers** — below the roster is an invite section with the same two-tab interface (Enter Manually / Upload CSV) as the admin Invite Providers modal. Billing admins can enter providers row by row or upload a CSV with NPI and MCO contract data pre-populated. The results panel lists created vs. skipped entries with skip reasons.
 
-**Enrollment Services (Enrollment Tier only)** — when the agency's Enrollment Tier is enabled, each expanded provider row also shows a full enrollment management panel. Billing admins can:
+**Enrollment Services** — each expanded provider row shows an enrollment management panel. Assigned services (flagged "Assigned by DoulaShield" by the platform admin) are always visible here, even if the agency has not purchased the Enrollment Tier. Billing admins can:
 
-- **Start a new enrollment service** — click "+ Start Service" to choose a stage (PCB Certification, NPPES/NPI Setup, PROMISe™ Enrollment, or MCO Contracting) and, if PCB, the pathway (Education & Training or Experienced). The same prerequisite checks as the admin workflow apply: PCB must be complete before NPPES Setup can start, an NPI must be on file before Stage 2, and so on.
-- **Expand a service** — click any service row to load its task list. Tasks are fetched on demand (lazy-loaded) to keep the page fast.
+- **View assigned services** — services the platform admin has assigned appear automatically with an "Assigned by DoulaShield" indigo badge. Opening the provider row auto-expands the assigned service so the task list is immediately visible.
 - **Mark tasks complete** — each task has a checkbox. Clicking it toggles between `complete` and `not_started`. The same validation rules apply as in the admin panel (e.g. training hours must be ≥ 24 before the `pcb_training_hours` task can be marked complete).
 - **Save notes** — each incomplete task has a notes field and a Save button for tracking per-task context (surrogate dates, submission confirmations, etc.).
+- **Start a new enrollment service** *(Enrollment Tier required)* — click "+ Start Service" to choose a stage (PCB Certification, NPPES/NPI Setup, PROMISe™ Enrollment, or MCO Contracting) and, if PCB, the pathway (Education & Training or Experienced). The same prerequisite checks as the admin workflow apply. This button is hidden unless the agency's Enrollment Tier is enabled.
 
-All enrollment actions are scoped to the billing admin's own agency — they cannot view or modify services belonging to providers in a different agency. The platform admin must enable the Enrollment Tier on the agency's billing provider record before this panel appears (see [Enrollment Tier](#enrollment-tier-add-on)).
+All enrollment actions are scoped to the billing admin's own agency — they cannot view or modify services belonging to providers in a different agency.
 
 #### Weekly Compliance Summary Email
 
