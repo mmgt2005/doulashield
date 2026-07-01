@@ -54,6 +54,63 @@ interface EobClaimLine {
   _applied: boolean
 }
 
+type Preset = 'this_month' | 'last_month' | '3m' | '6m' | '180d' | 'ytd' | 'last_year' | 'all' | 'custom'
+
+const PRESETS: { key: Preset; label: string }[] = [
+  { key: 'this_month',  label: 'This Month' },
+  { key: 'last_month',  label: 'Last Month' },
+  { key: '3m',          label: 'Last 3 Months' },
+  { key: '6m',          label: 'Last 6 Months' },
+  { key: '180d',        label: 'Last 180 Days' },
+  { key: 'ytd',         label: 'Year to Date' },
+  { key: 'last_year',   label: 'Last Year' },
+  { key: 'all',         label: 'All Time' },
+  { key: 'custom',      label: 'Custom' },
+]
+
+function fmtDate(d: Date): string {
+  return d.toISOString().split('T')[0]
+}
+
+function subDays(d: Date, n: number): Date {
+  const r = new Date(d)
+  r.setDate(r.getDate() - n)
+  return r
+}
+
+function subMonths(d: Date, n: number): Date {
+  const r = new Date(d)
+  r.setMonth(r.getMonth() - n)
+  return r
+}
+
+function presetDates(p: Preset): { from: string | null; to: string | null } {
+  const today = new Date()
+  switch (p) {
+    case 'this_month':
+      return { from: fmtDate(new Date(today.getFullYear(), today.getMonth(), 1)), to: fmtDate(today) }
+    case 'last_month': {
+      const f = new Date(today.getFullYear(), today.getMonth() - 1, 1)
+      const t = new Date(today.getFullYear(), today.getMonth(), 0)
+      return { from: fmtDate(f), to: fmtDate(t) }
+    }
+    case '3m':
+      return { from: fmtDate(subMonths(today, 3)), to: fmtDate(today) }
+    case '6m':
+      return { from: fmtDate(subMonths(today, 6)), to: fmtDate(today) }
+    case '180d':
+      return { from: fmtDate(subDays(today, 179)), to: fmtDate(today) }
+    case 'ytd':
+      return { from: fmtDate(new Date(today.getFullYear(), 0, 1)), to: fmtDate(today) }
+    case 'last_year': {
+      const y = today.getFullYear() - 1
+      return { from: `${y}-01-01`, to: `${y}-12-31` }
+    }
+    default:
+      return { from: null, to: null }
+  }
+}
+
 function claimStatusDisplay(status: string | null): { label: string; color: 'amber' | 'blue' | 'green' | 'red' } {
   const s = (status ?? '').toLowerCase()
   if (s === 'paid') return { label: 'Paid', color: 'green' }
@@ -87,26 +144,46 @@ export default function ReportsPage() {
   const [eobError, setEobError] = useState<string | null>(null)
   const [eobApplying, setEobApplying] = useState<number | null>(null)
 
-  useEffect(() => {
+  const [preset, setPreset] = useState<Preset>('all')
+  const [customFrom, setCustomFrom] = useState('')
+  const [customTo, setCustomTo] = useState('')
+
+  const loadStats = useCallback(async (from: string | null, to: string | null) => {
+    setLoading(true)
+    setError(null)
     const base = process.env.NEXT_PUBLIC_API_URL
     const headers = { Authorization: `Bearer ${getAccessToken()}` }
+    const params: Record<string, string> = {}
+    if (from) params.date_from = from
+    if (to) params.date_to = to
 
-    Promise.all([
-      axios.get<Stats>(`${base}/api/v1/stats/summary`, { headers }),
-      axios.get<{ mco_contracts: McoContract[] | null; billing_provider: unknown | null }>(`${base}/api/v1/auth/me/provider-settings`, { headers }),
-      axios.get<Patient[]>(`${base}/api/v1/patients`, { headers }).catch(() => ({ data: [] as Patient[] })),
-      axios.get<Claim[]>(`${base}/api/v1/claims`, { headers }).catch(() => ({ data: [] as Claim[] })),
-    ])
-      .then(([statsRes, settingsRes, patientsRes, claimsRes]) => {
-        setStats(statsRes.data)
-        setContracts(settingsRes.data.mco_contracts ?? [])
-        setHasBillingAgency(settingsRes.data.billing_provider != null)
-        setAllPatients(patientsRes.data)
-        setAllClaims(claimsRes.data)
-      })
-      .catch(() => setError('Failed to load report data.'))
-      .finally(() => setLoading(false))
+    try {
+      const [statsRes, settingsRes, patientsRes, claimsRes] = await Promise.all([
+        axios.get<Stats>(`${base}/api/v1/stats/summary`, { headers, params }),
+        axios.get<{ mco_contracts: McoContract[] | null; billing_provider: unknown | null }>(`${base}/api/v1/auth/me/provider-settings`, { headers }),
+        axios.get<Patient[]>(`${base}/api/v1/patients`, { headers }).catch(() => ({ data: [] as Patient[] })),
+        axios.get<Claim[]>(`${base}/api/v1/claims`, { headers }).catch(() => ({ data: [] as Claim[] })),
+      ])
+      setStats(statsRes.data)
+      setContracts(settingsRes.data.mco_contracts ?? [])
+      setHasBillingAgency(settingsRes.data.billing_provider != null)
+      setAllPatients(patientsRes.data)
+      setAllClaims(claimsRes.data)
+    } catch {
+      setError('Failed to load report data.')
+    } finally {
+      setLoading(false)
+    }
   }, [])
+
+  useEffect(() => {
+    if (preset === 'custom') {
+      if (customFrom && customTo) loadStats(customFrom, customTo)
+      return
+    }
+    const { from, to } = presetDates(preset)
+    loadStats(from, to)
+  }, [preset, customFrom, customTo, loadStats])
 
   const handleEobScanned = useCallback((data: Record<string, unknown>) => {
     setEobError(null)
@@ -184,6 +261,9 @@ export default function ReportsPage() {
     }
   }, [])
 
+  const today = new Date().toISOString().split('T')[0]
+  const activeDates = preset !== 'custom' ? presetDates(preset) : { from: customFrom || null, to: customTo || null }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -204,7 +284,6 @@ export default function ReportsPage() {
       ? (stats.revenue.total_paid / stats.revenue.total_billed) * 100
       : null
 
-  // Build MCO table rows: contracted MCOs first, then any from claims not in contracts
   const contractMap = new Map(contracts.map((c) => [c.mco, c]))
   const breakdownMap = new Map(stats.mco_breakdown.map((r) => [r.mco ?? '(None)', r]))
 
@@ -227,7 +306,53 @@ export default function ReportsPage() {
 
   return (
     <div className="space-y-6 max-w-5xl">
-      <h1 className="text-2xl font-bold text-gray-900">Reports</h1>
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Reports</h1>
+        {activeDates.from && activeDates.to && (
+          <p className="mt-0.5 text-xs text-gray-400">{activeDates.from} → {activeDates.to}</p>
+        )}
+      </div>
+
+      {/* Date range filter */}
+      <div className="space-y-2">
+        <div className="flex flex-wrap gap-1.5">
+          {PRESETS.map(p => (
+            <button
+              key={p.key}
+              type="button"
+              onClick={() => setPreset(p.key)}
+              className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                preset === p.key
+                  ? 'border-blue-600 bg-blue-600 text-white'
+                  : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+        {preset === 'custom' && (
+          <div className="flex items-center gap-2">
+            <input
+              type="date"
+              value={customFrom}
+              max={customTo || today}
+              onChange={e => setCustomFrom(e.target.value)}
+              className="rounded border border-gray-200 px-2 py-1 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400"
+            />
+            <span className="text-xs text-gray-400">to</span>
+            <input
+              type="date"
+              value={customTo}
+              min={customFrom || undefined}
+              max={today}
+              onChange={e => setCustomTo(e.target.value)}
+              className="rounded border border-gray-200 px-2 py-1 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400"
+            />
+          </div>
+        )}
+      </div>
 
       {/* Row 1 — Stat cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">

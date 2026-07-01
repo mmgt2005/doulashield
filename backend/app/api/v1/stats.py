@@ -1,6 +1,7 @@
+from datetime import date
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -31,8 +32,24 @@ def _normalize_status(raw: str | None) -> str:
 async def get_stats_summary(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
+    date_from: date | None = Query(None, alias="date_from"),
+    date_to: date | None = Query(None, alias="date_to"),
 ) -> dict:
     uid = str(current_user.id)
+
+    # Build date filter clauses — applied to visits and claims only.
+    # total_patients and claim_deadline_summary are always all-time.
+    claim_date_clause = ""
+    visit_date_clause = ""
+    params: dict = {"uid": uid}
+    if date_from:
+        claim_date_clause += " AND service_date >= :date_from"
+        visit_date_clause += " AND visit_started_at::date >= :date_from"
+        params["date_from"] = date_from
+    if date_to:
+        claim_date_clause += " AND service_date <= :date_to"
+        visit_date_clause += " AND visit_started_at::date <= :date_to"
+        params["date_to"] = date_to
 
     patient_row = await db.execute(
         text(
@@ -44,14 +61,14 @@ async def get_stats_summary(
 
     visit_row = await db.execute(
         text(
-            """
+            f"""
             SELECT
               COUNT(*) FILTER (WHERE visit_ended_at IS NOT NULL) AS completed,
               COUNT(*) AS documented
-            FROM public.visits WHERE provider_id = :uid
+            FROM public.visits WHERE provider_id = :uid{visit_date_clause}
             """
         ),
-        {"uid": uid},
+        params,
     )
     vrow = visit_row.fetchone()
     visits_completed = int(vrow.completed) if vrow else 0
@@ -59,16 +76,16 @@ async def get_stats_summary(
 
     claims_rows = await db.execute(
         text(
-            """
+            f"""
             SELECT status,
                    COUNT(*) AS cnt,
                    COALESCE(SUM(billed_amount), 0) AS billed,
                    COALESCE(SUM(paid_amount), 0) AS paid
-            FROM public.claims WHERE provider_id = :uid
+            FROM public.claims WHERE provider_id = :uid{claim_date_clause}
             GROUP BY status
             """
         ),
-        {"uid": uid},
+        params,
     )
 
     buckets: dict[str, dict] = {
@@ -94,7 +111,7 @@ async def get_stats_summary(
 
     mco_rows = await db.execute(
         text(
-            """
+            f"""
             SELECT p.mco,
                    COUNT(DISTINCT c.patient_id) AS patients,
                    COUNT(c.id) AS claims,
@@ -102,11 +119,11 @@ async def get_stats_summary(
                    COALESCE(SUM(c.paid_amount), 0) AS paid
             FROM public.claims c
             JOIN public.patients p ON c.patient_id = p.id
-            WHERE c.provider_id = :uid
+            WHERE c.provider_id = :uid{claim_date_clause}
             GROUP BY p.mco
             """
         ),
-        {"uid": uid},
+        params,
     )
 
     mco_breakdown = [
@@ -120,6 +137,7 @@ async def get_stats_summary(
         for row in mco_rows.fetchall()
     ]
 
+    # Deadline summary is always all-time — deadlines are forward-looking.
     deadline_rows = await db.execute(
         text(
             """

@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.53.0] — 2026-07-01
+
+### Added
+- **Date range filter on Reports page**: Nine preset buttons (This Month, Last Month, Last 3 Months, Last 6 Months, Last 180 Days, Year to Date, Last Year, All Time) plus a Custom date picker now appear above the stat cards. Selecting a preset refetches all stats — visits, claim pipeline, revenue summary, and MCO breakdown — filtered to that window. The active date range is shown as a subtitle under the page title. Total Clients and the claim-deadline summary remain all-time regardless of the selected range. `GET /api/v1/stats/summary` now accepts optional `date_from` and `date_to` query parameters.
+
+---
+
 ## [1.52.2] — 2026-07-01
 
 ### Fixed
