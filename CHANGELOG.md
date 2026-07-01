@@ -12,6 +12,15 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.55.0] — 2026-07-01
+
+### Added
+- **Webinar confirmation email with instant video access**: After registering on the landing page, prospects now receive a "You're registered" email with a "Watch the Webinar Now →" button linking to the pre-recorded video. Set `WEBINAR_VIDEO_URL` in Railway to activate the button; omit it and the email still sends without the link. A "Book a Free Setup Call →" button is included when `SETUP_CALL_URL` is set.
+- **Separate agency webinar URL**: The agency quiz results email now uses `WEBINAR_REGISTER_URL_AGENCY` when set, falling back to `WEBINAR_REGISTER_URL` if empty. Individual quiz emails continue to use `WEBINAR_REGISTER_URL`. Two new config settings: `WEBINAR_REGISTER_URL_AGENCY` and `WEBINAR_VIDEO_URL`.
+- **Duplicate lead deduplication**: All three public lead endpoints (webinar, quiz, contact form) now deduplicate by email + source. A repeat submission from the same email updates the existing lead record (refreshes `lead_data`, sets `updated_at`) without creating a new row or re-firing the admin notification. Exception: the quiz still sends the prospect fresh results on every re-submission, and the webinar still sends the confirmation/video link. Leads with a `converted_user_id` (already paying users) are returned silently with no update.
+
+---
+
 ## [1.54.0] — 2026-07-01
 
 ### Added

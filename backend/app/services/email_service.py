@@ -966,6 +966,67 @@ async def send_billing_subscription_started(
     )
 
 
+async def send_webinar_confirmation(lead: object) -> None:
+    """Sends a registration confirmation to a webinar lead with a Watch Now link."""
+    if not _configured():
+        return
+    resend.api_key = settings.RESEND_API_KEY
+
+    lead_email = getattr(lead, "email", "")
+    if not lead_email:
+        return
+    first_name = getattr(lead, "first_name", "") or "there"
+
+    watch_btn = ""
+    if settings.WEBINAR_VIDEO_URL:
+        watch_btn = f"""
+  <p style="margin: 24px 0;">
+    <a href="{settings.WEBINAR_VIDEO_URL}"
+       style="background:#2563eb;color:#fff;padding:12px 24px;border-radius:6px;
+              text-decoration:none;font-weight:600;font-size:15px;display:inline-block;">
+      Watch the Webinar Now &rarr;
+    </a>
+  </p>"""
+
+    setup_btn = ""
+    if settings.SETUP_CALL_URL:
+        setup_btn = f"""
+  <p style="margin: 16px 0;">
+    <a href="{settings.SETUP_CALL_URL}"
+       style="background:#f3f4f6;color:#374151;padding:12px 24px;border-radius:6px;
+              text-decoration:none;font-weight:600;font-size:14px;display:inline-block;border:1px solid #d1d5db;">
+      Book a Free Setup Call &rarr;
+    </a>
+  </p>"""
+
+    await asyncio.to_thread(
+        resend.Emails.send,
+        {
+            "from": settings.EMAIL_FROM,
+            "to": [lead_email],
+            "subject": "You're registered — watch the DoulaShield webinar",
+            "html": f"""<!DOCTYPE html>
+<html>
+<body style="font-family: sans-serif; color: #1a1a1a; max-width: 520px; margin: 0 auto; padding: 24px;">
+  <p style="font-size: 16px;">Hi {first_name},</p>
+  <p>Thanks for registering! You now have access to the <strong>DoulaShield PA Medicaid Doula Billing</strong> webinar.</p>
+  <p style="color:#374151;font-size:14px;">
+    In the webinar you'll learn how to get credentialed, submit CMS-1500 claims through Availity, and never miss
+    the 180-day PA Medicaid filing deadline — all without re-entering data you've already collected.
+  </p>
+  {watch_btn}
+  {setup_btn}
+  <p style="color:#6b7280;font-size:13px;">
+    Questions? Reply to this email and we'll get back to you.
+  </p>
+  <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
+  <p style="color:#9ca3af;font-size:12px;">You receive this because you registered for the DoulaShield webinar. The DoulaShield Team</p>
+</body>
+</html>""",
+        },
+    )
+
+
 async def send_caqh_screenshare_invite(
     to_email: str, provider_name: str, doxy_me_url: str
 ) -> None:
@@ -1038,22 +1099,19 @@ async def send_quiz_results_email(lead: object, answers: dict) -> None:
       Book a Free Setup Call &rarr;
     </a>"""
 
-    webinar_btn = ""
-    if settings.WEBINAR_REGISTER_URL:
-        webinar_btn = f"""
-    <a href="{settings.WEBINAR_REGISTER_URL}"
+    if provider_type == "agency":
+        # ---- Agency compliance audit email ----
+        webinar_url = settings.WEBINAR_REGISTER_URL_AGENCY or settings.WEBINAR_REGISTER_URL
+        webinar_btn = ""
+        if webinar_url:
+            webinar_btn = f"""
+    <a href="{webinar_url}"
        style="background:#f3f4f6;color:#374151;padding:12px 22px;border-radius:6px;
               text-decoration:none;font-weight:600;font-size:14px;display:inline-block;margin-bottom:8px;border:1px solid #d1d5db;">
       Register for a Webinar &rarr;
     </a>"""
-
-    cta_section = ""
-    if setup_call_btn or webinar_btn:
         cta_section = f"""
-  <p style="margin:28px 0 4px;">{setup_call_btn}{webinar_btn}</p>"""
-
-    if provider_type == "agency":
-        # ---- Agency compliance audit email ----
+  <p style="margin:28px 0 4px;">{setup_call_btn}{webinar_btn}</p>""" if (setup_call_btn or webinar_btn) else ""
         compliance_score = answers.get("compliance_score", "")
         compliance_band = answers.get("compliance_band", "Some gaps")
 
@@ -1132,6 +1190,16 @@ async def send_quiz_results_email(lead: object, answers: dict) -> None:
 
     else:
         # ---- Individual provider self-assessment email ----
+        webinar_btn = ""
+        if settings.WEBINAR_REGISTER_URL:
+            webinar_btn = f"""
+    <a href="{settings.WEBINAR_REGISTER_URL}"
+       style="background:#f3f4f6;color:#374151;padding:12px 22px;border-radius:6px;
+              text-decoration:none;font-weight:600;font-size:14px;display:inline-block;margin-bottom:8px;border:1px solid #d1d5db;">
+      Register for a Webinar &rarr;
+    </a>"""
+        cta_section = f"""
+  <p style="margin:28px 0 4px;">{setup_call_btn}{webinar_btn}</p>""" if (setup_call_btn or webinar_btn) else ""
         assessment_result = answers.get("assessment_result", "")
 
         badge_colors = {
