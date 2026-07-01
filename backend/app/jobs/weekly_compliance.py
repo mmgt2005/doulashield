@@ -20,7 +20,7 @@ from app.models.user import User
 from app.services import email_service
 
 # Warning thresholds (days before expiry)
-_CAQH_CYCLE = 90
+_CAQH_CYCLE = 120
 _PCB_CYCLE = 730
 _PROMISE_CYCLE = 1825
 

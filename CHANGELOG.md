@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.52.2] — 2026-07-01
+
+### Fixed
+- **Weekly compliance email used wrong CAQH attestation cycle**: `weekly_compliance.py` calculated CAQH expiry at 90 days while every other part of the system (dashboard, billing admin roster, reminder emails) uses the correct 120-day cycle. Corrected `_CAQH_CYCLE = 120` so the Monday digest shows accurate days-to-renew for CAQH.
+
+---
+
 ## [1.52.1] — 2026-06-30
 
 ### Added
