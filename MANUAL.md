@@ -487,6 +487,24 @@ Reminder emails show the patient's initials (e.g., J.D.) rather than their full 
 
 Go to **Reports** in the sidebar for an at-a-glance view of your practice performance.
 
+### Filtering by Date Range
+
+A row of preset buttons appears below the page title. Click any preset to scope all stats to that window:
+
+| Preset | What it covers |
+|---|---|
+| **This Month** | 1st of the current month through today |
+| **Last Month** | Full prior calendar month |
+| **Last 3 Months** | Rolling 3 months back from today |
+| **Last 6 Months** | Rolling 6 months back from today |
+| **Last 180 Days** | The PA Medicaid timely-filing window |
+| **Year to Date** | January 1 of the current year through today |
+| **Last Year** | Full prior calendar year (Jan 1 – Dec 31) |
+| **All Time** | No date filter — full history (default) |
+| **Custom** | Enter a From and To date manually |
+
+When a date range is active, the active window appears as a subtitle under the page title (e.g., `2026-01-01 → 2026-06-30`). The **Clients** card and the claim-deadline warnings on your main Dashboard always show all-time totals regardless of the selected range.
+
 ### Stats Cards
 
 Three cards at the top:
