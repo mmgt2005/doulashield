@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.54.0] — 2026-07-01
+
+### Added
+- **Quiz results email to prospect**: After submitting either the individual PA Medicaid Billing Self-Assessment or the Agency Compliance Audit quiz, the prospect now receives a branded Resend email with their results. Individual emails show a color-coded stage badge (amber for Stages 1–4, blue for "Ready to bill", green for "Fully operational"), the result recommendation, a body paragraph, three personalized next steps, and a recap of their quiz answers. Agency emails show the compliance score, a colored band pill (green/amber/red), band-specific advice, and a 9-item checklist table with green ✓ / red ✗ per item. Both emails include up to two CTA buttons (Book a Setup Call, Register for a Webinar) that appear only when `SETUP_CALL_URL` and `WEBINAR_REGISTER_URL` are set. Email failure is swallowed silently so the `201` response the landing page depends on is never affected. Two new optional config settings: `SETUP_CALL_URL` and `WEBINAR_REGISTER_URL`.
+
+---
+
 ## [1.53.0] — 2026-07-01
 
 ### Added

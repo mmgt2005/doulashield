@@ -63,6 +63,8 @@ class Settings(BaseSettings):
     # Lead capture
     ADMIN_NOTIFICATION_EMAIL: str = ""  # receives new-lead notifications
     CORS_EXTRA_ORIGINS: str = ""  # comma-separated extra CORS origins (e.g. marketing site)
+    SETUP_CALL_URL: str = ""       # Calendly / booking link shown in quiz result emails
+    WEBINAR_REGISTER_URL: str = "" # Webinar registration link shown in quiz result emails
 
     # Internal ops
     INTERNAL_SECRET: str = ""  # required for POST /internal/trigger-remittance-sync

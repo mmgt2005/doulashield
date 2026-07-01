@@ -1016,6 +1016,256 @@ async def send_caqh_screenshare_invite(
     )
 
 
+async def send_quiz_results_email(lead: object, answers: dict) -> None:
+    """Send quiz results to the prospect who just submitted the quiz form."""
+    if not _configured():
+        return
+    resend.api_key = settings.RESEND_API_KEY
+
+    first_name = getattr(lead, "first_name", "") or "there"
+    lead_email = getattr(lead, "email", "")
+    if not lead_email:
+        return
+
+    provider_type = getattr(lead, "provider_type", "unknown")
+
+    setup_call_btn = ""
+    if settings.SETUP_CALL_URL:
+        setup_call_btn = f"""
+    <a href="{settings.SETUP_CALL_URL}"
+       style="background:#2563eb;color:#fff;padding:12px 22px;border-radius:6px;
+              text-decoration:none;font-weight:600;font-size:14px;display:inline-block;margin-right:10px;margin-bottom:8px;">
+      Book a Free Setup Call &rarr;
+    </a>"""
+
+    webinar_btn = ""
+    if settings.WEBINAR_REGISTER_URL:
+        webinar_btn = f"""
+    <a href="{settings.WEBINAR_REGISTER_URL}"
+       style="background:#f3f4f6;color:#374151;padding:12px 22px;border-radius:6px;
+              text-decoration:none;font-weight:600;font-size:14px;display:inline-block;margin-bottom:8px;border:1px solid #d1d5db;">
+      Register for a Webinar &rarr;
+    </a>"""
+
+    cta_section = ""
+    if setup_call_btn or webinar_btn:
+        cta_section = f"""
+  <p style="margin:28px 0 4px;">{setup_call_btn}{webinar_btn}</p>"""
+
+    if provider_type == "agency":
+        # ---- Agency compliance audit email ----
+        compliance_score = answers.get("compliance_score", "")
+        compliance_band = answers.get("compliance_band", "Some gaps")
+
+        band_colors = {"Strong": "#16a34a", "Some gaps": "#d97706", "At risk": "#dc2626"}
+        band_bg = {"Strong": "#f0fdf4", "Some gaps": "#fffbeb", "At risk": "#fef2f2"}
+        band_color = band_colors.get(compliance_band, "#d97706")
+        band_bg_color = band_bg.get(compliance_band, "#fffbeb")
+
+        band_advice = {
+            "Strong": "Your agency is in great shape — most core requirements are in place. DoulaShield can automate the remaining checks and keep every credential current.",
+            "Some gaps": "A solid foundation with a few gaps. The unchecked items below are where billing errors and audit risk concentrate. DoulaShield closes them.",
+            "At risk": "Several core requirements are missing. Unchecked items below represent active billing risk and potential compliance exposure. DoulaShield can fix this.",
+        }
+        advice = band_advice.get(compliance_band, band_advice["Some gaps"])
+
+        checklist_labels = [
+            ("group_npi", "Group NPI configured"),
+            ("billing_admin", "Billing admin assigned"),
+            ("availity_configured", "Availity credentials set up"),
+            ("promise_enrolled", "All providers PROMISe™-enrolled"),
+            ("expiry_tracking", "Credential expiry tracking active"),
+            ("client_verified", "Client Medicaid details verified before billing"),
+            ("zip4_enriched", "ZIP+4 enriched for CMS-1500"),
+            ("audit_logging", "Audit logging enabled"),
+            ("surrogate_agreements", "Surrogate authorization agreements on file"),
+        ]
+
+        checklist_rows = ""
+        for slug, label in checklist_labels:
+            val = answers.get(slug, "no")
+            if val == "yes":
+                icon = '<span style="color:#16a34a;font-weight:700;">&#10003;</span>'
+            else:
+                icon = '<span style="color:#dc2626;font-weight:700;">&#10007;</span>'
+            bg = "" if checklist_rows.count("<tr") % 2 == 0 else ' style="background:#f9fafb;"'
+            checklist_rows += (
+                f'<tr{bg}>'
+                f'<td style="padding:7px 12px;font-size:13px;border-bottom:1px solid #f3f4f6;">{label}</td>'
+                f'<td style="padding:7px 12px;font-size:14px;border-bottom:1px solid #f3f4f6;text-align:center;">{icon}</td>'
+                f"</tr>\n"
+            )
+
+        html = f"""<!DOCTYPE html>
+<html>
+<body style="font-family: sans-serif; color: #1a1a1a; max-width: 560px; margin: 0 auto; padding: 24px;">
+  <p style="font-size: 16px;">Hi {first_name},</p>
+
+  <div style="margin:20px 0;padding:16px 20px;background:{band_bg_color};border-radius:8px;border:1px solid {band_color}30;">
+    <div style="display:inline-block;background:{band_color};color:#fff;padding:3px 12px;border-radius:20px;font-size:12px;font-weight:700;letter-spacing:.04em;margin-bottom:10px;">
+      {compliance_band.upper()}
+    </div>
+    <div style="font-size:28px;font-weight:700;color:{band_color};">{compliance_score}</div>
+    <div style="font-size:13px;color:#374151;margin-top:4px;">Agency Compliance Score</div>
+  </div>
+
+  <p style="font-size:14px;color:#374151;">{advice}</p>
+
+  <h3 style="font-size:13px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:.05em;margin:24px 0 8px;">Compliance Checklist</h3>
+  <table style="width:100%;border-collapse:collapse;font-size:13px;">
+    <thead>
+      <tr style="background:#f3f4f6;">
+        <th style="padding:7px 12px;text-align:left;font-size:12px;color:#6b7280;font-weight:600;">Item</th>
+        <th style="padding:7px 12px;text-align:center;font-size:12px;color:#6b7280;font-weight:600;width:60px;">Status</th>
+      </tr>
+    </thead>
+    <tbody>
+{checklist_rows}    </tbody>
+  </table>
+  {cta_section}
+  <hr style="border:none;border-top:1px solid #e5e7eb;margin:28px 0;">
+  <p style="color:#9ca3af;font-size:12px;">You receive this because you completed the Doula Agency Compliance Audit. The DoulaShield Team</p>
+</body>
+</html>"""
+
+        subject = "Your Doula Agency Compliance Audit — DoulaShield"
+
+    else:
+        # ---- Individual provider self-assessment email ----
+        assessment_result = answers.get("assessment_result", "")
+
+        badge_colors = {
+            "Stage 1 · Certification":   ("#d97706", "#fffbeb", "#92400e"),
+            "Stage 2 · NPI setup":        ("#d97706", "#fffbeb", "#92400e"),
+            "Stage 3 · PROMISe™":         ("#d97706", "#fffbeb", "#92400e"),
+            "Stage 4 · MCO contracting":  ("#d97706", "#fffbeb", "#92400e"),
+            "Ready to bill":              ("#2563eb", "#eff6ff", "#1e40af"),
+            "Fully operational":          ("#16a34a", "#f0fdf4", "#14532d"),
+        }
+        badge_border, badge_bg, badge_text = badge_colors.get(
+            assessment_result, ("#d97706", "#fffbeb", "#92400e")
+        )
+
+        recommendation = answers.get("recommendation", assessment_result)
+
+        body_copy = {
+            "Stage 1 · Certification":  "You're at the very beginning of the pipeline — which is exactly where DoulaShield is most useful. We'll guide your PCB application and handle everything that follows.",
+            "Stage 2 · NPI setup":      "Your PCB certification is handled. The next hurdle is registering your NPI correctly, then PROMISe™ and MCO contracting. We take it from here.",
+            "Stage 3 · PROMISe™":       "Certification and NPI are in place. PROMISe™ enrollment is where many doulas stall. We'll finish it and get you contracted with MCOs.",
+            "Stage 4 · MCO contracting":"You're enrolled in PROMISe™ and just need MCO contracts to start billing. We handle the contracting and get your claims flowing.",
+            "Ready to bill":            "You've cleared the credentialing pipeline. If claims are still bouncing or slow, DoulaShield's claims engine and audit-proof vault clean up the billing side.",
+            "Fully operational":        "You've made it through the whole pipeline and you're billing successfully. DoulaShield can still cut your admin time, catch denials early, and keep every credential current.",
+        }
+        body = body_copy.get(assessment_result, "DoulaShield handles your PA Medicaid credentialing and billing end-to-end.")
+
+        steps_copy = {
+            "Stage 1 · Certification": [
+                "Complete your PCB certification with our guided, pre-filled forms",
+                "We register your NPI as your administrative delegate",
+                "We handle PROMISe™ enrollment and MCO contracting for you",
+            ],
+            "Stage 2 · NPI setup": [
+                "We register your NPPES / NPI as your delegate",
+                "We complete your PROMISe™ provider enrollment",
+                "We contract you with the right PA Medicaid MCOs",
+            ],
+            "Stage 3 · PROMISe™": [
+                "We complete and track your PROMISe™ enrollment",
+                "We contract you with PA Medicaid MCOs",
+                "We set you up to submit CMS-1500 claims",
+            ],
+            "Stage 4 · MCO contracting": [
+                "We contract you with the PA Medicaid MCOs you serve",
+                "We generate and submit your CMS-1500 claims via Availity",
+                "We track every claim through to reimbursement",
+            ],
+            "Ready to bill": [
+                "Generate error-checked CMS-1500 claims automatically",
+                "Submit 837P electronically through Availity",
+                "Track submitted, paid, and denied claims in one queue",
+            ],
+            "Fully operational": [
+                "Automate expiry reminders for NPI, CAQH, PROMISe™ &amp; PCB",
+                "Keep an audit-proof vault of every claim and document",
+                "Add providers under a group NPI as you grow",
+            ],
+        }
+        steps = steps_copy.get(assessment_result, [])
+        steps_html = "".join(
+            f'<li style="padding:5px 0;font-size:14px;color:#374151;">{s}</li>'
+            for s in steps
+        )
+
+        answer_labels = [
+            ("pcb_certification",  "PCB Certification"),
+            ("npi",                "NPI (NPPES)"),
+            ("promise_enrollment", "PROMISe™ Enrollment"),
+            ("mco_contracting",    "MCO Contracting"),
+            ("cms1500_claim",      "CMS-1500 Claims"),
+        ]
+        answer_rows = ""
+        for key, label in answer_labels:
+            val = answers.get(key, "no answer")
+            if val and val != "no answer":
+                bg = "" if answer_rows.count("<tr") % 2 == 0 else ' style="background:#f9fafb;"'
+                answer_rows += (
+                    f"<tr{bg}>"
+                    f'<td style="padding:7px 12px;font-size:13px;color:#6b7280;border-bottom:1px solid #f3f4f6;">{label}</td>'
+                    f'<td style="padding:7px 12px;font-size:13px;border-bottom:1px solid #f3f4f6;">{val}</td>'
+                    f"</tr>\n"
+                )
+
+        answers_section = ""
+        if answer_rows:
+            answers_section = f"""
+  <h3 style="font-size:13px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:.05em;margin:24px 0 8px;">Your Answers</h3>
+  <table style="width:100%;border-collapse:collapse;">
+    <tbody>
+{answer_rows}    </tbody>
+  </table>"""
+
+        steps_section = ""
+        if steps_html:
+            steps_section = f"""
+  <h3 style="font-size:13px;font-weight:600;color:#374151;text-transform:uppercase;letter-spacing:.05em;margin:24px 0 8px;">Your Next Steps</h3>
+  <ul style="padding-left:20px;margin:0;">
+    {steps_html}
+  </ul>"""
+
+        html = f"""<!DOCTYPE html>
+<html>
+<body style="font-family: sans-serif; color: #1a1a1a; max-width: 560px; margin: 0 auto; padding: 24px;">
+  <p style="font-size: 16px;">Hi {first_name},</p>
+
+  <div style="margin:20px 0;padding:16px 20px;background:{badge_bg};border-radius:8px;border:1px solid {badge_border}30;">
+    <div style="display:inline-block;background:{badge_border};color:#fff;padding:3px 12px;border-radius:20px;font-size:12px;font-weight:700;letter-spacing:.04em;margin-bottom:10px;">
+      {assessment_result.upper()}
+    </div>
+    <div style="font-size:18px;font-weight:700;color:{badge_text};">{recommendation}</div>
+  </div>
+
+  <p style="font-size:14px;color:#374151;">{body}</p>
+  {steps_section}
+  {answers_section}
+  {cta_section}
+  <hr style="border:none;border-top:1px solid #e5e7eb;margin:28px 0;">
+  <p style="color:#9ca3af;font-size:12px;">You receive this because you completed the PA Medicaid Doula Billing Self-Assessment. The DoulaShield Team</p>
+</body>
+</html>"""
+
+        subject = "Your PA Medicaid Billing Self-Assessment — DoulaShield"
+
+    await asyncio.to_thread(
+        resend.Emails.send,
+        {
+            "from": settings.EMAIL_FROM,
+            "to": [lead_email],
+            "subject": subject,
+            "html": html,
+        },
+    )
+
+
 async def send_screenshare_invite(
     to_email: str, provider_name: str, doxy_me_url: str
 ) -> None:

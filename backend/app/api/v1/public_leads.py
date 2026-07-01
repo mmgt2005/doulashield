@@ -23,6 +23,16 @@ async def _notify_admin(lead: Lead) -> None:
         log.warning("Failed to send admin lead notification", exc_info=True)
 
 
+async def _notify_prospect_quiz(lead: Lead, answers: dict | None) -> None:
+    if not answers:
+        return
+    try:
+        from app.services.email_service import send_quiz_results_email
+        await send_quiz_results_email(lead, answers)
+    except Exception:
+        log.warning("Failed to send quiz results to prospect", exc_info=True)
+
+
 @router.post("/webinar", status_code=status.HTTP_201_CREATED)
 @limiter.limit("5/minute")
 async def register_webinar_lead(
@@ -71,6 +81,7 @@ async def register_quiz_lead(
     await db.commit()
     await db.refresh(lead)
     await _notify_admin(lead)
+    await _notify_prospect_quiz(lead, body.answers)
     log.info("New quiz lead: %s %s <%s>", body.first_name, body.last_name, body.email)
     return {"status": "ok", "id": str(lead.id)}
 
