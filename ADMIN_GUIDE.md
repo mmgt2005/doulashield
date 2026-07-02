@@ -53,7 +53,7 @@ DoulaShield connects to Cal.com to automatically capture booked setup calls as l
 
 1. In Cal.com go to **Settings → Developer → Webhooks → Add Webhook**.
 2. Set the URL to `https://your-backend.railway.app/api/v1/public/leads/cal`.
-3. Enable these trigger events: **BOOKING_CREATED**, **BOOKING_RESCHEDULED**, **BOOKING_CANCELLED**.
+3. Enable these trigger events: **BOOKING_CREATED**, **BOOKING_RESCHEDULED**, **BOOKING_CANCELLED**, **RECORDING_READY**, **TRANSCRIPT_READY**.
 4. Copy the webhook secret Cal.com generates and add it to your backend Railway environment as `CAL_COM_WEBHOOK_SECRET`.
 5. Set `NEXT_PUBLIC_SETUP_CALL_URL` in your frontend Railway environment to your Cal.com booking page URL (e.g. `https://cal.com/yourname/setup-call`). This enables the "Book Setup Call →" button in the lead edit panel.
 

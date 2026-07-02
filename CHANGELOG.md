@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.57.1] — 2026-07-02
+
+### Added
+- **Cal.com recording and transcript webhooks**: The webhook handler now processes `RECORDING_READY` and `TRANSCRIPT_READY` events from Cal.com. Recording payload is stored under `lead_data.cal_recording`; transcript under `lead_data.cal_transcript`. Both are matched to the lead via `cal_booking_uid`. The lead edit panel shows a violet **Recording** card with a "Watch Recording →" link and an amber **Transcript** card with scrollable speaker-segmented turns (or plain text if segments are not available). Enable in Cal.com by adding `RECORDING_READY` and `TRANSCRIPT_READY` to your existing webhook subscription.
+
+---
+
 ## [1.57.0] — 2026-07-02
 
 ### Added
