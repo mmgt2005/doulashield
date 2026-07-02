@@ -103,8 +103,14 @@ export default function GmailPage() {
     }
   }
 
-  const handleConnect = () => {
-    window.location.href = `${api}/api/v1/admin/gmail/connect`
+  const handleConnect = async () => {
+    try {
+      const res = await axios.get<{ auth_url: string }>(`${api}/api/v1/admin/gmail/auth-url`, { headers })
+      window.location.href = res.data.auth_url
+    } catch (e) {
+      const msg = axios.isAxiosError(e) ? e.response?.data?.detail : 'Failed to start Gmail OAuth'
+      showToast(typeof msg === 'string' ? msg : 'Failed to start Gmail OAuth')
+    }
   }
 
   const handleDisconnect = async () => {
