@@ -17,26 +17,20 @@ def _configured() -> bool:
     return bool(settings.GOOGLE_CLIENT_ID and settings.GOOGLE_CLIENT_SECRET)
 
 
-def get_oauth_flow(redirect_uri: str):
-    from google_auth_oauthlib.flow import Flow
+def build_authorization_url(redirect_uri: str, state: str) -> str:
+    """Build OAuth consent URL manually — no PKCE, no code_challenge."""
+    import urllib.parse
 
-    client_config = {
-        "web": {
-            "client_id": settings.GOOGLE_CLIENT_ID,
-            "client_secret": settings.GOOGLE_CLIENT_SECRET,
-            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-            "token_uri": "https://oauth2.googleapis.com/token",
-            "redirect_uris": [redirect_uri],
-        }
+    params = {
+        "client_id": settings.GOOGLE_CLIENT_ID,
+        "redirect_uri": redirect_uri,
+        "response_type": "code",
+        "scope": " ".join(_SCOPES),
+        "access_type": "offline",
+        "prompt": "consent",
+        "state": state,
     }
-    flow = Flow.from_client_config(client_config, scopes=_SCOPES, redirect_uri=redirect_uri)
-    return flow
-
-
-def get_authorization_url(redirect_uri: str) -> tuple[str, str]:
-    flow = get_oauth_flow(redirect_uri)
-    url, state = flow.authorization_url(access_type="offline", prompt="consent")
-    return url, state
+    return "https://accounts.google.com/o/oauth2/v2/auth?" + urllib.parse.urlencode(params)
 
 
 async def exchange_code(code: str, redirect_uri: str) -> dict:

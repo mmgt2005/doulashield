@@ -88,12 +88,7 @@ async def gmail_auth_url(
     from app.services import gmail_service
 
     state = _make_state(current_user.id)
-    flow = gmail_service.get_oauth_flow(_REDIRECT_URI())
-    auth_url, _ = flow.authorization_url(
-        access_type="offline",
-        prompt="consent",
-        state=state,
-    )
+    auth_url = gmail_service.build_authorization_url(_REDIRECT_URI(), state)
     return {"auth_url": auth_url}
 
 
