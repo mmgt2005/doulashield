@@ -742,8 +742,8 @@ When a new billing provider entity is created, any billing admin already linked 
 
 Each admin can connect their own Gmail account to DoulaShield. Once connected, two surfaces become available:
 
-- **Gmail inbox page** (`/admin/gmail` in the sidebar): shows your recent inbox with a search bar. Click any message row to expand and read the full body.
-- **Lead edit panel — Emails section**: when you open a lead for editing, DoulaShield automatically fetches up to 10 Gmail threads that include the lead's email address. Click any thread to read the full message.
+- **Gmail inbox page** (`/admin/gmail` in the sidebar): shows your recent inbox with a search bar. Click any message row to expand and read the full body. Attachments appear as download pills below the message body — click to download the file directly from Gmail.
+- **Lead edit panel — Emails section**: when you open a lead for editing, DoulaShield automatically fetches up to 10 Gmail threads that include the lead's email address. Click any thread to read the full message. Attachments are shown as clickable links at the bottom of the expanded message.
 
 Gmail is read-only — DoulaShield never sends, modifies, or deletes emails.
 
