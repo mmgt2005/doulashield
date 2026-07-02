@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.59.6] — 2026-07-02
+
+### Fixed
+- **Gmail "Missing code verifier" (root cause)**: `google_auth_oauthlib`'s `Flow.authorization_url()` was injecting a PKCE `code_challenge` into the consent URL. Since the Flow object is recreated in the callback request, the verifier was lost and Google rejected the exchange. Replaced with a plain `urllib.parse` URL builder that constructs the Google OAuth URL directly — no `code_challenge`, no verifier required.
+
+---
+
 ## [1.59.5] — 2026-07-02
 
 ### Fixed
