@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.57.2] — 2026-07-02
+
+### Fixed
+- **TypeScript build error in leads page**: Cal.com booking, recording, and transcript display blocks used `&&` with `unknown`-typed values, which TypeScript rejects as a ReactNode. Changed all three to ternary expressions (`? ... : null`) to satisfy the type checker.
+
+---
+
 ## [1.57.1] — 2026-07-02
 
 ### Added
