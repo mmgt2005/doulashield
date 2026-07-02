@@ -12,6 +12,16 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.59.3] — 2026-07-02
+
+### Changed
+- **Gmail now shared across all admins**: All admin users connect to and read from the same Gmail account (doulashield@gmail.com). Previously each admin would have connected their own account. The inbox, lead email threads, status, and disconnect endpoints now look for whichever admin has Gmail tokens stored rather than the requesting admin's own tokens. Disconnecting clears tokens from all admins.
+
+### Fixed
+- **Gmail callback Internal Server Error**: Wrapped the Google token exchange in a try/except so failures return a readable 502 error instead of a bare 500.
+
+---
+
 ## [1.59.2] — 2026-07-02
 
 ### Fixed
