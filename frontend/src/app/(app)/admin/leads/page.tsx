@@ -486,7 +486,7 @@ export default function AdminLeadsPage() {
               </a>
             )}
 
-            {panel.lead.lead_data?.cal_booking && (() => {
+            {panel.lead.lead_data?.cal_booking ? (() => {
               const b = panel.lead.lead_data.cal_booking as Record<string, unknown>
               const startTime = b.startTime as string | undefined
               const meetingUrl = (b.videoCallData as Record<string, unknown> | undefined)?.url as string | undefined
@@ -516,9 +516,9 @@ export default function AdminLeadsPage() {
                   )}
                 </div>
               )
-            })()}
+            })() : null}
 
-            {panel.lead.lead_data?.cal_recording && (() => {
+            {panel.lead.lead_data?.cal_recording ? (() => {
               const r = panel.lead.lead_data.cal_recording as Record<string, unknown>
               const recordingUrl = (r.recordingUrl ?? r.downloadLink ?? r.url) as string | undefined
               return (
@@ -538,9 +538,9 @@ export default function AdminLeadsPage() {
                   )}
                 </div>
               )
-            })()}
+            })() : null}
 
-            {panel.lead.lead_data?.cal_transcript && (() => {
+            {panel.lead.lead_data?.cal_transcript ? (() => {
               const t = panel.lead.lead_data.cal_transcript as Record<string, unknown>
               const td = t.transcriptData as Record<string, unknown> | undefined
               const text = (td?.text ?? t.text) as string | undefined
@@ -564,7 +564,7 @@ export default function AdminLeadsPage() {
                   )}
                 </div>
               )
-            })()}
+            })() : null}
 
             {panel.lead.lead_data && (
               <div>
