@@ -518,6 +518,54 @@ export default function AdminLeadsPage() {
               )
             })()}
 
+            {panel.lead.lead_data?.cal_recording && (() => {
+              const r = panel.lead.lead_data.cal_recording as Record<string, unknown>
+              const recordingUrl = (r.recordingUrl ?? r.downloadLink ?? r.url) as string | undefined
+              return (
+                <div className="rounded border border-violet-200 bg-violet-50 p-3 space-y-1">
+                  <p className="text-xs font-semibold text-violet-800">Recording</p>
+                  {recordingUrl ? (
+                    <a
+                      href={recordingUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-blue-600 hover:underline block"
+                    >
+                      Watch Recording →
+                    </a>
+                  ) : (
+                    <p className="text-xs text-gray-500">Recording URL not yet available</p>
+                  )}
+                </div>
+              )
+            })()}
+
+            {panel.lead.lead_data?.cal_transcript && (() => {
+              const t = panel.lead.lead_data.cal_transcript as Record<string, unknown>
+              const td = t.transcriptData as Record<string, unknown> | undefined
+              const text = (td?.text ?? t.text) as string | undefined
+              const segments = (td?.segments ?? t.segments) as Array<Record<string, unknown>> | undefined
+              return (
+                <div className="rounded border border-amber-200 bg-amber-50 p-3 space-y-2">
+                  <p className="text-xs font-semibold text-amber-800">Transcript</p>
+                  {segments && segments.length > 0 ? (
+                    <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                      {segments.map((seg, i) => (
+                        <div key={i} className="text-xs">
+                          <span className="font-medium text-amber-900">{String(seg.speaker ?? 'Speaker')}: </span>
+                          <span className="text-gray-700">{String(seg.text ?? '')}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : text ? (
+                    <p className="text-xs text-gray-700 max-h-48 overflow-y-auto whitespace-pre-wrap">{text}</p>
+                  ) : (
+                    <p className="text-xs text-gray-500">Transcript data not yet available</p>
+                  )}
+                </div>
+              )
+            })()}
+
             {panel.lead.lead_data && (
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Source Data</label>

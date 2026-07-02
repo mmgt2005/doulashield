@@ -156,4 +156,28 @@ async def cal_webhook(request: Request) -> dict:
                 await db.commit()
                 log.info("cal_webhook: cancelled lead uid=%s reverted to qualified", booking_uid)
 
+        elif trigger == "RECORDING_READY":
+            lead = await _find_lead_by_uid(db, booking_uid)
+            if lead:
+                data = dict(lead.lead_data or {})
+                data["cal_recording"] = payload
+                lead.lead_data = data
+                lead.updated_at = datetime.now(timezone.utc)
+                await db.commit()
+                log.info("cal_webhook: recording stored for lead uid=%s", booking_uid)
+            else:
+                log.warning("cal_webhook: RECORDING_READY — no lead found for uid=%s", booking_uid)
+
+        elif trigger == "TRANSCRIPT_READY":
+            lead = await _find_lead_by_uid(db, booking_uid)
+            if lead:
+                data = dict(lead.lead_data or {})
+                data["cal_transcript"] = payload
+                lead.lead_data = data
+                lead.updated_at = datetime.now(timezone.utc)
+                await db.commit()
+                log.info("cal_webhook: transcript stored for lead uid=%s", booking_uid)
+            else:
+                log.warning("cal_webhook: TRANSCRIPT_READY — no lead found for uid=%s", booking_uid)
+
     return {"received": True}
