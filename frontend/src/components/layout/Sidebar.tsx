@@ -20,6 +20,7 @@ const adminLinks = [
   { href: '/admin/billing-providers', label: 'Billing Providers' },
   { href: '/admin/enrollment-services', label: 'Enrollment Services' },
   { href: '/admin/leads', label: 'Leads' },
+  { href: '/admin/gmail', label: 'Gmail' },
   { href: '/admin/audit-logs', label: 'Audit Logs' },
 ]
 

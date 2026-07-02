@@ -70,6 +70,10 @@ class Settings(BaseSettings):
     WEBINAR_VIDEO_URL_AGENCY: str = ""      # Pre-recorded agency webinar video link; falls back to WEBINAR_VIDEO_URL if empty
     CAL_COM_WEBHOOK_SECRET: str = ""        # HMAC-SHA256 secret from Cal.com Settings → Webhooks
 
+    # Google / Gmail OAuth
+    GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_CLIENT_SECRET: str = ""
+
     # Internal ops
     INTERNAL_SECRET: str = ""  # required for POST /internal/trigger-remittance-sync
 

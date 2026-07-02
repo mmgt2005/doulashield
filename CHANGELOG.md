@@ -12,6 +12,17 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.59.0] — 2026-07-02
+
+### Added
+- **Gmail integration**: Admins can connect their Gmail account via OAuth 2.0 (read-only scope). Once connected, a new `/admin/gmail` page shows the full inbox with search support and expandable message bodies. The lead edit panel shows an "Emails" section with up to 10 threads matching the lead's email address — fetched live from Gmail, nothing stored in DoulaShield. Tokens are stored encrypted in the database using the same Fernet pattern as other credentials.
+- **Gmail sidebar link**: "Gmail" added to the admin sidebar navigation.
+- **Migration 0052**: Adds `gmail_access_token_encrypted`, `gmail_refresh_token_encrypted`, `gmail_token_expiry`, and `gmail_connected_email` columns to `public.users`.
+- **New backend packages**: `google-auth`, `google-auth-oauthlib`, `google-api-python-client`.
+- **New config vars**: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`.
+
+---
+
 ## [1.58.0] — 2026-07-02
 
 ### Added

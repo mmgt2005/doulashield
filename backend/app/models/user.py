@@ -28,6 +28,10 @@ class User(Base):
     telehealth_link: Mapped[str | None] = mapped_column(Text, nullable=True)
     contact_email: Mapped[str | None] = mapped_column(Text, nullable=True)
     zipzign_api_key_encrypted: Mapped[str | None] = mapped_column(Text, nullable=True)
+    gmail_access_token_encrypted: Mapped[str | None] = mapped_column(Text, nullable=True)
+    gmail_refresh_token_encrypted: Mapped[str | None] = mapped_column(Text, nullable=True)
+    gmail_token_expiry: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    gmail_connected_email: Mapped[str | None] = mapped_column(Text, nullable=True)
     zone: Mapped[str | None] = mapped_column(String(4), nullable=True)
     counties: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON array e.g. '["Bucks","Chester"]'
     provider_address: Mapped[str | None] = mapped_column(Text, nullable=True)

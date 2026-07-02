@@ -26,6 +26,7 @@ from app.api.v1.enrollment_provider import router as enrollment_provider_router
 from app.api.v1.public_leads import router as public_leads_router
 from app.api.v1.admin_leads import router as admin_leads_router
 from app.api.v1.webhooks_cal import router as webhooks_cal_router
+from app.api.v1.gmail import router as gmail_router
 
 api_router = APIRouter()
 
@@ -55,3 +56,4 @@ api_router.include_router(enrollment_provider_router)
 api_router.include_router(public_leads_router)
 api_router.include_router(admin_leads_router)
 api_router.include_router(webhooks_cal_router)
+api_router.include_router(gmail_router)

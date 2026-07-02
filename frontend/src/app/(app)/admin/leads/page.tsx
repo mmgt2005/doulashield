@@ -82,6 +82,13 @@ export default function AdminLeadsPage() {
   const [converting, setConverting] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
 
+  // Gmail
+  const [gmailConnected, setGmailConnected] = useState(false)
+  const [leadEmails, setLeadEmails] = useState<Array<{ id: string; subject: string; from: string; date: string; snippet: string; unread: boolean }>>([])
+  const [emailsLoading, setEmailsLoading] = useState(false)
+  const [expandedEmail, setExpandedEmail] = useState<string | null>(null)
+  const [emailDetail, setEmailDetail] = useState<Record<string, { body: string; to: string }>>({})
+
   // Add lead modal
   const [showAdd, setShowAdd] = useState(false)
   const [addForm, setAddForm] = useState({
@@ -117,7 +124,12 @@ export default function AdminLeadsPage() {
     }
   }
 
-  useEffect(() => { fetchAll() }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    fetchAll()
+    axios.get(`${API}/api/v1/admin/gmail/status`, { headers: authHeaders() })
+      .then(r => setGmailConnected(r.data.connected))
+      .catch(() => {})
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const openEdit = (lead: Lead) => {
     setPanel({
@@ -131,6 +143,19 @@ export default function AdminLeadsPage() {
       last_name: lead.last_name,
       phone: lead.phone ?? '',
     })
+    setLeadEmails([])
+    setExpandedEmail(null)
+    setEmailDetail({})
+    if (gmailConnected) {
+      setEmailsLoading(true)
+      axios.get(`${API}/api/v1/admin/gmail/messages`, {
+        headers: authHeaders(),
+        params: { email: lead.email },
+      })
+        .then(r => setLeadEmails(r.data))
+        .catch(() => {})
+        .finally(() => setEmailsLoading(false))
+    }
   }
 
   const saveEdit = async () => {
@@ -491,6 +516,63 @@ export default function AdminLeadsPage() {
                 className="w-full rounded border border-gray-300 px-2 py-1.5 text-sm focus:border-blue-400 focus:outline-none"
               />
             </div>
+
+            {gmailConnected && (
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  Emails
+                  {!emailsLoading && leadEmails.length > 0 && (
+                    <span className="ml-1 text-gray-400">({leadEmails.length})</span>
+                  )}
+                </label>
+                {emailsLoading ? (
+                  <p className="text-xs text-gray-400">Loading emails…</p>
+                ) : leadEmails.length === 0 ? (
+                  <p className="text-xs text-gray-400">No emails found with {panel.lead.email}</p>
+                ) : (
+                  <div className="divide-y divide-gray-100 rounded border border-gray-200 bg-white max-h-64 overflow-y-auto">
+                    {leadEmails.map(em => (
+                      <div key={em.id}>
+                        <button
+                          onClick={async () => {
+                            if (expandedEmail === em.id) { setExpandedEmail(null); return }
+                            setExpandedEmail(em.id)
+                            if (!emailDetail[em.id]) {
+                              try {
+                                const r = await axios.get(`${API}/api/v1/admin/gmail/messages/${em.id}`, { headers: authHeaders() })
+                                setEmailDetail(prev => ({ ...prev, [em.id]: { body: r.data.body, to: r.data.to } }))
+                              } catch { /* ignore */ }
+                            }
+                          }}
+                          className="w-full text-left px-3 py-2 hover:bg-gray-50 transition-colors"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0 flex-1">
+                              <p className={`text-xs truncate ${em.unread ? 'font-semibold text-gray-900' : 'font-medium text-gray-700'}`}>
+                                {em.subject || '(no subject)'}
+                              </p>
+                              <p className="text-xs text-gray-400 truncate mt-0.5">{em.snippet}</p>
+                            </div>
+                            <p className="shrink-0 text-xs text-gray-400">{em.date.slice(0, 11)}</p>
+                          </div>
+                        </button>
+                        {expandedEmail === em.id && (
+                          <div className="border-t border-gray-100 bg-gray-50 px-3 py-2 text-xs space-y-1">
+                            <p className="text-gray-500"><span className="font-medium">From:</span> {em.from}</p>
+                            {emailDetail[em.id]?.to && (
+                              <p className="text-gray-500"><span className="font-medium">To:</span> {emailDetail[em.id].to}</p>
+                            )}
+                            <div className="mt-1.5 rounded border border-gray-200 bg-white p-2 whitespace-pre-wrap text-gray-700 max-h-40 overflow-y-auto">
+                              {emailDetail[em.id]?.body || em.snippet}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             {process.env.NEXT_PUBLIC_SETUP_CALL_URL && (
               <a
