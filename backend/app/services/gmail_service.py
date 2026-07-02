@@ -56,7 +56,8 @@ async def exchange_code(code: str, redirect_uri: str) -> dict:
                 "grant_type": "authorization_code",
             },
         )
-        resp.raise_for_status()
+        if not resp.is_success:
+            raise ValueError(f"Google token endpoint {resp.status_code}: {resp.text}")
         data = resp.json()
 
     expiry = None
