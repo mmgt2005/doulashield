@@ -188,7 +188,7 @@ export interface UserWithBilling {
   subscription_status: string | null
 }
 
-export type LeadSource = 'webinar' | 'quiz' | 'manual' | 'contact_form'
+export type LeadSource = 'webinar' | 'quiz' | 'manual' | 'contact_form' | 'cal_com'
 export type LeadStatus = 'new' | 'contacted' | 'qualified' | 'demo_scheduled' | 'converted' | 'not_interested'
 export type LeadProviderType = 'independent' | 'agency' | 'unknown'
 
@@ -207,6 +207,7 @@ export interface Lead {
   follow_up_at: string | null
   assigned_to: string | null
   converted_user_id: string | null
+  cal_booking_uid: string | null
   created_at: string
   updated_at: string | null
 }

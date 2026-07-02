@@ -4,7 +4,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, EmailStr
 
-SourceLiteral = Literal["webinar", "quiz", "manual", "contact_form"]
+SourceLiteral = Literal["webinar", "quiz", "manual", "contact_form", "cal_com"]
 StatusLiteral = Literal["new", "contacted", "qualified", "demo_scheduled", "converted", "not_interested"]
 ProviderTypeLiteral = Literal["independent", "agency", "unknown"]
 
@@ -77,6 +77,7 @@ class LeadRead(BaseModel):
     follow_up_at: datetime | None
     assigned_to: uuid.UUID | None
     converted_user_id: uuid.UUID | None
+    cal_booking_uid: str | None
     created_at: datetime
     updated_at: datetime | None
 

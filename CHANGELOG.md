@@ -12,6 +12,17 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.57.0] — 2026-07-02
+
+### Added
+- **Cal.com Setup Call integration**: When a prospect books a "Setup Call" via Cal.com, a webhook automatically upserts the lead in DoulaShield, sets status to `Demo Scheduled`, records the booking start time as the follow-up date, and stores the full booking payload for display in the edit panel. New webhook endpoint `POST /api/v1/public/leads/cal` handles `BOOKING_CREATED`, `BOOKING_RESCHEDULED`, and `BOOKING_CANCELLED` events. HMAC-SHA256 signature verification uses `CAL_COM_WEBHOOK_SECRET` (optional during development).
+- **Structured booking card in lead edit panel**: When a lead has a Cal.com booking, the edit panel shows a formatted card with date/time, booking status, and a "Join Meeting →" link (when a video call URL is present), in addition to the raw source data.
+- **"Book Setup Call →" button in lead edit panel**: Opens the Cal.com booking page in a new tab with the lead's email and name pre-filled. Enabled by setting `NEXT_PUBLIC_SETUP_CALL_URL` in the frontend environment.
+- **New `cal_com` lead source**: Cal.com bookings from new (previously unknown) prospects create leads with `source: "cal_com"`. Bookings matched to an existing lead by email update the existing record regardless of its original source.
+- **Migration 0051**: Adds `cal_booking_uid` column to `public.leads` for idempotent event handling and reschedule/cancel lookups.
+
+---
+
 ## [1.56.0] — 2026-07-02
 
 ### Added

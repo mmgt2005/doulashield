@@ -10,6 +10,7 @@ const SOURCE_LABELS: Record<string, string> = {
   quiz: 'Quiz',
   manual: 'Manual',
   contact_form: 'Contact Form',
+  cal_com: 'Setup Call',
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -26,6 +27,7 @@ const SOURCE_COLORS: Record<string, string> = {
   quiz: 'bg-purple-100 text-purple-800',
   manual: 'bg-gray-100 text-gray-700',
   contact_form: 'bg-teal-100 text-teal-800',
+  cal_com: 'bg-sky-100 text-sky-800',
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -472,6 +474,49 @@ export default function AdminLeadsPage() {
                 className="w-full rounded border border-gray-300 px-2 py-1.5 text-sm focus:border-blue-400 focus:outline-none"
               />
             </div>
+
+            {process.env.NEXT_PUBLIC_SETUP_CALL_URL && (
+              <a
+                href={`${process.env.NEXT_PUBLIC_SETUP_CALL_URL}?email=${encodeURIComponent(panel.lead.email)}&name=${encodeURIComponent(`${panel.first_name} ${panel.last_name}`.trim())}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
+              >
+                Book Setup Call →
+              </a>
+            )}
+
+            {panel.lead.lead_data?.cal_booking && (() => {
+              const b = panel.lead.lead_data.cal_booking as Record<string, unknown>
+              const startTime = b.startTime as string | undefined
+              const meetingUrl = (b.videoCallData as Record<string, unknown> | undefined)?.url as string | undefined
+              const bookingStatus = b.status as string | undefined
+              return (
+                <div className="rounded border border-sky-200 bg-sky-50 p-3 space-y-1">
+                  <p className="text-xs font-semibold text-sky-800">Cal.com Booking</p>
+                  {startTime && (
+                    <p className="text-xs text-gray-600">
+                      📅 {new Date(startTime).toLocaleString()}
+                    </p>
+                  )}
+                  {bookingStatus && (
+                    <p className="text-xs text-gray-600">
+                      Status: <span className="font-medium">{bookingStatus}</span>
+                    </p>
+                  )}
+                  {meetingUrl && (
+                    <a
+                      href={meetingUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-blue-600 hover:underline block"
+                    >
+                      Join Meeting →
+                    </a>
+                  )}
+                </div>
+              )
+            })()}
 
             {panel.lead.lead_data && (
               <div>
