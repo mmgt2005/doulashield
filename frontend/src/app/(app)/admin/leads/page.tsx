@@ -80,6 +80,7 @@ export default function AdminLeadsPage() {
   const [panel, setPanel] = useState<EditPanel | null>(null)
   const [saving, setSaving] = useState(false)
   const [converting, setConverting] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   // Add lead modal
   const [showAdd, setShowAdd] = useState(false)
@@ -157,6 +158,22 @@ export default function AdminLeadsPage() {
       alert(`Save failed: ${msg}`)
     } finally {
       setSaving(false)
+    }
+  }
+
+  const deleteLead = async () => {
+    if (!panel) return
+    if (!confirm(`Delete "${panel.first_name} ${panel.last_name}"? This cannot be undone.`)) return
+    setDeleting(true)
+    try {
+      await axios.delete(`${API}/api/v1/admin/leads/${panel.lead.id}`, { headers: authHeaders() })
+      setPanel(null)
+      await fetchAll()
+    } catch (e) {
+      const msg = axios.isAxiosError(e) ? e.response?.data?.detail ?? e.message : String(e)
+      alert(`Delete failed: ${msg}`)
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -597,6 +614,16 @@ export default function AdminLeadsPage() {
                 className="w-full rounded bg-emerald-600 py-2 text-sm font-medium text-white hover:bg-emerald-700"
               >
                 Convert → Create Account
+              </button>
+            )}
+
+            {panel.lead.source === 'manual' && (
+              <button
+                onClick={deleteLead}
+                disabled={deleting}
+                className="w-full rounded border border-red-200 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
+              >
+                {deleting ? 'Deleting…' : 'Delete Lead'}
               </button>
             )}
           </div>

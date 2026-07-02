@@ -185,6 +185,36 @@ async def update_lead(
     return LeadRead.model_validate(lead)
 
 
+@router.delete("/{lead_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_lead(
+    request: Request,
+    lead_id: uuid.UUID,
+    current_user: Annotated[CurrentUser, Depends(require_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    audit: Annotated[AuditLogger, Depends(get_audit)],
+) -> None:
+    result = await db.execute(select(Lead).where(Lead.id == lead_id))
+    lead = result.scalar_one_or_none()
+    if not lead:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lead not found")
+    if lead.source != "manual":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only manually-added leads can be deleted",
+        )
+    await audit.log(
+        action="DELETE_LEAD",
+        resource_type="lead",
+        resource_id=lead.id,
+        ip_address=get_client_ip(request),
+        user_agent=get_user_agent(request),
+        user_id=current_user.id,
+        extra_context={"email": lead.email, "source": lead.source},
+    )
+    await db.delete(lead)
+    await db.commit()
+
+
 @router.post("/{lead_id}/convert", status_code=status.HTTP_200_OK)
 async def convert_lead(
     request: Request,
