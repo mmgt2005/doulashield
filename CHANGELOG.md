@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.56.0] — 2026-07-02
+
+### Added
+- **Separate agency webinar video URL**: `WEBINAR_VIDEO_URL_AGENCY` controls the pre-recorded video link sent to agency webinar registrants. Falls back to `WEBINAR_VIDEO_URL` if empty. The landing page sets `webinar_topic` to a value containing "agency" (e.g. "Agency Webinar") to trigger the agency video; all other topics use the individual video URL.
+
+---
+
 ## [1.55.0] — 2026-07-01
 
 ### Added

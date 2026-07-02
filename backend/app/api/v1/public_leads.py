@@ -42,10 +42,16 @@ async def _notify_prospect_quiz(lead: Lead, answers: dict | None) -> None:
         log.warning("Failed to send quiz results to prospect", exc_info=True)
 
 
-async def _notify_prospect_webinar(lead: Lead) -> None:
+async def _notify_prospect_webinar(lead: Lead, webinar_topic: str | None = None) -> None:
     try:
+        from app.core.config import settings
         from app.services.email_service import send_webinar_confirmation
-        await send_webinar_confirmation(lead)
+        topic = (webinar_topic or "").lower()
+        if "agency" in topic:
+            video_url = settings.WEBINAR_VIDEO_URL_AGENCY or settings.WEBINAR_VIDEO_URL
+        else:
+            video_url = settings.WEBINAR_VIDEO_URL
+        await send_webinar_confirmation(lead, video_url=video_url)
     except Exception:
         log.warning("Failed to send webinar confirmation to prospect", exc_info=True)
 
@@ -62,14 +68,12 @@ async def register_webinar_lead(
 
     if existing:
         if existing.converted_user_id:
-            # Already a paying user — silent no-op
             return {"status": "ok", "id": str(existing.id)}
-        # Re-registration: refresh lead_data and send them the video link again
         existing.lead_data = {"webinar_topic": body.webinar_topic} if body.webinar_topic else existing.lead_data
         existing.updated_at = datetime.now(timezone.utc)
         await db.commit()
         await db.refresh(existing)
-        await _notify_prospect_webinar(existing)
+        await _notify_prospect_webinar(existing, body.webinar_topic)
         log.info("Duplicate webinar lead updated: <%s>", email)
         return {"status": "ok", "id": str(existing.id)}
 
@@ -88,7 +92,7 @@ async def register_webinar_lead(
     await db.commit()
     await db.refresh(lead)
     await _notify_admin(lead)
-    await _notify_prospect_webinar(lead)
+    await _notify_prospect_webinar(lead, body.webinar_topic)
     log.info("New webinar lead: %s %s <%s>", body.first_name, body.last_name, email)
     return {"status": "ok", "id": str(lead.id)}
 
@@ -106,7 +110,6 @@ async def register_quiz_lead(
     if existing:
         if existing.converted_user_id:
             return {"status": "ok", "id": str(existing.id)}
-        # Re-submission: update answers and send fresh results
         existing.lead_data = {"answers": body.answers} if body.answers else existing.lead_data
         existing.provider_type = body.provider_type or existing.provider_type
         existing.updated_at = datetime.now(timezone.utc)
@@ -149,7 +152,6 @@ async def register_contact_lead(
     if existing:
         if existing.converted_user_id:
             return {"status": "ok", "id": str(existing.id)}
-        # Repeat contact: update message, suppress admin noise
         existing.lead_data = {"message": body.message} if body.message else existing.lead_data
         existing.updated_at = datetime.now(timezone.utc)
         await db.commit()

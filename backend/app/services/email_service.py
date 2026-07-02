@@ -966,7 +966,7 @@ async def send_billing_subscription_started(
     )
 
 
-async def send_webinar_confirmation(lead: object) -> None:
+async def send_webinar_confirmation(lead: object, video_url: str = "") -> None:
     """Sends a registration confirmation to a webinar lead with a Watch Now link."""
     if not _configured():
         return
@@ -978,10 +978,10 @@ async def send_webinar_confirmation(lead: object) -> None:
     first_name = getattr(lead, "first_name", "") or "there"
 
     watch_btn = ""
-    if settings.WEBINAR_VIDEO_URL:
+    if video_url:
         watch_btn = f"""
   <p style="margin: 24px 0;">
-    <a href="{settings.WEBINAR_VIDEO_URL}"
+    <a href="{video_url}"
        style="background:#2563eb;color:#fff;padding:12px 24px;border-radius:6px;
               text-decoration:none;font-weight:600;font-size:15px;display:inline-block;">
       Watch the Webinar Now &rarr;

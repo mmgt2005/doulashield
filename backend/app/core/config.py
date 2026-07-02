@@ -66,7 +66,8 @@ class Settings(BaseSettings):
     SETUP_CALL_URL: str = ""                # Calendly / booking link shown in quiz result emails
     WEBINAR_REGISTER_URL: str = ""          # Individual webinar registration link (quiz results + webinar confirmation)
     WEBINAR_REGISTER_URL_AGENCY: str = ""   # Agency webinar URL; falls back to WEBINAR_REGISTER_URL if empty
-    WEBINAR_VIDEO_URL: str = ""             # Pre-recorded webinar video link sent in webinar confirmation email
+    WEBINAR_VIDEO_URL: str = ""             # Pre-recorded individual webinar video link
+    WEBINAR_VIDEO_URL_AGENCY: str = ""      # Pre-recorded agency webinar video link; falls back to WEBINAR_VIDEO_URL if empty
 
     # Internal ops
     INTERNAL_SECRET: str = ""  # required for POST /internal/trigger-remittance-sync
