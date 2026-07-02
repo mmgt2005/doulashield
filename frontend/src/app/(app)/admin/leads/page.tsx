@@ -89,6 +89,31 @@ export default function AdminLeadsPage() {
   const [expandedEmail, setExpandedEmail] = useState<string | null>(null)
   const [emailDetail, setEmailDetail] = useState<Record<string, { body: string; to: string; attachments?: Array<{ id: string | null; filename: string; mimeType: string; size: number }> }>>({})
 
+  const downloadLeadAttachment = async (
+    messageId: string,
+    att: { id: string | null; filename: string; mimeType: string }
+  ) => {
+    if (!att.id) return
+    try {
+      const res = await axios.get(
+        `${API}/api/v1/admin/gmail/messages/${messageId}/attachments/${att.id}`,
+        {
+          headers: authHeaders(),
+          params: { filename: att.filename, mime_type: att.mimeType },
+          responseType: 'blob',
+        }
+      )
+      const url = URL.createObjectURL(new Blob([res.data], { type: att.mimeType }))
+      const a = document.createElement('a')
+      a.href = url
+      a.download = att.filename
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    } catch { /* ignore */ }
+  }
+
   // Add lead modal
   const [showAdd, setShowAdd] = useState(false)
   const [addForm, setAddForm] = useState({
@@ -569,16 +594,13 @@ export default function AdminLeadsPage() {
                               <div className="mt-1 flex flex-wrap gap-1">
                                 {emailDetail[em.id].attachments!.map((att, i) => (
                                   att.id ? (
-                                    <a
+                                    <button
                                       key={i}
-                                      href={`${API}/api/v1/admin/gmail/messages/${em.id}/attachments/${att.id}?filename=${encodeURIComponent(att.filename)}&mime_type=${encodeURIComponent(att.mimeType)}`}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
+                                      onClick={() => downloadLeadAttachment(em.id, att)}
                                       className="inline-flex items-center gap-0.5 rounded border border-gray-200 bg-white px-1.5 py-0.5 text-xs text-gray-700 hover:bg-gray-50"
-                                      download={att.filename}
                                     >
                                       {att.filename}
-                                    </a>
+                                    </button>
                                   ) : (
                                     <span key={i} className="rounded border border-gray-200 px-1.5 py-0.5 text-xs text-gray-500">{att.filename}</span>
                                   )

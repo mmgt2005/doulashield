@@ -12,6 +12,16 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.59.8] — 2026-07-02
+
+### Fixed
+- **Gmail attachment "Not authenticated" error**: Attachment download links were plain `<a href>` tags pointing directly at the backend, so the browser sent no Bearer token and got a 401. Replaced with authenticated `axios` fetches (`responseType: 'blob'`) that create a temporary blob URL and trigger download programmatically. Applies to both the Gmail inbox page and the lead-panel Emails section.
+
+### Changed
+- **ADMIN_GUIDE — Gmail section rewritten**: expanded to cover the shared-account model, detailed Google Cloud Console setup steps, inbox usage guide (search syntax, attachments, lead email history), and disconnect behavior.
+
+---
+
 ## [1.59.7] — 2026-07-02
 
 ### Added

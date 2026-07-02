@@ -740,40 +740,50 @@ When a new billing provider entity is created, any billing admin already linked 
 
 ## Gmail Integration
 
-Each admin can connect their own Gmail account to DoulaShield. Once connected, two surfaces become available:
+DoulaShield connects to a shared Gmail account (`doulashield@gmail.com`) so all admins can see the same inbox. Whoever first completes the OAuth flow stores the tokens; every other admin reads from those same tokens. Once connected, two surfaces become available:
 
-- **Gmail inbox page** (`/admin/gmail` in the sidebar): shows your recent inbox with a search bar. Click any message row to expand and read the full body. Attachments appear as download pills below the message body — click to download the file directly from Gmail.
-- **Lead edit panel — Emails section**: when you open a lead for editing, DoulaShield automatically fetches up to 10 Gmail threads that include the lead's email address. Click any thread to read the full message. Attachments are shown as clickable links at the bottom of the expanded message.
+- **Gmail inbox page** (`/admin/gmail` in the sidebar): shows your recent inbox with a search bar. Click any message row to expand and read the full body. Attachments appear as download buttons below the message body — click to download the file.
+- **Lead edit panel — Emails section**: when you open a lead for editing, DoulaShield automatically fetches up to 10 Gmail threads involving the lead's email address. Click any thread to read the full message. Attachments appear as clickable buttons at the bottom of the expanded message.
 
 Gmail is read-only — DoulaShield never sends, modifies, or deletes emails.
 
 ### One-Time Google Cloud Setup
 
-Before using this feature, a DoulaShield developer (or the Google Workspace admin) must configure a Google Cloud project:
+A developer must configure a Google Cloud project once before any admin can connect:
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com) → **APIs & Services** → **Library** → enable **Gmail API**.
-2. **OAuth consent screen**: set to External, add the `https://www.googleapis.com/auth/gmail.readonly` scope, and add your admin email as a test user (while in development/testing mode).
+2. **OAuth consent screen**: set to **External**. Under **Scopes** add `https://www.googleapis.com/auth/gmail.readonly`. Under **Test users** add `doulashield@gmail.com` (required while the app is in testing mode).
 3. **Credentials** → **Create Credentials** → **OAuth 2.0 Client ID** (Web application):
-   - Authorized redirect URI: `https://your-backend.railway.app/api/v1/admin/gmail/callback`
-4. Copy the **Client ID** and **Client Secret** into the backend environment:
+   - Under **Authorized redirect URIs** add: `https://your-backend.railway.app/api/v1/admin/gmail/callback`
+4. Copy the **Client ID** and **Client Secret** into the backend Railway environment variables:
    ```
    GOOGLE_CLIENT_ID=<paste here>
    GOOGLE_CLIENT_SECRET=<paste here>
    ```
-5. Run `alembic upgrade head` to apply migration 0052 (adds four Gmail columns to the users table).
+5. Run `alembic upgrade head` to apply migration 0052 (adds four Gmail columns to the `users` table).
 
-### Connecting Your Gmail Account
+### Connecting the Shared Gmail Account
+
+Any admin can authorize the shared account — only one needs to do it:
 
 1. Go to **Gmail** in the admin sidebar.
 2. Click **Connect Gmail** — you are redirected to Google's consent screen.
-3. Authorize read-only Gmail access.
-4. You are redirected back to `/admin/gmail` and your inbox loads automatically.
+3. Sign in as `doulashield@gmail.com` and authorize read-only access.
+4. You are redirected back to `/admin/gmail` and the inbox loads automatically.
+5. All other admins now see the same inbox without needing to connect again.
 
-The connected email address appears at the top of the Gmail page. Each admin connects independently — one admin's Gmail credentials are never shared with or visible to another.
+The connected email address (`doulashield@gmail.com`) appears at the top of the Gmail page.
+
+### Using the Inbox
+
+- **Search**: type any Gmail search query (sender, subject keywords, date ranges like `after:2025-01-01`) in the search bar and press Search. Click Clear to return to the full inbox.
+- **Read a message**: click any row to expand it. The full email body, headers, and attachments load inline.
+- **Download an attachment**: click the attachment button that appears below the message body. The file downloads through the app — no separate Google login required.
+- **Lead email history**: open any lead in the edit panel and scroll to the **Emails** section. It shows up to 10 threads involving that lead's email address. Expand any thread to read the body and download attachments.
 
 ### Disconnecting
 
-Click **Disconnect** on the Gmail page. This immediately clears the stored tokens and the Emails section disappears from lead panels until you reconnect.
+Click **Disconnect** on the Gmail page. This clears the stored tokens for all admins at once. The Emails section disappears from lead panels until someone reconnects. Disconnecting also attempts to revoke the token at Google so it can no longer be used.
 
 ---
 

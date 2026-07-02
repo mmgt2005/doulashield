@@ -121,6 +121,30 @@ export default function GmailPage() {
     }
   }
 
+  const downloadAttachment = async (messageId: string, att: GmailAttachment) => {
+    if (!att.id) return
+    try {
+      const res = await axios.get(
+        `${api}/api/v1/admin/gmail/messages/${messageId}/attachments/${att.id}`,
+        {
+          headers,
+          params: { filename: att.filename, mime_type: att.mimeType },
+          responseType: 'blob',
+        }
+      )
+      const url = URL.createObjectURL(new Blob([res.data], { type: att.mimeType }))
+      const a = document.createElement('a')
+      a.href = url
+      a.download = att.filename
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    } catch {
+      showToast('Failed to download attachment')
+    }
+  }
+
   const handleDisconnect = async () => {
     if (!confirm('Disconnect Gmail? You will need to re-authorize to view emails again.')) return
     setDisconnecting(true)
@@ -263,18 +287,15 @@ export default function GmailPage() {
                               <div className="flex flex-wrap gap-1.5">
                                 {detail.attachments.map((att, i) => (
                                   att.id ? (
-                                    <a
+                                    <button
                                       key={i}
-                                      href={`${api}/api/v1/admin/gmail/messages/${detail.id}/attachments/${att.id}?filename=${encodeURIComponent(att.filename)}&mime_type=${encodeURIComponent(att.mimeType)}`}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
+                                      onClick={() => downloadAttachment(detail.id, att)}
                                       className="inline-flex items-center gap-1 rounded border border-gray-200 bg-white px-2 py-1 text-xs text-gray-700 hover:bg-gray-50"
-                                      download={att.filename}
                                     >
-                                      <svg className="h-3 w-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
+                                      <svg className="h-3 w-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
                                       {att.filename}
-                                      {att.size > 0 && <span className="text-gray-400">({(att.size / 1024).toFixed(0)}KB)</span>}
-                                    </a>
+                                      {att.size > 0 && <span className="text-gray-400 ml-0.5">({(att.size / 1024).toFixed(0)} KB)</span>}
+                                    </button>
                                   ) : (
                                     <span key={i} className="inline-flex items-center gap-1 rounded border border-gray-200 bg-white px-2 py-1 text-xs text-gray-500">
                                       {att.filename}
