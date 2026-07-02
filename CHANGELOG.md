@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.59.2] — 2026-07-02
+
+### Fixed
+- **Gmail OAuth "invalid_request" error**: Added `redirect_uris` to the OAuth client config passed to `google_auth_oauthlib`. The library requires this field to generate a valid authorization URL.
+
+---
+
 ## [1.59.1] — 2026-07-02
 
 ### Fixed
