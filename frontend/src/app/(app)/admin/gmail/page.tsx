@@ -15,9 +15,17 @@ interface GmailMessage {
   unread: boolean
 }
 
+interface GmailAttachment {
+  id: string | null
+  filename: string
+  mimeType: string
+  size: number
+}
+
 interface GmailMessageDetail extends GmailMessage {
   cc: string
   body: string
+  attachments: GmailAttachment[]
 }
 
 export default function GmailPage() {
@@ -249,6 +257,33 @@ export default function GmailPage() {
                           <div className="mt-3 rounded border border-gray-200 bg-white p-3 whitespace-pre-wrap font-mono text-gray-700 max-h-96 overflow-y-auto">
                             {detail.body || detail.snippet}
                           </div>
+                          {detail.attachments?.length > 0 && (
+                            <div className="mt-2">
+                              <p className="text-xs font-medium text-gray-500 mb-1">Attachments</p>
+                              <div className="flex flex-wrap gap-1.5">
+                                {detail.attachments.map((att, i) => (
+                                  att.id ? (
+                                    <a
+                                      key={i}
+                                      href={`${api}/api/v1/admin/gmail/messages/${detail.id}/attachments/${att.id}?filename=${encodeURIComponent(att.filename)}&mime_type=${encodeURIComponent(att.mimeType)}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center gap-1 rounded border border-gray-200 bg-white px-2 py-1 text-xs text-gray-700 hover:bg-gray-50"
+                                      download={att.filename}
+                                    >
+                                      <svg className="h-3 w-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
+                                      {att.filename}
+                                      {att.size > 0 && <span className="text-gray-400">({(att.size / 1024).toFixed(0)}KB)</span>}
+                                    </a>
+                                  ) : (
+                                    <span key={i} className="inline-flex items-center gap-1 rounded border border-gray-200 bg-white px-2 py-1 text-xs text-gray-500">
+                                      {att.filename}
+                                    </span>
+                                  )
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       ) : null}
                     </div>

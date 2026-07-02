@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.59.7] — 2026-07-02
+
+### Added
+- **Gmail attachment support**: Emails in the Gmail inbox page and the lead panel "Emails" section now list attachments with download links. `fetch_message_detail` returns an `attachments` array (filename, MIME type, size, attachment ID). New `GET /admin/gmail/messages/{id}/attachments/{attachment_id}` endpoint streams the file directly from the Gmail API with the correct `Content-Disposition` header.
+
+---
+
 ## [1.59.6] — 2026-07-02
 
 ### Fixed

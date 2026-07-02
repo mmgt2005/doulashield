@@ -1,10 +1,11 @@
+import base64
 import logging
 import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, Response
 from jose import JWTError, jwt
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -215,3 +216,27 @@ async def gmail_message_detail(
         raise HTTPException(status_code=400, detail="Gmail not connected")
     from app.services import gmail_service
     return await gmail_service.fetch_message_detail(gmail_user, db, message_id)
+
+
+@router.get("/messages/{message_id}/attachments/{attachment_id}")
+async def gmail_attachment(
+    message_id: str,
+    attachment_id: str,
+    filename: str = Query("attachment"),
+    mime_type: str = Query("application/octet-stream"),
+    _: Annotated[CurrentUser, Depends(require_admin)] = None,
+    db: Annotated[AsyncSession, Depends(get_db)] = None,
+) -> Response:
+    gmail_user = await _get_shared_gmail_user(db)
+    if not gmail_user:
+        raise HTTPException(status_code=400, detail="Gmail not connected")
+    from app.services import gmail_service
+    att = await gmail_service.fetch_attachment(gmail_user, db, message_id, attachment_id)
+    raw = att.get("data", "")
+    data = base64.urlsafe_b64decode(raw + "==") if raw else b""
+    safe_name = filename.replace('"', "")
+    return Response(
+        content=data,
+        media_type=mime_type,
+        headers={"Content-Disposition": f'attachment; filename="{safe_name}"'},
+    )

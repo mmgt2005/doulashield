@@ -87,7 +87,7 @@ export default function AdminLeadsPage() {
   const [leadEmails, setLeadEmails] = useState<Array<{ id: string; subject: string; from: string; date: string; snippet: string; unread: boolean }>>([])
   const [emailsLoading, setEmailsLoading] = useState(false)
   const [expandedEmail, setExpandedEmail] = useState<string | null>(null)
-  const [emailDetail, setEmailDetail] = useState<Record<string, { body: string; to: string }>>({})
+  const [emailDetail, setEmailDetail] = useState<Record<string, { body: string; to: string; attachments?: Array<{ id: string | null; filename: string; mimeType: string; size: number }> }>>({})
 
   // Add lead modal
   const [showAdd, setShowAdd] = useState(false)
@@ -540,7 +540,7 @@ export default function AdminLeadsPage() {
                             if (!emailDetail[em.id]) {
                               try {
                                 const r = await axios.get(`${API}/api/v1/admin/gmail/messages/${em.id}`, { headers: authHeaders() })
-                                setEmailDetail(prev => ({ ...prev, [em.id]: { body: r.data.body, to: r.data.to } }))
+                                setEmailDetail(prev => ({ ...prev, [em.id]: { body: r.data.body, to: r.data.to, attachments: r.data.attachments } }))
                               } catch { /* ignore */ }
                             }
                           }}
@@ -565,6 +565,26 @@ export default function AdminLeadsPage() {
                             <div className="mt-1.5 rounded border border-gray-200 bg-white p-2 whitespace-pre-wrap text-gray-700 max-h-40 overflow-y-auto">
                               {emailDetail[em.id]?.body || em.snippet}
                             </div>
+                            {(emailDetail[em.id]?.attachments?.length ?? 0) > 0 && (
+                              <div className="mt-1 flex flex-wrap gap-1">
+                                {emailDetail[em.id].attachments!.map((att, i) => (
+                                  att.id ? (
+                                    <a
+                                      key={i}
+                                      href={`${API}/api/v1/admin/gmail/messages/${em.id}/attachments/${att.id}?filename=${encodeURIComponent(att.filename)}&mime_type=${encodeURIComponent(att.mimeType)}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center gap-0.5 rounded border border-gray-200 bg-white px-1.5 py-0.5 text-xs text-gray-700 hover:bg-gray-50"
+                                      download={att.filename}
+                                    >
+                                      {att.filename}
+                                    </a>
+                                  ) : (
+                                    <span key={i} className="rounded border border-gray-200 px-1.5 py-0.5 text-xs text-gray-500">{att.filename}</span>
+                                  )
+                                ))}
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>

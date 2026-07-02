@@ -125,6 +125,27 @@ def _parse_message_summary(msg: dict) -> dict:
     }
 
 
+def _extract_attachments(payload: dict) -> list[dict]:
+    """Walk the MIME tree and return metadata for every part with a filename."""
+    attachments: list[dict] = []
+
+    def _walk(part: dict) -> None:
+        filename = part.get("filename", "")
+        if filename:
+            body = part.get("body", {})
+            attachments.append({
+                "id": body.get("attachmentId"),
+                "filename": filename,
+                "mimeType": part.get("mimeType", "application/octet-stream"),
+                "size": body.get("size", 0),
+            })
+        for subpart in part.get("parts", []):
+            _walk(subpart)
+
+    _walk(payload)
+    return attachments
+
+
 def _decode_body(payload: dict) -> str:
     parts = payload.get("parts", [])
     if parts:
@@ -216,4 +237,18 @@ async def fetch_message_detail(user, db: AsyncSession, message_id: str) -> dict:
         "snippet": msg.get("snippet", ""),
         "unread": "UNREAD" in label_ids,
         "body": body,
+        "attachments": _extract_attachments(payload),
+    }
+
+
+async def fetch_attachment(user, db: AsyncSession, message_id: str, attachment_id: str) -> dict:
+    service = await _build_service(user, db)
+    att = await asyncio.to_thread(
+        lambda: service.users().messages().attachments().get(
+            userId="me", messageId=message_id, id=attachment_id
+        ).execute()
+    )
+    return {
+        "data": att.get("data", ""),
+        "size": att.get("size", 0),
     }
