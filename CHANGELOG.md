@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.59.5] — 2026-07-02
+
+### Fixed
+- **Gmail token exchange error details**: The 400 error from Google's token endpoint now surfaces the full response body (e.g. `redirect_uri_mismatch`, `invalid_grant`) so the root cause is visible rather than a generic bad-request message.
+
+---
+
 ## [1.59.4] — 2026-07-02
 
 ### Fixed
