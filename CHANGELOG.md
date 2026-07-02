@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.58.0] — 2026-07-02
+
+### Added
+- **Delete manual leads**: Admin can now delete manually-added leads from the edit panel. A "Delete Lead" button appears only when `source` is `manual` — leads from webinar, quiz, contact form, or Cal.com cannot be deleted. Clicking the button prompts for confirmation before permanently removing the record. The action is audited as `DELETE_LEAD`.
+
+---
+
 ## [1.57.2] — 2026-07-02
 
 ### Fixed
