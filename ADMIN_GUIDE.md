@@ -738,6 +738,45 @@ When a new billing provider entity is created, any billing admin already linked 
 
 ---
 
+## Gmail Integration
+
+Each admin can connect their own Gmail account to DoulaShield. Once connected, two surfaces become available:
+
+- **Gmail inbox page** (`/admin/gmail` in the sidebar): shows your recent inbox with a search bar. Click any message row to expand and read the full body.
+- **Lead edit panel — Emails section**: when you open a lead for editing, DoulaShield automatically fetches up to 10 Gmail threads that include the lead's email address. Click any thread to read the full message.
+
+Gmail is read-only — DoulaShield never sends, modifies, or deletes emails.
+
+### One-Time Google Cloud Setup
+
+Before using this feature, a DoulaShield developer (or the Google Workspace admin) must configure a Google Cloud project:
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com) → **APIs & Services** → **Library** → enable **Gmail API**.
+2. **OAuth consent screen**: set to External, add the `https://www.googleapis.com/auth/gmail.readonly` scope, and add your admin email as a test user (while in development/testing mode).
+3. **Credentials** → **Create Credentials** → **OAuth 2.0 Client ID** (Web application):
+   - Authorized redirect URI: `https://your-backend.railway.app/api/v1/admin/gmail/callback`
+4. Copy the **Client ID** and **Client Secret** into the backend environment:
+   ```
+   GOOGLE_CLIENT_ID=<paste here>
+   GOOGLE_CLIENT_SECRET=<paste here>
+   ```
+5. Run `alembic upgrade head` to apply migration 0052 (adds four Gmail columns to the users table).
+
+### Connecting Your Gmail Account
+
+1. Go to **Gmail** in the admin sidebar.
+2. Click **Connect Gmail** — you are redirected to Google's consent screen.
+3. Authorize read-only Gmail access.
+4. You are redirected back to `/admin/gmail` and your inbox loads automatically.
+
+The connected email address appears at the top of the Gmail page. Each admin connects independently — one admin's Gmail credentials are never shared with or visible to another.
+
+### Disconnecting
+
+Click **Disconnect** on the Gmail page. This immediately clears the stored tokens and the Emails section disappears from lead panels until you reconnect.
+
+---
+
 ## Admin-Only Settings
 
 Two fields in **Settings** are visible only to admins:
