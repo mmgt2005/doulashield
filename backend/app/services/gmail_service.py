@@ -40,18 +40,34 @@ def get_authorization_url(redirect_uri: str) -> tuple[str, str]:
 
 
 async def exchange_code(code: str, redirect_uri: str) -> dict:
-    flow = get_oauth_flow(redirect_uri)
+    """Exchange auth code for tokens directly — bypasses google_auth_oauthlib Flow
+    so no PKCE code_verifier is required (avoids 'Missing code verifier' error)."""
+    import httpx
+    from datetime import timedelta
 
-    def _fetch():
-        flow.fetch_token(code=code)
-        creds = flow.credentials
-        return {
-            "access_token": creds.token,
-            "refresh_token": creds.refresh_token,
-            "expiry": creds.expiry,
-        }
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(
+            "https://oauth2.googleapis.com/token",
+            data={
+                "code": code,
+                "client_id": settings.GOOGLE_CLIENT_ID,
+                "client_secret": settings.GOOGLE_CLIENT_SECRET,
+                "redirect_uri": redirect_uri,
+                "grant_type": "authorization_code",
+            },
+        )
+        resp.raise_for_status()
+        data = resp.json()
 
-    return await asyncio.to_thread(_fetch)
+    expiry = None
+    if "expires_in" in data:
+        expiry = datetime.now(timezone.utc) + timedelta(seconds=int(data["expires_in"]))
+
+    return {
+        "access_token": data["access_token"],
+        "refresh_token": data.get("refresh_token"),
+        "expiry": expiry,
+    }
 
 
 async def _get_credentials(user):
