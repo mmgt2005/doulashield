@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.59.1] — 2026-07-02
+
+### Fixed
+- **Gmail OAuth "Not authenticated" error**: The Connect Gmail button previously navigated the browser directly to the backend `/connect` endpoint, which required a Bearer token that browsers don't send on plain navigation. The flow now uses a new `GET /admin/gmail/auth-url` endpoint (called via axios with auth headers) that returns the Google consent URL as JSON; the frontend then redirects to it. The callback identifies the user via a signed JWT embedded in the OAuth `state` parameter instead of a session cookie.
+
+---
+
 ## [1.59.0] — 2026-07-02
 
 ### Added
