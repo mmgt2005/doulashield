@@ -40,9 +40,36 @@ Go to **Admin → Leads** to manage prospective providers and agencies. Leads en
 | **Webinar** | Prospect registers for a demo webinar via the marketing site (`POST /api/v1/public/leads/webinar`) |
 | **Quiz** | Prospect completes the "Are you ready for Medicaid billing?" quiz on the marketing site |
 | **Contact Form** | Prospect submits a general interest form on the marketing site |
+| **Setup Call** | Prospect books a "Setup Call" on Cal.com — DoulaShield receives the booking via webhook |
 | **Manual** | Admin adds a lead directly from an in-person conversation or referral |
 
 When a public form is submitted, DoulaShield emails a notification to the address in `ADMIN_NOTIFICATION_EMAIL` with the lead's name, email, phone, organization, and a direct link to the Leads dashboard.
+
+### Cal.com Integration
+
+DoulaShield connects to Cal.com to automatically capture booked setup calls as leads.
+
+**One-time setup:**
+
+1. In Cal.com go to **Settings → Developer → Webhooks → Add Webhook**.
+2. Set the URL to `https://your-backend.railway.app/api/v1/public/leads/cal`.
+3. Enable these trigger events: **BOOKING_CREATED**, **BOOKING_RESCHEDULED**, **BOOKING_CANCELLED**.
+4. Copy the webhook secret Cal.com generates and add it to your backend Railway environment as `CAL_COM_WEBHOOK_SECRET`.
+5. Set `NEXT_PUBLIC_SETUP_CALL_URL` in your frontend Railway environment to your Cal.com booking page URL (e.g. `https://cal.com/yourname/setup-call`). This enables the "Book Setup Call →" button in the lead edit panel.
+
+**How it works:**
+
+- When a prospect books a Setup Call, Cal.com fires a webhook and DoulaShield automatically creates or updates the matching lead.
+- If the prospect's email already exists as a lead (from a webinar, quiz, or any other source), that existing lead is updated — no duplicate is created.
+- The lead's status is automatically set to **Demo Scheduled** and the follow-up date is set to the booking time.
+- If the prospect is brand new, a lead is created with source **Setup Call** and status **Demo Scheduled**, and the admin notification email fires.
+- If a booking is rescheduled, the follow-up date updates automatically.
+- If a booking is cancelled, the lead's status reverts to **Qualified** and the follow-up date is cleared.
+- The Cal.com booking card (date, booking status, meeting link) appears in the lead edit panel under the source data section.
+
+**"Book Setup Call →" button:**
+
+The lead edit panel shows a **Book Setup Call →** link when `NEXT_PUBLIC_SETUP_CALL_URL` is configured. Clicking it opens your Cal.com booking page with the lead's email and name pre-filled, so the prospect only needs to pick a time slot.
 
 ### Lead Statuses
 
@@ -79,7 +106,7 @@ Click **Edit** on any row to open the slide-out panel. You can update:
 - **Follow-up date** — sets a visible reminder in the table; you will need to check back manually (no automated email is sent for follow-up dates)
 - **Notes** — running log of calls, emails, and next actions
 
-Click **Save Changes** to persist. The panel also shows any source data (quiz answers, webinar topic, contact message) in a read-only JSON block.
+Click **Save Changes** to persist. The panel also shows any source data (quiz answers, webinar topic, contact message) in a read-only JSON block. For Cal.com leads, a structured **Cal.com Booking** card appears above the raw data, showing the scheduled date and time, booking status, and a "Join Meeting →" link if a video call URL is attached.
 
 ### Converting a Lead to a Provider Account
 
