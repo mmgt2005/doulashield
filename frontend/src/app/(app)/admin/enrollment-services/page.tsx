@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import axios from 'axios'
 import { getAccessToken } from '@/lib/auth'
@@ -105,6 +105,7 @@ export default function EnrollmentServicesPage() {
   const [activeStage, setActiveStage] = useState<'pcb' | 'nppes_setup' | 'enrollment' | 'mco_contracting'>('pcb')
 
   // New service form
+  const newServiceFormRef = useRef<HTMLDivElement>(null)
   const [showNew, setShowNew] = useState(false)
   const [newProviderId, setNewProviderId] = useState('')
   const [newStage, setNewStage] = useState<'pcb' | 'nppes_setup' | 'enrollment' | 'mco_contracting'>('pcb')
@@ -297,6 +298,18 @@ export default function EnrollmentServicesPage() {
     const next = expandedId === serviceId ? null : serviceId
     setExpandedId(next)
     if (next) loadDetail(next)
+  }
+
+  const quickStartNextStage = (
+    providerId: string,
+    stage: 'nppes_setup' | 'enrollment' | 'mco_contracting',
+  ) => {
+    setNewProviderId(providerId)
+    setNewStage(stage)
+    setActiveStage(stage)
+    setCreateError(null)
+    setShowNew(true)
+    setTimeout(() => newServiceFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)
   }
 
   const handleCreate = async () => {
@@ -883,7 +896,7 @@ export default function EnrollmentServicesPage() {
 
       {/* New service form */}
       {showNew && (
-        <div className="mb-6 rounded-lg border border-blue-200 bg-blue-50 p-5">
+        <div ref={newServiceFormRef} className="mb-6 rounded-lg border border-blue-200 bg-blue-50 p-5">
           <h2 className="mb-4 text-sm font-semibold text-blue-900">New Enrollment Service</h2>
 
           {/* Stage selection */}
@@ -1406,22 +1419,41 @@ export default function EnrollmentServicesPage() {
 
                         {/* Completion banners */}
                         {svc.status === 'complete' && stage === 'nppes_setup' && (
-                          <div className="rounded bg-indigo-50 px-3 py-2 text-xs text-indigo-700">
-                            NPI setup complete
-                            {svc.intake_data?.npi ? ` · NPI: ${svc.intake_data.npi}` : ''} — provider profile updated.
+                          <div className="rounded bg-indigo-50 px-3 py-2 text-xs text-indigo-700 flex items-center justify-between gap-3">
+                            <span>NPI setup complete{svc.intake_data?.npi ? ` · NPI: ${svc.intake_data.npi}` : ''} — provider profile updated.</span>
+                            <button
+                              onClick={() => quickStartNextStage(svc.provider_id, 'enrollment')}
+                              className="shrink-0 rounded border border-indigo-400 bg-white px-2 py-0.5 text-xs font-medium text-indigo-700 hover:bg-indigo-100"
+                            >
+                              Start Stage 2 →
+                            </button>
                           </div>
                         )}
 
                         {svc.status === 'complete' && stage === 'pcb' && svc.pcb_cert_date && (
-                          <div className="rounded bg-green-50 px-3 py-2 text-xs text-green-700">
-                            PCB certified on {svc.pcb_cert_date} — provider profile updated.
+                          <div className="rounded bg-green-50 px-3 py-2 text-xs text-green-700 flex items-center justify-between gap-3">
+                            <span>PCB certified on {svc.pcb_cert_date} — provider profile updated.</span>
+                            <button
+                              onClick={() => quickStartNextStage(svc.provider_id, 'nppes_setup')}
+                              className="shrink-0 rounded border border-green-400 bg-white px-2 py-0.5 text-xs font-medium text-green-700 hover:bg-green-100"
+                            >
+                              Start NPPES Setup →
+                            </button>
                           </div>
                         )}
                         {svc.status === 'complete' && stage === 'enrollment' && (
-                          <div className="rounded bg-blue-50 px-3 py-2 text-xs text-blue-700">
-                            Stage 2 enrollment complete
-                            {svc.intake_data?.promise_id ? ` · PROMISe ID: ${svc.intake_data.promise_id}` : ''}
-                            {svc.intake_data?.caqh_id ? ` · CAQH ID: ${svc.intake_data.caqh_id}` : ''}
+                          <div className="rounded bg-blue-50 px-3 py-2 text-xs text-blue-700 flex items-center justify-between gap-3">
+                            <span>
+                              Stage 2 enrollment complete
+                              {svc.intake_data?.promise_id ? ` · PROMISe ID: ${svc.intake_data.promise_id}` : ''}
+                              {svc.intake_data?.caqh_id ? ` · CAQH ID: ${svc.intake_data.caqh_id}` : ''}
+                            </span>
+                            <button
+                              onClick={() => quickStartNextStage(svc.provider_id, 'mco_contracting')}
+                              className="shrink-0 rounded border border-blue-400 bg-white px-2 py-0.5 text-xs font-medium text-blue-700 hover:bg-blue-100"
+                            >
+                              Start MCO Contracting →
+                            </button>
                           </div>
                         )}
                         {svc.status === 'complete' && stage === 'mco_contracting' && (
