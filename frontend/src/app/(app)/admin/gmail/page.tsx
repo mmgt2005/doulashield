@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
 import axios from 'axios'
 import { getAccessToken } from '@/lib/auth'
@@ -55,8 +55,6 @@ export default function GmailPage() {
   const [composeBody, setComposeBody] = useState('')
   const [composeFiles, setComposeFiles] = useState<File[]>([])
   const [composeSending, setComposeSending] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
-
   const showToast = (msg: string) => {
     setToast(msg)
     setTimeout(() => setToast(null), 3500)
@@ -118,7 +116,6 @@ export default function GmailPage() {
   const addFiles = (newFiles: FileList | null) => {
     if (!newFiles) return
     setComposeFiles(prev => [...prev, ...Array.from(newFiles)])
-    if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
   const removeFile = (index: number) => {
@@ -324,20 +321,15 @@ export default function GmailPage() {
               {/* Attachments */}
               <div>
                 <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="rounded border border-gray-200 px-2.5 py-1 text-xs font-medium text-gray-600 hover:bg-gray-50"
-                  >
+                  <label className="cursor-pointer rounded border border-gray-200 px-2.5 py-1 text-xs font-medium text-gray-600 hover:bg-gray-50">
                     Attach files
-                  </button>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    multiple
-                    className="hidden"
-                    onChange={e => addFiles(e.target.files)}
-                  />
+                    <input
+                      type="file"
+                      multiple
+                      className="hidden"
+                      onChange={e => addFiles(e.target.files)}
+                    />
+                  </label>
                 </div>
                 {composeFiles.length > 0 && (
                   <div className="mt-2 space-y-1">
