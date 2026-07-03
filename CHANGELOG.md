@@ -12,6 +12,14 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.61.0] — 2026-07-03
+
+### Added
+- **DoulaShield logo in outgoing emails**: HTML emails sent via Compose or Reply now include a branded header with the DoulaShield logo (`/logo.png` served from the frontend origin) above the message body. Emails that cannot determine the frontend URL fall back to the plain-text layout with no broken image.
+- **Sent tab on Gmail inbox page**: The `/admin/gmail` page now has Inbox and Sent tabs. Clicking Sent loads emails from the Gmail `SENT` label (shows "To: …" instead of "From: …" in the message list). The Reply button is hidden for sent messages. Switching tabs resets the search and collapses any open message. Search works within whichever tab is active.
+
+---
+
 ## [1.60.1] — 2026-07-03
 
 ### Fixed
