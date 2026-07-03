@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.63.1] — 2026-07-03
+
+### Fixed
+- **Billing-admin My Providers — "Field Required" on Start enrollment service**: The "Start" button in the New Enrollment Service form was reading `provider_id` from a render-closure variable (`p.id`) that could be stale if the providers list re-rendered between when the form opened and when the button was clicked. Now reads `showStartService` directly from state, which always holds the correct provider ID at call time. Added a "For: [name]" label to the form so the target provider is visible when the form is opened via a completion-banner shortcut.
+
+---
+
 ## [1.63.0] — 2026-07-03
 
 ### Added
