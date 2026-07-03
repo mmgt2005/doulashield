@@ -157,6 +157,9 @@ export default function EnrollmentServicesPage() {
   // Assign to billing admin
   const [assignLoading, setAssignLoading] = useState<string | null>(null)
 
+  // Delete service
+  const [deleteServiceLoading, setDeleteServiceLoading] = useState<string | null>(null)
+
   // doxy.me screen-share
   const [telehealthLink, setTelehealthLink] = useState<string | null>(null)
   const [screenshareLoading, setScreenshareLoading] = useState<string | null>(null)
@@ -215,6 +218,23 @@ export default function EnrollmentServicesPage() {
       showToast(typeof msg === 'string' ? msg : 'Failed')
     } finally {
       setAssignLoading(null)
+    }
+  }
+
+  const handleDeleteService = async (serviceId: string) => {
+    if (!window.confirm('Delete this enrollment service? This also removes all its tasks and uploaded documents. This cannot be undone.')) return
+    setDeleteServiceLoading(serviceId)
+    try {
+      await axios.delete(`${api}/api/v1/admin/enrollment/services/${serviceId}`, { headers })
+      setServices(prev => prev.filter(s => s.id !== serviceId))
+      setDetailCache(prev => { const n = { ...prev }; delete n[serviceId]; return n })
+      if (expandedId === serviceId) setExpandedId(null)
+      showToast('Enrollment service deleted.')
+    } catch (e: unknown) {
+      const msg = axios.isAxiosError(e) ? e.response?.data?.detail : 'Failed to delete'
+      showToast(typeof msg === 'string' ? msg : 'Failed to delete')
+    } finally {
+      setDeleteServiceLoading(null)
     }
   }
 
@@ -1098,7 +1118,7 @@ export default function EnrollmentServicesPage() {
                     </div>
                   </button>
                   {/* Assign to billing admin — separate from expand trigger */}
-                  <div className="flex items-center border-l border-gray-100 px-3">
+                  <div className="flex items-center gap-2 border-l border-gray-100 px-3">
                     <button
                       onClick={() => handleAssign(svc.id)}
                       disabled={assignLoading === svc.id}
@@ -1111,6 +1131,16 @@ export default function EnrollmentServicesPage() {
                     >
                       {assignLoading === svc.id ? '…' : svc.assigned_to_billing_admin ? '✓ Assigned to Agency' : 'Assign to Agency'}
                     </button>
+                    {svc.status !== 'complete' && (
+                      <button
+                        onClick={() => handleDeleteService(svc.id)}
+                        disabled={deleteServiceLoading === svc.id}
+                        title="Delete this enrollment service"
+                        className="rounded px-2 py-1 text-xs font-medium text-red-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-40 transition-colors"
+                      >
+                        {deleteServiceLoading === svc.id ? '…' : 'Delete'}
+                      </button>
+                    )}
                   </div>
                 </div>
 

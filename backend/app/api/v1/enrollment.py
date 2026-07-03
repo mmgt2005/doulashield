@@ -1257,6 +1257,40 @@ async def get_enrollment_document_url(
     return {"url": url, "file_name": doc.file_name}
 
 
+@router.delete("/services/{service_id}", status_code=204, response_class=Response)
+async def delete_enrollment_service(
+    service_id: uuid.UUID,
+    current_user: Annotated[CurrentUser, Depends(require_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    audit: Annotated[AuditLogger, Depends(get_audit)],
+    request: Request,
+):
+    """Delete an enrollment service (admin only). Blocked if status is 'complete'."""
+    service = await _get_service_or_404(service_id, db)
+    if service.status == "complete":
+        raise HTTPException(status_code=409, detail="Cannot delete a completed enrollment service.")
+    # Cascade: delete tasks then documents then service
+    tasks_result = await db.execute(select(EnrollmentTask).where(EnrollmentTask.service_id == service_id))
+    for task in tasks_result.scalars().all():
+        await db.delete(task)
+    docs_result = await db.execute(select(EnrollmentDocument).where(EnrollmentDocument.service_id == service_id))
+    for doc in docs_result.scalars().all():
+        try:
+            from app.services.ocr_service import delete_file
+            await delete_file(doc.file_path)
+        except Exception:
+            pass
+        await db.delete(doc)
+    await db.delete(service)
+    await db.commit()
+    await audit.log(
+        db=db, action="DELETE_ENROLLMENT_SERVICE", resource_type="enrollment_service",
+        resource_id=str(service_id), user_id=current_user.id,
+        ip_address=get_client_ip(request), user_agent=get_user_agent(request),
+        extra_context={"service_id": str(service_id)},
+    )
+
+
 @router.delete("/services/{service_id}/documents/{doc_id}", status_code=204, response_class=Response)
 async def delete_enrollment_document(
     service_id: uuid.UUID,

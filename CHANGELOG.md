@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.63.6] — 2026-07-03
+
+### Added
+- **Admin Enrollment Services — Delete service**: Added a "Delete" button on each non-complete enrollment service row in the admin Enrollment Services page. Calls `DELETE /api/v1/admin/enrollment/services/{id}`, cascades to delete all tasks and uploaded documents, and prompts for confirmation before proceeding. Completed services cannot be deleted.
+
+---
+
 ## [1.63.5] — 2026-07-03
 
 ### Fixed
