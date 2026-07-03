@@ -740,19 +740,17 @@ When a new billing provider entity is created, any billing admin already linked 
 
 ## Gmail Integration
 
-DoulaShield connects to a shared Gmail account (`doulashield@gmail.com`) so all admins can see the same inbox. Whoever first completes the OAuth flow stores the tokens; every other admin reads from those same tokens. Once connected, two surfaces become available:
+DoulaShield connects to a shared Gmail account (`doulashield@gmail.com`) so all admins can see the same inbox and send emails from it. Whoever first completes the OAuth flow stores the tokens; every other admin uses those same tokens. Once connected, two surfaces become available:
 
-- **Gmail inbox page** (`/admin/gmail` in the sidebar): shows your recent inbox with a search bar. Click any message row to expand and read the full body. Attachments appear as download buttons below the message body — click to download the file.
-- **Lead edit panel — Emails section**: when you open a lead for editing, DoulaShield automatically fetches up to 10 Gmail threads involving the lead's email address. Click any thread to read the full message. Attachments appear as clickable buttons at the bottom of the expanded message.
-
-Gmail is read-only — DoulaShield never sends, modifies, or deletes emails.
+- **Gmail inbox page** (`/admin/gmail` in the sidebar): shows your recent inbox with a search bar. Click any message row to expand and read the full body. Reply to any message or compose a new email directly from this page. Attachments appear as download buttons below the message body.
+- **Lead edit panel — Emails section**: when you open a lead for editing, DoulaShield automatically fetches up to 10 Gmail threads involving the lead's email address. Click any thread to read the full message and download attachments.
 
 ### One-Time Google Cloud Setup
 
 A developer must configure a Google Cloud project once before any admin can connect:
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com) → **APIs & Services** → **Library** → enable **Gmail API**.
-2. **OAuth consent screen**: set to **External**. Under **Scopes** add `https://www.googleapis.com/auth/gmail.readonly`. Under **Test users** add `doulashield@gmail.com` (required while the app is in testing mode).
+2. **OAuth consent screen**: set to **External**. Under **Scopes** add both `https://www.googleapis.com/auth/gmail.readonly` and `https://www.googleapis.com/auth/gmail.send`. Under **Test users** add `doulashield@gmail.com` (required while the app is in testing mode).
 3. **Credentials** → **Create Credentials** → **OAuth 2.0 Client ID** (Web application):
    - Under **Authorized redirect URIs** add: `https://your-backend.railway.app/api/v1/admin/gmail/callback`
 4. Copy the **Client ID** and **Client Secret** into the backend Railway environment variables:
@@ -762,28 +760,49 @@ A developer must configure a Google Cloud project once before any admin can conn
    ```
 5. Run `alembic upgrade head` to apply migration 0052 (adds four Gmail columns to the `users` table).
 
+### Setting Up the support@doulashield.com Alias (optional)
+
+To have outgoing emails show `From: support@doulashield.com` instead of `doulashield@gmail.com`:
+
+1. Sign into `doulashield@gmail.com` → **Settings → See all settings → Accounts and Import → Send mail as → Add another email address**.
+2. Name: `DoulaShield Support`, Email: `support@doulashield.com`. Uncheck "Treat as an alias."
+3. Gmail sends a verification code to `support@doulashield.com` — enter it to confirm.
+4. Add `GMAIL_SEND_AS=support@doulashield.com` to the backend Railway environment variables.
+
+If `GMAIL_SEND_AS` is left empty, emails go out as `doulashield@gmail.com`.
+
 ### Connecting the Shared Gmail Account
 
 Any admin can authorize the shared account — only one needs to do it:
 
 1. Go to **Gmail** in the admin sidebar.
 2. Click **Connect Gmail** — you are redirected to Google's consent screen.
-3. Sign in as `doulashield@gmail.com` and authorize read-only access.
+3. Sign in as `doulashield@gmail.com` and authorize read and send access.
 4. You are redirected back to `/admin/gmail` and the inbox loads automatically.
-5. All other admins now see the same inbox without needing to connect again.
+5. All other admins now see the same inbox and can send from the same account without connecting again.
 
-The connected email address (`doulashield@gmail.com`) appears at the top of the Gmail page.
+The connected email address appears at the top of the Gmail page.
+
+**Re-authorizing after a scope upgrade:** If Gmail was previously connected with read-only access, you must disconnect and reconnect once to grant the send permission. Go to the Gmail page → Disconnect → Connect Gmail → authorize again.
 
 ### Using the Inbox
 
 - **Search**: type any Gmail search query (sender, subject keywords, date ranges like `after:2025-01-01`) in the search bar and press Search. Click Clear to return to the full inbox.
 - **Read a message**: click any row to expand it. The full email body, headers, and attachments load inline.
-- **Download an attachment**: click the attachment button that appears below the message body. The file downloads through the app — no separate Google login required.
-- **Lead email history**: open any lead in the edit panel and scroll to the **Emails** section. It shows up to 10 threads involving that lead's email address. Expand any thread to read the body and download attachments.
+- **Download an attachment**: click the attachment button below the message body. The file downloads through the app — no separate Google login required.
+- **Lead email history**: open any lead in the edit panel and scroll to the **Emails** section. It shows up to 10 threads involving that lead's email address.
+
+### Composing and Replying
+
+**Compose a new email**: click **Compose** in the top-right of the Gmail page. A modal opens with To, Subject, and Body fields. URLs typed in the body are automatically converted to clickable links in the recipient's inbox. Click **Attach files** to add PDFs, images, or other files. Click **Send** when ready.
+
+**Reply to a message**: expand a message in the inbox, then click **Reply** below the message body. The modal pre-fills To and Subject (`Re: …`). Add your reply text and any attachments, then click **Send**. The reply is threaded to the original message in Gmail.
+
+Outgoing emails are sent from `support@doulashield.com` (if configured) or `doulashield@gmail.com`.
 
 ### Disconnecting
 
-Click **Disconnect** on the Gmail page. This clears the stored tokens for all admins at once. The Emails section disappears from lead panels until someone reconnects. Disconnecting also attempts to revoke the token at Google so it can no longer be used.
+Click **Disconnect** on the Gmail page. This clears the stored tokens for all admins at once. The Emails section disappears from lead panels, and Compose/Reply become unavailable, until someone reconnects. Disconnecting also attempts to revoke the token at Google so it can no longer be used.
 
 ---
 
