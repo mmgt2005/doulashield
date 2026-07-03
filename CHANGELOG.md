@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.62.1] — 2026-07-03
+
+### Changed
+- **Next-stage shortcut buttons on enrollment completion banners**: After marking a PCB, NPPES, or Stage 2 service complete, admins now see a one-click button ("Start NPPES Setup →", "Start Stage 2 →", "Start MCO Contracting →") directly in the completion banner. Clicking it opens the New Enrollment Service form with the correct provider and stage already selected and scrolls to it, eliminating the need to manually re-select the provider and the "Select a provider" error that appeared when the form was opened manually.
+
+---
+
 ## [1.62.0] — 2026-07-03
 
 ### Added
