@@ -5,6 +5,8 @@ import { useSearchParams } from 'next/navigation'
 import axios from 'axios'
 import { getAccessToken } from '@/lib/auth'
 
+type GmailLabel = 'INBOX' | 'SENT'
+
 interface GmailMessage {
   id: string
   subject: string
@@ -31,10 +33,11 @@ interface GmailMessageDetail extends GmailMessage {
 export default function GmailPage() {
   const searchParams = useSearchParams()
   const api = process.env.NEXT_PUBLIC_API_URL
-  const headers = { Authorization: `Bearer ${getAccessToken()}` }
+  const authHeader = { Authorization: `Bearer ${getAccessToken()}` }
 
   const [connected, setConnected] = useState<boolean | null>(null)
   const [connectedEmail, setConnectedEmail] = useState<string | null>(null)
+  const [activeLabel, setActiveLabel] = useState<GmailLabel>('INBOX')
   const [messages, setMessages] = useState<GmailMessage[]>([])
   const [loading, setLoading] = useState(false)
   const [search, setSearch] = useState('')
@@ -124,7 +127,7 @@ export default function GmailPage() {
 
   const loadStatus = useCallback(async () => {
     try {
-      const res = await axios.get(`${api}/api/v1/admin/gmail/status`, { headers })
+      const res = await axios.get(`${api}/api/v1/admin/gmail/status`, { headers: authHeader })
       setConnected(res.data.connected)
       setConnectedEmail(res.data.email)
     } catch {
@@ -132,20 +135,32 @@ export default function GmailPage() {
     }
   }, [api])
 
-  const loadInbox = useCallback(async (q?: string) => {
+  const loadMessages = useCallback(async (q?: string, label: GmailLabel = 'INBOX') => {
     setLoading(true)
+    setExpanded(null)
+    setDetail(null)
     try {
-      const params = q ? { q } : {}
-      const res = await axios.get<GmailMessage[]>(`${api}/api/v1/admin/gmail/inbox`, { headers, params })
+      const params: Record<string, string> = { label }
+      if (q) params.q = q
+      const res = await axios.get<GmailMessage[]>(`${api}/api/v1/admin/gmail/inbox`, {
+        headers: authHeader,
+        params,
+      })
       setMessages(res.data)
     } catch (e) {
       if (axios.isAxiosError(e) && e.response?.status !== 400) {
-        showToast('Failed to load inbox')
+        showToast('Failed to load messages')
       }
     } finally {
       setLoading(false)
     }
   }, [api])
+
+  const switchTab = (label: GmailLabel) => {
+    setActiveLabel(label)
+    setSearch('')
+    loadMessages(undefined, label)
+  }
 
   useEffect(() => {
     loadStatus()
@@ -153,16 +168,16 @@ export default function GmailPage() {
 
   useEffect(() => {
     if (connected) {
-      loadInbox()
+      loadMessages(undefined, 'INBOX')
       if (searchParams.get('connected') === '1') {
         showToast('Gmail connected successfully!')
       }
     }
-  }, [connected, loadInbox, searchParams])
+  }, [connected, loadMessages, searchParams])
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
-    loadInbox(search || undefined)
+    loadMessages(search || undefined, activeLabel)
   }
 
   const handleExpand = async (id: string) => {
@@ -175,7 +190,9 @@ export default function GmailPage() {
     setDetail(null)
     setDetailLoading(true)
     try {
-      const res = await axios.get<GmailMessageDetail>(`${api}/api/v1/admin/gmail/messages/${id}`, { headers })
+      const res = await axios.get<GmailMessageDetail>(`${api}/api/v1/admin/gmail/messages/${id}`, {
+        headers: authHeader,
+      })
       setDetail(res.data)
     } catch {
       showToast('Failed to load message')
@@ -186,7 +203,9 @@ export default function GmailPage() {
 
   const handleConnect = async () => {
     try {
-      const res = await axios.get<{ auth_url: string }>(`${api}/api/v1/admin/gmail/auth-url`, { headers })
+      const res = await axios.get<{ auth_url: string }>(`${api}/api/v1/admin/gmail/auth-url`, {
+        headers: authHeader,
+      })
       window.location.href = res.data.auth_url
     } catch (e) {
       const msg = axios.isAxiosError(e) ? e.response?.data?.detail : 'Failed to start Gmail OAuth'
@@ -200,7 +219,7 @@ export default function GmailPage() {
       const res = await axios.get(
         `${api}/api/v1/admin/gmail/messages/${messageId}/attachments/${att.id}`,
         {
-          headers,
+          headers: authHeader,
           params: { filename: att.filename, mime_type: att.mimeType },
           responseType: 'blob',
         }
@@ -222,7 +241,7 @@ export default function GmailPage() {
     if (!confirm('Disconnect Gmail? You will need to re-authorize to view emails again.')) return
     setDisconnecting(true)
     try {
-      await axios.delete(`${api}/api/v1/admin/gmail/disconnect`, { headers })
+      await axios.delete(`${api}/api/v1/admin/gmail/disconnect`, { headers: authHeader })
       setConnected(false)
       setConnectedEmail(null)
       setMessages([])
@@ -235,6 +254,13 @@ export default function GmailPage() {
   }
 
   const sendAs = connectedEmail && connectedEmail !== 'connected' ? connectedEmail : 'Gmail'
+
+  const tabClass = (label: GmailLabel) =>
+    `px-4 py-2 text-xs font-medium border-b-2 transition-colors ${
+      activeLabel === label
+        ? 'border-blue-600 text-blue-600'
+        : 'border-transparent text-gray-500 hover:text-gray-700'
+    }`
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-4">
@@ -354,6 +380,7 @@ export default function GmailPage() {
         </div>
       )}
 
+      {/* Page header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-lg font-semibold text-gray-900">Gmail</h1>
@@ -408,12 +435,19 @@ export default function GmailPage() {
 
       {connected && (
         <>
+          {/* Inbox / Sent tabs */}
+          <div className="flex border-b border-gray-200 -mb-2">
+            <button onClick={() => switchTab('INBOX')} className={tabClass('INBOX')}>Inbox</button>
+            <button onClick={() => switchTab('SENT')} className={tabClass('SENT')}>Sent</button>
+          </div>
+
+          {/* Search bar */}
           <form onSubmit={handleSearch} className="flex gap-2">
             <input
               type="text"
               value={search}
               onChange={e => setSearch(e.target.value)}
-              placeholder="Search inbox…"
+              placeholder={activeLabel === 'SENT' ? 'Search sent…' : 'Search inbox…'}
               className="flex-1 rounded border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
             />
             <button
@@ -425,7 +459,7 @@ export default function GmailPage() {
             {search && (
               <button
                 type="button"
-                onClick={() => { setSearch(''); loadInbox() }}
+                onClick={() => { setSearch(''); loadMessages(undefined, activeLabel) }}
                 className="rounded border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50"
               >
                 Clear
@@ -434,7 +468,7 @@ export default function GmailPage() {
           </form>
 
           {loading ? (
-            <p className="text-sm text-gray-400">Loading inbox…</p>
+            <p className="text-sm text-gray-400">Loading…</p>
           ) : messages.length === 0 ? (
             <p className="text-sm text-gray-400">No messages found.</p>
           ) : (
@@ -453,7 +487,9 @@ export default function GmailPage() {
                             {msg.subject}
                           </p>
                         </div>
-                        <p className="text-xs text-gray-500 truncate mt-0.5">{msg.from}</p>
+                        <p className="text-xs text-gray-500 truncate mt-0.5">
+                          {activeLabel === 'SENT' ? `To: ${msg.to}` : msg.from}
+                        </p>
                         <p className="text-xs text-gray-400 truncate mt-0.5">{msg.snippet}</p>
                       </div>
                       <p className="shrink-0 text-xs text-gray-400 whitespace-nowrap">{msg.date.slice(0, 16)}</p>
@@ -499,14 +535,16 @@ export default function GmailPage() {
                               </div>
                             </div>
                           )}
-                          <div className="mt-3 flex justify-end">
-                            <button
-                              onClick={() => openReply(detail)}
-                              className="rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
-                            >
-                              Reply
-                            </button>
-                          </div>
+                          {activeLabel === 'INBOX' && (
+                            <div className="mt-3 flex justify-end">
+                              <button
+                                onClick={() => openReply(detail)}
+                                className="rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
+                              >
+                                Reply
+                              </button>
+                            </div>
+                          )}
                         </div>
                       ) : null}
                     </div>

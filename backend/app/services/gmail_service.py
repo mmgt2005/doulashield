@@ -168,11 +168,11 @@ def _decode_body(payload: dict) -> str:
     return ""
 
 
-async def fetch_inbox(user, db: AsyncSession, max_results: int = 30, q: str | None = None) -> list[dict]:
+async def fetch_inbox(user, db: AsyncSession, max_results: int = 30, q: str | None = None, label: str = "INBOX") -> list[dict]:
     service = await _build_service(user, db)
 
     def _list():
-        kwargs = {"userId": "me", "labelIds": ["INBOX"], "maxResults": max_results}
+        kwargs = {"userId": "me", "labelIds": [label], "maxResults": max_results}
         if q:
             kwargs["q"] = q
         return service.users().messages().list(**kwargs).execute()
@@ -244,15 +244,40 @@ async def fetch_message_detail(user, db: AsyncSession, message_id: str) -> dict:
     }
 
 
-def _text_to_html(text: str) -> str:
-    """Convert plain text to minimal HTML: escape, auto-link URLs, preserve newlines."""
+def _text_to_html(text: str, logo_url: str | None = None) -> str:
+    """Convert plain text to HTML with optional logo header."""
     import html as _html
     import re
 
     safe = _html.escape(text)
-    safe = re.sub(r"(https?://\S+)", r'<a href="\1">\1</a>', safe)
+    safe = re.sub(r"(https?://\S+)", r'<a href="\1" style="color:#2563eb">\1</a>', safe)
     safe = safe.replace("\n", "<br>\n")
-    return f'<div style="font-family:sans-serif;font-size:14px;line-height:1.5">{safe}</div>'
+
+    logo_block = ""
+    if logo_url:
+        logo_block = (
+            f'<div style="padding:16px 24px;background:#1e3a8a;border-radius:8px 8px 0 0">'
+            f'<img src="{logo_url}" alt="DoulaShield" width="130" height="auto"'
+            f' style="display:block;max-width:100%"/>'
+            f'</div>'
+        )
+        radius = "0 0 8px 8px"
+    else:
+        radius = "8px"
+
+    body_block = (
+        f'<div style="font-family:sans-serif;font-size:14px;line-height:1.6;color:#374151;'
+        f'padding:24px;background:#ffffff;border:1px solid #e5e7eb;'
+        f'border-top:{"none" if logo_url else "1px solid #e5e7eb"};border-radius:{radius}">'
+        f'{safe}'
+        f'</div>'
+    )
+
+    return (
+        f'<div style="max-width:600px;margin:0 auto">'
+        f'{logo_block}{body_block}'
+        f'</div>'
+    )
 
 
 async def fetch_message_reply_headers(user, db: AsyncSession, message_id: str) -> dict:
@@ -301,9 +326,11 @@ async def send_message(
 
     from_addr = settings.GMAIL_SEND_AS or (user.gmail_connected_email or "me")
 
+    logo_url = f"{settings.FRONTEND_ORIGIN}/logo.png" if settings.FRONTEND_ORIGIN else None
+
     alt = MIMEMultipart("alternative")
     alt.attach(MIMEText(body_text, "plain", "utf-8"))
-    alt.attach(MIMEText(_text_to_html(body_text), "html", "utf-8"))
+    alt.attach(MIMEText(_text_to_html(body_text, logo_url=logo_url), "html", "utf-8"))
 
     if attachments:
         outer: MIMEMultipart = MIMEMultipart("mixed")

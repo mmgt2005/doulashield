@@ -184,12 +184,13 @@ async def gmail_inbox(
     _: Annotated[CurrentUser, Depends(require_admin)],
     db: Annotated[AsyncSession, Depends(get_db)],
     q: str | None = Query(None),
+    label: str = Query("INBOX"),
 ) -> list[dict]:
     gmail_user = await _get_shared_gmail_user(db)
     if not gmail_user:
         raise HTTPException(status_code=400, detail="Gmail not connected")
     from app.services import gmail_service
-    return await gmail_service.fetch_inbox(gmail_user, db, q=q)
+    return await gmail_service.fetch_inbox(gmail_user, db, q=q, label=label)
 
 
 @router.get("/messages")
