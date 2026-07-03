@@ -674,7 +674,10 @@ export default function BillingAdminProvidersPage() {
 
                         {enrollmentTierEnabled && showStartService === p.id && (
                           <div className="mb-3 rounded-md border border-indigo-200 bg-indigo-50 p-3 space-y-2">
-                            <p className="text-xs font-medium text-indigo-800">New Enrollment Service</p>
+                            <div className="flex items-center justify-between">
+                              <p className="text-xs font-medium text-indigo-800">New Enrollment Service</p>
+                              <p className="text-[11px] text-indigo-600">For: <span className="font-medium">{p.full_name ?? p.email}</span></p>
+                            </div>
                             <div className="flex gap-2 flex-wrap">
                               <select value={startStage} onChange={e => setStartStage(e.target.value)}
                                 className="rounded border border-gray-200 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400">
@@ -692,7 +695,7 @@ export default function BillingAdminProvidersPage() {
                               )}
                             </div>
                             <div className="flex gap-2">
-                              <button onClick={() => startEnrollmentService(p.id)} disabled={startServiceLoading}
+                              <button onClick={() => showStartService && startEnrollmentService(showStartService)} disabled={startServiceLoading}
                                 className="rounded bg-indigo-600 px-3 py-1 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-50">
                                 {startServiceLoading ? 'Starting…' : 'Start'}
                               </button>
