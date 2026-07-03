@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.60.1] — 2026-07-03
+
+### Fixed
+- **Gmail attachments not delivered**: Two bugs caused file attachments to be silently dropped. (1) The frontend set `Content-Type: multipart/form-data` manually, which stripped the auto-generated boundary and prevented FastAPI from parsing the file parts. (2) The backend `MIMEBase` part was missing the `name` param on `Content-Type`, and `Content-Disposition` used a raw string instead of properly quoted keyword-arg format. Switched to `BytesGenerator` for reliable binary MIME serialization.
+
+---
+
 ## [1.60.0] — 2026-07-03
 
 ### Added
