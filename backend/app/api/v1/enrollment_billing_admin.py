@@ -32,6 +32,10 @@ from app.models.billing_provider import BillingProvider
 from app.models.enrollment import EnrollmentDocument, EnrollmentService, EnrollmentTask
 from app.models.user import User
 from app.schemas.enrollment import (
+    CompleteMcoContractingRequest,
+    CompleteEnrollmentRequest,
+    CompleteNppesRequest,
+    CompletePcbRequest,
     EnrollmentDocumentRead,
     EnrollmentServiceCreate,
     EnrollmentServiceDetail,
@@ -345,3 +349,176 @@ async def delete_agency_enrollment_document(
         pass
     await db.delete(doc)
     await db.commit()
+
+
+# ── Stage-completion endpoints (enrollment tier required) ──────────────────────
+
+@router.post(
+    "/billing-admin/enrollment/services/{service_id}/complete-pcb",
+    response_model=EnrollmentServiceRead,
+)
+async def billing_admin_complete_pcb(
+    service_id: uuid.UUID,
+    body: CompletePcbRequest,
+    bp: Annotated[BillingProvider, Depends(require_billing_enrollment_tier)],
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    audit: Annotated[AuditLogger, Depends(get_audit)],
+    request: Request,
+) -> EnrollmentServiceRead:
+    """Mark a PCB certification service complete and record the cert date."""
+    service, provider = await _get_service_in_agency(service_id, bp.id, db)
+    if service.stage != "pcb":
+        raise HTTPException(status_code=422, detail="This endpoint is only for PCB Certification services.")
+    if service.status == "complete":
+        raise HTTPException(status_code=409, detail="Service is already marked complete.")
+
+    service.status = "complete"
+    service.pcb_cert_date = body.cert_date
+    provider.pcb_last_certified_on = body.cert_date
+
+    await db.commit()
+    await db.refresh(service)
+
+    await audit.log(
+        action="BILLING_ADMIN_PCB_COMPLETE",
+        user_id=current_user.id,
+        resource_type="user",
+        resource_id=provider.id,
+        ip_address=get_client_ip(request),
+        user_agent=get_user_agent(request),
+        extra_context={"service_id": str(service_id), "cert_date": str(body.cert_date), "billing_provider_id": str(bp.id)},
+    )
+    return EnrollmentServiceRead.model_validate(service)
+
+
+@router.post(
+    "/billing-admin/enrollment/services/{service_id}/complete-nppes",
+    response_model=EnrollmentServiceRead,
+)
+async def billing_admin_complete_nppes(
+    service_id: uuid.UUID,
+    body: CompleteNppesRequest,
+    bp: Annotated[BillingProvider, Depends(require_billing_enrollment_tier)],
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    audit: Annotated[AuditLogger, Depends(get_audit)],
+    request: Request,
+) -> EnrollmentServiceRead:
+    """Mark an NPPES/NPI Setup service complete and record the NPI."""
+    service, provider = await _get_service_in_agency(service_id, bp.id, db)
+    if service.stage != "nppes_setup":
+        raise HTTPException(status_code=422, detail="This endpoint is only for NPPES/NPI Setup services.")
+    if service.status == "complete":
+        raise HTTPException(status_code=409, detail="Service is already marked complete.")
+
+    npi = body.npi.strip()
+    if not npi.isdigit() or len(npi) != 10:
+        raise HTTPException(status_code=422, detail="NPI must be exactly 10 digits.")
+
+    service.status = "complete"
+    intake = dict(service.intake_data or {})
+    intake["npi"] = npi
+    service.intake_data = intake
+    provider.npi = npi
+
+    await db.commit()
+    await db.refresh(service)
+
+    await audit.log(
+        action="BILLING_ADMIN_NPPES_COMPLETE",
+        user_id=current_user.id,
+        resource_type="user",
+        resource_id=provider.id,
+        ip_address=get_client_ip(request),
+        user_agent=get_user_agent(request),
+        extra_context={"service_id": str(service_id), "npi": npi, "billing_provider_id": str(bp.id)},
+    )
+    return EnrollmentServiceRead.model_validate(service)
+
+
+@router.post(
+    "/billing-admin/enrollment/services/{service_id}/complete-enrollment",
+    response_model=EnrollmentServiceRead,
+)
+async def billing_admin_complete_enrollment(
+    service_id: uuid.UUID,
+    body: CompleteEnrollmentRequest,
+    bp: Annotated[BillingProvider, Depends(require_billing_enrollment_tier)],
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    audit: Annotated[AuditLogger, Depends(get_audit)],
+    request: Request,
+) -> EnrollmentServiceRead:
+    """Mark a PROMISe Enrollment service complete."""
+    service, provider = await _get_service_in_agency(service_id, bp.id, db)
+    if service.stage != "enrollment":
+        raise HTTPException(status_code=422, detail="This endpoint is only for Stage 2 enrollment services.")
+    if service.status == "complete":
+        raise HTTPException(status_code=409, detail="Service is already marked complete.")
+
+    service.status = "complete"
+    intake = dict(service.intake_data or {})
+    if body.promise_id:
+        intake["promise_id"] = body.promise_id
+    if body.caqh_id:
+        intake["caqh_id"] = body.caqh_id
+    service.intake_data = intake
+
+    provider.promise_last_enrolled_on = body.promise_enrolled_on
+    if body.liability_insurance_expires_on:
+        provider.liability_insurance_expires_on = body.liability_insurance_expires_on
+
+    await db.commit()
+    await db.refresh(service)
+
+    await audit.log(
+        action="BILLING_ADMIN_ENROLLMENT_COMPLETE",
+        user_id=current_user.id,
+        resource_type="user",
+        resource_id=provider.id,
+        ip_address=get_client_ip(request),
+        user_agent=get_user_agent(request),
+        extra_context={"service_id": str(service_id), "promise_enrolled_on": str(body.promise_enrolled_on), "billing_provider_id": str(bp.id)},
+    )
+    return EnrollmentServiceRead.model_validate(service)
+
+
+@router.post(
+    "/billing-admin/enrollment/services/{service_id}/complete-mco-contracting",
+    response_model=EnrollmentServiceRead,
+)
+async def billing_admin_complete_mco_contracting(
+    service_id: uuid.UUID,
+    body: CompleteMcoContractingRequest,
+    bp: Annotated[BillingProvider, Depends(require_billing_enrollment_tier)],
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    audit: Annotated[AuditLogger, Depends(get_audit)],
+    request: Request,
+) -> EnrollmentServiceRead:
+    """Mark an MCO Contracting service complete."""
+    service, provider = await _get_service_in_agency(service_id, bp.id, db)
+    if service.stage != "mco_contracting":
+        raise HTTPException(status_code=422, detail="This endpoint is only for MCO Contracting services.")
+    if service.status == "complete":
+        raise HTTPException(status_code=409, detail="Service is already marked complete.")
+
+    service.status = "complete"
+    intake = dict(service.intake_data or {})
+    intake["contracted_on"] = str(body.contracted_on)
+    service.intake_data = intake
+
+    await db.commit()
+    await db.refresh(service)
+
+    await audit.log(
+        action="BILLING_ADMIN_MCO_CONTRACTING_COMPLETE",
+        user_id=current_user.id,
+        resource_type="user",
+        resource_id=provider.id,
+        ip_address=get_client_ip(request),
+        user_agent=get_user_agent(request),
+        extra_context={"service_id": str(service_id), "contracted_on": str(body.contracted_on), "billing_provider_id": str(bp.id)},
+    )
+    return EnrollmentServiceRead.model_validate(service)

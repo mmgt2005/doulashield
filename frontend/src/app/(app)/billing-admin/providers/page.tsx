@@ -206,6 +206,19 @@ export default function BillingAdminProvidersPage() {
   const [startPathway, setStartPathway] = useState('education_training')
   const [startServiceLoading, setStartServiceLoading] = useState(false)
 
+  // Stage-completion modals
+  const [completePcbModal, setCompletePcbModal] = useState<string | null>(null)
+  const [completePcbDate, setCompletePcbDate] = useState('')
+  const [completeNppesModal, setCompleteNppesModal] = useState<string | null>(null)
+  const [completeNppesNpi, setCompleteNppesNpi] = useState('')
+  const [completeEnrollmentModal, setCompleteEnrollmentModal] = useState<string | null>(null)
+  const [completeEnrollmentDate, setCompleteEnrollmentDate] = useState('')
+  const [completeEnrollmentPromiseId, setCompleteEnrollmentPromiseId] = useState('')
+  const [completeEnrollmentCaqhId, setCompleteEnrollmentCaqhId] = useState('')
+  const [completeMcoModal, setCompleteMcoModal] = useState<string | null>(null)
+  const [completeMcoDate, setCompleteMcoDate] = useState('')
+  const [completeModalSaving, setCompleteModalSaving] = useState(false)
+
   const [inviteTab, setInviteTab] = useState<'manual' | 'csv'>('manual')
   const [rows, setRows] = useState<InviteRow[]>([{ ...EMPTY_ROW }])
   const [submitting, setSubmitting] = useState(false)
@@ -405,6 +418,50 @@ export default function BillingAdminProvidersPage() {
       }
     } finally {
       setStartServiceLoading(false)
+    }
+  }
+
+  const quickStartNextStage = (providerId: string, stage: string) => {
+    setShowStartService(providerId)
+    setStartStage(stage)
+    setStartPathway('education_training')
+  }
+
+  const handleCompleteStage = async (
+    serviceId: string,
+    endpoint: string,
+    body: Record<string, string>,
+    resetFn: () => void,
+  ) => {
+    setCompleteModalSaving(true)
+    try {
+      const res = await axios.post<EnrollmentService>(
+        `${api}/api/v1/billing-admin/enrollment/services/${serviceId}/${endpoint}`,
+        body,
+        { headers },
+      )
+      setAllServices(prev => prev.map(s => s.id === serviceId ? { ...s, status: res.data.status } : s))
+      setServiceDetails(prev => {
+        const detail = prev[serviceId]
+        if (!detail) return prev
+        return { ...prev, [serviceId]: { ...detail, service: { ...detail.service, status: res.data.status } } }
+      })
+      resetFn()
+      showToast('Stage marked complete.')
+    } catch (e: unknown) {
+      if (axios.isAxiosError(e)) {
+        const detail = e.response?.data?.detail
+        const msg = typeof detail === 'string'
+          ? detail
+          : Array.isArray(detail)
+          ? detail.map((d: { msg?: string }) => d.msg ?? String(d)).join('; ')
+          : 'Failed to complete stage'
+        showToast(msg)
+      } else {
+        showToast('Failed to complete stage')
+      }
+    } finally {
+      setCompleteModalSaving(false)
     }
   }
 
@@ -765,6 +822,80 @@ export default function BillingAdminProvidersPage() {
                                               })}
                                             </div>
                                           )}
+
+                                          {/* Mark stage complete prompt — enrollment tier only, all tasks done, service still in_progress */}
+                                          {enrollmentTierEnabled && detail && svc.status === 'in_progress' && detail.tasks.length > 0 && detail.tasks.every(t => t.status === 'complete') && (
+                                            <div className="mt-3 rounded border border-indigo-200 bg-indigo-50 p-3">
+                                              <p className="text-xs font-semibold text-indigo-800 mb-1">All tasks complete — ready to close this stage?</p>
+                                              <p className="text-[11px] text-indigo-600 mb-2">Recording the completion date updates the provider's credential record and unlocks the next stage.</p>
+                                              {svc.stage === 'pcb' && (
+                                                <button onClick={() => { setCompletePcbModal(svc.id); setCompletePcbDate('') }}
+                                                  className="rounded bg-indigo-600 px-3 py-1 text-xs font-medium text-white hover:bg-indigo-700">
+                                                  Mark PCB Complete →
+                                                </button>
+                                              )}
+                                              {svc.stage === 'nppes_setup' && (
+                                                <button onClick={() => { setCompleteNppesModal(svc.id); setCompleteNppesNpi('') }}
+                                                  className="rounded bg-indigo-600 px-3 py-1 text-xs font-medium text-white hover:bg-indigo-700">
+                                                  Mark NPPES Complete →
+                                                </button>
+                                              )}
+                                              {svc.stage === 'enrollment' && (
+                                                <button onClick={() => { setCompleteEnrollmentModal(svc.id); setCompleteEnrollmentDate(''); setCompleteEnrollmentPromiseId(''); setCompleteEnrollmentCaqhId('') }}
+                                                  className="rounded bg-indigo-600 px-3 py-1 text-xs font-medium text-white hover:bg-indigo-700">
+                                                  Mark Enrollment Complete →
+                                                </button>
+                                              )}
+                                              {svc.stage === 'mco_contracting' && (
+                                                <button onClick={() => { setCompleteMcoModal(svc.id); setCompleteMcoDate('') }}
+                                                  className="rounded bg-indigo-600 px-3 py-1 text-xs font-medium text-white hover:bg-indigo-700">
+                                                  Mark MCO Contracting Complete →
+                                                </button>
+                                              )}
+                                            </div>
+                                          )}
+
+                                          {/* Completion banners with next-stage shortcuts */}
+                                          {svc.status === 'complete' && (
+                                            <div className="mt-3 rounded border border-green-200 bg-green-50 p-3">
+                                              {svc.stage === 'pcb' && (
+                                                <div className="flex items-center justify-between gap-3">
+                                                  <p className="text-xs font-semibold text-green-800">PCB Certification complete!</p>
+                                                  {enrollmentTierEnabled && (
+                                                    <button onClick={() => quickStartNextStage(svc.provider_id, 'nppes_setup')}
+                                                      className="flex-shrink-0 rounded bg-green-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-green-700">
+                                                      Start NPPES Setup →
+                                                    </button>
+                                                  )}
+                                                </div>
+                                              )}
+                                              {svc.stage === 'nppes_setup' && (
+                                                <div className="flex items-center justify-between gap-3">
+                                                  <p className="text-xs font-semibold text-green-800">NPPES / NPI Setup complete!</p>
+                                                  {enrollmentTierEnabled && (
+                                                    <button onClick={() => quickStartNextStage(svc.provider_id, 'enrollment')}
+                                                      className="flex-shrink-0 rounded bg-green-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-green-700">
+                                                      Start Stage 2 →
+                                                    </button>
+                                                  )}
+                                                </div>
+                                              )}
+                                              {svc.stage === 'enrollment' && (
+                                                <div className="flex items-center justify-between gap-3">
+                                                  <p className="text-xs font-semibold text-green-800">PROMISe Enrollment complete!</p>
+                                                  {enrollmentTierEnabled && (
+                                                    <button onClick={() => quickStartNextStage(svc.provider_id, 'mco_contracting')}
+                                                      className="flex-shrink-0 rounded bg-green-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-green-700">
+                                                      Start MCO Contracting →
+                                                    </button>
+                                                  )}
+                                                </div>
+                                              )}
+                                              {svc.stage === 'mco_contracting' && (
+                                                <p className="text-xs font-semibold text-green-800">MCO Contracting complete — this provider is ready to bill!</p>
+                                              )}
+                                            </div>
+                                          )}
                                         </div>
                                       )}
                                     </div>
@@ -979,6 +1110,116 @@ export default function BillingAdminProvidersPage() {
           </>
         )}
       </div>
+
+      {/* Complete PCB modal */}
+      {completePcbModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setCompletePcbModal(null)}>
+          <div className="w-full max-w-sm rounded-xl bg-white shadow-2xl p-6" onClick={e => e.stopPropagation()}>
+            <h3 className="text-sm font-semibold text-gray-900 mb-1">Mark PCB Certification Complete</h3>
+            <p className="text-xs text-gray-500 mb-4">Enter the PCB certification date. This updates the provider&apos;s credential record and unlocks NPPES / NPI Setup.</p>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Certification Date</label>
+            <input type="date" value={completePcbDate} onChange={e => setCompletePcbDate(e.target.value)}
+              className="w-full rounded border border-gray-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400" />
+            <div className="mt-4 flex justify-end gap-2">
+              <button onClick={() => setCompletePcbModal(null)} className="rounded border border-gray-200 px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-50">Cancel</button>
+              <button disabled={!completePcbDate || completeModalSaving}
+                onClick={() => handleCompleteStage(completePcbModal, 'complete-pcb', { cert_date: completePcbDate }, () => setCompletePcbModal(null))}
+                className="rounded bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-50">
+                {completeModalSaving ? 'Saving…' : 'Mark Complete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Complete NPPES modal */}
+      {completeNppesModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setCompleteNppesModal(null)}>
+          <div className="w-full max-w-sm rounded-xl bg-white shadow-2xl p-6" onClick={e => e.stopPropagation()}>
+            <h3 className="text-sm font-semibold text-gray-900 mb-1">Mark NPPES / NPI Setup Complete</h3>
+            <p className="text-xs text-gray-500 mb-4">Enter the provider&apos;s 10-digit NPI. This updates the provider&apos;s record and unlocks Stage 2 Enrollment.</p>
+            <label className="block text-xs font-medium text-gray-700 mb-1">NPI (10 digits)</label>
+            <input type="text" inputMode="numeric" maxLength={10} value={completeNppesNpi} onChange={e => setCompleteNppesNpi(e.target.value.replace(/\D/g, ''))}
+              placeholder="1234567890"
+              className="w-full rounded border border-gray-200 px-2 py-1.5 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-indigo-400" />
+            <div className="mt-4 flex justify-end gap-2">
+              <button onClick={() => setCompleteNppesModal(null)} className="rounded border border-gray-200 px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-50">Cancel</button>
+              <button disabled={completeNppesNpi.length !== 10 || completeModalSaving}
+                onClick={() => handleCompleteStage(completeNppesModal, 'complete-nppes', { npi: completeNppesNpi }, () => setCompleteNppesModal(null))}
+                className="rounded bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-50">
+                {completeModalSaving ? 'Saving…' : 'Mark Complete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Complete Enrollment modal */}
+      {completeEnrollmentModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setCompleteEnrollmentModal(null)}>
+          <div className="w-full max-w-sm rounded-xl bg-white shadow-2xl p-6" onClick={e => e.stopPropagation()}>
+            <h3 className="text-sm font-semibold text-gray-900 mb-1">Mark PROMISe Enrollment Complete</h3>
+            <p className="text-xs text-gray-500 mb-4">Record the enrollment date and optional IDs. Unlocks MCO Contracting.</p>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">PROMISe Enrolled Date <span className="text-red-500">*</span></label>
+                <input type="date" value={completeEnrollmentDate} onChange={e => setCompleteEnrollmentDate(e.target.value)}
+                  className="w-full rounded border border-gray-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">PROMISe ID (optional)</label>
+                <input type="text" value={completeEnrollmentPromiseId} onChange={e => setCompleteEnrollmentPromiseId(e.target.value)}
+                  placeholder="e.g. 123456789"
+                  className="w-full rounded border border-gray-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">CAQH ID (optional)</label>
+                <input type="text" value={completeEnrollmentCaqhId} onChange={e => setCompleteEnrollmentCaqhId(e.target.value)}
+                  placeholder="e.g. 12345678"
+                  className="w-full rounded border border-gray-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400" />
+              </div>
+            </div>
+            <div className="mt-4 flex justify-end gap-2">
+              <button onClick={() => setCompleteEnrollmentModal(null)} className="rounded border border-gray-200 px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-50">Cancel</button>
+              <button disabled={!completeEnrollmentDate || completeModalSaving}
+                onClick={() => handleCompleteStage(
+                  completeEnrollmentModal,
+                  'complete-enrollment',
+                  {
+                    promise_enrolled_on: completeEnrollmentDate,
+                    ...(completeEnrollmentPromiseId ? { promise_id: completeEnrollmentPromiseId } : {}),
+                    ...(completeEnrollmentCaqhId ? { caqh_id: completeEnrollmentCaqhId } : {}),
+                  },
+                  () => setCompleteEnrollmentModal(null),
+                )}
+                className="rounded bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-50">
+                {completeModalSaving ? 'Saving…' : 'Mark Complete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Complete MCO Contracting modal */}
+      {completeMcoModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setCompleteMcoModal(null)}>
+          <div className="w-full max-w-sm rounded-xl bg-white shadow-2xl p-6" onClick={e => e.stopPropagation()}>
+            <h3 className="text-sm font-semibold text-gray-900 mb-1">Mark MCO Contracting Complete</h3>
+            <p className="text-xs text-gray-500 mb-4">Enter the MCO contracting date. The provider is now fully credentialed and ready to bill.</p>
+            <label className="block text-xs font-medium text-gray-700 mb-1">Contracted Date</label>
+            <input type="date" value={completeMcoDate} onChange={e => setCompleteMcoDate(e.target.value)}
+              className="w-full rounded border border-gray-200 px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400" />
+            <div className="mt-4 flex justify-end gap-2">
+              <button onClick={() => setCompleteMcoModal(null)} className="rounded border border-gray-200 px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-50">Cancel</button>
+              <button disabled={!completeMcoDate || completeModalSaving}
+                onClick={() => handleCompleteStage(completeMcoModal, 'complete-mco-contracting', { contracted_on: completeMcoDate }, () => setCompleteMcoModal(null))}
+                className="rounded bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-50">
+                {completeModalSaving ? 'Saving…' : 'Mark Complete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {toast && (
         <div className="fixed bottom-6 right-6 z-50 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-800 shadow-lg">

@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.63.0] — 2026-07-03
+
+### Added
+- **Billing-admin stage completion (enrollment tier)**: Billing admins with the Enrollment Tier add-on can now mark enrollment stages complete directly from My Providers, matching the capability previously available only to DoulaShield admins. When all tasks in a service are checked complete, a "Mark [Stage] Complete →" prompt appears with a modal to record the required completion data (cert date / NPI / PROMISe enrolled date / MCO contracted date). Four new backend endpoints — `POST /billing-admin/enrollment/services/{id}/complete-pcb|complete-nppes|complete-enrollment|complete-mco-contracting` — handle the stage transitions, update provider credential fields, and log audit events. Completion banners with next-stage shortcut buttons appear after each stage completes, letting billing admins move through the full pipeline (PCB → NPPES → Stage 2 → MCO) without leaving My Providers.
+
+---
+
 ## [1.62.1] — 2026-07-03
 
 ### Changed
