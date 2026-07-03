@@ -293,9 +293,11 @@ async def send_message(
     in_reply_to / references: RFC 2822 threading headers for replies.
     """
     import email.encoders
+    from email.generator import BytesGenerator
     from email.mime.base import MIMEBase
     from email.mime.multipart import MIMEMultipart
     from email.mime.text import MIMEText
+    from io import BytesIO
 
     from_addr = settings.GMAIL_SEND_AS or (user.gmail_connected_email or "me")
 
@@ -304,15 +306,15 @@ async def send_message(
     alt.attach(MIMEText(_text_to_html(body_text), "html", "utf-8"))
 
     if attachments:
-        outer: MIMEMultipart | MIMEMultipart = MIMEMultipart("mixed")
+        outer: MIMEMultipart = MIMEMultipart("mixed")
         outer.attach(alt)
         for filename, data, content_type in attachments:
             main_type, _, sub_type = content_type.partition("/")
-            part = MIMEBase(main_type or "application", sub_type or "octet-stream")
+            safe_name = filename.replace('"', "")
+            part = MIMEBase(main_type or "application", sub_type or "octet-stream", name=safe_name)
             part.set_payload(data)
             email.encoders.encode_base64(part)
-            safe_name = filename.replace('"', "")
-            part.add_header("Content-Disposition", f'attachment; filename="{safe_name}"')
+            part.add_header("Content-Disposition", "attachment", filename=safe_name)
             outer.attach(part)
     else:
         outer = alt  # type: ignore[assignment]
@@ -325,7 +327,9 @@ async def send_message(
         refs = f"{references} {in_reply_to}".strip() if references else in_reply_to
         outer["References"] = refs
 
-    raw = base64.urlsafe_b64encode(outer.as_bytes()).decode()
+    buf = BytesIO()
+    BytesGenerator(buf, mangle_from_=False).flatten(outer)
+    raw = base64.urlsafe_b64encode(buf.getvalue()).decode()
 
     service = await _build_service(user, db)
     result = await asyncio.to_thread(

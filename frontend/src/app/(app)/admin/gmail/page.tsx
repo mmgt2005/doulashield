@@ -100,7 +100,7 @@ export default function GmailPage() {
         : `${api}/api/v1/admin/gmail/send`
 
       await axios.post(url, formData, {
-        headers: { ...headers, 'Content-Type': 'multipart/form-data' },
+        headers: { Authorization: `Bearer ${getAccessToken()}` },
       })
       resetCompose()
       showToast('Email sent')
