@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.63.4] — 2026-07-03
+
+### Fixed
+- **Billing-admin My Providers — "Field Required" definitive fix**: Removed all ref-based provider ID capture. The Start button now closes directly over `p.id` (the current provider's ID in the render loop), which is always present and correct in context. `startStage` and `startPathway` are read from React state via the render closure, which is always fresh at click time because React has already re-rendered with the new values before the user can click. Removed the three `pendingProvider/Stage/PathwayRef` refs that were added in previous fix attempts — they were unnecessary complexity and the provider ID ref was never guaranteed to be set in all code paths.
+
+---
+
 ## [1.63.3] — 2026-07-03
 
 ### Fixed
