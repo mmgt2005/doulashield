@@ -392,10 +392,11 @@ export default function BillingAdminProvidersPage() {
     }
   }
 
-  const startEnrollmentService = async () => {
-    if (!newServiceProviderId) { showToast('No provider selected'); return }
-    const body: Record<string, unknown> = { provider_id: newServiceProviderId, stage: startStage }
+  const startEnrollmentService = async (providerId: string) => {
+    if (!providerId) { showToast('No provider selected'); return }
+    const body: Record<string, unknown> = { provider_id: providerId, stage: startStage }
     if (startStage === 'pcb') body.pcb_pathway = startPathway
+    console.log('[DS v1.63.8] startEnrollmentService body:', JSON.stringify(body))
     setStartServiceLoading(true)
     try {
       const res = await axios.post<EnrollmentServiceDetail>(
@@ -575,7 +576,7 @@ export default function BillingAdminProvidersPage() {
         <div>
           <h1 className="text-xl font-bold text-gray-900">My Providers</h1>
           <p className="mt-0.5 text-sm text-gray-500">
-            Provider roster, enrollment progress, and credential expiry reminders.
+            Provider roster, enrollment progress, and credential expiry reminders. <span className="text-[10px] text-gray-300">v1.63.8</span>
           </p>
         </div>
         <button
@@ -727,7 +728,7 @@ export default function BillingAdminProvidersPage() {
                               )}
                             </div>
                             <div className="flex gap-2">
-                              <button onClick={() => startEnrollmentService()} disabled={startServiceLoading}
+                              <button onClick={() => startEnrollmentService(p.id)} disabled={startServiceLoading}
                                 className="rounded bg-indigo-600 px-3 py-1 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-50">
                                 {startServiceLoading ? 'Starting…' : 'Start'}
                               </button>
