@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.63.8] — 2026-07-03
+
+### Fixed
+- **Billing-admin My Providers — "Field required" on Start enrollment**: `startEnrollmentService` now takes the provider ID as an explicit required parameter, and the Start button passes `p.id` directly from the render-time closure instead of reading from state. This eliminates any possible stale-closure or React batching issue. Added a `console.log` in the function so browser DevTools shows exactly what is being sent. Added a `v1.63.8` version indicator in the page subtitle so it is easy to confirm which code version is deployed.
+
+---
+
 ## [1.63.7] — 2026-07-03
 
 ### Fixed
