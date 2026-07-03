@@ -157,8 +157,6 @@ export default function EnrollmentServicesPage() {
   // Assign to billing admin
   const [assignLoading, setAssignLoading] = useState<string | null>(null)
 
-  // Delete service
-  const [deleteServiceLoading, setDeleteServiceLoading] = useState<string | null>(null)
 
   // doxy.me screen-share
   const [telehealthLink, setTelehealthLink] = useState<string | null>(null)
@@ -223,18 +221,21 @@ export default function EnrollmentServicesPage() {
 
   const handleDeleteService = async (serviceId: string) => {
     if (!window.confirm('Delete this enrollment service? This also removes all its tasks and uploaded documents. This cannot be undone.')) return
-    setDeleteServiceLoading(serviceId)
+    // Optimistic: remove immediately so the UI feels instant
+    const removed = services.find(s => s.id === serviceId)
+    const removedDetail = detailCache[serviceId]
+    setServices(prev => prev.filter(s => s.id !== serviceId))
+    setDetailCache(prev => { const n = { ...prev }; delete n[serviceId]; return n })
+    if (expandedId === serviceId) setExpandedId(null)
+    showToast('Enrollment service deleted.')
     try {
       await axios.delete(`${api}/api/v1/admin/enrollment/services/${serviceId}`, { headers })
-      setServices(prev => prev.filter(s => s.id !== serviceId))
-      setDetailCache(prev => { const n = { ...prev }; delete n[serviceId]; return n })
-      if (expandedId === serviceId) setExpandedId(null)
-      showToast('Enrollment service deleted.')
     } catch (e: unknown) {
+      // Rollback on failure
+      if (removed) setServices(prev => [removed, ...prev])
+      if (removedDetail) setDetailCache(prev => ({ ...prev, [serviceId]: removedDetail }))
       const msg = axios.isAxiosError(e) ? e.response?.data?.detail : 'Failed to delete'
       showToast(typeof msg === 'string' ? msg : 'Failed to delete')
-    } finally {
-      setDeleteServiceLoading(null)
     }
   }
 
@@ -1134,11 +1135,10 @@ export default function EnrollmentServicesPage() {
                     {svc.status !== 'complete' && (
                       <button
                         onClick={() => handleDeleteService(svc.id)}
-                        disabled={deleteServiceLoading === svc.id}
                         title="Delete this enrollment service"
-                        className="rounded px-2 py-1 text-xs font-medium text-red-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-40 transition-colors"
+                        className="rounded px-2 py-1 text-xs font-medium text-red-400 hover:bg-red-50 hover:text-red-600 transition-colors"
                       >
-                        {deleteServiceLoading === svc.id ? '…' : 'Delete'}
+                        Delete
                       </button>
                     )}
                   </div>

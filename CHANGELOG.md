@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.63.7] — 2026-07-03
+
+### Fixed
+- **Delete enrollment service — optimistic UI**: Both the admin Enrollment Services page and the billing-admin My Providers page now remove the service row and show the success toast immediately when the user confirms deletion, rather than waiting for the network round-trip. If the server request fails, the row is restored and an error toast is shown.
+
+---
+
 ## [1.63.6] — 2026-07-03
 
 ### Added

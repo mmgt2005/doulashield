@@ -206,7 +206,6 @@ export default function BillingAdminProvidersPage() {
   const [startStage, setStartStage] = useState('pcb')
   const [startPathway, setStartPathway] = useState('education_training')
   const [startServiceLoading, setStartServiceLoading] = useState(false)
-  const [deleteServiceLoading, setDeleteServiceLoading] = useState<string | null>(null)
 
   // Stage-completion modals
   const [completePcbModal, setCompletePcbModal] = useState<string | null>(null)
@@ -428,22 +427,21 @@ export default function BillingAdminProvidersPage() {
   }
 
   const deleteEnrollmentService = async (serviceId: string) => {
-    setDeleteServiceLoading(serviceId)
+    // Optimistic: remove immediately so the UI feels instant
+    const removed = allServices.find(s => s.id === serviceId)
+    const removedDetail = serviceDetails[serviceId]
+    setAllServices(prev => prev.filter(s => s.id !== serviceId))
+    setServiceDetails(prev => { const n = { ...prev }; delete n[serviceId]; return n })
+    if (expandedService === serviceId) setExpandedService(null)
+    showToast('Enrollment service deleted.')
     try {
       await axios.delete(`${api}/api/v1/billing-admin/enrollment/services/${serviceId}`, { headers })
-      setAllServices(prev => prev.filter(s => s.id !== serviceId))
-      setServiceDetails(prev => { const n = { ...prev }; delete n[serviceId]; return n })
-      if (expandedService === serviceId) setExpandedService(null)
-      showToast('Enrollment service deleted.')
     } catch (e: unknown) {
-      if (axios.isAxiosError(e)) {
-        const detail = e.response?.data?.detail
-        showToast(typeof detail === 'string' ? detail : 'Failed to delete service')
-      } else {
-        showToast('Failed to delete service')
-      }
-    } finally {
-      setDeleteServiceLoading(null)
+      // Rollback on failure
+      if (removed) setAllServices(prev => [removed, ...prev])
+      if (removedDetail) setServiceDetails(prev => ({ ...prev, [serviceId]: removedDetail }))
+      const msg = axios.isAxiosError(e) ? e.response?.data?.detail : 'Failed to delete service'
+      showToast(typeof msg === 'string' ? msg : 'Failed to delete service')
     }
   }
 
@@ -783,11 +781,10 @@ export default function BillingAdminProvidersPage() {
                                           {enrollmentTierEnabled && svc.status !== 'complete' && !svc.assigned_to_billing_admin && (
                                             <button
                                               onClick={e => { e.stopPropagation(); deleteEnrollmentService(svc.id) }}
-                                              disabled={deleteServiceLoading === svc.id}
                                               title="Delete this enrollment service"
-                                              className="text-[10px] text-red-400 hover:text-red-600 disabled:opacity-40 px-1"
+                                              className="text-[10px] text-red-400 hover:text-red-600 px-1"
                                             >
-                                              {deleteServiceLoading === svc.id ? '…' : '✕'}
+                                              ✕
                                             </button>
                                           )}
                                         </div>
