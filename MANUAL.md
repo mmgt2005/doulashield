@@ -198,6 +198,32 @@ A link to the blank official PCB application is also available on the page if yo
 **Downloadable forms on task cards:**
 Each client evaluation task shows a **Download PCB Client Evaluation Form →** link so you can print the official form and give it to your client to complete. Each letter of recommendation task (experienced pathway) shows a **Download Recommendation Letter Template →** link — a fill-in PDF you can hand to clients to guide them in writing their letter. Both links open the document in a new tab.
 
+### 5-Year Work History Bio-Builder
+
+The **5-Year Work History** task in your MCO Contracting stage includes an AI-powered tool that turns your rough notes into a state-compliant work history table — no resume required.
+
+#### Before you start (about 40 minutes total)
+
+Click **"Before You Start — How to Gather Your Work History"** to expand the four prep steps:
+
+1. **Audit Digital Financial Trails** (~15 min) — Log into TurboTax, TaxSlayer, or IRS.gov and pull W-2s or 1099s for the past 5 years. For private-pay work, search Stripe, PayPal, or bank statements for recurring client deposits to pin down the months you were actively working.
+2. **Scrape Birth Platforms & Calendars** (~15 min) — Check your history on DoulaMatch or local collective directories. Search Google Calendar or Apple Calendar for "birth," "prenatal," "postpartum," or "client" to find exact start and end dates for contract blocks.
+3. **Map Out the Gaps** (~10 min) — Identify any months where no formal employment or active clients occurred. Note the reason — PA Medicaid rejects applications with unexplained gaps over 30 days.
+4. **Execute the Brain Dump** (~5 min) — Don't worry about formatting. Write a messy chronological list of dates, organization names (or "Independent Practice"), addresses, and what you did. Then paste it into the text box below the prep steps.
+
+#### Generating your work history
+
+After pasting your notes, click **Generate Work History with AI**. DoulaShield sends your text to an AI and returns:
+
+- A formatted table with columns: Start Date, End Date, Employer/Organization Name, Address, Job Title, Description of Duties — in reverse chronological order covering the past 5 years.
+- A **Gap Log** (amber box) listing any periods over 30 days with a plain-English explanation for each gap.
+
+The result is saved automatically. If you close the page and come back, your table is still there.
+
+To revise your notes and regenerate, click **Edit / Regenerate** — your original text reappears in the text box ready to edit.
+
+Once you are satisfied with the AI output, upload your final signed PDF work history document using the **+ Upload Document** button below the table.
+
 ---
 
 ## Managing Clients
