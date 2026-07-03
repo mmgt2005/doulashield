@@ -256,7 +256,7 @@ def _text_to_html(text: str, logo_url: str | None = None) -> str:
     logo_block = ""
     if logo_url:
         logo_block = (
-            f'<div style="padding:16px 24px;background:#1e3a8a;border-radius:8px 8px 0 0">'
+            f'<div style="padding:16px 24px;background:#ffffff;border:1px solid #e5e7eb;border-bottom:none;border-radius:8px 8px 0 0">'
             f'<img src="{logo_url}" alt="DoulaShield" width="130" height="auto"'
             f' style="display:block;max-width:100%"/>'
             f'</div>'
