@@ -12,6 +12,16 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.63.5] — 2026-07-03
+
+### Fixed
+- **Billing-admin My Providers — "Field Required" final fix**: Completely restructured the "Start Enrollment Service" form to mirror the working admin enrollment pattern. Added a dedicated `newServiceProviderId` state variable that is explicitly set when the form opens (both from the + Start Service button and the completion-banner shortcuts). The handler reads from this state variable directly — no refs, no closure captures from render loops. Body construction now omits `pcb_pathway` for non-PCB stages (matching admin behavior). Added a guard that short-circuits if no provider ID is set.
+
+### Added
+- **Billing-admin My Providers — Delete enrollment service**: Added a ✕ button on each non-complete, non-assigned enrollment service row so billing admins can remove a service started in error. Calls `DELETE /api/v1/billing-admin/enrollment/services/{id}` which cascades to delete tasks and documents. Completed services and DoulaShield-assigned services cannot be deleted.
+
+---
+
 ## [1.63.4] — 2026-07-03
 
 ### Fixed

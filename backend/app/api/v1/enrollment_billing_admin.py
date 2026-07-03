@@ -322,6 +322,43 @@ async def get_agency_enrollment_document_url(
 
 
 @router.delete(
+    "/billing-admin/enrollment/services/{service_id}",
+    status_code=204,
+    response_class=Response,
+)
+async def delete_agency_enrollment_service(
+    service_id: uuid.UUID,
+    bp: Annotated[BillingProvider, Depends(require_billing_enrollment_tier)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    audit: Annotated[AuditLogger, Depends(get_audit)],
+    request: Request,
+):
+    """Delete an enrollment service that was started in error (not_started or in_progress only)."""
+    service, _ = await _get_service_in_agency(service_id, bp.id, db)
+    if service.status == "complete":
+        raise HTTPException(status_code=409, detail="Cannot delete a completed enrollment service.")
+    # Delete child tasks and documents first
+    tasks_result = await db.execute(select(EnrollmentTask).where(EnrollmentTask.service_id == service_id))
+    for task in tasks_result.scalars().all():
+        await db.delete(task)
+    docs_result = await db.execute(select(EnrollmentDocument).where(EnrollmentDocument.service_id == service_id))
+    for doc in docs_result.scalars().all():
+        try:
+            from app.services.ocr_service import delete_file
+            await delete_file(doc.file_path)
+        except Exception:
+            pass
+        await db.delete(doc)
+    await db.delete(service)
+    await db.commit()
+    await audit.log(
+        db=db, action="DELETE_ENROLLMENT_SERVICE", resource_type="enrollment_service",
+        resource_id=str(service_id), user_id=None, ip_address=get_client_ip(request),
+        user_agent=get_user_agent(request), extra_context={"service_id": str(service_id)},
+    )
+
+
+@router.delete(
     "/billing-admin/enrollment/services/{service_id}/documents/{doc_id}",
     status_code=204,
     response_class=Response,

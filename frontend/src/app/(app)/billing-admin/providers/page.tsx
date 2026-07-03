@@ -202,9 +202,11 @@ export default function BillingAdminProvidersPage() {
   const [taskSaving, setTaskSaving] = useState<string | null>(null)
   const [taskNotes, setTaskNotes] = useState<Record<string, string>>({})
   const [showStartService, setShowStartService] = useState<string | null>(null)
+  const [newServiceProviderId, setNewServiceProviderId] = useState('')
   const [startStage, setStartStage] = useState('pcb')
   const [startPathway, setStartPathway] = useState('education_training')
   const [startServiceLoading, setStartServiceLoading] = useState(false)
+  const [deleteServiceLoading, setDeleteServiceLoading] = useState<string | null>(null)
 
   // Stage-completion modals
   const [completePcbModal, setCompletePcbModal] = useState<string | null>(null)
@@ -391,8 +393,10 @@ export default function BillingAdminProvidersPage() {
     }
   }
 
-  const startEnrollmentService = async (providerId: string, stage: string, pathway: string) => {
-    const body = { provider_id: providerId, stage, pcb_pathway: stage === 'pcb' ? pathway : null }
+  const startEnrollmentService = async () => {
+    if (!newServiceProviderId) { showToast('No provider selected'); return }
+    const body: Record<string, unknown> = { provider_id: newServiceProviderId, stage: startStage }
+    if (startStage === 'pcb') body.pcb_pathway = startPathway
     setStartServiceLoading(true)
     try {
       const res = await axios.post<EnrollmentServiceDetail>(
@@ -404,6 +408,7 @@ export default function BillingAdminProvidersPage() {
       setServiceDetails(prev => ({ ...prev, [res.data.service.id]: res.data }))
       setExpandedService(res.data.service.id)
       setShowStartService(null)
+      setNewServiceProviderId('')
       showToast('Enrollment service started.')
     } catch (e: unknown) {
       if (axios.isAxiosError(e)) {
@@ -422,8 +427,29 @@ export default function BillingAdminProvidersPage() {
     }
   }
 
+  const deleteEnrollmentService = async (serviceId: string) => {
+    setDeleteServiceLoading(serviceId)
+    try {
+      await axios.delete(`${api}/api/v1/billing-admin/enrollment/services/${serviceId}`, { headers })
+      setAllServices(prev => prev.filter(s => s.id !== serviceId))
+      setServiceDetails(prev => { const n = { ...prev }; delete n[serviceId]; return n })
+      if (expandedService === serviceId) setExpandedService(null)
+      showToast('Enrollment service deleted.')
+    } catch (e: unknown) {
+      if (axios.isAxiosError(e)) {
+        const detail = e.response?.data?.detail
+        showToast(typeof detail === 'string' ? detail : 'Failed to delete service')
+      } else {
+        showToast('Failed to delete service')
+      }
+    } finally {
+      setDeleteServiceLoading(null)
+    }
+  }
+
   const quickStartNextStage = (providerId: string, stage: string) => {
     setExpandedService(null)  // collapse current service so the form is prominent
+    setNewServiceProviderId(providerId)
     setShowStartService(providerId)
     setStartStage(stage)
     setStartPathway('education_training')
@@ -669,6 +695,7 @@ export default function BillingAdminProvidersPage() {
                               onClick={() => {
                                 const opening = showStartService !== p.id
                                 setShowStartService(opening ? p.id : null)
+                                setNewServiceProviderId(opening ? p.id : '')
                                 setStartStage('pcb')
                                 setStartPathway('education_training')
                               }}
@@ -702,7 +729,7 @@ export default function BillingAdminProvidersPage() {
                               )}
                             </div>
                             <div className="flex gap-2">
-                              <button onClick={() => startEnrollmentService(p.id, startStage, startPathway)} disabled={startServiceLoading}
+                              <button onClick={() => startEnrollmentService()} disabled={startServiceLoading}
                                 className="rounded bg-indigo-600 px-3 py-1 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-50">
                                 {startServiceLoading ? 'Starting…' : 'Start'}
                               </button>
@@ -749,9 +776,21 @@ export default function BillingAdminProvidersPage() {
                                             </span>
                                           )}
                                         </div>
-                                        <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium border ${statusColor}`}>
-                                          {svc.status === 'complete' ? 'Complete' : svc.status === 'in_progress' ? 'In Progress' : svc.status}
-                                        </span>
+                                        <div className="flex items-center gap-2">
+                                          <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium border ${statusColor}`}>
+                                            {svc.status === 'complete' ? 'Complete' : svc.status === 'in_progress' ? 'In Progress' : svc.status}
+                                          </span>
+                                          {enrollmentTierEnabled && svc.status !== 'complete' && !svc.assigned_to_billing_admin && (
+                                            <button
+                                              onClick={e => { e.stopPropagation(); deleteEnrollmentService(svc.id) }}
+                                              disabled={deleteServiceLoading === svc.id}
+                                              title="Delete this enrollment service"
+                                              className="text-[10px] text-red-400 hover:text-red-600 disabled:opacity-40 px-1"
+                                            >
+                                              {deleteServiceLoading === svc.id ? '…' : '✕'}
+                                            </button>
+                                          )}
+                                        </div>
                                       </button>
                                       {isExpanded && (
                                         <div className="border-t border-gray-100 px-3 py-2">
