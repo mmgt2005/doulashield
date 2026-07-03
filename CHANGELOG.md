@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.61.1] — 2026-07-03
+
+### Fixed
+- **Gmail compose — "Attach files" button not opening file picker**: Replaced the button + `fileInputRef.current.click()` pattern with a `<label>` wrapping the hidden `<input type="file">`. Some browsers block programmatic `.click()` on file inputs; the label approach uses native browser activation and works universally.
+
+---
+
 ## [1.61.0] — 2026-07-03
 
 ### Added
