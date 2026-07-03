@@ -12,6 +12,14 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.63.2] — 2026-07-03
+
+### Fixed
+- **Billing-admin My Providers — "Start NPPES Setup" still showing "Field Required"**: Root cause was a React state timing issue — `showStartService` state and `startStage` state are set synchronously in `quickStartNextStage`, but the event handler's closure on the Start button could capture stale values before React's batch update completed a re-render. Replaced the state read in the Start button with a `useRef` (`pendingProviderIdRef`) that is written synchronously at click time, guaranteeing the correct provider ID is passed to the API even if React hasn't committed the new state yet.
+- **Billing-admin My Providers — collapsed stage after shortcut**: Clicking "Start NPPES Setup →" (or any completion-banner next-stage shortcut) now collapses the currently-expanded service panel so the New Enrollment Service form is immediately visible without having to scroll past the expanded task list.
+
+---
+
 ## [1.63.1] — 2026-07-03
 
 ### Fixed

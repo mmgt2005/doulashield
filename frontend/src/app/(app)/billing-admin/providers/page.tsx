@@ -226,6 +226,7 @@ export default function BillingAdminProvidersPage() {
   const [csvRows, setCsvRows] = useState<CsvRow[]>([])
   const [csvShowGuide, setCsvShowGuide] = useState(false)
   const csvInputRef = useRef<HTMLInputElement>(null)
+  const pendingProviderIdRef = useRef<string | null>(null)
 
   const showToast = (msg: string) => {
     setToast(msg)
@@ -422,6 +423,8 @@ export default function BillingAdminProvidersPage() {
   }
 
   const quickStartNextStage = (providerId: string, stage: string) => {
+    pendingProviderIdRef.current = providerId  // synchronous — bypasses React batching
+    setExpandedService(null)  // collapse current service so the form is prominent
     setShowStartService(providerId)
     setStartStage(stage)
     setStartPathway('education_training')
@@ -664,7 +667,13 @@ export default function BillingAdminProvidersPage() {
                           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Enrollment Services</p>
                           {enrollmentTierEnabled && (
                             <button
-                              onClick={() => { setShowStartService(showStartService === p.id ? null : p.id); setStartStage('pcb'); setStartPathway('education_training') }}
+                              onClick={() => {
+                                const opening = showStartService !== p.id
+                                if (opening) pendingProviderIdRef.current = p.id
+                                setShowStartService(opening ? p.id : null)
+                                setStartStage('pcb')
+                                setStartPathway('education_training')
+                              }}
                               className="text-xs text-indigo-600 hover:underline"
                             >
                               + Start Service
@@ -695,7 +704,10 @@ export default function BillingAdminProvidersPage() {
                               )}
                             </div>
                             <div className="flex gap-2">
-                              <button onClick={() => showStartService && startEnrollmentService(showStartService)} disabled={startServiceLoading}
+                              <button onClick={() => {
+                                const pid = pendingProviderIdRef.current
+                                if (pid) startEnrollmentService(pid)
+                              }} disabled={startServiceLoading}
                                 className="rounded bg-indigo-600 px-3 py-1 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-50">
                                 {startServiceLoading ? 'Starting…' : 'Start'}
                               </button>
