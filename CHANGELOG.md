@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.61.2] — 2026-07-03
+
+### Fixed
+- **Email logo header color**: Changed the logo header background in outgoing emails from dark blue (`#1e3a8a`) to white, which contrasts correctly with the dark-colored DoulaShield logo. The header now shares the same border and background as the email body for a seamless look.
+
+---
+
 ## [1.61.1] — 2026-07-03
 
 ### Fixed
