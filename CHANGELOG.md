@@ -12,6 +12,17 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.60.0] — 2026-07-03
+
+### Added
+- **Gmail Compose & Reply**: Admins can now compose new emails and reply to existing messages directly from the Gmail inbox page (`/admin/gmail`). Emails support file attachments (PDF, images, etc.) and auto-linked URLs in the body. The "Compose" button appears in the page header when Gmail is connected; a "Reply" button appears below each expanded message body.
+- **HTML email body**: Outgoing emails are sent as `multipart/alternative` (plain text + HTML). URLs typed in the body are automatically converted to clickable `<a>` links in the recipient's email client.
+- **File attachment support**: The Compose/Reply modal includes an "Attach files" picker with per-file remove buttons. Files are transmitted as `multipart/form-data` and attached to the email as MIME parts.
+- **`GMAIL_SEND_AS` config**: New optional backend setting. When set to an alias address (e.g. `support@doulashield.com`) that has been configured in Gmail "Send mail as" settings, outgoing emails display that address as the From. Falls back to the connected Gmail address if empty.
+- **`gmail.send` OAuth scope**: Added to `_SCOPES` alongside `gmail.readonly`. Existing connections must disconnect and reconnect once to grant the new permission.
+
+---
+
 ## [1.59.8] — 2026-07-02
 
 ### Fixed

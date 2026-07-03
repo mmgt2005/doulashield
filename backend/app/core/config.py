@@ -73,6 +73,7 @@ class Settings(BaseSettings):
     # Google / Gmail OAuth
     GOOGLE_CLIENT_ID: str = ""
     GOOGLE_CLIENT_SECRET: str = ""
+    GMAIL_SEND_AS: str = ""  # alias From address, e.g. support@doulashield.com
 
     # Internal ops
     INTERNAL_SECRET: str = ""  # required for POST /internal/trigger-remittance-sync

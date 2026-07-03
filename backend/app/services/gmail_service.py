@@ -10,7 +10,10 @@ from app.core.encryption import decrypt_field, encrypt_field
 
 log = logging.getLogger(__name__)
 
-_SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]
+_SCOPES = [
+    "https://www.googleapis.com/auth/gmail.readonly",
+    "https://www.googleapis.com/auth/gmail.send",
+]
 
 
 def _configured() -> bool:
@@ -239,6 +242,96 @@ async def fetch_message_detail(user, db: AsyncSession, message_id: str) -> dict:
         "body": body,
         "attachments": _extract_attachments(payload),
     }
+
+
+def _text_to_html(text: str) -> str:
+    """Convert plain text to minimal HTML: escape, auto-link URLs, preserve newlines."""
+    import html as _html
+    import re
+
+    safe = _html.escape(text)
+    safe = re.sub(r"(https?://\S+)", r'<a href="\1">\1</a>', safe)
+    safe = safe.replace("\n", "<br>\n")
+    return f'<div style="font-family:sans-serif;font-size:14px;line-height:1.5">{safe}</div>'
+
+
+async def fetch_message_reply_headers(user, db: AsyncSession, message_id: str) -> dict:
+    """Fetch Message-ID, References, Subject, and From headers needed to construct a reply."""
+    service = await _build_service(user, db)
+    msg = await asyncio.to_thread(
+        lambda: service.users().messages().get(
+            userId="me",
+            id=message_id,
+            format="metadata",
+            metadataHeaders=["Message-ID", "References", "Subject", "From"],
+        ).execute()
+    )
+    payload = msg.get("payload", {})
+    headers = payload.get("headers", [])
+    h = _extract_headers(headers, {"message-id", "references", "subject", "from"})
+    return {
+        "message_id": h.get("message-id", ""),
+        "references": h.get("references", ""),
+        "subject": h.get("subject", ""),
+        "from_": h.get("from", ""),
+    }
+
+
+async def send_message(
+    user,
+    db: AsyncSession,
+    to: str,
+    subject: str,
+    body_text: str,
+    attachments: list[tuple[str, bytes, str]] | None = None,
+    in_reply_to: str | None = None,
+    references: str | None = None,
+) -> dict:
+    """Build and send an email via the Gmail API.
+
+    attachments: list of (filename, raw_bytes, content_type)
+    in_reply_to / references: RFC 2822 threading headers for replies.
+    """
+    import email.encoders
+    from email.mime.base import MIMEBase
+    from email.mime.multipart import MIMEMultipart
+    from email.mime.text import MIMEText
+
+    from_addr = settings.GMAIL_SEND_AS or (user.gmail_connected_email or "me")
+
+    alt = MIMEMultipart("alternative")
+    alt.attach(MIMEText(body_text, "plain", "utf-8"))
+    alt.attach(MIMEText(_text_to_html(body_text), "html", "utf-8"))
+
+    if attachments:
+        outer: MIMEMultipart | MIMEMultipart = MIMEMultipart("mixed")
+        outer.attach(alt)
+        for filename, data, content_type in attachments:
+            main_type, _, sub_type = content_type.partition("/")
+            part = MIMEBase(main_type or "application", sub_type or "octet-stream")
+            part.set_payload(data)
+            email.encoders.encode_base64(part)
+            safe_name = filename.replace('"', "")
+            part.add_header("Content-Disposition", f'attachment; filename="{safe_name}"')
+            outer.attach(part)
+    else:
+        outer = alt  # type: ignore[assignment]
+
+    outer["From"] = from_addr
+    outer["To"] = to
+    outer["Subject"] = subject
+    if in_reply_to:
+        outer["In-Reply-To"] = in_reply_to
+        refs = f"{references} {in_reply_to}".strip() if references else in_reply_to
+        outer["References"] = refs
+
+    raw = base64.urlsafe_b64encode(outer.as_bytes()).decode()
+
+    service = await _build_service(user, db)
+    result = await asyncio.to_thread(
+        lambda: service.users().messages().send(userId="me", body={"raw": raw}).execute()
+    )
+    return {"id": result.get("id"), "threadId": result.get("threadId")}
 
 
 async def fetch_attachment(user, db: AsyncSession, message_id: str, attachment_id: str) -> dict:

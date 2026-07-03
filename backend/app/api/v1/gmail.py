@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile
 from fastapi.responses import RedirectResponse, Response
 from jose import JWTError, jwt
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -216,6 +216,63 @@ async def gmail_message_detail(
         raise HTTPException(status_code=400, detail="Gmail not connected")
     from app.services import gmail_service
     return await gmail_service.fetch_message_detail(gmail_user, db, message_id)
+
+
+@router.post("/send")
+async def gmail_send(
+    _: Annotated[CurrentUser, Depends(require_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    to: str = Form(...),
+    subject: str = Form(...),
+    body: str = Form(...),
+    files: list[UploadFile] = File(default=[]),
+) -> dict:
+    gmail_user = await _get_shared_gmail_user(db)
+    if not gmail_user:
+        raise HTTPException(status_code=400, detail="Gmail not connected")
+    from app.services import gmail_service
+
+    attachment_data = [
+        (f.filename or "attachment", await f.read(), f.content_type or "application/octet-stream")
+        for f in files
+    ]
+    result = await gmail_service.send_message(
+        gmail_user, db, to, subject, body, attachments=attachment_data or None
+    )
+    return {"sent": True, **result}
+
+
+@router.post("/messages/{message_id}/reply")
+async def gmail_reply(
+    message_id: str,
+    _: Annotated[CurrentUser, Depends(require_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    to: str = Form(...),
+    subject: str = Form(...),
+    body: str = Form(...),
+    files: list[UploadFile] = File(default=[]),
+) -> dict:
+    gmail_user = await _get_shared_gmail_user(db)
+    if not gmail_user:
+        raise HTTPException(status_code=400, detail="Gmail not connected")
+    from app.services import gmail_service
+
+    orig = await gmail_service.fetch_message_reply_headers(gmail_user, db, message_id)
+    attachment_data = [
+        (f.filename or "attachment", await f.read(), f.content_type or "application/octet-stream")
+        for f in files
+    ]
+    result = await gmail_service.send_message(
+        gmail_user,
+        db,
+        to,
+        subject,
+        body,
+        attachments=attachment_data or None,
+        in_reply_to=orig["message_id"] or None,
+        references=orig["references"] or None,
+    )
+    return {"sent": True, **result}
 
 
 @router.get("/messages/{message_id}/attachments/{attachment_id}")

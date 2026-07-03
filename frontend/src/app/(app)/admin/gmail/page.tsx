@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
 import axios from 'axios'
 import { getAccessToken } from '@/lib/auth'
@@ -44,9 +44,82 @@ export default function GmailPage() {
   const [toast, setToast] = useState<string | null>(null)
   const [disconnecting, setDisconnecting] = useState(false)
 
+  // Compose / reply state
+  const [showCompose, setShowCompose] = useState(false)
+  const [replyToId, setReplyToId] = useState<string | null>(null)
+  const [composeTo, setComposeTo] = useState('')
+  const [composeSubject, setComposeSubject] = useState('')
+  const [composeBody, setComposeBody] = useState('')
+  const [composeFiles, setComposeFiles] = useState<File[]>([])
+  const [composeSending, setComposeSending] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
   const showToast = (msg: string) => {
     setToast(msg)
     setTimeout(() => setToast(null), 3500)
+  }
+
+  const resetCompose = () => {
+    setShowCompose(false)
+    setReplyToId(null)
+    setComposeTo('')
+    setComposeSubject('')
+    setComposeBody('')
+    setComposeFiles([])
+    setComposeSending(false)
+  }
+
+  const openCompose = () => {
+    resetCompose()
+    setShowCompose(true)
+  }
+
+  const openReply = (msg: GmailMessageDetail) => {
+    resetCompose()
+    setReplyToId(msg.id)
+    setComposeTo(msg.from)
+    setComposeSubject(msg.subject.startsWith('Re:') ? msg.subject : `Re: ${msg.subject}`)
+    setShowCompose(true)
+  }
+
+  const handleSend = async () => {
+    if (!composeTo.trim() || !composeSubject.trim()) {
+      showToast('To and Subject are required')
+      return
+    }
+    setComposeSending(true)
+    try {
+      const formData = new FormData()
+      formData.append('to', composeTo.trim())
+      formData.append('subject', composeSubject.trim())
+      formData.append('body', composeBody)
+      composeFiles.forEach(f => formData.append('files', f))
+
+      const url = replyToId
+        ? `${api}/api/v1/admin/gmail/messages/${replyToId}/reply`
+        : `${api}/api/v1/admin/gmail/send`
+
+      await axios.post(url, formData, {
+        headers: { ...headers, 'Content-Type': 'multipart/form-data' },
+      })
+      resetCompose()
+      showToast('Email sent')
+    } catch (e) {
+      const msg = axios.isAxiosError(e) ? e.response?.data?.detail : null
+      showToast(typeof msg === 'string' ? msg : 'Failed to send email')
+    } finally {
+      setComposeSending(false)
+    }
+  }
+
+  const addFiles = (newFiles: FileList | null) => {
+    if (!newFiles) return
+    setComposeFiles(prev => [...prev, ...Array.from(newFiles)])
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  const removeFile = (index: number) => {
+    setComposeFiles(prev => prev.filter((_, i) => i !== index))
   }
 
   const loadStatus = useCallback(async () => {
@@ -161,11 +234,123 @@ export default function GmailPage() {
     }
   }
 
+  const sendAs = connectedEmail && connectedEmail !== 'connected' ? connectedEmail : 'Gmail'
+
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-4">
       {toast && (
         <div className="fixed top-4 right-4 z-50 rounded-lg bg-gray-900 px-4 py-2 text-sm text-white shadow-lg">
           {toast}
+        </div>
+      )}
+
+      {/* Compose / Reply modal */}
+      {showCompose && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={e => { if (e.target === e.currentTarget) resetCompose() }}
+        >
+          <div className="w-full max-w-lg rounded-lg bg-white shadow-xl flex flex-col max-h-[90vh]">
+            <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+              <h2 className="text-sm font-semibold text-gray-900">
+                {replyToId ? 'Reply' : 'New Message'}
+              </h2>
+              <button onClick={resetCompose} className="text-gray-400 hover:text-gray-600 text-lg leading-none">×</button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              <div className="text-xs text-gray-500">
+                <span className="font-medium">From:</span> {sendAs}
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">To</label>
+                <input
+                  type="email"
+                  value={composeTo}
+                  onChange={e => setComposeTo(e.target.value)}
+                  placeholder="recipient@example.com"
+                  className="w-full rounded border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Subject</label>
+                <input
+                  type="text"
+                  value={composeSubject}
+                  onChange={e => setComposeSubject(e.target.value)}
+                  className="w-full rounded border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Body</label>
+                <textarea
+                  value={composeBody}
+                  onChange={e => setComposeBody(e.target.value)}
+                  rows={8}
+                  placeholder="Write your message here. URLs will be auto-linked."
+                  className="w-full rounded border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400 resize-y"
+                />
+              </div>
+
+              {/* Attachments */}
+              <div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="rounded border border-gray-200 px-2.5 py-1 text-xs font-medium text-gray-600 hover:bg-gray-50"
+                  >
+                    Attach files
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    className="hidden"
+                    onChange={e => addFiles(e.target.files)}
+                  />
+                </div>
+                {composeFiles.length > 0 && (
+                  <div className="mt-2 space-y-1">
+                    {composeFiles.map((f, i) => (
+                      <div key={i} className="flex items-center gap-2 text-xs text-gray-600">
+                        <span className="truncate max-w-xs">{f.name}</span>
+                        <span className="text-gray-400 shrink-0">({(f.size / 1024).toFixed(0)} KB)</span>
+                        <button
+                          type="button"
+                          onClick={() => removeFile(i)}
+                          className="text-gray-400 hover:text-red-500 shrink-0"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 border-t border-gray-100 px-4 py-3">
+              <button
+                type="button"
+                onClick={resetCompose}
+                className="rounded border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSend}
+                disabled={composeSending}
+                className="rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+              >
+                {composeSending ? 'Sending…' : 'Send'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -176,23 +361,33 @@ export default function GmailPage() {
             <p className="text-xs text-gray-500 mt-0.5">Connected as {connectedEmail}</p>
           )}
         </div>
-        {connected === false && (
-          <button
-            onClick={handleConnect}
-            className="rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
-          >
-            Connect Gmail
-          </button>
-        )}
-        {connected && (
-          <button
-            onClick={handleDisconnect}
-            disabled={disconnecting}
-            className="rounded border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
-          >
-            {disconnecting ? '…' : 'Disconnect'}
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {connected && (
+            <button
+              onClick={openCompose}
+              className="rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
+            >
+              Compose
+            </button>
+          )}
+          {connected === false && (
+            <button
+              onClick={handleConnect}
+              className="rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
+            >
+              Connect Gmail
+            </button>
+          )}
+          {connected && (
+            <button
+              onClick={handleDisconnect}
+              disabled={disconnecting}
+              className="rounded border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
+            >
+              {disconnecting ? '…' : 'Disconnect'}
+            </button>
+          )}
+        </div>
       </div>
 
       {connected === null && (
@@ -202,7 +397,6 @@ export default function GmailPage() {
       {connected === false && (
         <div className="rounded-lg border border-dashed border-gray-300 p-8 text-center">
           <p className="text-sm text-gray-500">Connect your Gmail account to view your inbox here.</p>
-          <p className="mt-1 text-xs text-gray-400">DoulaShield only reads emails — it never sends or modifies them.</p>
           <button
             onClick={handleConnect}
             className="mt-4 rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
@@ -305,6 +499,14 @@ export default function GmailPage() {
                               </div>
                             </div>
                           )}
+                          <div className="mt-3 flex justify-end">
+                            <button
+                              onClick={() => openReply(detail)}
+                              className="rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
+                            >
+                              Reply
+                            </button>
+                          </div>
                         </div>
                       ) : null}
                     </div>
