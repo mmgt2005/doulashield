@@ -225,6 +225,22 @@ interface SensitiveProfile {
   has_tax_id: boolean
 }
 
+interface WorkHistoryRow {
+  start_date: string
+  end_date: string
+  employer_name: string
+  address: string
+  job_title: string
+  duties: string
+}
+
+interface GapEntry {
+  start_date: string
+  end_date: string
+  duration_days: number
+  explanation: string
+}
+
 const GENDER_OPTIONS = ['Female', 'Male', 'Non-binary / Gender non-conforming', 'Transgender female', 'Transgender male', 'Prefer not to say', 'Not listed']
 const RACE_OPTIONS = ['American Indian or Alaska Native', 'Asian', 'Black or African American', 'Hispanic or Latino', 'Native Hawaiian or Other Pacific Islander', 'White', 'Two or more races', 'Prefer not to say']
 const DOULA_TYPE_OPTIONS = ['Birth Doula', 'Postpartum Doula', 'Perinatal Doula', 'Other']
@@ -249,6 +265,10 @@ export default function EnrollmentStatusPage() {
   const [sensitiveFormSaving, setSensitiveFormSaving] = useState(false)
   const [sensitiveFormSaved, setSensitiveFormSaved] = useState(false)
   const [showGuide, setShowGuide] = useState(false)
+  const [bioInput, setBioInput] = useState<Record<string, string>>({})
+  const [bioBuilding, setBioBuilding] = useState<Record<string, boolean>>({})
+  const [bioResult, setBioResult] = useState<Record<string, { rows: WorkHistoryRow[]; gaps: GapEntry[] }>>({})
+  const [showBioPrep, setShowBioPrep] = useState<Record<string, boolean>>({})
 
   const headers = { Authorization: `Bearer ${getAccessToken()}` }
   const api = process.env.NEXT_PUBLIC_API_URL
@@ -285,6 +305,27 @@ export default function EnrollmentStatusPage() {
       )
     }
   }, [services, activeStage])
+
+  // Pre-populate bio builder result from saved task_data when services load
+  useEffect(() => {
+    const mcoDetail = services.find((d) => d.service.stage === 'mco_contracting')
+    if (!mcoDetail) return
+    const whTask = mcoDetail.tasks.find((t) => t.task_key === 'mco_work_history')
+    if (!whTask?.task_data) return
+    const td = whTask.task_data as Record<string, unknown>
+    const rows = td.work_history_rows
+    const gaps = td.gap_log
+    const brainDump = td.brain_dump
+    if (Array.isArray(rows) && rows.length > 0) {
+      setBioResult((prev) => ({
+        ...prev,
+        [whTask.id]: { rows: rows as WorkHistoryRow[], gaps: Array.isArray(gaps) ? (gaps as GapEntry[]) : [] },
+      }))
+    }
+    if (typeof brainDump === 'string' && brainDump) {
+      setBioInput((prev) => ({ ...prev, [whTask.id]: brainDump }))
+    }
+  }, [services])
 
   const checkAgreement = async () => {
     try {
@@ -406,6 +447,36 @@ export default function EnrollmentStatusPage() {
       showToast('Could not generate pre-filled application')
     } finally {
       setDownloadingPrefill(false)
+    }
+  }
+
+  const handleBioBuild = async (serviceId: string, taskId: string) => {
+    const text = bioInput[taskId]?.trim()
+    if (!text) return
+    setBioBuilding((prev) => ({ ...prev, [taskId]: true }))
+    try {
+      const res = await axios.post<{ ok: boolean; rows: WorkHistoryRow[]; gaps: GapEntry[] }>(
+        `${api}/api/v1/enrollment/me/${serviceId}/tasks/${taskId}/bio-build`,
+        { brain_dump: text },
+        { headers }
+      )
+      setBioResult((prev) => ({ ...prev, [taskId]: { rows: res.data.rows, gaps: res.data.gaps } }))
+      setServices((prev) =>
+        prev.map((d) => {
+          if (d.service.id !== serviceId) return d
+          return {
+            ...d,
+            tasks: d.tasks.map((t) =>
+              t.id === taskId && t.status === 'not_started' ? { ...t, status: 'in_progress' } : t
+            ),
+          }
+        })
+      )
+    } catch (e: unknown) {
+      const msg = axios.isAxiosError(e) ? e.response?.data?.detail : null
+      showToast(typeof msg === 'string' ? msg : 'AI processing failed — please try again or contact support.')
+    } finally {
+      setBioBuilding((prev) => ({ ...prev, [taskId]: false }))
     }
   }
 
@@ -795,6 +866,134 @@ export default function EnrollmentStatusPage() {
                           >
                             Download blank official PCB application →
                           </a>
+                        </div>
+                      )}
+
+                      {/* Work History Bio-Builder — only for mco_work_history task */}
+                      {task.task_key === 'mco_work_history' && task.status !== 'complete' && (
+                        <div className="mt-4 space-y-3 border-t border-gray-100 pt-4">
+
+                          {/* Collapsible prep guide */}
+                          <div className="rounded border border-blue-100 bg-blue-50">
+                            <button
+                              onClick={() => setShowBioPrep((prev) => ({ ...prev, [task.id]: !prev[task.id] }))}
+                              className="flex w-full items-center justify-between px-3 py-2 text-xs font-semibold text-blue-800"
+                            >
+                              <span>Before You Start — How to Gather Your Work History (4 steps)</span>
+                              <span className="ml-2 shrink-0">{showBioPrep[task.id] ? '▲' : '▼'}</span>
+                            </button>
+                            {showBioPrep[task.id] && (
+                              <div className="divide-y divide-blue-100 border-t border-blue-100 px-3 pb-3">
+                                {[
+                                  {
+                                    title: 'Audit Digital Financial Trails',
+                                    time: '~15 min',
+                                    body: 'Log into tax portals (TurboTax, TaxSlayer, or IRS.gov) to pull W-2s or 1099s for the past 5 years. For private-pay work, search Stripe, PayPal, or bank statements for recurring client deposits to pin down active working months.',
+                                  },
+                                  {
+                                    title: 'Scrape Birth Platforms & Calendars',
+                                    time: '~15 min',
+                                    body: 'Check your history on doula directories (DoulaMatch, local collectives) or digital client logs. Search Google Calendar or Apple Calendar for "birth," "prenatal," "postpartum," or "client" to find exact start and end dates for contract blocks.',
+                                  },
+                                  {
+                                    title: 'Map Out the Gaps',
+                                    time: '~10 min',
+                                    body: 'Identify any months where no formal employment or active client cycles occurred. Note the reason — PA Medicaid will reject applications with unexplained timeline gaps over 30 days.',
+                                  },
+                                  {
+                                    title: 'Execute the Brain Dump',
+                                    time: '~5 min',
+                                    body: "Don't worry about formatting or spelling. Write a messy chronological list of dates, organization names (or \"Independent Practice\"), addresses, and what you actually did — then paste it below.",
+                                  },
+                                ].map((step, i) => (
+                                  <div key={i} className="py-2">
+                                    <p className="text-xs font-medium text-blue-900">
+                                      {i + 1}. {step.title}
+                                      <span className="ml-1.5 font-normal text-blue-500">({step.time})</span>
+                                    </p>
+                                    <p className="mt-0.5 text-xs text-blue-700 leading-relaxed">{step.body}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+
+                          {!bioResult[task.id] ? (
+                            /* Input mode */
+                            <>
+                              <p className="text-xs text-gray-500">
+                                Type or paste your work history below — dates, employers, job titles, and what you did.
+                                Rough notes are fine. Our AI will format them into the PROMISe™/MCO-compliant table.
+                              </p>
+                              <textarea
+                                rows={8}
+                                value={bioInput[task.id] ?? ''}
+                                onChange={(e) => setBioInput((prev) => ({ ...prev, [task.id]: e.target.value }))}
+                                placeholder="e.g. From Jan 2022 to Aug 2023 I worked at St. Luke's hospital doing shift doula work. Then I started my own practice 'Luna Birth Services' out of Pittsburgh. I didn't work at all in Fall 2023 because I was taking care of my sick mom..."
+                                className="w-full rounded border border-gray-200 p-2 text-xs font-mono leading-relaxed focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              />
+                              <button
+                                onClick={() => handleBioBuild(activeDetail.service.id, task.id)}
+                                disabled={bioBuilding[task.id] || !bioInput[task.id]?.trim()}
+                                className="rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                              >
+                                {bioBuilding[task.id] ? 'Generating…' : 'Generate Work History with AI'}
+                              </button>
+                            </>
+                          ) : (
+                            /* Result mode */
+                            <>
+                              <div className="overflow-x-auto rounded border border-gray-200">
+                                <table className="w-full text-xs">
+                                  <thead className="bg-gray-50">
+                                    <tr>
+                                      {['Start', 'End', 'Employer', 'Address', 'Title', 'Duties'].map((h) => (
+                                        <th key={h} className="px-2 py-1.5 text-left font-medium text-gray-600 whitespace-nowrap">{h}</th>
+                                      ))}
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-gray-100">
+                                    {bioResult[task.id].rows.map((row, i) => (
+                                      <tr key={i}>
+                                        <td className="px-2 py-1.5 whitespace-nowrap">{row.start_date}</td>
+                                        <td className="px-2 py-1.5 whitespace-nowrap">{row.end_date}</td>
+                                        <td className="px-2 py-1.5">{row.employer_name}</td>
+                                        <td className="px-2 py-1.5">{row.address}</td>
+                                        <td className="px-2 py-1.5">{row.job_title}</td>
+                                        <td className="px-2 py-1.5 text-gray-600">{row.duties}</td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+
+                              {bioResult[task.id].gaps.length > 0 && (
+                                <div className="rounded border border-amber-200 bg-amber-50 p-3">
+                                  <p className="text-xs font-semibold text-amber-800 mb-1.5">Gap Log — periods over 30 days</p>
+                                  <div className="space-y-1">
+                                    {bioResult[task.id].gaps.map((g, i) => (
+                                      <p key={i} className="text-xs text-amber-700">
+                                        <span className="font-medium">{g.start_date} – {g.end_date}</span>
+                                        {g.duration_days ? ` (${g.duration_days} days)` : ''}: {g.explanation}
+                                      </p>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              <div className="flex items-center gap-3">
+                                <button
+                                  onClick={() => setBioResult((prev) => { const n = { ...prev }; delete n[task.id]; return n })}
+                                  className="rounded border border-gray-200 px-3 py-1 text-xs text-gray-600 hover:bg-gray-50"
+                                >
+                                  Edit / Regenerate
+                                </button>
+                                <p className="text-xs text-gray-400">
+                                  Upload the final signed PDF below once verified.
+                                </p>
+                              </div>
+                            </>
+                          )}
                         </div>
                       )}
 

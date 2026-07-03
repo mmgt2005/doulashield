@@ -12,6 +12,16 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.62.0] — 2026-07-03
+
+### Added
+- **AI Work History Bio-Builder**: Providers completing the MCO Contracting stage can now paste a freeform brain-dump of their past 5 years into a text area on the `5-Year Work History` task card. DoulaShield sends the text to Claude and returns a PROMISe™/MCO-compliant chronological table with columns: Start Date, End Date, Employer, Address, Job Title, Description of Duties — plus a Gap Log for any unexplained breaks over 30 days.
+- **Guided prep steps**: The work history task card includes a collapsible "Before You Start" panel with four timed steps — audit financial records, scrape birth platform histories, map gaps, then execute the brain dump — so providers know exactly what to gather before typing.
+- `POST /enrollment/me/{service_id}/tasks/{task_id}/bio-build` backend endpoint processes the brain-dump via Claude Haiku and persists the structured result to the task's `task_data` column (no new DB table or migration needed).
+- Result persists across sessions: closing and reopening the enrollment status page shows the previously generated table without re-generating.
+
+---
+
 ## [1.61.2] — 2026-07-03
 
 ### Fixed

@@ -28,6 +28,10 @@ class _TaskDataPatch(BaseModel):
     task_data: dict
 
 
+class _BioBuildRequest(BaseModel):
+    brain_dump: str
+
+
 class _SensitiveProfilePatch(BaseModel):
     ssn: str | None = None
     dob: str | None = None
@@ -248,6 +252,63 @@ async def save_my_task_data(
     await db.commit()
     await db.refresh(task)
     return {"ok": True, "status": task.status}
+
+
+@router.post("/{service_id}/tasks/{task_id}/bio-build")
+async def bio_build_work_history(
+    service_id: uuid.UUID,
+    task_id: uuid.UUID,
+    body: _BioBuildRequest,
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> dict:
+    """Call Claude to convert a work history brain-dump into a structured table + gap log."""
+    if not body.brain_dump.strip():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="brain_dump is required")
+
+    service_result = await db.execute(
+        select(EnrollmentService).where(EnrollmentService.id == service_id)
+    )
+    service = service_result.scalar_one_or_none()
+    if not service or service.provider_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+
+    task_result = await db.execute(
+        select(EnrollmentTask).where(
+            EnrollmentTask.id == task_id,
+            EnrollmentTask.service_id == service_id,
+        )
+    )
+    task = task_result.scalar_one_or_none()
+    if not task:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
+    if task.task_key != "mco_work_history":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Bio-build is only available for the 5-year work history task",
+        )
+
+    from app.services.work_history_service import process_work_history
+    try:
+        result = await process_work_history(body.brain_dump)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+
+    existing = dict(task.task_data or {})
+    existing["brain_dump"] = body.brain_dump
+    existing["work_history_rows"] = result["rows"]
+    existing["gap_log"] = result["gaps"]
+    task.task_data = existing
+
+    if task.status == "not_started":
+        task.status = "in_progress"
+
+    await db.commit()
+    return {
+        "ok": True,
+        "rows": result["rows"],
+        "gaps": result["gaps"],
+    }
 
 
 @router.get("/sensitive-profile")
