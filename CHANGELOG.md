@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.63.3] — 2026-07-03
+
+### Fixed
+- **Billing-admin My Providers — "Field Required" root fix**: Eliminated the last possible stale-closure path. `startEnrollmentService` now accepts `(providerId, stage, pathway)` as explicit parameters instead of reading `startStage`/`startPathway` from a render closure. All three values are captured synchronously into refs (`pendingProviderIdRef`, `pendingStageRef`, `pendingPathwayRef`) at the moment of the originating event (shortcut click or form open), so the Start button always passes the exact values the user selected regardless of React's batching/render schedule. The stage dropdown onChange also writes to `pendingStageRef` so manual stage changes are reflected immediately.
+
+---
+
 ## [1.63.2] — 2026-07-03
 
 ### Fixed

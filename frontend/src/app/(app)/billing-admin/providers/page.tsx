@@ -227,6 +227,8 @@ export default function BillingAdminProvidersPage() {
   const [csvShowGuide, setCsvShowGuide] = useState(false)
   const csvInputRef = useRef<HTMLInputElement>(null)
   const pendingProviderIdRef = useRef<string | null>(null)
+  const pendingStageRef = useRef<string>('pcb')
+  const pendingPathwayRef = useRef<string>('education_training')
 
   const showToast = (msg: string) => {
     setToast(msg)
@@ -392,12 +394,12 @@ export default function BillingAdminProvidersPage() {
     }
   }
 
-  const startEnrollmentService = async (providerId: string) => {
+  const startEnrollmentService = async (providerId: string, stage: string, pathway: string) => {
     setStartServiceLoading(true)
     try {
       const res = await axios.post<EnrollmentServiceDetail>(
         `${api}/api/v1/billing-admin/enrollment/services`,
-        { provider_id: providerId, stage: startStage, pcb_pathway: startStage === 'pcb' ? startPathway : null },
+        { provider_id: providerId, stage, pcb_pathway: stage === 'pcb' ? pathway : null },
         { headers },
       )
       setAllServices(prev => [res.data.service, ...prev])
@@ -424,6 +426,8 @@ export default function BillingAdminProvidersPage() {
 
   const quickStartNextStage = (providerId: string, stage: string) => {
     pendingProviderIdRef.current = providerId  // synchronous — bypasses React batching
+    pendingStageRef.current = stage
+    pendingPathwayRef.current = 'education_training'
     setExpandedService(null)  // collapse current service so the form is prominent
     setShowStartService(providerId)
     setStartStage(stage)
@@ -669,7 +673,11 @@ export default function BillingAdminProvidersPage() {
                             <button
                               onClick={() => {
                                 const opening = showStartService !== p.id
-                                if (opening) pendingProviderIdRef.current = p.id
+                                if (opening) {
+                                  pendingProviderIdRef.current = p.id
+                                  pendingStageRef.current = 'pcb'
+                                  pendingPathwayRef.current = 'education_training'
+                                }
                                 setShowStartService(opening ? p.id : null)
                                 setStartStage('pcb')
                                 setStartPathway('education_training')
@@ -688,7 +696,7 @@ export default function BillingAdminProvidersPage() {
                               <p className="text-[11px] text-indigo-600">For: <span className="font-medium">{p.full_name ?? p.email}</span></p>
                             </div>
                             <div className="flex gap-2 flex-wrap">
-                              <select value={startStage} onChange={e => setStartStage(e.target.value)}
+                              <select value={startStage} onChange={e => { pendingStageRef.current = e.target.value; setStartStage(e.target.value) }}
                                 className="rounded border border-gray-200 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400">
                                 <option value="pcb">PCB Certification</option>
                                 <option value="nppes_setup">NPPES / NPI Setup</option>
@@ -696,7 +704,7 @@ export default function BillingAdminProvidersPage() {
                                 <option value="mco_contracting">MCO Contracting</option>
                               </select>
                               {startStage === 'pcb' && (
-                                <select value={startPathway} onChange={e => setStartPathway(e.target.value)}
+                                <select value={startPathway} onChange={e => { pendingPathwayRef.current = e.target.value; setStartPathway(e.target.value) }}
                                   className="rounded border border-gray-200 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400">
                                   <option value="education_training">Education &amp; Training Pathway</option>
                                   <option value="experienced">Experienced Pathway</option>
@@ -706,7 +714,9 @@ export default function BillingAdminProvidersPage() {
                             <div className="flex gap-2">
                               <button onClick={() => {
                                 const pid = pendingProviderIdRef.current
-                                if (pid) startEnrollmentService(pid)
+                                const stage = pendingStageRef.current
+                                const pathway = pendingPathwayRef.current
+                                if (pid) startEnrollmentService(pid, stage, pathway)
                               }} disabled={startServiceLoading}
                                 className="rounded bg-indigo-600 px-3 py-1 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-50">
                                 {startServiceLoading ? 'Starting…' : 'Start'}
