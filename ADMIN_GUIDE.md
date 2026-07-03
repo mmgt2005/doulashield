@@ -277,6 +277,8 @@ Each stage auto-generates a task checklist. Upload documents per task, enter any
 
 **Notes copy button:** When a task's notes field has a recorded value (ATN, CAQH ID, contract number, etc.), a small clipboard icon appears next to the field. Click it to copy the value directly to your clipboard.
 
+**Next-stage shortcut buttons:** After you mark a stage complete (PCB, NPPES, or Stage 2), the completion banner shows a one-click shortcut — "Start NPPES Setup →", "Start Stage 2 →", or "Start MCO Contracting →". Clicking it opens the New Enrollment Service form with the provider and next stage already selected, then scrolls to it. This is the recommended way to advance a provider to the next stage — faster and avoids accidentally leaving the provider unselected.
+
 **Walkthrough guide:** Click the **How It Works** button (top-right of the Enrollment Services page) to open a full visual walkthrough of all four stages. It shows each stage's task list, gate prerequisites, step-by-step admin actions, and key rules — useful during onboarding or whenever you need a quick reference without leaving the page.
 
 For task-by-task document instructions (what to collect, what to verify, how to navigate PROMISe™ and CAQH), see **Help → Enrollment Guide** in the sidebar.
