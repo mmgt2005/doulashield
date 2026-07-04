@@ -463,10 +463,15 @@ _STAGE3_TASKS: list[dict] = [
         "required_pathway": "all",
         "label": "AmeriHealth Caritas — Application + LOI",
         "description": (
-            "Upload the completed AmeriHealth Caritas PA credentialing application and Letter of "
-            "Intent (LOI). The LOI should state the provider's intent to contract as a doula "
-            "under the agency's billing NPI. Record the application reference number and submission "
-            "date in notes. Record the contract signing date in the Contract Date field when received."
+            "Step 1 — Contracting: Email the completed Contract Application to "
+            "pnmcontracting@amerihealthcaritas.com. "
+            "Step 2 — Credentialing: Once AmeriHealth emails back the contract, submit the provider's "
+            "CAQH ID and the Application Checklist to the credentialing email or fax provided in the "
+            "welcome packet. "
+            "Step 3 — Validation: Monitor for a 'Participating ID Number' notice — do not schedule "
+            "members under this MCO until that notice arrives. "
+            "Upload the completed application and any signed LOI here. Record the application "
+            "reference number and submission date in notes. Record the contract signing date when received."
         ),
         "sort_order": 3,
     },
@@ -475,8 +480,15 @@ _STAGE3_TASKS: list[dict] = [
         "required_pathway": "all",
         "label": "Keystone First — Application + LOI",
         "description": (
-            "Upload the completed Keystone First credentialing application and LOI. "
-            "Record reference number, submission date, and contract date in notes/task data."
+            "Step 1 — Contracting: Email the completed Contract Application to "
+            "provider.contracting@keystonefirstpa.com. "
+            "Step 2 — Credentialing: Once Keystone First emails back the contract, submit the "
+            "provider's CAQH ID and the Application Checklist to the credentialing contact provided "
+            "in the welcome packet. "
+            "Step 3 — Validation: Monitor for a 'Participating ID Number' notice — do not schedule "
+            "members under this MCO until that notice arrives. "
+            "Upload the completed application and any signed LOI here. Record reference number, "
+            "submission date, and contract date in notes."
         ),
         "sort_order": 4,
     },
@@ -485,8 +497,14 @@ _STAGE3_TASKS: list[dict] = [
         "required_pathway": "all",
         "label": "UPMC For You — Application + LOI",
         "description": (
-            "Upload the completed UPMC For You credentialing application and LOI. "
-            "Record reference number, submission date, and contract date in notes/task data."
+            "Step 1 — Request: Go to upmchealthplan.com/providers/medical/join-us and select "
+            "'Ancillary' to begin the network participation request. "
+            "Step 2 — Portal: Enter the provider's CAQH ID when prompted. "
+            "Step 3 — Onboarding: If approved, UPMC will send an invitation to the Provider "
+            "Onboarding Express portal to upload UPMC-specific assessment forms and professional "
+            "documents. Complete all requested uploads promptly. "
+            "Upload the completed application and any signed LOI here. Record reference number, "
+            "submission date, and contract date in notes."
         ),
         "sort_order": 5,
     },
@@ -495,8 +513,17 @@ _STAGE3_TASKS: list[dict] = [
         "required_pathway": "all",
         "label": "Geisinger Health Plan — Application + LOI",
         "description": (
-            "Upload the completed Geisinger Health Plan credentialing application and LOI. "
-            "Record reference number, submission date, and contract date in notes/task data."
+            "Step 1 — Interest Form: Complete the Provider Interest Form at "
+            "geisinger.org/health-plan/providers/join-our-network. "
+            "Step 2 — CAQH Authorization: Log into the provider's CAQH ProView account and "
+            "specifically authorize 'Geisinger Health Plan' to view their data — Geisinger will "
+            "not be able to pull credentials without this authorization. "
+            "Step 3 — Network Review: Geisinger performs a Network Adequacy review. If approved, "
+            "the provider receives a formal Letter of Intent (LOI). "
+            "Step 4 — Availity Integration: Upon signing the LOI, the provider will be invited to "
+            "link their practice to the Availity Essentials portal. "
+            "Upload the completed application and signed LOI here. Record reference number, "
+            "submission date, and contract date in notes."
         ),
         "sort_order": 6,
     },
@@ -505,8 +532,14 @@ _STAGE3_TASKS: list[dict] = [
         "required_pathway": "all",
         "label": "Highmark Wholecare — Application + LOI",
         "description": (
-            "Upload the completed Highmark Wholecare credentialing application and LOI. "
-            "Record reference number, submission date, and contract date in notes/task data."
+            "Step 1 — Credentialing Request: Complete the Initial Credentialing Request Form at "
+            "forms.office.com (Highmark Wholecare provider credentialing form). "
+            "Step 2 — Follow-up: Highmark will email if additional documentation is needed. "
+            "Check spam daily — failure to respond will result in application discontinuation. "
+            "Step 3 — Contract: After credentialing approval, use the Participating Provider form "
+            "(Highmark Wholecare provider contracting portal) to generate the contract. "
+            "Upload the completed credentialing request and signed contract here. Record reference "
+            "number, submission date, and contract signing date in notes."
         ),
         "sort_order": 7,
     },
@@ -515,8 +548,13 @@ _STAGE3_TASKS: list[dict] = [
         "required_pathway": "all",
         "label": "UnitedHealthcare Community Plan — Application + LOI",
         "description": (
-            "Upload the completed UnitedHealthcare Community Plan credentialing application and LOI. "
-            "Record reference number, submission date, and contract date in notes/task data."
+            "Step 1 — Onboard Pro: Sign in to onboard-pro.uhcprovider.com/Contracting. "
+            "Step 2 — Guided Workflow: Enter the provider's Tax ID and state — the portal wizard "
+            "will guide document submission. "
+            "Step 3 — Tracking: Use the portal dashboard to track real-time application status. "
+            "Use the 24/7 portal chat feature for questions. "
+            "Upload the completed application and any signed LOI here. Record reference number, "
+            "submission date, and contract date in notes."
         ),
         "sort_order": 8,
     },
@@ -525,8 +563,15 @@ _STAGE3_TASKS: list[dict] = [
         "required_pathway": "all",
         "label": "Aetna Better Health — Application + LOI",
         "description": (
-            "Upload the completed Aetna Better Health PA credentialing application and LOI. "
-            "Record reference number, submission date, and contract date in notes/task data."
+            "Step 1 — Application: Complete the Prospective Provider Online Form at "
+            "extaz-oci.aetna.com/pocui/join-the-aetna-network. "
+            "Step 2 — Evaluation: Aetna will notify the provider within 45 days if they are "
+            "eligible for network participation. "
+            "Step 3 — Credentialing: If selected, Aetna pulls data directly from CAQH. "
+            "Ensure the provider has logged into their CAQH ProView account and designated "
+            "'Aetna Better Health' as an Authorized Health Plan before this step. "
+            "Upload the completed application and any signed LOI here. Record reference number, "
+            "submission date, and contract date in notes."
         ),
         "sort_order": 9,
     },
@@ -535,8 +580,12 @@ _STAGE3_TASKS: list[dict] = [
         "required_pathway": "all",
         "label": "Health Partners Plans — Application + LOI",
         "description": (
-            "Upload the completed Health Partners Plans credentialing application and LOI. "
-            "Record reference number, submission date, and contract date in notes/task data."
+            "Contact Health Partners Plans to request a Provider Participation Agreement. "
+            "Visit healthpartnersplans.com/providers or call the provider relations line to obtain "
+            "the current credentialing application packet. Submit the completed application along "
+            "with the provider's CAQH ID and required supporting documents. "
+            "Upload the completed application and any signed LOI here. Record reference number, "
+            "submission date, and contract date in notes."
         ),
         "sort_order": 10,
     },

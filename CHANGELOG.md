@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.63.18] — 2026-07-04
+
+### Changed
+- **MCO task descriptions enriched with step-by-step enrollment instructions**: Each MCO contracting task (AmeriHealth Caritas, Keystone First, UPMC For You, Geisinger Health Plan, Highmark Wholecare, UnitedHealthcare Community Plan, Aetna Better Health) now includes numbered steps covering the exact submission method, portal URL, CAQH authorization requirements, follow-up actions, and validation milestones specific to that MCO. Health Partners Plans description updated to include contact instructions and CAQH submission guidance.
+
+---
+
 ## [1.63.17] — 2026-07-04
 
 ### Added
