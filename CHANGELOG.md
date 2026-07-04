@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.63.10] — 2026-07-04
+
+### Fixed
+- **Billing-admin My Providers — PROMISe Enrollment available when NPI already on file**: The stage dropdown now enables PROMISe Enrollment if the provider has an NPI number in their settings, even if a formal NPPES enrollment service has never been created. This matches the backend prerequisite check (`provider.npi` present), so providers who had their NPI before joining DoulaShield can proceed directly to PROMISe Enrollment without a redundant NPPES Setup service.
+
+---
+
 ## [1.63.9] — 2026-07-04
 
 ### Fixed
