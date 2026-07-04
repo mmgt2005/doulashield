@@ -576,7 +576,7 @@ export default function BillingAdminProvidersPage() {
         <div>
           <h1 className="text-xl font-bold text-gray-900">My Providers</h1>
           <p className="mt-0.5 text-sm text-gray-500">
-            Provider roster, enrollment progress, and credential expiry reminders. <span className="text-[10px] text-gray-300">v1.63.8</span>
+            Provider roster, enrollment progress, and credential expiry reminders. <span className="text-[10px] text-gray-300">v1.63.9</span>
           </p>
         </div>
         <button
@@ -712,13 +712,20 @@ export default function BillingAdminProvidersPage() {
                               <p className="text-[11px] text-indigo-600">For: <span className="font-medium">{p.full_name ?? p.email}</span></p>
                             </div>
                             <div className="flex gap-2 flex-wrap">
-                              <select value={startStage} onChange={e => setStartStage(e.target.value)}
-                                className="rounded border border-gray-200 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400">
-                                <option value="pcb">PCB Certification</option>
-                                <option value="nppes_setup">NPPES / NPI Setup</option>
-                                <option value="enrollment">PROMISe Enrollment</option>
-                                <option value="mco_contracting">MCO Contracting</option>
-                              </select>
+                              {(() => {
+                                const pcbDone = p.enrollment_stages.pcb === 'complete'
+                                const nppesDone = p.enrollment_stages.nppes_setup === 'complete'
+                                const enrollDone = p.enrollment_stages.enrollment === 'complete'
+                                return (
+                                  <select value={startStage} onChange={e => setStartStage(e.target.value)}
+                                    className="rounded border border-gray-200 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400">
+                                    <option value="pcb">PCB Certification</option>
+                                    <option value="nppes_setup" disabled={!pcbDone} title={!pcbDone ? 'Complete PCB Certification first' : undefined}>NPPES / NPI Setup{!pcbDone ? ' (PCB required)' : ''}</option>
+                                    <option value="enrollment" disabled={!pcbDone || !nppesDone} title={!pcbDone || !nppesDone ? 'Complete PCB + NPPES first' : undefined}>PROMISe Enrollment{(!pcbDone || !nppesDone) ? ' (PCB + NPPES required)' : ''}</option>
+                                    <option value="mco_contracting" disabled={!enrollDone} title={!enrollDone ? 'Complete PROMISe Enrollment first' : undefined}>MCO Contracting{!enrollDone ? ' (Enrollment required)' : ''}</option>
+                                  </select>
+                                )
+                              })()}
                               {startStage === 'pcb' && (
                                 <select value={startPathway} onChange={e => setStartPathway(e.target.value)}
                                   className="rounded border border-gray-200 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400">

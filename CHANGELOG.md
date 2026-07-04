@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.63.9] — 2026-07-04
+
+### Fixed
+- **Billing-admin My Providers — stage dropdown shows unavailable options**: The stage selector in the New Enrollment Service form now disables options whose prerequisites are not yet met. NPPES Setup requires PCB complete; PROMISe Enrollment requires PCB + NPPES complete; MCO Contracting requires Enrollment complete. Disabled options show the prerequisite in their label (e.g. "PROMISe Enrollment (PCB + NPPES required)"). This prevents the 422 validation error that appeared when selecting a stage the provider was not yet eligible for.
+
+---
+
 ## [1.63.8] — 2026-07-03
 
 ### Fixed
