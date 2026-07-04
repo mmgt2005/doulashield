@@ -201,6 +201,7 @@ export default function BillingAdminProvidersPage() {
   const [expandedService, setExpandedService] = useState<string | null>(null)
   const [taskSaving, setTaskSaving] = useState<string | null>(null)
   const [taskNotes, setTaskNotes] = useState<Record<string, string>>({})
+  const [contractDates, setContractDates] = useState<Record<string, string>>({})
   const [showStartService, setShowStartService] = useState<string | null>(null)
   const [newServiceProviderId, setNewServiceProviderId] = useState('')
   const [startStage, setStartStage] = useState('pcb')
@@ -257,14 +258,20 @@ export default function BillingAdminProvidersPage() {
         )
         const preloaded: Record<string, EnrollmentServiceDetail> = {}
         const preloadedNotes: Record<string, string> = {}
+        const preloadedDates: Record<string, string> = {}
         detailResults.forEach((res, i) => {
           if (res) {
             preloaded[assignedSvcs[i].id] = res.data
-            res.data.tasks.forEach((t: EnrollmentTask) => { if (t.notes) preloadedNotes[t.id] = t.notes })
+            res.data.tasks.forEach((t: EnrollmentTask) => {
+              if (t.notes) preloadedNotes[t.id] = t.notes
+              const cd = (t.task_data as Record<string, unknown> | null)?.contract_signed_date
+              if (typeof cd === 'string' && cd) preloadedDates[t.id] = cd
+            })
           }
         })
         setServiceDetails(preloaded)
         setTaskNotes(prev => ({ ...prev, ...preloadedNotes }))
+        setContractDates(prev => ({ ...prev, ...preloadedDates }))
       }
     } catch {
       showToast('Failed to load provider roster')
@@ -279,8 +286,14 @@ export default function BillingAdminProvidersPage() {
       const res = await axios.get<EnrollmentServiceDetail>(`${api}/api/v1/billing-admin/enrollment/services/${serviceId}`, { headers })
       setServiceDetails(prev => ({ ...prev, [serviceId]: res.data }))
       const notes: Record<string, string> = {}
-      res.data.tasks.forEach(t => { if (t.notes) notes[t.id] = t.notes })
+      const dates: Record<string, string> = {}
+      res.data.tasks.forEach(t => {
+        if (t.notes) notes[t.id] = t.notes
+        const cd = (t.task_data as Record<string, unknown> | null)?.contract_signed_date
+        if (typeof cd === 'string' && cd) dates[t.id] = cd
+      })
       setTaskNotes(prev => ({ ...prev, ...notes }))
+      setContractDates(prev => ({ ...prev, ...dates }))
     } catch {
       showToast('Failed to load service tasks')
     }
@@ -333,6 +346,34 @@ export default function BillingAdminProvidersPage() {
       showToast('Notes saved.')
     } catch {
       showToast('Failed to save notes')
+    } finally {
+      setTaskSaving(null)
+    }
+  }
+
+  const MCO_CONTRACT_TASK_KEYS = new Set([
+    'mco_amerihealth', 'mco_keystone', 'mco_upmc', 'mco_geisinger',
+    'mco_highmark', 'mco_uhc', 'mco_aetna', 'mco_hpplans',
+  ])
+
+  const saveContractDate = async (task: EnrollmentTask, date: string) => {
+    setTaskSaving(task.id)
+    try {
+      const newData = { ...(task.task_data as Record<string, unknown> || {}), contract_signed_date: date || null }
+      const res = await axios.patch<EnrollmentTask>(
+        `${api}/api/v1/billing-admin/enrollment/tasks/${task.id}`,
+        { task_data: newData },
+        { headers },
+      )
+      setServiceDetails(prev => {
+        const detail = prev[task.service_id]
+        if (!detail) return prev
+        return { ...prev, [task.service_id]: { ...detail, tasks: detail.tasks.map(t => t.id === task.id ? res.data : t) } }
+      })
+      setContractDates(prev => ({ ...prev, [task.id]: date }))
+      showToast(date ? 'Contract date saved.' : 'Contract date cleared.')
+    } catch {
+      showToast('Failed to save contract date')
     } finally {
       setTaskSaving(null)
     }
@@ -846,6 +887,33 @@ export default function BillingAdminProvidersPage() {
                                                         )}
                                                         {isComplete && task.notes && (
                                                           <p className="mt-0.5 text-[11px] text-gray-500">Note: {task.notes}</p>
+                                                        )}
+                                                        {/* Contract signed date — MCO tasks only */}
+                                                        {MCO_CONTRACT_TASK_KEYS.has(task.task_key) && enrollmentTierEnabled && (
+                                                          <div className="mt-1.5">
+                                                            {isComplete && contractDates[task.id] ? (
+                                                              <p className="text-[11px] font-medium text-green-700">
+                                                                ✓ Contract signed {contractDates[task.id]}
+                                                              </p>
+                                                            ) : (
+                                                              <div className="flex items-center gap-1.5">
+                                                                <label className="text-[10px] text-gray-500 whitespace-nowrap">Contract signed:</label>
+                                                                <input
+                                                                  type="date"
+                                                                  value={contractDates[task.id] ?? ''}
+                                                                  onChange={e => setContractDates(prev => ({ ...prev, [task.id]: e.target.value }))}
+                                                                  className="rounded border border-gray-200 px-1.5 py-0.5 text-[11px] focus:outline-none focus:ring-1 focus:ring-blue-400"
+                                                                />
+                                                                <button
+                                                                  onClick={() => saveContractDate(task, contractDates[task.id] ?? '')}
+                                                                  disabled={taskSaving === task.id || !contractDates[task.id]}
+                                                                  className="rounded border border-gray-200 px-1.5 py-0.5 text-[10px] text-gray-600 hover:bg-gray-50 disabled:opacity-40"
+                                                                >
+                                                                  Save
+                                                                </button>
+                                                              </div>
+                                                            )}
+                                                          </div>
                                                         )}
                                                         {(() => {
                                                           const docs = taskDocsFor(detail, task.id)

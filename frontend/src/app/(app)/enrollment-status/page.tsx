@@ -274,6 +274,13 @@ interface ResumeSections {
   philosophy: string
 }
 
+// MCO-specific task keys whose step-by-step instructions are admin/billing-admin only.
+// On the provider page these tasks show label + status only — no description text.
+const MCO_ADMIN_TASK_KEYS = new Set([
+  'mco_amerihealth', 'mco_keystone', 'mco_upmc', 'mco_geisinger',
+  'mco_highmark', 'mco_uhc', 'mco_aetna', 'mco_hpplans',
+])
+
 const GENDER_OPTIONS = ['Female', 'Male', 'Non-binary / Gender non-conforming', 'Transgender female', 'Transgender male', 'Prefer not to say', 'Not listed']
 const RACE_OPTIONS = ['American Indian or Alaska Native', 'Asian', 'Black or African American', 'Hispanic or Latino', 'Native Hawaiian or Other Pacific Islander', 'White', 'Two or more races', 'Prefer not to say']
 const DOULA_TYPE_OPTIONS = ['Birth Doula', 'Postpartum Doula', 'Perinatal Doula', 'Other']
@@ -940,7 +947,7 @@ Please output the completed, formatted resume inside a single, pristine Markdown
                           </span>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-gray-800">{task.label}</p>
-                            {task.description && (
+                            {task.description && !MCO_ADMIN_TASK_KEYS.has(task.task_key) && (
                               <p className="mt-1 text-xs text-gray-500 leading-relaxed">{task.description}</p>
                             )}
                             {TASK_DOWNLOAD_LINKS[task.task_key] && (

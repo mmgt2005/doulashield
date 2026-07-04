@@ -12,6 +12,16 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.63.21] — 2026-07-04
+
+### Changed
+- **MCO task descriptions hidden from providers**: Step-by-step MCO enrollment instructions (portal URLs, email addresses, CAQH authorization steps) are now visible only to admins and billing admins. On the provider enrollment status page, MCO-specific task cards (AmeriHealth Caritas, Keystone First, UPMC For You, Geisinger, Highmark Wholecare, UHC, Aetna, Health Partners Plans) show only the task label and status badge — not the operational instructions intended for the credentialing team.
+
+### Added
+- **Contract signed date on billing admin My Providers**: For agencies on the enrollment tier, each MCO contracting task card now shows a "Contract signed:" date input. Entering and saving a date writes `contract_signed_date` to the task's `task_data`. Once a task is marked complete and a date is recorded, the card shows "✓ Contract signed YYYY-MM-DD" in green. Dates are pre-populated from saved `task_data` when the task list loads.
+
+---
+
 ## [1.63.20] — 2026-07-04
 
 ### Fixed
