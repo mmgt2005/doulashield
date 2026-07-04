@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.63.13] — 2026-07-04
+
+### Changed
+- **PROMISe™ Enrollment — removed Type 130 (CHIP) task**: DoulaShield providers bill PA Medicaid only, not CHIP. The "PROMISe™ Type 130 Application (CHIP)" task has been removed from the Stage 2 enrollment task list. New Stage 2 services will have 7 tasks instead of 8. Existing services that already have the task seeded are unaffected.
+
+---
+
 ## [1.63.12] — 2026-07-04
 
 ### Fixed

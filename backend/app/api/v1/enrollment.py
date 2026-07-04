@@ -381,25 +381,6 @@ _STAGE2_TASKS: list[dict] = [
         "sort_order": 4,
     },
     {
-        "task_key": "promise_type130",
-        "required_pathway": "all",
-        "label": "PROMISe™ Type 130 Application (CHIP)",
-        "description": (
-            "Required to bill CHIP MCOs (Keystone First CHIP, UPMC for You CHIP, etc.). "
-            "This is a separate application from Type 13 — complete Type 13 first.\n\n"
-            "Follow the same Stage & Share process as Type 13: build the application in advance, "
-            "then bring the provider in for live attestation and submit. The provider must personally "
-            "sign and submit; you cannot do it on their behalf.\n\n"
-            "At provider.ipx.pa.gov, select 'Enroll as a New Provider' again for a fresh application "
-            "instance. All classification, demographic, credential, and W-9 name entries follow "
-            "the same steps as Type 13 — the only difference is selecting Provider Type 130 (CHIP) "
-            "instead of Type 13 in the primary dropdown.\n\n"
-            "Record the Type 130 ATN in the notes field below and upload a screenshot of the "
-            "ATN confirmation page. Processing also takes 30–60 days."
-        ),
-        "sort_order": 5,
-    },
-    {
         "task_key": "caqh_request_access",
         "required_pathway": "all",
         "label": "Request Practice Manager Access in CAQH",
