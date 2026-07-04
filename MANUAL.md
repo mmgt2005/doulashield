@@ -220,9 +220,48 @@ After pasting your notes, click **Generate Work History with AI**. DoulaShield s
 
 The result is saved automatically. If you close the page and come back, your table is still there.
 
-To revise your notes and regenerate, click **Edit / Regenerate** — your original text reappears in the text box ready to edit.
+To save your notes without regenerating (for example, mid-session), click **Save Notes** below the text box. Your text is preserved so you can pick up later without losing your work.
+
+To revise your notes and regenerate, click **Edit / Regenerate** — your original text reappears in the text box ready to edit. Click **Save Notes** again if you want to save the revised text before running the AI.
 
 Once you are satisfied with the AI output, upload your final signed PDF work history document using the **+ Upload Document** button below the table.
+
+### Resume / CV Generator
+
+The **Resume / CV** task in your MCO Contracting stage includes an AI-powered tool that generates a professional credentialing resume ready for MCO applications — no writing required.
+
+#### What you need to enter
+
+The form has four fields:
+
+- **Full Name** — your name as it should appear at the top of the resume
+- **Certifications & Credentials** — list each credential on a new line (e.g., "PCB Certified Perinatal Doula — issued Jan 2024", "CPR/AED — expires Dec 2025")
+- **Work History Summary** — paste or type your work history in plain language. You can paste your AI-generated work history table from the 5-Year Work History task, or write freeform notes. The AI will organize and format it.
+- **Care Philosophy** — one or two sentences about your approach to doula care. This appears at the bottom of the resume as a personal statement. Leave blank if you prefer not to include one.
+
+Click **Save Draft** at any time to preserve what you have entered without running the AI.
+
+#### Generating and downloading your resume
+
+Click **Generate Resume with AI**. DoulaShield formats your inputs into a structured resume with:
+
+- A credentials header (name + credentials line)
+- Professional summary
+- Certifications table (credential, date issued, expiry if applicable)
+- Work experience table
+- Education list
+- Skills section
+- Care philosophy statement (if provided)
+
+The structured preview appears immediately on screen. Click **↓ Download Resume PDF** to download a print-ready PDF formatted for MCO credentialing submissions.
+
+To make changes, click **Edit / Regenerate** — your original inputs reappear so you can update any field and run the AI again. Click **Save Draft** to save edits before regenerating.
+
+### MCO Contracting Tasks
+
+Your MCO Contracting stage (Stage 3) includes a separate task for each Managed Care Organization (MCO) you will be contracted with. Each task shows its name and status badge (Not Started / In Progress / Complete).
+
+The detailed enrollment steps for each MCO are managed by your billing admin or DoulaShield staff. You will see the task status update as your agency works through the process on your behalf. If you have questions about the status of a specific MCO contract, contact your billing admin directly.
 
 ---
 
