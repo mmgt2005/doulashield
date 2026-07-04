@@ -600,6 +600,70 @@ export default function EnrollmentStatusPage() {
         )}
       </div>
 
+      {/* Progress stepper — always shown once agreement is signed */}
+      {(() => {
+        const stageStatusMap: Record<string, string> = {}
+        for (const d of services) stageStatusMap[d.service.stage] = d.service.status
+        const STEPS = [
+          { key: 'pcb', label: 'PCB Certification', short: 'PCB' },
+          { key: 'nppes_setup', label: 'NPPES / NPI Setup', short: 'NPI' },
+          { key: 'enrollment', label: 'Enrollment', short: 'Enrollment' },
+          { key: 'mco_contracting', label: 'MCO Contracting', short: 'MCO' },
+        ]
+        return (
+          <div className="mb-6 rounded-lg border border-gray-100 bg-white px-4 py-4 shadow-sm">
+            <p className="mb-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">Credentialing Pipeline</p>
+            <div className="flex items-center">
+              {STEPS.map((step, i) => {
+                const status = stageStatusMap[step.key]
+                const isDone = status === 'complete'
+                const isActive = status === 'in_progress' || status === 'submitted'
+                const hasService = !!status
+                const isClickable = hasService && services.length > 0
+                return (
+                  <div key={step.key} className="flex flex-1 items-center">
+                    <button
+                      onClick={() => isClickable && setActiveStage(step.key)}
+                      disabled={!isClickable}
+                      className="flex flex-col items-center gap-1 flex-shrink-0 disabled:cursor-default group"
+                      title={step.label}
+                    >
+                      {/* Node */}
+                      <div className={`relative flex h-8 w-8 items-center justify-center rounded-full border-2 transition-all
+                        ${isDone ? 'border-green-500 bg-green-500' : isActive ? 'border-blue-500 bg-blue-50' : hasService ? 'border-gray-300 bg-gray-50' : 'border-gray-200 bg-gray-50'}
+                        ${isClickable && !isDone ? 'group-hover:border-blue-400' : ''}
+                      `}>
+                        {isDone ? (
+                          <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                        ) : isActive ? (
+                          <span className="h-2.5 w-2.5 rounded-full bg-blue-500 animate-pulse" />
+                        ) : hasService ? (
+                          <span className="h-2 w-2 rounded-full bg-gray-300" />
+                        ) : (
+                          <span className="h-2 w-2 rounded-full bg-gray-200" />
+                        )}
+                      </div>
+                      {/* Label */}
+                      <span className={`text-center text-[10px] font-medium leading-tight max-w-[60px]
+                        ${isDone ? 'text-green-700' : isActive ? 'text-blue-700' : hasService ? 'text-gray-500' : 'text-gray-300'}
+                      `}>
+                        {step.short}
+                      </span>
+                    </button>
+                    {/* Connector line */}
+                    {i < STEPS.length - 1 && (
+                      <div className={`mx-1 flex-1 h-0.5 ${isDone ? 'bg-green-400' : 'bg-gray-200'}`} />
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )
+      })()}
+
       {services.length === 0 ? (
         <div className="rounded-lg border border-dashed border-gray-300 py-16 text-center">
           <p className="text-sm text-gray-500">No enrollment services have been started yet.</p>

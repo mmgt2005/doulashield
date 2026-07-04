@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.63.14] — 2026-07-04
+
+### Added
+- **Enrollment status progress stepper**: A horizontal 4-step pipeline indicator now appears at the top of the provider enrollment status page. Each stage (PCB Certification → NPPES / NPI Setup → Enrollment → MCO Contracting) shows as a node: green checkmark = complete, pulsing blue dot = in progress, gray = not yet started. Completed stages show a green connector line between nodes. Nodes are clickable when a service exists for that stage.
+
+---
+
 ## [1.63.13] — 2026-07-04
 
 ### Changed
