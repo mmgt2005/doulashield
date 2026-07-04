@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.63.22] — 2026-07-04
+
+### Fixed
+- **Vercel build error**: TypeScript build failed because the local `EnrollmentTask` interface in `billing-admin/providers/page.tsx` was missing the `task_data` field added by the contract date feature. Added `task_data: Record<string, unknown> | null` to the interface.
+
+---
+
 ## [1.63.21] — 2026-07-04
 
 ### Changed
