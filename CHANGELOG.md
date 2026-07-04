@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.63.17] — 2026-07-04
+
+### Added
+- **Resume/CV Generator (Resume Alchemist)**: Added an AI-powered resume generator to the `mco_resume_cv` task on the provider's enrollment status page (MCO Contracting service). Providers fill in four fields — name/credentials, certifications, work history notes, and care philosophy — and receive a tailored Claude AI prompt to generate a PROMISe™/MCO-compliant doula CV. Includes a 5-step pre-flight checklist, a live prompt preview panel, and a one-click "Copy Prompt" button. The generated prompt guides Claude to produce a full credential summary, 5-year chronological experience table, education block, references section, and philosophy statement formatted for PA Medicaid and MCO credentialing applications.
+
+---
+
 ## [1.63.16] — 2026-07-04
 
 ### Fixed

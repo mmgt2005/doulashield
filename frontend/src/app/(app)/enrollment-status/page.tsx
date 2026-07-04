@@ -272,6 +272,12 @@ export default function EnrollmentStatusPage() {
   const [downloadingWorkHistory, setDownloadingWorkHistory] = useState<Record<string, boolean>>({})
   const [showBioPrep, setShowBioPrep] = useState<Record<string, boolean>>({})
 
+  // Resume Alchemist state (mco_resume_cv task)
+  const [resumeFields, setResumeFields] = useState<Record<string, { name: string; certs: string; history: string; philosophy: string }>>({})
+  const [showResumeChecklist, setShowResumeChecklist] = useState<Record<string, boolean>>({})
+  const [resumeChecked, setResumeChecked] = useState<Record<string, Record<string, boolean>>>({})
+  const [resumeCopied, setResumeCopied] = useState<Record<string, boolean>>({})
+
   const headers = { Authorization: `Bearer ${getAccessToken()}` }
   const api = process.env.NEXT_PUBLIC_API_URL
 
@@ -494,6 +500,58 @@ export default function EnrollmentStatusPage() {
       showToast(typeof msg === 'string' ? msg : 'AI processing failed — please try again or contact support.')
     } finally {
       setBioBuilding((prev) => ({ ...prev, [taskId]: false }))
+    }
+  }
+
+  const getResumeFields = (taskId: string) =>
+    resumeFields[taskId] ?? { name: '', certs: '', history: '', philosophy: '' }
+
+  const setResumeField = (taskId: string, field: 'name' | 'certs' | 'history' | 'philosophy', value: string) => {
+    setResumeFields((prev) => ({ ...prev, [taskId]: { ...getResumeFields(taskId), ...prev[taskId], [field]: value } }))
+  }
+
+  const buildResumePrompt = (taskId: string): string => {
+    const f = getResumeFields(taskId)
+    const n = f.name || '[Enter Your Full Name]'
+    const c = f.certs || '[Enter Your Certifications]'
+    const h = f.history || '[Enter Your History & Gaps]'
+    const p = f.philosophy || '[Enter Your Care Philosophy]'
+    return `You are an expert healthcare credentialing specialist, professional CV writer, and medical resume architect.
+
+I am applying for Pennsylvania Medicaid (PROMISe™) enrollment as a Provider Type 13 (Certified Perinatal Doula) and commercial Managed Care Organization (MCO) contracts (e.g., Keystone First, UPMC for You). The credentialing departments require a flawless, highly professional, and continuous 5-year work chronology.
+
+Your objective is to take my raw, messy work history, qualifications, and personal care philosophy, and assemble them into a stunning, state-compliant Professional Resume.
+
+---
+PROVIDER BASELINE INFO:
+- Name/Credentials: ${n}
+- Certifications: ${c}
+- Raw Timeline & History Notes:
+${h}
+- Philosophy of Care / Personal Value Statement:
+${p}
+---
+
+INSTRUCTIONS FOR GENERATION:
+1. Translating Vocabulary: Translate all informal or standard language into clinically and administratively professional healthcare language (e.g., "stayed through the night" → "provided continuous, overnight labor support and physiological comfort measures").
+2. Core Sections to Include:
+   - PROFESSIONAL CONTACT BLOCK: Centered header with placeholders for Address, Phone, Email, and NPI/PROMISe IDs.
+   - CARE PHILOSOPHY STATEMENT: A premium 3-sentence profile emphasizing evidence-based, culturally competent care.
+   - CERTIFICATIONS & TRAININGS: Bulleted list highlighting the PCB certificate, active CPR, and relevant education.
+   - PROFESSIONAL EXPERIENCE: Month-by-month timeline. Use precise, active, healthcare-centric bullet points.
+   - EDUCATION: Chronological high school / higher education history.
+3. Strict Chronology & Gap Protocol: If my notes indicate a gap in traditional employment (e.g., family care, maternity leave), explicitly list that gap block in the work experience timeline under an appropriate administrative title (e.g., "Full-time Family Caregiving" or "Educational Professional Sabbatical") so credentialing agents do not flag the resume.
+
+Please output the completed, formatted resume inside a single, pristine Markdown document block that I can easily export.`
+  }
+
+  const handleCopyResumePrompt = async (taskId: string) => {
+    try {
+      await navigator.clipboard.writeText(buildResumePrompt(taskId))
+      setResumeCopied((prev) => ({ ...prev, [taskId]: true }))
+      setTimeout(() => setResumeCopied((prev) => ({ ...prev, [taskId]: false })), 3000)
+    } catch {
+      showToast('Could not copy to clipboard — please select and copy manually.')
     }
   }
 
@@ -1173,6 +1231,161 @@ export default function EnrollmentStatusPage() {
                               </div>
                             </>
                           )}
+                        </div>
+                      )}
+
+                      {/* Resume Alchemist — only for mco_resume_cv task */}
+                      {task.task_key === 'mco_resume_cv' && task.status !== 'complete' && (
+                        <div className="mt-4 space-y-3 border-t border-gray-100 pt-4">
+
+                          {/* Collapsible info-gathering checklist */}
+                          <div className="rounded border border-indigo-100 bg-indigo-50">
+                            <button
+                              onClick={() => setShowResumeChecklist((prev) => ({ ...prev, [task.id]: !prev[task.id] }))}
+                              className="flex w-full items-center justify-between px-3 py-2 text-xs font-semibold text-indigo-800"
+                            >
+                              <span>Before You Start — Information Retrieval Checklist (5 steps)</span>
+                              <span>{showResumeChecklist[task.id] ? '▲' : '▼'}</span>
+                            </button>
+                            {showResumeChecklist[task.id] && (
+                              <div className="divide-y divide-indigo-100 border-t border-indigo-100 px-3 py-2 space-y-2">
+                                {[
+                                  {
+                                    key: 'credentials',
+                                    title: 'Step 1 — Contact & Credentials',
+                                    body: 'Locate your National Provider Identifier (NPI), your state PROMISe ID (if you have one), and your active Pennsylvania Certification Board (PCB) number.',
+                                    badge: 'Find on: nppes.cms.hhs.gov',
+                                    color: 'bg-indigo-100 text-indigo-800',
+                                  },
+                                  {
+                                    key: 'training',
+                                    title: 'Step 2 — Training & Certifications',
+                                    body: 'Find dates and hours for your core doula training, CPR certification (must be Adult & Infant), lactation education, and any continuing education units (CEUs).',
+                                    badge: 'Verify: Active CPR expiration date',
+                                    color: 'bg-amber-100 text-amber-800',
+                                  },
+                                  {
+                                    key: 'births',
+                                    title: 'Step 3 — Direct Birth & Perinatal Work',
+                                    body: 'Count your total births attended. Look through client logs, Google Calendar, and contracts to pinpoint active months, client locations, and services provided.',
+                                    badge: 'Tip: Search calendar for "birth"',
+                                    color: 'bg-teal-100 text-teal-800',
+                                  },
+                                  {
+                                    key: 'gaps',
+                                    title: 'Step 4 — Non-Birth Working Gaps',
+                                    body: 'Write down non-birth jobs (e.g., customer service, social work, admin). These will be translated into "transferable healthcare skills" like HIPAA compliance and advocacy.',
+                                    badge: 'Required: Complete 5-year timeline',
+                                    color: 'bg-gray-200 text-gray-800',
+                                  },
+                                  {
+                                    key: 'philosophy',
+                                    title: 'Step 5 — Care Philosophy',
+                                    body: 'Jot down your main care tenets. Do you specialize in trauma-informed care? Teen parents? High-risk pregnancies? Write it in plain, conversational English.',
+                                    badge: null,
+                                    color: '',
+                                  },
+                                ].map((step) => (
+                                  <div key={step.key} className="py-1.5">
+                                    <label className="flex items-start gap-2 cursor-pointer">
+                                      <input
+                                        type="checkbox"
+                                        checked={resumeChecked[task.id]?.[step.key] ?? false}
+                                        onChange={(e) => setResumeChecked((prev) => ({
+                                          ...prev,
+                                          [task.id]: { ...(prev[task.id] || {}), [step.key]: e.target.checked },
+                                        }))}
+                                        className="mt-0.5 h-3.5 w-3.5 rounded border-gray-300 text-indigo-600"
+                                      />
+                                      <div>
+                                        <p className="text-xs font-semibold text-indigo-900">{step.title}</p>
+                                        <p className="mt-0.5 text-xs text-indigo-700 leading-relaxed">{step.body}</p>
+                                        {step.badge && (
+                                          <span className={`mt-1 inline-block text-[10px] px-2 py-0.5 rounded font-medium ${step.color}`}>
+                                            {step.badge}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </label>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Input fields */}
+                          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">2. The Messy Brain Dump</p>
+                          <p className="text-xs text-gray-500">Fill in what you have — rough notes are fine. The generated AI prompt will turn them into a polished, MCO-ready resume.</p>
+                          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                            <div>
+                              <label className="block text-xs text-gray-500 mb-1">Full Legal Name <span className="text-gray-400">(e.g., Sarah Jenkins, CPD)</span></label>
+                              <input
+                                type="text"
+                                value={getResumeFields(task.id).name}
+                                onChange={(e) => setResumeField(task.id, 'name', e.target.value)}
+                                placeholder="e.g., Maria Gonzalez, CPD"
+                                className="w-full rounded border border-gray-200 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs text-gray-500 mb-1">Certifications Held</label>
+                              <input
+                                type="text"
+                                value={getResumeFields(task.id).certs}
+                                onChange={(e) => setResumeField(task.id, 'certs', e.target.value)}
+                                placeholder="e.g., PCB CPD, Adult/Infant CPR"
+                                className="w-full rounded border border-gray-200 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-xs text-gray-500 mb-1">Raw Professional History & Gaps</label>
+                            <textarea
+                              rows={6}
+                              value={getResumeFields(task.id).history}
+                              onChange={(e) => setResumeField(task.id, 'history', e.target.value)}
+                              placeholder="Don't worry about sounding perfect. Paste your messy timelines, rough dates, hospital experiences, gaps, and volunteer jobs here..."
+                              className="w-full rounded border border-gray-200 p-2 text-xs font-mono leading-relaxed focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs text-gray-500 mb-1">My Care Philosophy <span className="text-gray-400">(in your own words)</span></label>
+                            <textarea
+                              rows={2}
+                              value={getResumeFields(task.id).philosophy}
+                              onChange={(e) => setResumeField(task.id, 'philosophy', e.target.value)}
+                              placeholder="e.g., I believe in empowering parents through evidence-based support, focusing on BIPOC and low-income maternal advocacy..."
+                              className="w-full rounded border border-gray-200 p-2 text-xs leading-relaxed focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                            />
+                          </div>
+
+                          {/* Generated AI prompt */}
+                          <div className="rounded-lg bg-gray-900 p-4 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <p className="text-xs font-semibold text-gray-300 flex items-center gap-1.5">
+                                <span className="inline-block h-2 w-2 rounded-full bg-teal-400 animate-pulse" />
+                                Your AI Alchemist Prompt
+                              </p>
+                              <button
+                                onClick={() => handleCopyResumePrompt(task.id)}
+                                className={`inline-flex items-center gap-1.5 rounded px-3 py-1 text-xs font-semibold transition-all
+                                  ${resumeCopied[task.id]
+                                    ? 'bg-green-500 text-white'
+                                    : 'bg-teal-500 hover:bg-teal-400 text-gray-900'
+                                  }`}
+                              >
+                                {resumeCopied[task.id] ? '✓ Copied!' : 'Copy Prompt'}
+                              </button>
+                            </div>
+                            <div className="max-h-52 overflow-y-auto rounded bg-gray-950 p-3">
+                              <pre className="whitespace-pre-wrap font-mono text-[10px] text-teal-300 leading-relaxed">
+                                {buildResumePrompt(task.id)}
+                              </pre>
+                            </div>
+                            <p className="text-[10px] text-gray-400">
+                              Copy this prompt and paste it into Claude, ChatGPT, or Gemini to receive your formatted resume — then upload the finished document below.
+                            </p>
+                          </div>
                         </div>
                       )}
 
