@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.64.1] — 2026-07-04
+
+### Fixed
+- **Executive Dashboard TypeScript build error**: `providers_never_billed` was accessed from a `Record<string, unknown>` map; the `unknown ?? 0` expression did not satisfy the `StatCard` component's `value: string | number` prop type. Added an explicit `as number` cast to fix the Vercel build failure.
+
+---
+
 ## [1.64.0] — 2026-07-04
 
 ### Added
