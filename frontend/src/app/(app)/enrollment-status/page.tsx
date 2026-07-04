@@ -325,7 +325,8 @@ export default function EnrollmentStatusPage() {
       }))
     }
     if (typeof brainDump === 'string' && brainDump) {
-      setBioInput((prev) => ({ ...prev, [whTask.id]: brainDump }))
+      // Only initialise from saved data — never overwrite text the user has already typed
+      setBioInput((prev) => ({ ...prev, [whTask.id]: prev[whTask.id] || brainDump }))
     }
   }, [services])
 
@@ -464,14 +465,27 @@ export default function EnrollmentStatusPage() {
       )
       setBioResult((prev) => ({ ...prev, [taskId]: { rows: res.data.rows, gaps: res.data.gaps } }))
       setBioEditing((prev) => { const n = { ...prev }; delete n[taskId]; return n })
+      // Also update bioInput to the submitted text so re-entering edit mode shows correct notes
+      setBioInput((prev) => ({ ...prev, [taskId]: text }))
       setServices((prev) =>
         prev.map((d) => {
           if (d.service.id !== serviceId) return d
           return {
             ...d,
-            tasks: d.tasks.map((t) =>
-              t.id === taskId && t.status === 'not_started' ? { ...t, status: 'in_progress' } : t
-            ),
+            tasks: d.tasks.map((t) => {
+              if (t.id !== taskId) return t
+              return {
+                ...t,
+                status: t.status === 'not_started' ? 'in_progress' : t.status,
+                // Keep local task_data in sync so the [services] useEffect doesn't reset bioInput
+                task_data: {
+                  ...(t.task_data || {}),
+                  brain_dump: text,
+                  work_history_rows: res.data.rows,
+                  gap_log: res.data.gaps,
+                },
+              }
+            }),
           }
         })
       )

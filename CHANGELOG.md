@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.63.16] — 2026-07-04
+
+### Fixed
+- **Work history edit mode lost user's edits**: After a successful bio-build, `setServices` was called to update task status but left `task_data.brain_dump` as the old text in local state. The `[services]` `useEffect` would immediately re-fire and reset `bioInput` back to the old brain dump, wiping any edits the user typed before regenerating. Fixed by (1) having `setServices` also sync `task_data.brain_dump/work_history_rows/gap_log` in local state, (2) explicitly setting `bioInput` to the submitted text after success, and (3) changing the `useEffect` to use `prev[id] || brainDump` so it only initialises the textarea from saved data and never overwrites text the user has already typed.
+
+---
+
 ## [1.63.15] — 2026-07-04
 
 ### Added
