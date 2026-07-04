@@ -193,7 +193,7 @@ export default function ExecutiveDashboard() {
                 <StatCard label="Median Days to First Claim"
                   value={latency.median_days != null ? `${latency.median_days}d` : '—'} />
                 <StatCard label="Providers Never Billed"
-                  value={latency.providers_never_billed ?? 0}
+                  value={(latency.providers_never_billed as number) ?? 0}
                   sub="active, no claims" />
               </div>
             </div>
