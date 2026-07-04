@@ -8,6 +8,7 @@ export interface User {
   mfa_enabled: boolean
   is_active: boolean
   is_demo?: boolean
+  is_executive?: boolean
   created_at: string
   last_sign_in_at: string | null
   welcome_email_sent_at: string | null

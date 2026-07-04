@@ -22,6 +22,7 @@ class User(Base):
     mfa_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     is_demo: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    is_executive: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false", nullable=False)
     npi: Mapped[str | None] = mapped_column(String(10), nullable=True)
     availity_client_id_encrypted: Mapped[str | None] = mapped_column(Text, nullable=True)
     availity_client_secret_encrypted: Mapped[str | None] = mapped_column(Text, nullable=True)

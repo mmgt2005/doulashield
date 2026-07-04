@@ -12,6 +12,23 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.64.0] — 2026-07-04
+
+### Added
+- **Executive Analytics Dashboard** (`/admin/executive`): Platform-wide KPI dashboard accessible only to admin users with the new `is_executive` flag. Five sections:
+  - **Platform Health**: Total active providers, active subscriptions, estimated MRR, new providers this month, providers active last 30/90 days, churn count; plus First-Claim Latency tiles (avg days, median days, providers never billed) and a 12-month Provider Cohort Retention table.
+  - **Lead Funnel**: Leads by source, pipeline stage distribution, lead-to-conversion rate, avg days to convert, provider type split.
+  - **Claims & Revenue**: Platform-wide totals (billed, collected, collection rate), overdue claims, avg revenue per provider; Revenue by Visit Type table (T1033, T1032 U7/U8/U9 with hardcoded rates and live collection data); 6-bucket Claim Aging table (0–30 through 180+ days) with amber/red highlights for aging unpaid claims.
+  - **Enrollment Pipeline**: Enrollment tier penetration, stage distribution, and a Stage Completion Time table (avg and median days per stage).
+  - **Compliance Health**: MA91 consent compliance rate, overdue/urgent claims, resubmitted claims count.
+  - All claims/visits/leads sections respect an optional date-range filter (preset bar); SaaS KPIs and cohort retention are always all-time.
+- **MCO Partnership Report** (`/admin/executive/mco-report`): Cross-provider aggregate table showing Covered Patients, Provider Count, Total Claims, Total Billed/Paid, Collection Rate, Denial Rate, Resubmission Rate, and Avg Days to Pay for each MCO — color-coded for fast contract-negotiation reads. Includes Service Delivery Profile (in-person vs. telehealth split) and a Referring Physicians table (top 50 NPIs sorted by patient count, with doula coverage count). CSV export via "Export CSV" button.
+- **`is_executive` flag on User model**: New `BOOLEAN NOT NULL DEFAULT false` column gating access to the executive dashboard. Granted/revoked from Admin → Users page (toggle visible only on `role='admin'` accounts). Alembic migration `0054` adds the column.
+- **`require_executive` dependency**: Chains on `require_admin` then checks `is_executive`; returns 403 if false. Used by all three executive endpoints (`/admin/executive/stats`, `/admin/executive/mco-report`, `/admin/executive/mco-report.csv`).
+- **Executive sidebar links**: Users with `is_executive=true` see "Executive Dashboard" and "MCO Partnership Report" in the sidebar; role badge shows "Admin · Executive".
+
+---
+
 ## [1.63.24] — 2026-07-04
 
 ### Docs

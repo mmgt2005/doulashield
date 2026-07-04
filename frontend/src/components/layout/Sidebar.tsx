@@ -24,6 +24,11 @@ const adminLinks = [
   { href: '/admin/audit-logs', label: 'Audit Logs' },
 ]
 
+const executiveLinks = [
+  { href: '/admin/executive', label: 'Executive Dashboard' },
+  { href: '/admin/executive/mco-report', label: 'MCO Partnership Report' },
+]
+
 const billingAdminLinks = [
   { href: '/billing-admin/providers', label: 'My Providers' },
   { href: '/billing-admin/claims', label: 'Agency Claims' },
@@ -56,15 +61,20 @@ export default function Sidebar({ onClose }: SidebarProps) {
     user?.role === 'billing_admin'
       ? billingAdminLinks
       : user?.role === 'admin'
-      ? [...providerLinks, ...adminLinks]
+      ? [...providerLinks, ...adminLinks, ...executiveLinks]
+      : user?.is_executive
+      ? executiveLinks
       : providerLinks
 
   const roleLabel =
+    user?.role === 'admin' && user?.is_executive ? 'Admin · Executive' :
     user?.role === 'admin' ? 'Admin' :
     user?.role === 'billing_admin' ? 'Billing Admin' :
+    user?.is_executive ? 'Executive' :
     'Provider'
 
   const roleBadgeClass =
+    user?.is_executive ? 'bg-indigo-100 text-indigo-700' :
     user?.role === 'admin' ? 'bg-purple-100 text-purple-700' :
     user?.role === 'billing_admin' ? 'bg-teal-100 text-teal-700' :
     'bg-blue-100 text-blue-700'

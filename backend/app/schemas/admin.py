@@ -54,6 +54,7 @@ class UserUpdate(BaseModel):
     role: RoleLiteral | None = None
     is_active: bool | None = None
     is_demo: bool | None = None
+    is_executive: bool | None = None
     billing_provider_id: uuid.UUID | None = None
     managed_billing_provider_id: uuid.UUID | None = None
 
@@ -66,6 +67,7 @@ class UserRead(BaseModel):
     mfa_enabled: bool
     is_active: bool
     is_demo: bool = False
+    is_executive: bool = False
     created_at: datetime
     last_sign_in_at: datetime | None = None
     welcome_email_sent_at: datetime | None = None

@@ -20,6 +20,7 @@ from app.api.v1.visits import router as visits_router
 from app.api.v1.admin.users import router as admin_users_router
 from app.api.v1.admin.audit_logs import router as admin_audit_router
 from app.api.v1.admin.billing_providers import router as admin_billing_providers_router
+from app.api.v1.admin.executive import router as executive_router
 from app.api.v1.enrollment import router as enrollment_router
 from app.api.v1.enrollment_billing_admin import router as enrollment_billing_admin_router
 from app.api.v1.enrollment_provider import router as enrollment_provider_router
@@ -49,6 +50,7 @@ api_router.include_router(directory_router)
 api_router.include_router(admin_users_router)
 api_router.include_router(admin_audit_router)
 api_router.include_router(admin_billing_providers_router)
+api_router.include_router(executive_router)
 api_router.include_router(stats_router)
 api_router.include_router(enrollment_router)
 api_router.include_router(enrollment_billing_admin_router)

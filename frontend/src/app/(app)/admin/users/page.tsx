@@ -169,6 +169,20 @@ export default function AdminUsersPage() {
     }
   }
 
+  const toggleExecutive = async (userId: string, email: string, current: boolean) => {
+    setActionLoading(`exec-${userId}`)
+    try {
+      await axios.patch(`${api}/api/v1/admin/users/${userId}`, { is_executive: !current }, { headers })
+      showToast(`Executive access ${!current ? 'granted to' : 'revoked from'} ${email}`)
+      await reload()
+    } catch (e: unknown) {
+      const msg = axios.isAxiosError(e) ? e.response?.data?.detail : 'Failed to update'
+      showToast(`Error: ${msg}`)
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
   const openAssignModal = (userId: string, email: string, currentBpId: string | null) => {
     setAssignModal({ userId, email, currentBpId })
     setAssignBpId(currentBpId ?? '')
@@ -523,6 +537,19 @@ export default function AdminUsersPage() {
                           className="rounded border border-gray-300 px-2 py-1 text-xs font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50 whitespace-nowrap"
                         >
                           {actionLoading === `role-${u.id}` ? '…' : u.role === 'admin' ? 'Make Provider' : 'Make Admin'}
+                        </button>
+                      )}
+                      {u.id !== currentUser?.id && u.role === 'admin' && (
+                        <button
+                          onClick={() => toggleExecutive(u.id, u.email, !!(u as User & { is_executive?: boolean }).is_executive)}
+                          disabled={actionLoading === `exec-${u.id}`}
+                          className={`rounded border px-2 py-1 text-xs font-medium disabled:opacity-50 whitespace-nowrap ${
+                            (u as User & { is_executive?: boolean }).is_executive
+                              ? 'border-indigo-200 text-indigo-700 hover:bg-indigo-50'
+                              : 'border-gray-200 text-gray-500 hover:bg-gray-50'
+                          }`}
+                        >
+                          {actionLoading === `exec-${u.id}` ? '…' : (u as User & { is_executive?: boolean }).is_executive ? 'Revoke Executive' : 'Grant Executive'}
                         </button>
                       )}
                     </div>

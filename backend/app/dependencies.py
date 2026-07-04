@@ -82,6 +82,18 @@ async def require_billing_admin(user: Annotated[CurrentUser, Depends(get_current
     return user
 
 
+async def require_executive(
+    user: Annotated[CurrentUser, Depends(require_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> CurrentUser:
+    from sqlalchemy.future import select as _select
+    from app.models.user import User as _User
+    result = await db.execute(_select(_User.is_executive).where(_User.id == user.id))
+    if not result.scalar_one_or_none():
+        raise _FORBIDDEN
+    return user
+
+
 async def get_managed_billing_provider(
     user: Annotated[CurrentUser, Depends(require_billing_admin)],
     db: Annotated[AsyncSession, Depends(get_db)],

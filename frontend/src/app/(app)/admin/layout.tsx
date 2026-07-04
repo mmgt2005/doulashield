@@ -9,12 +9,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const { user, isLoading } = useAuthStore()
 
   useEffect(() => {
-    if (!isLoading && user?.role !== 'admin') {
+    if (!isLoading && user?.role !== 'admin' && !user?.is_executive) {
       router.replace('/dashboard')
     }
   }, [user, isLoading, router])
 
-  if (isLoading || user?.role !== 'admin') return null
+  if (isLoading || (user?.role !== 'admin' && !user?.is_executive)) return null
 
   return <>{children}</>
 }
