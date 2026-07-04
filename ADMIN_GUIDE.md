@@ -306,6 +306,24 @@ Enrollment tier penetration (agencies with tier enabled vs. all active agencies)
 
 MA91 consent compliance rate across all visits, overdue and urgent claims counts (highlighted red/amber when non-zero), and platform-wide resubmitted claims count.
 
+### Generate Strategic Report
+
+The **✦ Generate Strategic Report** button in the top-right of the dashboard generates an AI-written analysis of all the platform data visible on the screen, applying the current date filter. Click it once — the report streams in word by word above the dashboard tiles (typically 10–20 seconds).
+
+The report covers seven sections:
+
+1. **Executive Summary** — overall health verdict, biggest strength, biggest threat
+2. **Platform Health Assessment** — growth trajectory, login vs. billing engagement gap, activation friction
+3. **Revenue & Collections** — collection rate vs. the 80–85% industry benchmark, dollar exposure in aging buckets, visit type mix
+4. **MCO Contract Intelligence** — which MCOs to prioritise for renegotiation and why, with specific figures (denial rates, days-to-pay, collection gaps)
+5. **Operational Risks** — top 3 risks rated HIGH/MEDIUM/LOW, the metric that reveals each one, and a mitigation step
+6. **Strategic Recommendations** — top 5 prioritised recommendations, each citing the specific metric it addresses and the KPI it moves
+7. **Quick Wins** — 3–5 actions achievable within 30 days
+
+When generation completes, a **Print / Save PDF** button appears. Clicking it opens the browser print dialog with the dashboard tiles and sidebar hidden — only the report content prints. Use browser "Save as PDF" to create a shareable document for board decks or partner meetings.
+
+The report uses the same date filter as the dashboard. To generate an all-time report, select **All Time** before clicking Generate.
+
 ### MCO Partnership Report — `/admin/executive/mco-report`
 
 The MCO report aggregates platform-wide claims data by payer — the core data for MCO contract negotiations.

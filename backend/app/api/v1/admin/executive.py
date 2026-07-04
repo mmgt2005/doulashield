@@ -540,6 +540,33 @@ async def mco_report(
     }
 
 
+@router.get("/generate-report")
+async def generate_executive_report(
+    user: Annotated[CurrentUser, Depends(require_executive)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    date_from: date | None = Query(None),
+    date_to: date | None = Query(None),
+) -> StreamingResponse:
+    from app.services.executive_report_service import stream_executive_report
+
+    stats = await executive_stats(user, db, date_from, date_to)
+    mco = await mco_report(user, db, date_from, date_to)
+
+    if date_from and date_to:
+        period_label = f"{date_from} to {date_to}"
+    elif date_from:
+        period_label = f"from {date_from}"
+    elif date_to:
+        period_label = f"through {date_to}"
+    else:
+        period_label = "All Time"
+
+    return StreamingResponse(
+        stream_executive_report(stats, mco, period_label),
+        media_type="text/plain; charset=utf-8",
+    )
+
+
 @router.get("/mco-report.csv")
 async def mco_report_csv(
     _: Annotated[CurrentUser, Depends(require_executive)],

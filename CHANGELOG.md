@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.65.0] — 2026-07-04
+
+### Added
+- **AI Strategic Report Generator** on the Executive Dashboard: a "✦ Generate Strategic Report" button in the dashboard header calls a new `GET /admin/executive/generate-report` endpoint that assembles all platform stats (health, leads, claims, MCO data, enrollment, compliance) and streams a written strategic analysis back to the page in real time using the Anthropic API. The report appears above the dashboard tiles as markdown prose rendered via the `marked` library with Tailwind Typography styling, and covers seven sections: Executive Summary, Platform Health Assessment, Revenue & Collections, MCO Contract Intelligence, Operational Risks, Strategic Recommendations, and Quick Wins. A "Print / Save PDF" button uses `window.print()` with CSS that hides the dashboard tiles and layout chrome so only the report prints.
+
+---
+
 ## [1.64.1] — 2026-07-04
 
 ### Fixed
