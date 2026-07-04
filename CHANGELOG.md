@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.63.11] — 2026-07-04
+
+### Changed
+- **Billing-admin My Providers — improved 422 error diagnostics**: Toast now includes which field Pydantic flagged (e.g. "Field required @ body.provider_id"), and a full JSON dump of the error response is logged to the browser console as `[DS] 422 full error response:`. Temporary diagnostic aid to identify the root cause of the persistent 422 error.
+
+---
+
 ## [1.63.10] — 2026-07-04
 
 ### Fixed

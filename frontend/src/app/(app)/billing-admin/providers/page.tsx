@@ -396,7 +396,7 @@ export default function BillingAdminProvidersPage() {
     if (!providerId) { showToast('No provider selected'); return }
     const body: Record<string, unknown> = { provider_id: providerId, stage: startStage }
     if (startStage === 'pcb') body.pcb_pathway = startPathway
-    console.log('[DS v1.63.8] startEnrollmentService body:', JSON.stringify(body))
+    console.log('[DS v1.63.10] startEnrollmentService body:', JSON.stringify(body))
     setStartServiceLoading(true)
     try {
       const res = await axios.post<EnrollmentServiceDetail>(
@@ -412,11 +412,14 @@ export default function BillingAdminProvidersPage() {
       showToast('Enrollment service started.')
     } catch (e: unknown) {
       if (axios.isAxiosError(e)) {
+        console.error('[DS] 422 full error response:', JSON.stringify(e.response?.data))
         const detail = e.response?.data?.detail
         const msg = typeof detail === 'string'
           ? detail
           : Array.isArray(detail)
-          ? detail.map((d: { msg?: string }) => d.msg ?? String(d)).join('; ')
+          ? detail.map((d: { msg?: string; loc?: unknown[] }) =>
+              `${d.msg ?? String(d)}${d.loc ? ' @ ' + d.loc.join('.') : ''}`
+            ).join('; ')
           : 'Failed to start service'
         showToast(msg)
       } else {
@@ -576,7 +579,7 @@ export default function BillingAdminProvidersPage() {
         <div>
           <h1 className="text-xl font-bold text-gray-900">My Providers</h1>
           <p className="mt-0.5 text-sm text-gray-500">
-            Provider roster, enrollment progress, and credential expiry reminders. <span className="text-[10px] text-gray-300">v1.63.10</span>
+            Provider roster, enrollment progress, and credential expiry reminders. <span className="text-[10px] text-gray-300">v1.63.11</span>
           </p>
         </div>
         <button
