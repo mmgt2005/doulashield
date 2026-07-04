@@ -224,4 +224,4 @@ async def stream_executive_report(
                 yield text.encode("utf-8")
     except Exception:
         log.exception("Executive report generation failed")
-        yield b"\n\n*Report generation failed — please try again.*"
+        yield "\n\n*Report generation failed — please try again.*".encode("utf-8")

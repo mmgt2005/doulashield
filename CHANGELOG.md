@@ -12,6 +12,14 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.65.1] — 2026-07-04
+
+### Fixed
+- **PostgreSQL `ROUND(double precision, integer)` error**: `EXTRACT(EPOCH FROM ...)` returns `double precision`; PostgreSQL's two-argument `ROUND` only accepts `numeric`. Added `::numeric` casts to the first-claim latency and stage completion time queries in `executive_stats()`, fixing a `UndefinedFunctionError` that crashed every Executive Dashboard load.
+- **Python bytes literal syntax error in report service**: The error-fallback `yield` in `executive_report_service.py` used a `b"..."` literal containing an em dash (U+2014), which is non-ASCII and illegal in Python byte strings. Replaced with `"...".encode("utf-8")`.
+
+---
+
 ## [1.65.0] — 2026-07-04
 
 ### Added

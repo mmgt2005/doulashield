@@ -98,8 +98,8 @@ async def executive_stats(
     # First-claim latency
     latency_row = await db.execute(text("""
         SELECT
-          ROUND(AVG(days_to_first), 1) AS avg_days,
-          ROUND(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY days_to_first), 1)
+          ROUND(AVG(days_to_first)::numeric, 1) AS avg_days,
+          ROUND(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY days_to_first)::numeric, 1)
             AS median_days,
           COUNT(*) AS providers_with_claims
         FROM (
@@ -291,10 +291,10 @@ async def executive_stats(
           COUNT(*) AS completed_count,
           ROUND(AVG(
             EXTRACT(EPOCH FROM (es.updated_at - es.created_at)) / 86400
-          ), 1) AS avg_days,
+          )::numeric, 1) AS avg_days,
           ROUND(PERCENTILE_CONT(0.5) WITHIN GROUP (
             ORDER BY EXTRACT(EPOCH FROM (es.updated_at - es.created_at)) / 86400
-          ), 1) AS median_days
+          )::numeric, 1) AS median_days
         FROM public.enrollment_services es
         WHERE es.status = 'completed'
         GROUP BY es.stage
