@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.63.20] — 2026-07-04
+
+### Fixed
+- **MCO task descriptions now visible in all three views**: Added migration `0053` to UPDATE existing `enrollment_tasks` rows in the database by `task_key`. Because task labels and descriptions are stored as DB columns (not computed at runtime), the previous code change to `_STAGE3_TASKS` only affected newly created services. The migration backfills all existing AmeriHealth Caritas, Keystone First, UPMC For You, Geisinger Health Plan, Highmark Wholecare, UnitedHealthcare, Aetna Better Health, and Health Partners Plans task rows with the step-by-step enrollment instructions. After running `alembic upgrade head`, the updated descriptions will appear on the provider enrollment status page, the admin enrollment services page, and the billing admin My Providers page. Task status badges (Not Started / In Progress / Complete) are already rendered on all three pages.
+
+---
+
 ## [1.63.19] — 2026-07-04
 
 ### Changed
