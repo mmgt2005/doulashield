@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.63.24] — 2026-07-04
+
+### Docs
+- **MANUAL.md**: Documented the Save Notes button on the 5-Year Work History bio-builder, the inline Resume/CV AI generator (with Save Draft and PDF download), and a note explaining that MCO Contracting task steps are managed by the billing team — providers see task name and status badge only.
+
+---
+
 ## [1.63.23] — 2026-07-04
 
 ### Added
