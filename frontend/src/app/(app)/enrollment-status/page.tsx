@@ -268,6 +268,8 @@ export default function EnrollmentStatusPage() {
   const [bioInput, setBioInput] = useState<Record<string, string>>({})
   const [bioBuilding, setBioBuilding] = useState<Record<string, boolean>>({})
   const [bioResult, setBioResult] = useState<Record<string, { rows: WorkHistoryRow[]; gaps: GapEntry[] }>>({})
+  const [bioEditing, setBioEditing] = useState<Record<string, boolean>>({})
+  const [downloadingWorkHistory, setDownloadingWorkHistory] = useState<Record<string, boolean>>({})
   const [showBioPrep, setShowBioPrep] = useState<Record<string, boolean>>({})
 
   const headers = { Authorization: `Bearer ${getAccessToken()}` }
@@ -461,6 +463,7 @@ export default function EnrollmentStatusPage() {
         { headers }
       )
       setBioResult((prev) => ({ ...prev, [taskId]: { rows: res.data.rows, gaps: res.data.gaps } }))
+      setBioEditing((prev) => { const n = { ...prev }; delete n[taskId]; return n })
       setServices((prev) =>
         prev.map((d) => {
           if (d.service.id !== serviceId) return d
@@ -477,6 +480,28 @@ export default function EnrollmentStatusPage() {
       showToast(typeof msg === 'string' ? msg : 'AI processing failed — please try again or contact support.')
     } finally {
       setBioBuilding((prev) => ({ ...prev, [taskId]: false }))
+    }
+  }
+
+  const handleDownloadWorkHistory = async (serviceId: string, taskId: string) => {
+    setDownloadingWorkHistory((prev) => ({ ...prev, [taskId]: true }))
+    try {
+      const res = await axios.get(`${api}/api/v1/enrollment/me/${serviceId}/tasks/${taskId}/work-history.pdf`, {
+        headers,
+        responseType: 'blob',
+      })
+      const url = URL.createObjectURL(res.data as Blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'work-history.pdf'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    } catch {
+      showToast('Could not generate work history PDF')
+    } finally {
+      setDownloadingWorkHistory((prev) => ({ ...prev, [taskId]: false }))
     }
   }
 
@@ -983,7 +1008,7 @@ export default function EnrollmentStatusPage() {
                           </div>
 
                           {!bioResult[task.id] ? (
-                            /* Input mode */
+                            /* Input mode — no result yet */
                             <>
                               <p className="text-xs text-gray-500">
                                 Type or paste your work history below — dates, employers, job titles, and what you did.
@@ -1004,8 +1029,70 @@ export default function EnrollmentStatusPage() {
                                 {bioBuilding[task.id] ? 'Generating…' : 'Generate Work History with AI'}
                               </button>
                             </>
+                          ) : bioEditing[task.id] ? (
+                            /* Edit mode — show existing table for reference + textarea to revise */
+                            <>
+                              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Current Result (for reference)</p>
+                              <div className="overflow-x-auto rounded border border-gray-200 opacity-60">
+                                <table className="w-full text-xs">
+                                  <thead className="bg-gray-50">
+                                    <tr>
+                                      {['Start', 'End', 'Employer', 'Address', 'Title', 'Duties'].map((h) => (
+                                        <th key={h} className="px-2 py-1.5 text-left font-medium text-gray-600 whitespace-nowrap">{h}</th>
+                                      ))}
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-gray-100">
+                                    {bioResult[task.id].rows.map((row, i) => (
+                                      <tr key={i}>
+                                        <td className="px-2 py-1.5 whitespace-nowrap">{row.start_date}</td>
+                                        <td className="px-2 py-1.5 whitespace-nowrap">{row.end_date}</td>
+                                        <td className="px-2 py-1.5">{row.employer_name}</td>
+                                        <td className="px-2 py-1.5">{row.address}</td>
+                                        <td className="px-2 py-1.5">{row.job_title}</td>
+                                        <td className="px-2 py-1.5 text-gray-600">{row.duties}</td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                              {bioResult[task.id].gaps.length > 0 && (
+                                <div className="rounded border border-amber-200 bg-amber-50 px-3 py-2 opacity-60">
+                                  <p className="text-xs font-semibold text-amber-800 mb-1">Gap Log</p>
+                                  {bioResult[task.id].gaps.map((g, i) => (
+                                    <p key={i} className="text-xs text-amber-700">
+                                      <span className="font-medium">{g.start_date} – {g.end_date}</span>
+                                      {g.duration_days ? ` (${g.duration_days} days)` : ''}: {g.explanation}
+                                    </p>
+                                  ))}
+                                </div>
+                              )}
+                              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide pt-1">Update Your Notes</p>
+                              <p className="text-xs text-gray-500">Edit the notes below and click Regenerate — the table above will be replaced with the new result.</p>
+                              <textarea
+                                rows={8}
+                                value={bioInput[task.id] ?? ''}
+                                onChange={(e) => setBioInput((prev) => ({ ...prev, [task.id]: e.target.value }))}
+                                className="w-full rounded border border-gray-200 p-2 text-xs font-mono leading-relaxed focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              />
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => handleBioBuild(activeDetail.service.id, task.id)}
+                                  disabled={bioBuilding[task.id] || !bioInput[task.id]?.trim()}
+                                  className="rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                                >
+                                  {bioBuilding[task.id] ? 'Regenerating…' : 'Regenerate Work History'}
+                                </button>
+                                <button
+                                  onClick={() => setBioEditing((prev) => { const n = { ...prev }; delete n[task.id]; return n })}
+                                  className="rounded border border-gray-200 px-3 py-1 text-xs text-gray-600 hover:bg-gray-50"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            </>
                           ) : (
-                            /* Result mode */
+                            /* Result mode — view table, download PDF, or edit */
                             <>
                               <div className="overflow-x-auto rounded border border-gray-200">
                                 <table className="w-full text-xs">
@@ -1045,9 +1132,23 @@ export default function EnrollmentStatusPage() {
                                 </div>
                               )}
 
-                              <div className="flex items-center gap-3">
+                              <div className="flex flex-wrap items-center gap-2">
                                 <button
-                                  onClick={() => setBioResult((prev) => { const n = { ...prev }; delete n[task.id]; return n })}
+                                  onClick={() => handleDownloadWorkHistory(activeDetail.service.id, task.id)}
+                                  disabled={downloadingWorkHistory[task.id]}
+                                  className="inline-flex items-center gap-1.5 rounded bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700 disabled:opacity-50"
+                                >
+                                  {downloadingWorkHistory[task.id] ? (
+                                    <>
+                                      <span className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                                      Generating…
+                                    </>
+                                  ) : (
+                                    'Download PDF'
+                                  )}
+                                </button>
+                                <button
+                                  onClick={() => setBioEditing((prev) => ({ ...prev, [task.id]: true }))}
                                   className="rounded border border-gray-200 px-3 py-1 text-xs text-gray-600 hover:bg-gray-50"
                                 >
                                   Edit / Regenerate

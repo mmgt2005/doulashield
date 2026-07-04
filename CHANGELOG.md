@@ -12,6 +12,14 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.63.15] — 2026-07-04
+
+### Added
+- **Work history PDF download**: After the AI generates a 5-year work history table on the enrollment status page, a green "Download PDF" button appears. The backend generates a formatted PDF (via reportlab) containing the employment table and gap log, downloaded as `work-history.pdf`.
+- **Edit mode shows current result**: Clicking "Edit / Regenerate" on the work history builder no longer clears the table. Instead it switches to a split view — the existing structured table is shown dimmed above for reference, with the editable brain-dump textarea below. Clicking "Regenerate" replaces the table; clicking "Cancel" returns to view mode without losing the current result.
+
+---
+
 ## [1.63.14] — 2026-07-04
 
 ### Added
