@@ -101,6 +101,7 @@ interface EnrollmentTask {
   notes: string | null
   sort_order: number
   completed_at: string | null
+  task_data: Record<string, unknown> | null
 }
 
 interface EnrollmentServiceDetail {
