@@ -12,12 +12,13 @@ This guide covers everything admins can do that providers cannot. For day-to-day
 2. [Leads (CRM)](#leads-crm)
 3. [Managing Provider Accounts](#managing-provider-accounts)
    - [Onboarding New Providers (Demo Mode)](#onboarding-new-providers-demo-mode)
-4. [PCB Enrollment Services](#pcb-enrollment-services)
-5. [Billing & Escrow](#billing--escrow)
-6. [Billing Providers (Group NPIs)](#billing-providers-group-npis)
-7. [Admin-Only Settings](#admin-only-settings)
-8. [Audit Logs](#audit-logs)
-9. [Reference: Audit Action Types](#reference-audit-action-types)
+4. [Executive Dashboard](#executive-dashboard)
+5. [PCB Enrollment Services](#pcb-enrollment-services)
+6. [Billing & Escrow](#billing--escrow)
+7. [Billing Providers (Group NPIs)](#billing-providers-group-npis)
+8. [Admin-Only Settings](#admin-only-settings)
+9. [Audit Logs](#audit-logs)
+10. [Reference: Audit Action Types](#reference-audit-action-types)
 
 ---
 
@@ -262,6 +263,70 @@ You can also open the guide yourself at any time by clicking **Walkthrough Guide
 The provider enters this data into the real UI themselves — walking through the entry process is part of the training.
 
 The same guide is available to the provider directly: a green **Walkthrough Guide** link appears in their sidebar under the Help section while demo mode is on. They can open it at any time without needing to contact you.
+
+---
+
+## Executive Dashboard
+
+The Executive Dashboard is visible only to admin accounts with **Executive Access** enabled. It provides platform-wide analytics for founders and executive staff — not scoped to any single provider or agency.
+
+### Granting Executive Access
+
+Go to **Admin → Users**, find an admin-role account, and click **Grant Executive** in its actions row. The button appears only on `admin`-role accounts (not on providers or billing admins). The user will immediately see two new sidebar links: **Executive Dashboard** and **MCO Partnership Report**. Their role badge will read "Admin · Executive". Click **Revoke Executive** to remove access.
+
+### Executive Dashboard — `/admin/executive`
+
+The dashboard has five sections. A date-range preset bar at the top (Today / This Week / This Month / This Year / All Time) filters the claims, visits, and leads sections. SaaS KPIs and cohort data are always all-time.
+
+**Platform Health**
+
+Tiles showing: total active providers, active subscriptions, estimated MRR (individual subscriptions at $39 + agency subscriptions based on provider headcount at $55/seat), new providers this month, providers active in the last 30 and 90 days, and subscription churn count.
+
+Below the tiles: three First-Claim Latency tiles (avg days from account creation to first submitted claim, median days, and count of active providers who have never submitted a claim) — a high "never billed" count indicates onboarding friction worth addressing.
+
+A **Provider Cohort Retention** table shows the last 12 monthly signup cohorts — how many providers from each month are still actively logging in (within 30 days). A declining retention percentage across cohorts is the early churn signal to watch.
+
+**Lead Funnel**
+
+Counts by lead source, pipeline stage distribution, lead-to-conversion rate, average days from lead creation to conversion, and provider type split. Use this to evaluate which referral channels produce the best-converting leads.
+
+**Claims & Revenue**
+
+Platform-wide totals: total billed, total collected, overall collection rate, overdue claims (service date > 180 days with no submission), and average revenue per active provider.
+
+**Revenue by Visit Type** table breaks down each procedure code (T1033 Labor, T1032 U7 Prenatal, T1032 U8 Postnatal, T1032 U9 Crisis/Bereavement) with the hardcoded rate, total platform claims, total billed and paid, and collection rate. Use this to identify which visit types have collection problems.
+
+**Claim Aging** table shows unpaid claims bucketed by age: 0–30, 31–60, 61–90, 91–120, 121–180, and 180+ days. Claims in the 121–180 bucket are highlighted amber; 180+ are red. High concentrations in the 91–180 range by MCO indicate slow-paying payers worth addressing in contract negotiations.
+
+**Enrollment Pipeline**
+
+Enrollment tier penetration (agencies with tier enabled vs. all active agencies), service counts by stage, and a **Stage Completion Time** table showing avg and median days to complete each enrollment stage. The slowest stage is the credentialing bottleneck to focus operational improvements on.
+
+**Compliance Health**
+
+MA91 consent compliance rate across all visits, overdue and urgent claims counts (highlighted red/amber when non-zero), and platform-wide resubmitted claims count.
+
+### MCO Partnership Report — `/admin/executive/mco-report`
+
+The MCO report aggregates platform-wide claims data by payer — the core data for MCO contract negotiations.
+
+**MCO Negotiation Data** table columns:
+
+| Column | What it tells you |
+|---|---|
+| Covered Patients | Members of this MCO served by DoulaShield providers — the "covered lives" number MCO Medical Directors ask for |
+| Providers | Count of DoulaShield providers serving this MCO's members |
+| Claims / Total Billed / Total Paid | Raw volume and dollar footprint |
+| Collection % | Green if ≥80%, amber if ≥60%, red below that — a high rate is a quality-of-billing story |
+| Denial % | Red if >20% — leverage for renegotiation (MCO processing problems, not provider billing quality) |
+| Resubmitted / Resub % | Measure of billing team follow-through on denied claims |
+| Avg Days to Pay | Amber if >45 days — evidence for requesting faster payment terms |
+
+**Service Delivery Profile** shows in-person vs. telehealth split with percentages — useful for MCOs designing program benefit structures.
+
+**Referring Physicians** table lists the top 50 NPIs referring patients to DoulaShield providers, sorted by patient count, with the count of doulas serving those patients. Use this as a warm-intro story when approaching a health system: "Physicians on your medical staff are already informally referring patients to our doulas."
+
+**Export CSV** downloads a spreadsheet of the MCO negotiation table for use in partner presentations.
 
 ---
 
