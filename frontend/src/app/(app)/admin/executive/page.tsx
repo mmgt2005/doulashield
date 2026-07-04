@@ -186,11 +186,24 @@ export default function ExecutiveDashboard() {
       {/* Print styles — hide dashboard tiles and layout chrome when printing */}
       <style>{`
         @media print {
+          /* Break the app shell's h-screen / overflow-hidden cage so the full
+             report content renders across as many pages as needed. */
+          html, body { height: auto !important; overflow: visible !important; }
+          .h-screen { height: auto !important; }
+          .overflow-hidden { overflow: visible !important; }
+          .overflow-auto { overflow: visible !important; height: auto !important; }
+          .flex-1 { flex: none !important; }
+
+          /* Hide layout chrome */
           nav, aside, header, [data-sidebar], .sidebar { display: none !important; }
           #executive-dashboard-content { display: none !important; }
           #executive-report-section { border: none !important; padding: 0 !important; }
           #executive-report-section .no-print { display: none !important; }
           body { font-size: 11pt; }
+
+          /* Ensure prose content breaks across pages cleanly */
+          .prose h2 { page-break-after: avoid; break-after: avoid; }
+          .prose p, .prose li { orphans: 3; widows: 3; }
         }
       `}</style>
 

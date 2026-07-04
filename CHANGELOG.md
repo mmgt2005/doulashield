@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.65.2] — 2026-07-04
+
+### Fixed
+- **Strategic Report print/PDF truncation**: The app shell's `h-screen overflow-hidden` layout containers caused `window.print()` to clip the report at viewport height instead of rendering the full document. Added `@media print` overrides to reset `height`, `overflow`, and `flex` on those containers so all report pages print correctly.
+
+---
+
 ## [1.65.1] — 2026-07-04
 
 ### Fixed
