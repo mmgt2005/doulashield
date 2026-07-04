@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.65.3] — 2026-07-04
+
+### Fixed
+- **Strategic Report print text cut-off**: Removing `flex: 1` from the column container stripped its width, letting content overflow beyond the paper margin. Reverted to only clearing `overflow` (not flex), added `overflow-wrap: break-word` and `word-break: break-word` on the prose container, set `table-layout: fixed` on tables, and added an `@page` rule for consistent letter-size margins.
+
+---
+
 ## [1.65.2] — 2026-07-04
 
 ### Fixed

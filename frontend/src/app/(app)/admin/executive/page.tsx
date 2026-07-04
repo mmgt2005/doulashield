@@ -185,23 +185,34 @@ export default function ExecutiveDashboard() {
     <div className="mx-auto max-w-6xl space-y-8 p-6">
       {/* Print styles — hide dashboard tiles and layout chrome when printing */}
       <style>{`
+        @page { margin: 1.5cm 2cm; size: letter portrait; }
+
         @media print {
-          /* Break the app shell's h-screen / overflow-hidden cage so the full
-             report content renders across as many pages as needed. */
-          html, body { height: auto !important; overflow: visible !important; }
+          /* Break the app shell's h-screen / overflow-hidden cage */
+          html, body { height: auto !important; overflow: visible !important; width: 100% !important; }
           .h-screen { height: auto !important; }
+          /* Don't remove flex-1 — that strips the column's width; just unblock overflow */
           .overflow-hidden { overflow: visible !important; }
-          .overflow-auto { overflow: visible !important; height: auto !important; }
-          .flex-1 { flex: none !important; }
+          .overflow-auto  { overflow: visible !important; height: auto !important; }
 
           /* Hide layout chrome */
           nav, aside, header, [data-sidebar], .sidebar { display: none !important; }
           #executive-dashboard-content { display: none !important; }
-          #executive-report-section { border: none !important; padding: 0 !important; }
+          #executive-report-section { border: none !important; padding: 0 !important; max-width: 100% !important; }
           #executive-report-section .no-print { display: none !important; }
           body { font-size: 11pt; }
 
-          /* Ensure prose content breaks across pages cleanly */
+          /* Constrain prose to page width and force text wrapping */
+          .prose {
+            max-width: 100% !important;
+            width: 100% !important;
+            overflow-wrap: break-word !important;
+            word-break: break-word !important;
+          }
+          .prose table { width: 100% !important; table-layout: fixed !important; }
+          .prose td, .prose th { word-break: break-word !important; }
+
+          /* Page-break hygiene */
           .prose h2 { page-break-after: avoid; break-after: avoid; }
           .prose p, .prose li { orphans: 3; widows: 3; }
         }
