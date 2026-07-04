@@ -486,6 +486,255 @@ def _build_work_history_pdf(rows: list, gaps: list, provider_name: str) -> bytes
     return buf.getvalue()
 
 
+class _ResumeRequest(BaseModel):
+    name: str = ""
+    certs: str = ""
+    history: str = ""
+    philosophy: str = ""
+
+
+@router.post("/{service_id}/tasks/{task_id}/resume-build")
+async def resume_build(
+    service_id: uuid.UUID,
+    task_id: uuid.UUID,
+    body: _ResumeRequest,
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> dict:
+    """Call Claude to generate a structured MCO-compliant CV from provider inputs."""
+    if not any([body.name.strip(), body.certs.strip(), body.history.strip(), body.philosophy.strip()]):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="At least one field is required")
+
+    service_result = await db.execute(
+        select(EnrollmentService).where(EnrollmentService.id == service_id)
+    )
+    service = service_result.scalar_one_or_none()
+    if not service or service.provider_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+
+    task_result = await db.execute(
+        select(EnrollmentTask).where(
+            EnrollmentTask.id == task_id,
+            EnrollmentTask.service_id == service_id,
+        )
+    )
+    task = task_result.scalar_one_or_none()
+    if not task:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
+    if task.task_key != "mco_resume_cv":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Resume build is only available for the Resume / CV task",
+        )
+
+    from app.services.resume_service import process_resume
+    try:
+        result = await process_resume(body.name, body.certs, body.history, body.philosophy)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+
+    existing = dict(task.task_data or {})
+    existing["resume_name"] = body.name
+    existing["resume_certs"] = body.certs
+    existing["resume_history"] = body.history
+    existing["resume_philosophy"] = body.philosophy
+    existing["resume_sections"] = result
+    task.task_data = existing
+
+    if task.status == "not_started":
+        task.status = "in_progress"
+
+    await db.commit()
+    return {"ok": True, "sections": result}
+
+
+@router.get("/{service_id}/tasks/{task_id}/resume.pdf")
+async def download_resume_pdf(
+    service_id: uuid.UUID,
+    task_id: uuid.UUID,
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> Response:
+    service_result = await db.execute(
+        select(EnrollmentService).where(EnrollmentService.id == service_id)
+    )
+    service = service_result.scalar_one_or_none()
+    if not service or service.provider_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+
+    task_result = await db.execute(
+        select(EnrollmentTask).where(
+            EnrollmentTask.id == task_id,
+            EnrollmentTask.service_id == service_id,
+        )
+    )
+    task = task_result.scalar_one_or_none()
+    if not task or task.task_key != "mco_resume_cv":
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Resume task not found")
+
+    td = dict(task.task_data or {})
+    sections = td.get("resume_sections")
+    if not sections:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="No resume has been generated yet. Use the AI builder first.",
+        )
+
+    pdf_bytes = _build_resume_pdf(sections)
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": "attachment; filename=\"resume-cv.pdf\""},
+    )
+
+
+def _build_resume_pdf(sections: dict) -> bytes:
+    from reportlab.lib import colors
+    from reportlab.lib.pagesizes import letter
+    from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+    from reportlab.lib.units import inch
+    from reportlab.platypus import HRFlowable, ListFlowable, ListItem, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+    from datetime import date
+
+    buf = BytesIO()
+    doc = SimpleDocTemplate(
+        buf, pagesize=letter,
+        leftMargin=0.85 * inch, rightMargin=0.85 * inch,
+        topMargin=0.85 * inch, bottomMargin=0.85 * inch,
+    )
+
+    styles = getSampleStyleSheet()
+    name_s = ParagraphStyle("R_Name", parent=styles["Heading1"], fontSize=18, spaceAfter=2, leading=22)
+    cred_s = ParagraphStyle("R_Cred", parent=styles["Normal"], fontSize=9, textColor=colors.HexColor("#4B5563"), spaceAfter=12)
+    section_s = ParagraphStyle("R_Sec", parent=styles["Heading2"], fontSize=11, spaceBefore=12, spaceAfter=4, textColor=colors.HexColor("#1D4ED8"), borderPad=0)
+    body_s = ParagraphStyle("R_Body", parent=styles["Normal"], fontSize=9, leading=13, spaceAfter=6)
+    cell_s = ParagraphStyle("R_Cell", parent=styles["Normal"], fontSize=8, leading=10)
+    bullet_s = ParagraphStyle("R_Bull", parent=styles["Normal"], fontSize=9, leading=12)
+    note_s = ParagraphStyle("R_Note", parent=styles["Normal"], fontSize=7.5, textColor=colors.HexColor("#9CA3AF"), spaceBefore=8)
+
+    hr = HRFlowable(width="100%", thickness=0.5, color=colors.HexColor("#DBEAFE"), spaceAfter=4)
+
+    story: list = []
+
+    # Header
+    creds = sections.get("credentials_line", "")
+    parts = creds.split("|", 1)
+    name_part = parts[0].strip()
+    rest_part = parts[1].strip() if len(parts) > 1 else ""
+
+    story.append(Paragraph(name_part, name_s))
+    if rest_part:
+        story.append(Paragraph(rest_part, cred_s))
+    story.append(Paragraph(
+        f"CV generated by DoulaShield on {date.today().strftime('%B %d, %Y')} · PA Medicaid PROMISe™ &amp; MCO Credentialing",
+        note_s,
+    ))
+    story.append(Spacer(1, 0.1 * inch))
+    story.append(hr)
+
+    # Professional summary
+    summary = sections.get("professional_summary", "")
+    if summary:
+        story.append(Paragraph("Professional Summary", section_s))
+        story.append(hr)
+        story.append(Paragraph(summary, body_s))
+
+    # Certifications
+    certs = sections.get("certifications", [])
+    if certs:
+        story.append(Paragraph("Certifications &amp; Credentials", section_s))
+        story.append(hr)
+        cert_rows = [["Certification", "Issuing Organization", "Date", "Expires"]]
+        for c in certs:
+            cert_rows.append([
+                Paragraph(str(c.get("name", "")), cell_s),
+                Paragraph(str(c.get("issuer", "")), cell_s),
+                Paragraph(str(c.get("date", "")), cell_s),
+                Paragraph(str(c.get("expires") or "—"), cell_s),
+            ])
+        cert_tbl = Table(cert_rows, colWidths=[2.2 * inch, 2.0 * inch, 1.0 * inch, 1.0 * inch], repeatRows=1)
+        cert_tbl.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#EFF6FF")),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.HexColor("#1E40AF")),
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("FONTSIZE", (0, 0), (-1, 0), 8),
+            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#F9FAFB")]),
+            ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#E5E7EB")),
+            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ("TOPPADDING", (0, 0), (-1, -1), 4),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+            ("LEFTPADDING", (0, 0), (-1, -1), 5),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 5),
+        ]))
+        story.append(cert_tbl)
+
+    # Experience
+    experience = sections.get("experience", [])
+    if experience:
+        story.append(Paragraph("Professional Experience", section_s))
+        story.append(hr)
+        exp_rows = [["Start", "End", "Employer", "Location", "Title", "Duties"]]
+        for e in experience:
+            exp_rows.append([
+                Paragraph(str(e.get("start_date", "")), cell_s),
+                Paragraph(str(e.get("end_date", "")), cell_s),
+                Paragraph(str(e.get("employer", "")), cell_s),
+                Paragraph(str(e.get("location", "")), cell_s),
+                Paragraph(str(e.get("title", "")), cell_s),
+                Paragraph(str(e.get("duties", "")), cell_s),
+            ])
+        exp_tbl = Table(exp_rows, colWidths=[0.6 * inch, 0.6 * inch, 1.3 * inch, 1.0 * inch, 1.1 * inch, 2.2 * inch], repeatRows=1)
+        exp_tbl.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#EFF6FF")),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.HexColor("#1E40AF")),
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("FONTSIZE", (0, 0), (-1, 0), 7.5),
+            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#F9FAFB")]),
+            ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#E5E7EB")),
+            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ("TOPPADDING", (0, 0), (-1, -1), 4),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+            ("LEFTPADDING", (0, 0), (-1, -1), 4),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+        ]))
+        story.append(exp_tbl)
+
+    # Education
+    education = sections.get("education", [])
+    if education:
+        story.append(Paragraph("Education &amp; Training", section_s))
+        story.append(hr)
+        for ed in education:
+            hours = f" ({ed.get('hours')} hrs)" if ed.get("hours") else ""
+            line = f"<b>{ed.get('program', '')}</b> — {ed.get('institution', '')} · {ed.get('year', '')}{hours}"
+            story.append(Paragraph(line, body_s))
+
+    # Skills
+    skills = sections.get("skills", [])
+    if skills:
+        story.append(Paragraph("Core Competencies", section_s))
+        story.append(hr)
+        items = [ListItem(Paragraph(s, bullet_s), leftIndent=12, bulletColor=colors.HexColor("#3B82F6")) for s in skills]
+        story.append(ListFlowable(items, bulletType="bullet", bulletFontSize=6, leftIndent=0, spaceBefore=0))
+
+    # Philosophy
+    philosophy = sections.get("philosophy", "")
+    if philosophy:
+        story.append(Paragraph("Philosophy of Care", section_s))
+        story.append(hr)
+        story.append(Paragraph(philosophy, body_s))
+
+    story.append(Spacer(1, 0.2 * inch))
+    story.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor("#E5E7EB"), spaceAfter=4))
+    story.append(Paragraph(
+        "Generated by DoulaShield. Review all information for accuracy before submitting to MCOs or PROMISe™.",
+        note_s,
+    ))
+
+    doc.build(story)
+    return buf.getvalue()
+
+
 @router.get("/sensitive-profile")
 async def get_sensitive_profile(
     current_user: Annotated[CurrentUser, Depends(get_current_user)],

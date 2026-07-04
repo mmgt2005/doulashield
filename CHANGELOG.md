@@ -12,6 +12,18 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.63.19] — 2026-07-04
+
+### Changed
+- **Resume/CV Generator now generates inline (no copy-paste)**: The `mco_resume_cv` task on the enrollment status page now calls the DoulaShield backend AI directly — providers fill in their name/credentials, certifications, work history notes, and care philosophy, then click "Generate Resume with AI." The result appears immediately as a structured card with a credentials header, professional summary, certifications table, experience table, education list, core competency pills, and philosophy of care statement. A "Download PDF" button produces a properly formatted resume PDF via reportlab. "Edit / Regenerate" re-shows the input fields with the current values pre-filled. Results persist across page reloads from `task_data`.
+
+### Added
+- `backend/app/services/resume_service.py`: Claude-powered resume generator that accepts name, certifications, history notes, and philosophy and returns structured JSON sections (credentials line, summary, certifications, experience, education, skills, philosophy).
+- `POST /enrollment/me/{service_id}/tasks/{task_id}/resume-build`: Generates and stores the resume sections in `task_data.resume_sections`.
+- `GET /enrollment/me/{service_id}/tasks/{task_id}/resume.pdf`: Streams a formatted PDF resume built with reportlab.
+
+---
+
 ## [1.63.18] — 2026-07-04
 
 ### Changed

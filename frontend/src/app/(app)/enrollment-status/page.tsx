@@ -241,6 +241,39 @@ interface GapEntry {
   explanation: string
 }
 
+interface ResumeCert {
+  name: string
+  issuer: string
+  date: string
+  expires: string | null
+}
+
+interface ResumeExp {
+  start_date: string
+  end_date: string
+  employer: string
+  location: string
+  title: string
+  duties: string
+}
+
+interface ResumeEd {
+  program: string
+  institution: string
+  year: string
+  hours: string | null
+}
+
+interface ResumeSections {
+  credentials_line: string
+  professional_summary: string
+  certifications: ResumeCert[]
+  experience: ResumeExp[]
+  education: ResumeEd[]
+  skills: string[]
+  philosophy: string
+}
+
 const GENDER_OPTIONS = ['Female', 'Male', 'Non-binary / Gender non-conforming', 'Transgender female', 'Transgender male', 'Prefer not to say', 'Not listed']
 const RACE_OPTIONS = ['American Indian or Alaska Native', 'Asian', 'Black or African American', 'Hispanic or Latino', 'Native Hawaiian or Other Pacific Islander', 'White', 'Two or more races', 'Prefer not to say']
 const DOULA_TYPE_OPTIONS = ['Birth Doula', 'Postpartum Doula', 'Perinatal Doula', 'Other']
@@ -276,7 +309,10 @@ export default function EnrollmentStatusPage() {
   const [resumeFields, setResumeFields] = useState<Record<string, { name: string; certs: string; history: string; philosophy: string }>>({})
   const [showResumeChecklist, setShowResumeChecklist] = useState<Record<string, boolean>>({})
   const [resumeChecked, setResumeChecked] = useState<Record<string, Record<string, boolean>>>({})
-  const [resumeCopied, setResumeCopied] = useState<Record<string, boolean>>({})
+  const [resumeBuilding, setResumeBuilding] = useState<Record<string, boolean>>({})
+  const [resumeEditing, setResumeEditing] = useState<Record<string, boolean>>({})
+  const [resumeResult, setResumeResult] = useState<Record<string, ResumeSections>>({})
+  const [downloadingResume, setDownloadingResume] = useState<Record<string, boolean>>({})
 
   const headers = { Authorization: `Bearer ${getAccessToken()}` }
   const api = process.env.NEXT_PUBLIC_API_URL
@@ -314,25 +350,48 @@ export default function EnrollmentStatusPage() {
     }
   }, [services, activeStage])
 
-  // Pre-populate bio builder result from saved task_data when services load
+  // Pre-populate bio builder and resume builder from saved task_data when services load
   useEffect(() => {
     const mcoDetail = services.find((d) => d.service.stage === 'mco_contracting')
     if (!mcoDetail) return
+
+    // Work history bio-builder
     const whTask = mcoDetail.tasks.find((t) => t.task_key === 'mco_work_history')
-    if (!whTask?.task_data) return
-    const td = whTask.task_data as Record<string, unknown>
-    const rows = td.work_history_rows
-    const gaps = td.gap_log
-    const brainDump = td.brain_dump
-    if (Array.isArray(rows) && rows.length > 0) {
-      setBioResult((prev) => ({
-        ...prev,
-        [whTask.id]: { rows: rows as WorkHistoryRow[], gaps: Array.isArray(gaps) ? (gaps as GapEntry[]) : [] },
-      }))
+    if (whTask?.task_data) {
+      const td = whTask.task_data as Record<string, unknown>
+      const rows = td.work_history_rows
+      const gaps = td.gap_log
+      const brainDump = td.brain_dump
+      if (Array.isArray(rows) && rows.length > 0) {
+        setBioResult((prev) => ({
+          ...prev,
+          [whTask.id]: { rows: rows as WorkHistoryRow[], gaps: Array.isArray(gaps) ? (gaps as GapEntry[]) : [] },
+        }))
+      }
+      if (typeof brainDump === 'string' && brainDump) {
+        // Only initialise from saved data — never overwrite text the user has already typed
+        setBioInput((prev) => ({ ...prev, [whTask.id]: prev[whTask.id] || brainDump }))
+      }
     }
-    if (typeof brainDump === 'string' && brainDump) {
-      // Only initialise from saved data — never overwrite text the user has already typed
-      setBioInput((prev) => ({ ...prev, [whTask.id]: prev[whTask.id] || brainDump }))
+
+    // Resume / CV builder
+    const cvTask = mcoDetail.tasks.find((t) => t.task_key === 'mco_resume_cv')
+    if (cvTask?.task_data) {
+      const td = cvTask.task_data as Record<string, unknown>
+      const sections = td.resume_sections as ResumeSections | undefined
+      if (sections?.credentials_line) {
+        setResumeResult((prev) => ({ ...prev, [cvTask.id]: sections }))
+      }
+      // Restore input fields so provider can edit without re-entering
+      setResumeFields((prev) => ({
+        ...prev,
+        [cvTask.id]: {
+          name: prev[cvTask.id]?.name || (typeof td.resume_name === 'string' ? td.resume_name : ''),
+          certs: prev[cvTask.id]?.certs || (typeof td.resume_certs === 'string' ? td.resume_certs : ''),
+          history: prev[cvTask.id]?.history || (typeof td.resume_history === 'string' ? td.resume_history : ''),
+          philosophy: prev[cvTask.id]?.philosophy || (typeof td.resume_philosophy === 'string' ? td.resume_philosophy : ''),
+        },
+      }))
     }
   }, [services])
 
@@ -545,13 +604,69 @@ INSTRUCTIONS FOR GENERATION:
 Please output the completed, formatted resume inside a single, pristine Markdown document block that I can easily export.`
   }
 
-  const handleCopyResumePrompt = async (taskId: string) => {
+  const handleResumeBuild = async (serviceId: string, taskId: string) => {
+    const f = getResumeFields(taskId)
+    if (!f.name.trim() && !f.certs.trim() && !f.history.trim() && !f.philosophy.trim()) {
+      showToast('Fill in at least one field before generating.')
+      return
+    }
+    setResumeBuilding((prev) => ({ ...prev, [taskId]: true }))
+    setResumeEditing((prev) => ({ ...prev, [taskId]: false }))
     try {
-      await navigator.clipboard.writeText(buildResumePrompt(taskId))
-      setResumeCopied((prev) => ({ ...prev, [taskId]: true }))
-      setTimeout(() => setResumeCopied((prev) => ({ ...prev, [taskId]: false })), 3000)
+      const res = await axios.post(`${api}/api/v1/enrollment/me/${serviceId}/tasks/${taskId}/resume-build`, f, { headers })
+      const sections = res.data.sections as ResumeSections
+      setResumeResult((prev) => ({ ...prev, [taskId]: sections }))
+      setResumeFields((prev) => ({ ...prev, [taskId]: f }))
+      // Keep local task_data in sync so the [services] useEffect doesn't reset fields on next render
+      setServices((prev) =>
+        prev.map((d) => {
+          if (d.service.id !== serviceId) return d
+          return {
+            ...d,
+            tasks: d.tasks.map((t) => {
+              if (t.id !== taskId) return t
+              return {
+                ...t,
+                status: t.status === 'not_started' ? 'in_progress' : t.status,
+                task_data: {
+                  ...(t.task_data || {}),
+                  resume_name: f.name,
+                  resume_certs: f.certs,
+                  resume_history: f.history,
+                  resume_philosophy: f.philosophy,
+                  resume_sections: sections,
+                },
+              }
+            }),
+          }
+        })
+      )
     } catch {
-      showToast('Could not copy to clipboard — please select and copy manually.')
+      showToast('Resume generation failed — please try again.')
+    } finally {
+      setResumeBuilding((prev) => ({ ...prev, [taskId]: false }))
+    }
+  }
+
+  const handleDownloadResume = async (serviceId: string, taskId: string) => {
+    setDownloadingResume((prev) => ({ ...prev, [taskId]: true }))
+    try {
+      const res = await axios.get(`${api}/api/v1/enrollment/me/${serviceId}/tasks/${taskId}/resume.pdf`, {
+        headers,
+        responseType: 'blob',
+      })
+      const url = URL.createObjectURL(res.data as Blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'resume-cv.pdf'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    } catch {
+      showToast('Could not generate resume PDF')
+    } finally {
+      setDownloadingResume((prev) => ({ ...prev, [taskId]: false }))
     }
   }
 
@@ -1359,33 +1474,146 @@ Please output the completed, formatted resume inside a single, pristine Markdown
                             />
                           </div>
 
-                          {/* Generated AI prompt */}
-                          <div className="rounded-lg bg-gray-900 p-4 space-y-2">
-                            <div className="flex items-center justify-between">
-                              <p className="text-xs font-semibold text-gray-300 flex items-center gap-1.5">
-                                <span className="inline-block h-2 w-2 rounded-full bg-teal-400 animate-pulse" />
-                                Your AI Alchemist Prompt
-                              </p>
-                              <button
-                                onClick={() => handleCopyResumePrompt(task.id)}
-                                className={`inline-flex items-center gap-1.5 rounded px-3 py-1 text-xs font-semibold transition-all
-                                  ${resumeCopied[task.id]
-                                    ? 'bg-green-500 text-white'
-                                    : 'bg-teal-500 hover:bg-teal-400 text-gray-900'
-                                  }`}
-                              >
-                                {resumeCopied[task.id] ? '✓ Copied!' : 'Copy Prompt'}
-                              </button>
-                            </div>
-                            <div className="max-h-52 overflow-y-auto rounded bg-gray-950 p-3">
-                              <pre className="whitespace-pre-wrap font-mono text-[10px] text-teal-300 leading-relaxed">
-                                {buildResumePrompt(task.id)}
-                              </pre>
-                            </div>
-                            <p className="text-[10px] text-gray-400">
-                              Copy this prompt and paste it into Claude, ChatGPT, or Gemini to receive your formatted resume — then upload the finished document below.
-                            </p>
-                          </div>
+                          {/* Input / Edit mode → Generate button */}
+                          {(!resumeResult[task.id] || resumeEditing[task.id]) && (
+                            <button
+                              onClick={() => handleResumeBuild(activeDetail.service.id, task.id)}
+                              disabled={resumeBuilding[task.id]}
+                              className="rounded bg-indigo-600 px-4 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+                            >
+                              {resumeBuilding[task.id] ? 'Generating Resume…' : 'Generate Resume with AI'}
+                            </button>
+                          )}
+
+                          {/* Result view */}
+                          {resumeResult[task.id] && !resumeEditing[task.id] && (() => {
+                            const r = resumeResult[task.id]
+                            return (
+                              <div className="space-y-4">
+                                {/* Header card */}
+                                <div className="rounded border border-indigo-200 bg-indigo-50 p-3">
+                                  <p className="text-sm font-bold text-indigo-900">{r.credentials_line.split('|')[0].trim()}</p>
+                                  <p className="text-xs text-indigo-600 mt-0.5">{r.credentials_line.split('|').slice(1).join('|').trim()}</p>
+                                  {r.professional_summary && (
+                                    <p className="mt-2 text-xs text-indigo-800 leading-relaxed">{r.professional_summary}</p>
+                                  )}
+                                </div>
+
+                                {/* Certifications */}
+                                {r.certifications.length > 0 && (
+                                  <div>
+                                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Certifications</p>
+                                    <div className="overflow-x-auto rounded border border-gray-100">
+                                      <table className="w-full text-xs">
+                                        <thead className="bg-gray-50">
+                                          <tr>
+                                            {['Certification', 'Issuer', 'Date', 'Expires'].map(h => (
+                                              <th key={h} className="px-2 py-1.5 text-left font-medium text-gray-600">{h}</th>
+                                            ))}
+                                          </tr>
+                                        </thead>
+                                        <tbody>
+                                          {r.certifications.map((c, i) => (
+                                            <tr key={i} className="border-t border-gray-100">
+                                              <td className="px-2 py-1.5 font-medium">{c.name}</td>
+                                              <td className="px-2 py-1.5 text-gray-600">{c.issuer}</td>
+                                              <td className="px-2 py-1.5 whitespace-nowrap">{c.date}</td>
+                                              <td className="px-2 py-1.5 whitespace-nowrap">{c.expires ?? '—'}</td>
+                                            </tr>
+                                          ))}
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Experience */}
+                                {r.experience.length > 0 && (
+                                  <div>
+                                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Professional Experience</p>
+                                    <div className="overflow-x-auto rounded border border-gray-100">
+                                      <table className="w-full text-xs">
+                                        <thead className="bg-gray-50">
+                                          <tr>
+                                            {['Start', 'End', 'Employer', 'Location', 'Title', 'Duties'].map(h => (
+                                              <th key={h} className="px-2 py-1.5 text-left font-medium text-gray-600">{h}</th>
+                                            ))}
+                                          </tr>
+                                        </thead>
+                                        <tbody>
+                                          {r.experience.map((e, i) => (
+                                            <tr key={i} className="border-t border-gray-100">
+                                              <td className="px-2 py-1.5 whitespace-nowrap">{e.start_date}</td>
+                                              <td className="px-2 py-1.5 whitespace-nowrap">{e.end_date}</td>
+                                              <td className="px-2 py-1.5">{e.employer}</td>
+                                              <td className="px-2 py-1.5 whitespace-nowrap">{e.location}</td>
+                                              <td className="px-2 py-1.5">{e.title}</td>
+                                              <td className="px-2 py-1.5">{e.duties}</td>
+                                            </tr>
+                                          ))}
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Education */}
+                                {r.education.length > 0 && (
+                                  <div>
+                                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Education &amp; Training</p>
+                                    <ul className="space-y-0.5">
+                                      {r.education.map((ed, i) => (
+                                        <li key={i} className="text-xs text-gray-700">
+                                          <span className="font-medium">{ed.program}</span> — {ed.institution} · {ed.year}
+                                          {ed.hours && <span className="text-gray-400"> ({ed.hours} hrs)</span>}
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                )}
+
+                                {/* Skills */}
+                                {r.skills.length > 0 && (
+                                  <div>
+                                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Core Competencies</p>
+                                    <div className="flex flex-wrap gap-1.5">
+                                      {r.skills.map((s, i) => (
+                                        <span key={i} className="rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-medium text-indigo-700">{s}</span>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Philosophy */}
+                                {r.philosophy && (
+                                  <div>
+                                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Philosophy of Care</p>
+                                    <p className="text-xs text-gray-700 leading-relaxed italic">{r.philosophy}</p>
+                                  </div>
+                                )}
+
+                                {/* Action buttons */}
+                                <div className="flex items-center gap-2 pt-1">
+                                  <button
+                                    onClick={() => handleDownloadResume(activeDetail.service.id, task.id)}
+                                    disabled={downloadingResume[task.id]}
+                                    className="inline-flex items-center gap-1.5 rounded bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700 disabled:opacity-50"
+                                  >
+                                    {downloadingResume[task.id] ? 'Generating PDF…' : 'Download PDF'}
+                                  </button>
+                                  <button
+                                    onClick={() => setResumeEditing((prev) => ({ ...prev, [task.id]: true }))}
+                                    className="rounded border border-gray-200 px-3 py-1 text-xs text-gray-600 hover:bg-gray-50"
+                                  >
+                                    Edit / Regenerate
+                                  </button>
+                                </div>
+                                <p className="text-[10px] text-gray-400">
+                                  Review for accuracy, then download the PDF and upload it below.
+                                </p>
+                              </div>
+                            )
+                          })()}
                         </div>
                       )}
 
