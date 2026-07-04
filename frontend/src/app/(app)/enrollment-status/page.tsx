@@ -307,6 +307,7 @@ export default function EnrollmentStatusPage() {
   const [showGuide, setShowGuide] = useState(false)
   const [bioInput, setBioInput] = useState<Record<string, string>>({})
   const [bioBuilding, setBioBuilding] = useState<Record<string, boolean>>({})
+  const [bioSaving, setBioSaving] = useState<Record<string, boolean>>({})
   const [bioResult, setBioResult] = useState<Record<string, { rows: WorkHistoryRow[]; gaps: GapEntry[] }>>({})
   const [bioEditing, setBioEditing] = useState<Record<string, boolean>>({})
   const [downloadingWorkHistory, setDownloadingWorkHistory] = useState<Record<string, boolean>>({})
@@ -317,6 +318,7 @@ export default function EnrollmentStatusPage() {
   const [showResumeChecklist, setShowResumeChecklist] = useState<Record<string, boolean>>({})
   const [resumeChecked, setResumeChecked] = useState<Record<string, Record<string, boolean>>>({})
   const [resumeBuilding, setResumeBuilding] = useState<Record<string, boolean>>({})
+  const [resumeSaving, setResumeSaving] = useState<Record<string, boolean>>({})
   const [resumeEditing, setResumeEditing] = useState<Record<string, boolean>>({})
   const [resumeResult, setResumeResult] = useState<Record<string, ResumeSections>>({})
   const [downloadingResume, setDownloadingResume] = useState<Record<string, boolean>>({})
@@ -522,6 +524,46 @@ export default function EnrollmentStatusPage() {
       showToast('Could not generate pre-filled application')
     } finally {
       setDownloadingPrefill(false)
+    }
+  }
+
+  const handleSaveBioNotes = async (serviceId: string, taskId: string) => {
+    const text = bioInput[taskId] ?? ''
+    setBioSaving((prev) => ({ ...prev, [taskId]: true }))
+    try {
+      const existing = services
+        .find((d) => d.service.id === serviceId)
+        ?.tasks.find((t) => t.id === taskId)?.task_data as Record<string, unknown> | null
+      await axios.patch(
+        `${api}/api/v1/enrollment/me/${serviceId}/tasks/${taskId}/data`,
+        { task_data: { ...(existing || {}), brain_dump: text } },
+        { headers },
+      )
+      showToast('Notes saved.')
+    } catch {
+      showToast('Could not save notes — please try again.')
+    } finally {
+      setBioSaving((prev) => ({ ...prev, [taskId]: false }))
+    }
+  }
+
+  const handleSaveResumeFields = async (serviceId: string, taskId: string) => {
+    const f = getResumeFields(taskId)
+    setResumeSaving((prev) => ({ ...prev, [taskId]: true }))
+    try {
+      const existing = services
+        .find((d) => d.service.id === serviceId)
+        ?.tasks.find((t) => t.id === taskId)?.task_data as Record<string, unknown> | null
+      await axios.patch(
+        `${api}/api/v1/enrollment/me/${serviceId}/tasks/${taskId}/data`,
+        { task_data: { ...(existing || {}), resume_name: f.name, resume_certs: f.certs, resume_history: f.history, resume_philosophy: f.philosophy } },
+        { headers },
+      )
+      showToast('Draft saved.')
+    } catch {
+      showToast('Could not save draft — please try again.')
+    } finally {
+      setResumeSaving((prev) => ({ ...prev, [taskId]: false }))
     }
   }
 
@@ -1215,13 +1257,22 @@ Please output the completed, formatted resume inside a single, pristine Markdown
                                 placeholder="e.g. From Jan 2022 to Aug 2023 I worked at St. Luke's hospital doing shift doula work. Then I started my own practice 'Luna Birth Services' out of Pittsburgh. I didn't work at all in Fall 2023 because I was taking care of my sick mom..."
                                 className="w-full rounded border border-gray-200 p-2 text-xs font-mono leading-relaxed focus:outline-none focus:ring-1 focus:ring-blue-500"
                               />
-                              <button
-                                onClick={() => handleBioBuild(activeDetail.service.id, task.id)}
-                                disabled={bioBuilding[task.id] || !bioInput[task.id]?.trim()}
-                                className="rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-                              >
-                                {bioBuilding[task.id] ? 'Generating…' : 'Generate Work History with AI'}
-                              </button>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => handleSaveBioNotes(activeDetail.service.id, task.id)}
+                                  disabled={bioSaving[task.id] || bioBuilding[task.id]}
+                                  className="rounded border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+                                >
+                                  {bioSaving[task.id] ? 'Saving…' : 'Save Notes'}
+                                </button>
+                                <button
+                                  onClick={() => handleBioBuild(activeDetail.service.id, task.id)}
+                                  disabled={bioBuilding[task.id] || !bioInput[task.id]?.trim()}
+                                  className="rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                                >
+                                  {bioBuilding[task.id] ? 'Generating…' : 'Generate Work History with AI'}
+                                </button>
+                              </div>
                             </>
                           ) : bioEditing[task.id] ? (
                             /* Edit mode — show existing table for reference + textarea to revise */
@@ -1270,6 +1321,13 @@ Please output the completed, formatted resume inside a single, pristine Markdown
                                 className="w-full rounded border border-gray-200 p-2 text-xs font-mono leading-relaxed focus:outline-none focus:ring-1 focus:ring-blue-500"
                               />
                               <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => handleSaveBioNotes(activeDetail.service.id, task.id)}
+                                  disabled={bioSaving[task.id] || bioBuilding[task.id]}
+                                  className="rounded border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+                                >
+                                  {bioSaving[task.id] ? 'Saving…' : 'Save Notes'}
+                                </button>
                                 <button
                                   onClick={() => handleBioBuild(activeDetail.service.id, task.id)}
                                   disabled={bioBuilding[task.id] || !bioInput[task.id]?.trim()}
@@ -1481,15 +1539,24 @@ Please output the completed, formatted resume inside a single, pristine Markdown
                             />
                           </div>
 
-                          {/* Input / Edit mode → Generate button */}
+                          {/* Input / Edit mode → Save draft + Generate buttons */}
                           {(!resumeResult[task.id] || resumeEditing[task.id]) && (
-                            <button
-                              onClick={() => handleResumeBuild(activeDetail.service.id, task.id)}
-                              disabled={resumeBuilding[task.id]}
-                              className="rounded bg-indigo-600 px-4 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
-                            >
-                              {resumeBuilding[task.id] ? 'Generating Resume…' : 'Generate Resume with AI'}
-                            </button>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => handleSaveResumeFields(activeDetail.service.id, task.id)}
+                                disabled={resumeSaving[task.id] || resumeBuilding[task.id]}
+                                className="rounded border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+                              >
+                                {resumeSaving[task.id] ? 'Saving…' : 'Save Draft'}
+                              </button>
+                              <button
+                                onClick={() => handleResumeBuild(activeDetail.service.id, task.id)}
+                                disabled={resumeBuilding[task.id]}
+                                className="rounded bg-indigo-600 px-4 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+                              >
+                                {resumeBuilding[task.id] ? 'Generating Resume…' : 'Generate Resume with AI'}
+                              </button>
+                            </div>
                           )}
 
                           {/* Result view */}

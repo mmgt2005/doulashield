@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.63.23] — 2026-07-04
+
+### Added
+- **Save buttons on 5-Year Work History and Resume/CV tasks**: Providers can now save their in-progress notes without triggering AI generation. The 5-Year Work History section shows a "Save Notes" button beside the Generate/Regenerate button in both input mode and edit mode — it PATCHes the current textarea text to `task_data.brain_dump` so notes are preserved across sessions. The Resume/CV section shows a "Save Draft" button beside Generate/Regenerate — it saves the four input fields (name, certs, history, philosophy) to `task_data` without consuming an AI call. Both buttons show a "Saving…" state while the request is in flight.
+
+---
+
 ## [1.63.22] — 2026-07-04
 
 ### Fixed
