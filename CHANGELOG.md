@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.63.12] — 2026-07-04
+
+### Fixed
+- **Root cause of "Field required @ body.bp" on billing-admin enrollment POST**: `require_billing_enrollment_tier` in `dependencies.py` used `bp: Annotated["BillingProvider", Depends(...)]`. With `from __future__ import annotations` at the top of that file, all annotations become lazy strings. FastAPI resolves them via `typing.get_type_hints()`, but `BillingProvider` is only imported under `TYPE_CHECKING` (not available at runtime), so evaluation fails and FastAPI falls back to treating `bp` as a plain query parameter — producing the "Field required" 422. Fixed by removing the type annotation: `bp=Depends(get_managed_billing_provider)`. FastAPI resolves `Depends()` from the default value, bypassing annotation evaluation entirely.
+
+---
+
 ## [1.63.11] — 2026-07-04
 
 ### Changed

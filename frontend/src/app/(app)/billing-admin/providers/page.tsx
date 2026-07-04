@@ -579,7 +579,7 @@ export default function BillingAdminProvidersPage() {
         <div>
           <h1 className="text-xl font-bold text-gray-900">My Providers</h1>
           <p className="mt-0.5 text-sm text-gray-500">
-            Provider roster, enrollment progress, and credential expiry reminders. <span className="text-[10px] text-gray-300">v1.63.11</span>
+            Provider roster, enrollment progress, and credential expiry reminders. <span className="text-[10px] text-gray-300">v1.63.12</span>
           </p>
         </div>
         <button

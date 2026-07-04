@@ -103,7 +103,7 @@ async def get_managed_billing_provider(
 
 
 async def require_billing_enrollment_tier(
-    bp: Annotated["BillingProvider", Depends(get_managed_billing_provider)],
+    bp=Depends(get_managed_billing_provider),
 ) -> "BillingProvider":
     """Gate access to enrollment features; requires enrollment_tier_enabled on the agency."""
     if not bp.enrollment_tier_enabled:
