@@ -1,4 +1,5 @@
 """One-click demo data seed for the Executive Dashboard."""
+import math
 import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Annotated
@@ -7,8 +8,9 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.v1.enrollment import _NPPES_TASKS, _STAGE2_TASKS, _STAGE3_TASKS, _TASK_SEEDS
 from app.dependencies import CurrentUser, get_db, require_admin
-from app.models.enrollment import EnrollmentService
+from app.models.enrollment import EnrollmentService, EnrollmentTask
 from app.models.lead import Lead
 from app.models.user import User
 
@@ -19,6 +21,18 @@ _GHOST_EMAIL = "demo-ghost-provider@doulashield.internal"
 
 def _ago(days: int) -> datetime:
     return datetime.now(timezone.utc) - timedelta(days=days)
+
+
+def _task_seeds_for(stage: str, pathway: str | None) -> list[dict]:
+    if stage == "pcb":
+        return _TASK_SEEDS.get(pathway or "education_training", [])
+    if stage == "enrollment":
+        return _STAGE2_TASKS
+    if stage == "mco_contracting":
+        return _STAGE3_TASKS
+    if stage == "nppes_setup":
+        return _NPPES_TASKS
+    return []
 
 
 _DEMO_LEADS: list[dict] = [
@@ -89,7 +103,7 @@ async def seed_demo_data(
             created_at=_ago(ld["days_ago"]),
         ))
 
-    # 3. Wipe ALL existing demo enrollment services
+    # 3. Wipe ALL existing demo enrollment services (CASCADE removes their tasks)
     await db.execute(delete(EnrollmentService).where(EnrollmentService.is_demo == True))  # noqa: E712
 
     # 4. Find demo providers; if none exist, use/create a ghost demo provider
@@ -120,10 +134,10 @@ async def seed_demo_data(
             ghost_created = True
         demo_providers = [ghost]
 
-    # 5. Insert demo enrollment services (round-robin across demo providers)
+    # 5. Insert demo enrollment services + tasks (round-robin across demo providers)
     for i, svc in enumerate(_DEMO_SERVICES):
         provider = demo_providers[i % len(demo_providers)]
-        db.add(EnrollmentService(
+        service = EnrollmentService(
             provider_id=provider.id,
             stage=svc["stage"],
             pcb_pathway=svc["pathway"],
@@ -131,7 +145,27 @@ async def seed_demo_data(
             is_demo=True,
             created_at=_ago(svc["created"]),
             updated_at=_ago(svc["updated"]),
-        ))
+        )
+        db.add(service)
+        await db.flush()  # populate service.id before creating tasks
+
+        task_seeds = _task_seeds_for(svc["stage"], svc["pathway"])
+        is_complete = svc["status"] == "complete"
+        # For in_progress services, mark the first ~60% of tasks complete
+        complete_cutoff = len(task_seeds) if is_complete else math.ceil(len(task_seeds) * 0.6)
+
+        for j, seed in enumerate(task_seeds):
+            task_complete = j < complete_cutoff
+            db.add(EnrollmentTask(
+                service_id=service.id,
+                task_key=seed["task_key"],
+                required_pathway=seed["required_pathway"],
+                label=seed["label"],
+                description=seed["description"],
+                sort_order=seed["sort_order"],
+                status="complete" if task_complete else "not_started",
+                completed_at=_ago(svc["updated"]) if task_complete else None,
+            ))
 
     await db.commit()
 
