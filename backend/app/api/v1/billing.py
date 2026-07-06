@@ -1290,6 +1290,26 @@ async def submit_agency_claim(
 
     # Load agency
     bp = await _get_billing_provider(effective_bp_id, db)
+
+    # Demo bypass — simulate Availity submission for demo agencies
+    if bp.is_demo:
+        claim.availity_claim_id = f"DEMO-{uuid.uuid4().hex[:8].upper()}"
+        claim.status = "processing"
+        claim.submitted_at = datetime.now(timezone.utc)
+        claim.raw_response = {"demo": True, "message": "Demo mode — not submitted to Availity"}
+        await db.commit()
+        await db.refresh(claim)
+        await audit.log(
+            action="SUBMIT_AGENCY_CLAIM",
+            resource_type="claim",
+            resource_id=claim.id,
+            user_id=current_user.id,
+            ip_address=request.headers.get("X-Forwarded-For", request.client.host if request.client else ""),
+            user_agent=request.headers.get("User-Agent", ""),
+            extra_context={"billing_provider_id": str(bp.id), "provider_id": str(claim.provider_id), "demo": True},
+        )
+        return ClaimRead.model_validate(claim)
+
     if not bp.availity_client_id_encrypted or not bp.availity_client_secret_encrypted:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
