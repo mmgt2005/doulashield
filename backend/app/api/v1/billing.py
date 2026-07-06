@@ -1023,19 +1023,23 @@ async def list_billing_admin_claims(
     effective_bp_id = bp_id if (current_user.role == "admin" and bp_id) else managed_bp_id
     if not effective_bp_id:
         return []
+    bp_record = await db.get(BillingProvider, effective_bp_id)
+    is_demo_agency = bp_record.is_demo if bp_record else False
     providers_result = await db.execute(
         select(User.id).where(User.billing_provider_id == effective_bp_id)
     )
     provider_ids = [row.id for row in providers_result]
     if not provider_ids:
         return []
-    claims_result = await db.execute(
+    claim_query = (
         select(Claim)
         .join(Patient, Claim.patient_id == Patient.id)
         .where(Claim.provider_id.in_(provider_ids))
-        .where(Patient.is_demo == False)  # noqa: E712
         .order_by(Claim.created_at.desc())
     )
+    if not is_demo_agency:
+        claim_query = claim_query.where(Patient.is_demo == False)  # noqa: E712
+    claims_result = await db.execute(claim_query)
     return [ClaimRead.model_validate(c) for c in claims_result.scalars().all()]
 
 
@@ -1054,12 +1058,13 @@ async def list_billing_admin_providers(
     if not effective_bp_id:
         return []
 
-    users_result = await db.execute(
-        select(User).where(
-            User.billing_provider_id == effective_bp_id,
-            User.is_active.is_(True),
-        ).order_by(User.full_name)
-    )
+    bp_record = await db.get(BillingProvider, effective_bp_id)
+    is_demo_agency = bp_record.is_demo if bp_record else False
+
+    provider_query = select(User).where(User.billing_provider_id == effective_bp_id)
+    if not is_demo_agency:
+        provider_query = provider_query.where(User.is_active.is_(True))
+    users_result = await db.execute(provider_query.order_by(User.full_name))
     users = users_result.scalars().all()
     if not users:
         return []

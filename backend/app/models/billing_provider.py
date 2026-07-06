@@ -23,6 +23,7 @@ class BillingProvider(Base):
     stripe_customer_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     stripe_subscription_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     subscription_status: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    is_demo: Mapped[bool] = mapped_column(Boolean, server_default="false", nullable=False, default=False)
     enrollment_tier_enabled: Mapped[bool] = mapped_column(Boolean, server_default="false", nullable=False, default=False)
     enrollment_tier_stripe_item_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     availity_client_id_encrypted: Mapped[str | None] = mapped_column(Text, nullable=True)

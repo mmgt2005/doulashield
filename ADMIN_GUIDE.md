@@ -320,6 +320,35 @@ The **○ Demo Mode** button in the dashboard header lets you present a fully po
 
 Demo records are never shown on the live dashboard by default. Seeded leads and enrollment services do not affect billing, claim submission, or any provider-facing screens — they exist only in the admin analytics layer.
 
+### Demo Mode — Demoing the Billing Admin Role
+
+The seed also creates a fully populated demo billing agency so you can walk a prospective client through the **Billing Admin** portal, which is a separate login with its own three-tab view: My Providers, Agency Claims, and Agency Settings.
+
+**What the seed creates for the billing admin demo:**
+
+- **DoulaShield Demo Agency** — a demo billing agency with the Enrollment Tier enabled and an Active subscription status. This is the agency the demo billing admin manages.
+- **Demo Billing Admin account** — a login at `demo-billing-admin@doulashield.internal` with password `DoulaShield-Demo-2024!`. This account cannot access any real data — it is scoped entirely to the demo agency.
+- **Demo Provider** — the DoulaShield Demo Provider ghost account is assigned to the demo agency, so the billing admin's **My Providers** tab shows a provider with enrollment stages (PCB, Enrollment, MCO Contracting) and the 8 demo enrollment services seeded in the main demo.
+- **4 Demo Patients** — Jasmine Carter (AmeriHealth Caritas), Aaliyah Washington (Keystone First), Destiny Robinson (UPMC For You), and Imani Thompson (Highmark Wholecare), all assigned to the demo provider.
+- **6 Demo Claims** — a mix of `pending_billing_review` (ready for the billing admin to submit) and `approved` claims, across birth, prenatal, and postnatal visit types, at realistic billed amounts. These populate the **Agency Claims** tab immediately.
+
+**How to run a billing admin demo:**
+
+1. Click **Seed Demo Dashboard** in Admin → Users. This seeds everything in one step.
+2. Open a second browser tab (or an incognito window) and go to the DoulaShield login page.
+3. Log in with:
+   - **Email:** `demo-billing-admin@doulashield.internal`
+   - **Password:** `DoulaShield-Demo-2024!`
+4. You are now in the billing admin portal. Walk through:
+   - **My Providers** — shows the demo provider with enrollment stage summary and credential expiry dates.
+   - **Agency Claims** — shows the 6 demo claims. Click a claim row to review the CMS 1500 detail, download the audit packet, and walk through the submission flow.
+   - **Enrollment Services** — (visible because the demo agency has the Enrollment Tier enabled) shows the 8 demo enrollment services with task checklists.
+   - **Agency Settings** — shows agency address and Availity credential fields.
+
+**Re-seeding:** Clicking **Seed Demo Dashboard** again deletes all demo patients and claims and creates fresh ones. The demo agency and billing admin account persist between seeds so the login credentials never change. If you want to reset the billing admin password, re-seed and it remains `DoulaShield-Demo-2024!`.
+
+**Security note:** The demo billing admin account has `is_demo=true` and is scoped only to the demo agency — it cannot see any real providers, patients, or claims. The ghost provider's password is set to a non-authenticatable value so it cannot be logged into directly.
+
 ### Generate Strategic Report
 
 The **✦ Generate Strategic Report** button in the top-right of the dashboard generates an AI-written analysis of all the platform data visible on the screen, applying the current date filter. Click it once — the report streams in word by word above the dashboard tiles (typically 10–20 seconds).
