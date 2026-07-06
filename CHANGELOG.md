@@ -12,6 +12,15 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.67.1] — 2026-07-06
+
+### Fixed
+- **Billing admin demo My Providers — duplicate enrollment services**: The demo was assigning all 8 executive-dashboard enrollment services to the ghost provider, which then appeared as one provider with multiple same-stage services. Now creates 4 dedicated billing admin demo providers (Tamara Williams — Stage 2 Enrollment in progress; Keisha Johnson — PCB in progress; Maria Santos — MCO Contracting in progress; Ashley Thompson — PCB complete), each with exactly one enrollment service. The ghost enrollment provider is unlinked from the demo agency so it no longer appears in the billing admin roster.
+- **Billing admin demo claim amounts incorrect**: Demo claims used $800 for labor and $200 for prenatal/postnatal. Fixed to match the actual PA Medicaid doula fee schedule: **$1,000** for labor/birth (T1033) and **$100** for each prenatal or postnatal visit (T1032).
+- **Billing admin demo claims missing SOAP notes and visit dates**: Demo claims had no associated visit records, so the claim review screen showed no clinical documentation. Each demo claim now has a matching `Visit` row (looked up by `patient_id + visit_type`) with full SOAP note content (subjective, objective, assessment, plan), the correct visit date, and MA 91 signed status.
+
+---
+
 ## [1.67.0] — 2026-07-06
 
 ### Added
