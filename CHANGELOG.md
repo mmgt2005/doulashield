@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.66.2] — 2026-07-06
+
+### Fixed
+- **Demo enrollment service tasks missing**: The seed endpoint created `EnrollmentService` records but no `EnrollmentTask` rows, leaving the task list empty when viewing a demo enrollment service. The seed now imports the same task lists used by real service creation and seeds all tasks for each demo service. Completed services get all tasks marked complete; in-progress services get the first ~60% complete and the rest not started, giving a realistic view of an active enrollment pipeline.
+
+---
+
 ## [1.66.1] — 2026-07-06
 
 ### Fixed
