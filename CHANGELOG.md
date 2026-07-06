@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.67.2] — 2026-07-06
+
+### Fixed
+- **Billing admin demo claim submission blocked by missing credentials**: `POST /billing-admin/claims/{id}/submit` previously required Availity credentials even for demo agencies, causing an immediate error during a demo. Demo agencies (`billing_providers.is_demo=true`) now receive the same simulated submission as the provider-level walkthrough: a `DEMO-XXXXXXXX` tracking ID is generated, status is set to `processing`, and no request is sent to Availity.
+
+---
+
 ## [1.67.1] — 2026-07-06
 
 ### Fixed
