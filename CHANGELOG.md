@@ -12,6 +12,15 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.66.1] — 2026-07-06
+
+### Fixed
+- **Demo enrollment services not appearing in Demo Mode**: The seed endpoint only created the 8 demo enrollment services when at least one provider with `is_demo=true` already existed. The seed now auto-creates an inactive ghost provider (`demo-ghost-provider@doulashield.internal`, `is_demo=true`) when no demo providers are found, so enrollment services are always seeded regardless of account setup.
+- **Enrollment service status mismatch**: Demo services were seeded with status `"completed"` but the enrollment completion endpoints write `"complete"` (no trailing 'd'). Fixed the seed data to use `"complete"`, matching the actual codebase.
+- **Stage completion time always empty**: The Executive Dashboard's stage completion time query used `WHERE es.status = 'completed'`, which never matched any real records (all use `"complete"`). Fixed to `'complete'` so avg/median days for completed stages now display correctly in both live and demo mode.
+
+---
+
 ## [1.66.0] — 2026-07-06
 
 ### Added
