@@ -14,6 +14,8 @@ from app.models.user import User
 
 router = APIRouter(prefix="/admin/seed-demo-data", tags=["admin"])
 
+_GHOST_EMAIL = "demo-ghost-provider@doulashield.internal"
+
 
 def _ago(days: int) -> datetime:
     return datetime.now(timezone.utc) - timedelta(days=days)
@@ -55,13 +57,13 @@ _DEMO_LEADS: list[dict] = [
 
 _DEMO_SERVICES: list[dict] = [
     # stage, status, created_days_ago, updated_days_ago, pcb_pathway
-    {"stage": "pcb",            "status": "completed",   "created": 135, "updated": 100, "pathway": "education_training"},
-    {"stage": "pcb",            "status": "completed",   "created": 110, "updated": 80,  "pathway": "experienced"},
+    {"stage": "pcb",            "status": "complete",    "created": 135, "updated": 100, "pathway": "education_training"},
+    {"stage": "pcb",            "status": "complete",    "created": 110, "updated": 80,  "pathway": "experienced"},
     {"stage": "enrollment",     "status": "in_progress", "created": 70,  "updated": 5,   "pathway": None},
     {"stage": "enrollment",     "status": "in_progress", "created": 55,  "updated": 3,   "pathway": None},
     {"stage": "mco_contracting","status": "in_progress", "created": 35,  "updated": 2,   "pathway": None},
     {"stage": "mco_contracting","status": "in_progress", "created": 22,  "updated": 1,   "pathway": None},
-    {"stage": "mco_contracting","status": "completed",   "created": 85,  "updated": 60,  "pathway": None},
+    {"stage": "mco_contracting","status": "complete",    "created": 85,  "updated": 60,  "pathway": None},
     {"stage": "pcb",            "status": "in_progress", "created": 12,  "updated": 1,   "pathway": "education_training"},
 ]
 
@@ -87,43 +89,55 @@ async def seed_demo_data(
             created_at=_ago(ld["days_ago"]),
         ))
 
-    # 3. Find demo providers (round-robin for enrollment service assignment)
+    # 3. Wipe ALL existing demo enrollment services
+    await db.execute(delete(EnrollmentService).where(EnrollmentService.is_demo == True))  # noqa: E712
+
+    # 4. Find demo providers; if none exist, use/create a ghost demo provider
     providers_result = await db.execute(
         select(User).where(
             User.role == "provider",
             User.is_demo == True,  # noqa: E712
         )
     )
-    demo_providers = providers_result.scalars().all()
+    demo_providers = list(providers_result.scalars().all())
+    ghost_created = False
 
-    services_seeded = 0
-    if demo_providers:
-        # Wipe existing demo enrollment services for these providers
-        provider_ids = [p.id for p in demo_providers]
-        await db.execute(
-            delete(EnrollmentService).where(
-                EnrollmentService.provider_id.in_(provider_ids),
-                EnrollmentService.is_demo == True,  # noqa: E712
-            )
-        )
-
-        for i, svc in enumerate(_DEMO_SERVICES):
-            provider = demo_providers[i % len(demo_providers)]
-            db.add(EnrollmentService(
-                provider_id=provider.id,
-                stage=svc["stage"],
-                pcb_pathway=svc["pathway"],
-                status=svc["status"],
+    if not demo_providers:
+        ghost_result = await db.execute(select(User).where(User.email == _GHOST_EMAIL))
+        ghost = ghost_result.scalar_one_or_none()
+        if ghost is None:
+            ghost = User(
+                id=uuid.uuid4(),
+                email=_GHOST_EMAIL,
+                password_hash="!unusable",
+                role="provider",
+                full_name="DoulaShield Demo Provider",
+                is_active=False,
                 is_demo=True,
-                created_at=_ago(svc["created"]),
-                updated_at=_ago(svc["updated"]),
-            ))
-            services_seeded += 1
+            )
+            db.add(ghost)
+            await db.flush()
+            ghost_created = True
+        demo_providers = [ghost]
+
+    # 5. Insert demo enrollment services (round-robin across demo providers)
+    for i, svc in enumerate(_DEMO_SERVICES):
+        provider = demo_providers[i % len(demo_providers)]
+        db.add(EnrollmentService(
+            provider_id=provider.id,
+            stage=svc["stage"],
+            pcb_pathway=svc["pathway"],
+            status=svc["status"],
+            is_demo=True,
+            created_at=_ago(svc["created"]),
+            updated_at=_ago(svc["updated"]),
+        ))
 
     await db.commit()
 
     return {
         "leads_seeded": len(_DEMO_LEADS),
-        "enrollment_services_seeded": services_seeded,
+        "enrollment_services_seeded": len(_DEMO_SERVICES),
         "demo_providers_found": len(demo_providers),
+        "ghost_provider_created": ghost_created,
     }

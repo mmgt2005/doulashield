@@ -305,7 +305,7 @@ async def executive_stats(
             ORDER BY EXTRACT(EPOCH FROM (es.updated_at - es.created_at)) / 86400
           )::numeric, 1) AS median_days
         FROM public.enrollment_services es
-        WHERE es.status = 'completed'{_nes}
+        WHERE es.status = 'complete'{_nes}
         GROUP BY es.stage
         ORDER BY avg_days DESC NULLS LAST
     """))
