@@ -329,8 +329,13 @@ The seed also creates a fully populated demo billing agency so you can walk a pr
 - **DoulaShield Demo Agency** — a demo billing agency with the Enrollment Tier enabled and an Active subscription status. This is the agency the demo billing admin manages.
 - **Demo Billing Admin account** — a login at `demo-billing-admin@doulashield.internal` with password `DoulaShield-Demo-2024!`. This account cannot access any real data — it is scoped entirely to the demo agency.
 - **Demo Provider** — the DoulaShield Demo Provider ghost account is assigned to the demo agency, so the billing admin's **My Providers** tab shows a provider with enrollment stages (PCB, Enrollment, MCO Contracting) and the 8 demo enrollment services seeded in the main demo.
-- **4 Demo Patients** — Jasmine Carter (AmeriHealth Caritas), Aaliyah Washington (Keystone First), Destiny Robinson (UPMC For You), and Imani Thompson (Highmark Wholecare), all assigned to the demo provider.
-- **6 Demo Claims** — a mix of `pending_billing_review` (ready for the billing admin to submit) and `approved` claims, across birth, prenatal, and postnatal visit types, at realistic billed amounts. These populate the **Agency Claims** tab immediately.
+- **4 Demo Providers** — each at a distinct enrollment stage so the roster looks realistic:
+  - **Tamara Williams** — Stage 2 Enrollment in progress (PROMISe application submitted)
+  - **Keisha Johnson** — PCB Certification in progress (education/training pathway)
+  - **Maria Santos** — MCO Contracting in progress (fully enrolled, working on MCO networks)
+  - **Ashley Thompson** — PCB Certification complete (experienced pathway)
+- **4 Demo Patients** — two assigned to Tamara (Destiny Carter, Brianna Williams) and two to Maria (Jasmine Robinson, Aaliyah Thompson), spanning AmeriHealth Caritas and Keystone First MCOs.
+- **10 Demo Claims** — a mix of `pending_billing_review` and `approved` claims using the actual PA Medicaid doula fee schedule: **$1,000** for labor/birth (T1033) and **$100** for each prenatal or postnatal visit (T1032). Each claim links to a full visit record with SOAP notes so the billing admin can open any claim and see the complete clinical documentation, including visit date, subjective/objective/assessment/plan, and MA 91 signature status.
 
 **How to run a billing admin demo:**
 
