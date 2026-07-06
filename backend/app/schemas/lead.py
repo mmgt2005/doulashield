@@ -78,6 +78,7 @@ class LeadRead(BaseModel):
     assigned_to: uuid.UUID | None
     converted_user_id: uuid.UUID | None
     cal_booking_uid: str | None
+    is_demo: bool = False
     created_at: datetime
     updated_at: datetime | None
 

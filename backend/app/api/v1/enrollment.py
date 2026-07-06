@@ -844,6 +844,7 @@ async def create_enrollment_service(
         pcb_pathway=body.pcb_pathway if stage == "pcb" else None,
         status="in_progress",
         intake_data=body.intake_data,
+        is_demo=provider.is_demo,
     )
     db.add(service)
     await db.flush()

@@ -26,6 +26,7 @@ class EnrollmentService(Base):
     intake_data: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
     pcb_cert_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     assigned_to_billing_admin: Mapped[bool] = mapped_column(Boolean, server_default="false", nullable=False, default=False)
+    is_demo: Mapped[bool] = mapped_column(Boolean, server_default="false", nullable=False, default=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

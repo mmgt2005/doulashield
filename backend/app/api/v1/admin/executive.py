@@ -21,6 +21,7 @@ async def executive_stats(
     db: Annotated[AsyncSession, Depends(get_db)],
     date_from: date | None = Query(None),
     date_to: date | None = Query(None),
+    include_demo: bool = Query(False),
 ) -> dict:
     params: dict = {}
     claim_date = ""
@@ -37,31 +38,39 @@ async def executive_stats(
         lead_date += " AND created_at::date <= :date_to"
         params["date_to"] = date_to
 
+    # Demo filters — empty string when include_demo=True to show all records
+    _nd  = "" if include_demo else " AND NOT is_demo"        # users table, no alias
+    _nu  = "" if include_demo else " AND NOT u.is_demo"      # users table, alias u
+    _np  = "" if include_demo else " AND NOT p.is_demo"      # patients table, alias p
+    _nl  = "" if include_demo else " AND NOT is_demo"        # leads table
+    _ne  = "" if include_demo else " AND NOT is_demo"        # enrollment_services, no alias
+    _nes = "" if include_demo else " AND NOT es.is_demo"     # enrollment_services, alias es
+
     # ── Section A: Platform Health ────────────────────────────────────────────
-    ph = await db.execute(text("""
+    ph = await db.execute(text(f"""
         SELECT
-          COUNT(*) FILTER (WHERE role = 'provider' AND is_active AND NOT is_demo)
+          COUNT(*) FILTER (WHERE role = 'provider' AND is_active{_nd})
             AS active_providers,
-          COUNT(*) FILTER (WHERE role = 'provider' AND NOT is_active AND NOT is_demo)
+          COUNT(*) FILTER (WHERE role = 'provider' AND NOT is_active{_nd})
             AS inactive_providers,
-          COUNT(*) FILTER (WHERE role = 'provider' AND NOT is_demo)
+          COUNT(*) FILTER (WHERE role = 'provider'{_nd})
             AS total_providers,
-          COUNT(*) FILTER (WHERE role = 'provider' AND NOT is_demo
+          COUNT(*) FILTER (WHERE role = 'provider'{_nd}
             AND subscription_status IN ('active', 'trialing'))
             AS subscribed_providers,
-          COUNT(*) FILTER (WHERE role = 'provider' AND NOT is_demo
+          COUNT(*) FILTER (WHERE role = 'provider'{_nd}
             AND subscription_status = 'past_due')
             AS past_due_providers,
-          COUNT(*) FILTER (WHERE role = 'provider' AND NOT is_demo
+          COUNT(*) FILTER (WHERE role = 'provider'{_nd}
             AND created_at >= NOW() - INTERVAL '30 days')
             AS new_providers_30d,
-          COUNT(*) FILTER (WHERE role = 'provider' AND NOT is_demo
+          COUNT(*) FILTER (WHERE role = 'provider'{_nd}
             AND created_at >= NOW() - INTERVAL '90 days')
             AS new_providers_90d,
-          COUNT(*) FILTER (WHERE role = 'provider' AND NOT is_demo
+          COUNT(*) FILTER (WHERE role = 'provider'{_nd}
             AND last_sign_in_at >= NOW() - INTERVAL '30 days')
             AS active_last_30d,
-          COUNT(*) FILTER (WHERE role = 'provider' AND NOT is_demo
+          COUNT(*) FILTER (WHERE role = 'provider'{_nd}
             AND last_sign_in_at >= NOW() - INTERVAL '90 days')
             AS active_last_90d,
           COUNT(DISTINCT billing_provider_id)
@@ -72,7 +81,7 @@ async def executive_stats(
     ph_row = ph.fetchone()
 
     # Cohort retention — last 12 monthly cohorts
-    cohort_rows = await db.execute(text("""
+    cohort_rows = await db.execute(text(f"""
         SELECT
           DATE_TRUNC('month', created_at)::date AS cohort_month,
           COUNT(*) AS cohort_size,
@@ -80,7 +89,7 @@ async def executive_stats(
             WHERE is_active AND last_sign_in_at >= NOW() - INTERVAL '30 days'
           ) AS still_active
         FROM public.users
-        WHERE role = 'provider' AND NOT is_demo
+        WHERE role = 'provider'{_nd}
           AND created_at >= NOW() - INTERVAL '12 months'
         GROUP BY cohort_month
         ORDER BY cohort_month
@@ -96,7 +105,7 @@ async def executive_stats(
     ]
 
     # First-claim latency
-    latency_row = await db.execute(text("""
+    latency_row = await db.execute(text(f"""
         SELECT
           ROUND(AVG(days_to_first)::numeric, 1) AS avg_days,
           ROUND(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY days_to_first)::numeric, 1)
@@ -110,16 +119,16 @@ async def executive_stats(
           FROM public.users u
           JOIN public.claims c ON c.provider_id = u.id
           JOIN public.patients p ON c.patient_id = p.id
-          WHERE u.role = 'provider' AND NOT u.is_demo AND NOT p.is_demo
+          WHERE u.role = 'provider'{_nu}{_np}
           GROUP BY u.id
         ) sub
     """))
     latency = latency_row.fetchone()
 
-    never_billed_row = await db.execute(text("""
+    never_billed_row = await db.execute(text(f"""
         SELECT COUNT(*) AS cnt
         FROM public.users u
-        WHERE u.role = 'provider' AND u.is_active AND NOT u.is_demo
+        WHERE u.role = 'provider' AND u.is_active{_nu}
           AND NOT EXISTS (
             SELECT 1 FROM public.claims c WHERE c.provider_id = u.id
           )
@@ -145,7 +154,7 @@ async def executive_stats(
           COUNT(*) FILTER (WHERE status = 'demo_scheduled') AS demo_scheduled,
           COUNT(*) FILTER (WHERE status = 'not_interested') AS not_interested
         FROM public.leads
-        WHERE 1=1{lead_date}
+        WHERE 1=1{_nl}{lead_date}
         GROUP BY source
         ORDER BY total DESC
     """), params)
@@ -170,7 +179,7 @@ async def executive_stats(
           COUNT(*) FILTER (WHERE status = 'new') AS new,
           COUNT(*) FILTER (WHERE status = 'demo_scheduled') AS demo_scheduled
         FROM public.leads
-        WHERE 1=1{lead_date}
+        WHERE 1=1{_nl}{lead_date}
     """), params)
     lt = lead_totals.fetchone()
 
@@ -184,7 +193,7 @@ async def executive_stats(
           COUNT(*) FILTER (WHERE c.resubmit_count > 0) AS resubmitted_claims
         FROM public.claims c
         JOIN public.patients p ON c.patient_id = p.id
-        WHERE NOT p.is_demo{claim_date}
+        WHERE 1=1{_np}{claim_date}
     """), params)
     cs = claims_summary.fetchone()
     total_billed = float(cs.total_billed) if cs else 0.0
@@ -199,7 +208,7 @@ async def executive_stats(
           COALESCE(SUM(c.paid_amount), 0) AS total_paid
         FROM public.claims c
         JOIN public.patients p ON c.patient_id = p.id
-        WHERE NOT p.is_demo{claim_date}
+        WHERE 1=1{_np}{claim_date}
         GROUP BY c.visit_type
         ORDER BY claim_count DESC
     """), params)
@@ -228,7 +237,7 @@ async def executive_stats(
     ]
 
     # Claim aging buckets (unpaid only)
-    aging_rows = await db.execute(text("""
+    aging_rows = await db.execute(text(f"""
         SELECT
           CASE
             WHEN CURRENT_DATE - service_date <= 30  THEN '0-30'
@@ -245,8 +254,7 @@ async def executive_stats(
         JOIN public.patients p ON c.patient_id = p.id
         WHERE c.submitted_at IS NULL
           AND (c.status IS NULL OR c.status NOT IN ('paid', 'approved'))
-          AND c.service_date IS NOT NULL
-          AND NOT p.is_demo
+          AND c.service_date IS NOT NULL{_np}
         GROUP BY age_bucket
         ORDER BY min_age
     """))
@@ -260,7 +268,7 @@ async def executive_stats(
     ]
 
     # ── Section D: Enrollment Pipeline ────────────────────────────────────────
-    enroll_rows = await db.execute(text("""
+    enroll_rows = await db.execute(text(f"""
         SELECT
           stage,
           status,
@@ -269,6 +277,7 @@ async def executive_stats(
           COUNT(*) FILTER (WHERE pcb_pathway = 'experienced') AS exp_pathway,
           COUNT(*) FILTER (WHERE assigned_to_billing_admin) AS assigned_to_agency
         FROM public.enrollment_services
+        WHERE 1=1{_ne}
         GROUP BY stage, status
         ORDER BY stage, status
     """))
@@ -296,7 +305,7 @@ async def executive_stats(
             ORDER BY EXTRACT(EPOCH FROM (es.updated_at - es.created_at)) / 86400
           )::numeric, 1) AS median_days
         FROM public.enrollment_services es
-        WHERE es.status = 'completed'
+        WHERE es.status = 'completed'{_nes}
         GROUP BY es.stage
         ORDER BY avg_days DESC NULLS LAST
     """))
@@ -340,7 +349,7 @@ async def executive_stats(
           COUNT(*) FILTER (WHERE c.resubmit_count > 0) AS resubmitted_claims
         FROM public.claims c
         JOIN public.patients p ON c.patient_id = p.id
-        WHERE NOT p.is_demo{claim_date}
+        WHERE 1=1{_np}{claim_date}
     """), params)
     comp = compliance_row.fetchone()
 
@@ -353,7 +362,7 @@ async def executive_stats(
           COUNT(*) FILTER (WHERE v.ma91_status IS NULL) AS missing
         FROM public.visits v
         JOIN public.patients p ON v.patient_id = p.id
-        WHERE v.visit_started_at IS NOT NULL AND NOT p.is_demo{visit_date}
+        WHERE v.visit_started_at IS NOT NULL{_np}{visit_date}
     """), params)
     ma = ma91_row.fetchone()
 
@@ -434,6 +443,7 @@ async def mco_report(
     db: Annotated[AsyncSession, Depends(get_db)],
     date_from: date | None = Query(None),
     date_to: date | None = Query(None),
+    include_demo: bool = Query(False),
 ) -> dict:
     params: dict = {}
     date_clause = ""
@@ -443,6 +453,8 @@ async def mco_report(
     if date_to:
         date_clause += " AND c.service_date <= :date_to"
         params["date_to"] = date_to
+
+    _np = "" if include_demo else " AND NOT p.is_demo"
 
     mco_rows = await db.execute(text(f"""
         SELECT
@@ -463,7 +475,7 @@ async def mco_report(
         FROM public.claims c
         JOIN public.patients p ON c.patient_id = p.id
         LEFT JOIN public.remittances r ON c.remittance_id = r.id
-        WHERE NOT p.is_demo{date_clause}
+        WHERE 1=1{_np}{date_clause}
         GROUP BY LOWER(TRIM(p.mco)), p.mco
         ORDER BY total_billed DESC
     """), params)
@@ -497,7 +509,7 @@ async def mco_report(
           COUNT(DISTINCT p.provider_id)  AS doula_count
         FROM public.patients p
         WHERE p.referring_provider_npi IS NOT NULL
-          AND p.is_active AND NOT p.is_demo
+          AND p.is_active{_np}
         GROUP BY p.referring_provider_npi, p.referring_provider_name
         ORDER BY total_patients DESC
         LIMIT 50
@@ -513,14 +525,14 @@ async def mco_report(
     ]
 
     # Telehealth vs in-person
-    location_rows = await db.execute(text("""
+    location_rows = await db.execute(text(f"""
         SELECT
           COALESCE(v.location_type, 'unknown') AS location_type,
           COUNT(*) AS visit_count,
           COUNT(DISTINCT v.provider_id) AS provider_count
         FROM public.visits v
         JOIN public.patients p ON v.patient_id = p.id
-        WHERE v.visit_started_at IS NOT NULL AND NOT p.is_demo
+        WHERE v.visit_started_at IS NOT NULL{_np}
         GROUP BY location_type
         ORDER BY visit_count DESC
     """))
@@ -546,11 +558,12 @@ async def generate_executive_report(
     db: Annotated[AsyncSession, Depends(get_db)],
     date_from: date | None = Query(None),
     date_to: date | None = Query(None),
+    include_demo: bool = Query(False),
 ) -> StreamingResponse:
     from app.services.executive_report_service import stream_executive_report
 
-    stats = await executive_stats(user, db, date_from, date_to)
-    mco = await mco_report(user, db, date_from, date_to)
+    stats = await executive_stats(user, db, date_from, date_to, include_demo)
+    mco = await mco_report(user, db, date_from, date_to, include_demo)
 
     if date_from and date_to:
         period_label = f"{date_from} to {date_to}"
@@ -573,8 +586,9 @@ async def mco_report_csv(
     db: Annotated[AsyncSession, Depends(get_db)],
     date_from: date | None = Query(None),
     date_to: date | None = Query(None),
+    include_demo: bool = Query(False),
 ) -> StreamingResponse:
-    report = await mco_report(_, db, date_from, date_to)
+    report = await mco_report(_, db, date_from, date_to, include_demo)
 
     buf = io.StringIO()
     writer = csv.writer(buf)

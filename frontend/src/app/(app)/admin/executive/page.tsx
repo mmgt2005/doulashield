@@ -102,15 +102,20 @@ export default function ExecutiveDashboard() {
   const [showReport, setShowReport] = useState(false)
   const reportRef = useRef<HTMLDivElement>(null)
 
+  // Demo mode — includes seeded is_demo records in all stats
+  const [demoMode, setDemoMode] = useState(false)
+  const [seedingDemo, setSeedingDemo] = useState(false)
+
   const api = process.env.NEXT_PUBLIC_API_URL
   const headers = { Authorization: `Bearer ${getAccessToken()}` }
 
-  const load = useCallback(async (from: string | null, to: string | null) => {
+  const load = useCallback(async (from: string | null, to: string | null, demo = false) => {
     setLoading(true)
     try {
       const params: Record<string, string> = {}
       if (from) params.date_from = from
       if (to) params.date_to = to
+      if (demo) params.include_demo = 'true'
       const res = await axios.get(`${api}/api/v1/admin/executive/stats`, { headers, params })
       setData(res.data)
     } catch (e) {
@@ -122,14 +127,25 @@ export default function ExecutiveDashboard() {
     }
   }, [api])
 
+  const handleSeedDemo = async () => {
+    setSeedingDemo(true)
+    try {
+      await axios.post(`${api}/api/v1/admin/seed-demo-data`, {}, { headers })
+      const { from, to } = currentDates()
+      await load(from, to, true)
+    } finally {
+      setSeedingDemo(false)
+    }
+  }
+
   useEffect(() => {
     if (preset === 'custom') {
-      if (customFrom && customTo) load(customFrom, customTo)
+      if (customFrom && customTo) load(customFrom, customTo, demoMode)
       return
     }
     const { from, to } = presetDates(preset)
-    load(from, to)
-  }, [preset, customFrom, customTo, load])
+    load(from, to, demoMode)
+  }, [preset, customFrom, customTo, load, demoMode])
 
   if (!user?.is_executive && user?.role !== 'admin') return null
 
@@ -149,6 +165,7 @@ export default function ExecutiveDashboard() {
       const url = new URL(`${api}/api/v1/admin/executive/generate-report`)
       if (from) url.searchParams.set('date_from', from)
       if (to) url.searchParams.set('date_to', to)
+      if (demoMode) url.searchParams.set('include_demo', 'true')
 
       const res = await fetch(url.toString(), {
         headers: { Authorization: `Bearer ${getAccessToken()}` },
@@ -278,29 +295,62 @@ export default function ExecutiveDashboard() {
 
       {/* Dashboard content — hidden during print when report is shown */}
       <div id="executive-dashboard-content">
+        {/* Demo mode banner */}
+        {demoMode && (
+          <div className="mb-4 flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-xs text-amber-800">
+            <span className="font-medium">Demo Mode</span>
+            <span className="text-amber-600">· Dashboard includes seeded demo data for presentation purposes</span>
+            <button
+              onClick={handleSeedDemo}
+              disabled={seedingDemo}
+              className="ml-1 rounded border border-amber-300 bg-white px-2.5 py-1 font-medium text-amber-700 hover:bg-amber-50 disabled:opacity-50"
+            >
+              {seedingDemo ? 'Seeding…' : 'Re-seed Demo Data'}
+            </button>
+            <button
+              onClick={() => setDemoMode(false)}
+              className="ml-auto text-amber-500 hover:text-amber-800"
+            >
+              Exit Demo Mode ✕
+            </button>
+          </div>
+        )}
+
         {/* Header */}
         <div className="flex items-start justify-between">
           <div>
             <h1 className="text-xl font-semibold text-gray-900">Executive Dashboard</h1>
             <p className="mt-0.5 text-xs text-gray-400">Platform-wide · All providers · All agencies</p>
           </div>
-          <button
-            onClick={handleGenerateReport}
-            disabled={generatingReport || loading}
-            className="flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {generatingReport ? (
-              <>
-                <svg className="h-3 w-3 animate-spin" viewBox="0 0 24 24" fill="none">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-                </svg>
-                Generating…
-              </>
-            ) : (
-              '✦ Generate Strategic Report'
-            )}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setDemoMode((d) => !d)}
+              className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
+                demoMode
+                  ? 'border-amber-300 bg-amber-100 text-amber-800 hover:bg-amber-200'
+                  : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50'
+              }`}
+            >
+              {demoMode ? '● Demo Mode On' : '○ Demo Mode'}
+            </button>
+            <button
+              onClick={handleGenerateReport}
+              disabled={generatingReport || loading}
+              className="flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {generatingReport ? (
+                <>
+                  <svg className="h-3 w-3 animate-spin" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                  </svg>
+                  Generating…
+                </>
+              ) : (
+                '✦ Generate Strategic Report'
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Date filter */}

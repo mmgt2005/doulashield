@@ -40,6 +40,7 @@ export default function AdminUsersPage() {
   const [demoModal, setDemoModal] = useState<{ id: string; email: string; current: boolean } | null>(null)
   const [demoTogglingId, setDemoTogglingId] = useState<string | null>(null)
   const [guideModal, setGuideModal] = useState<string | null>(null)
+  const [seedingDemo, setSeedingDemo] = useState(false)
 
   const headers = { Authorization: `Bearer ${getAccessToken()}` }
   const api = process.env.NEXT_PUBLIC_API_URL
@@ -354,16 +355,43 @@ export default function AdminUsersPage() {
 
   if (loading) return <p className="text-sm text-gray-500">Loading…</p>
 
+  const handleSeedDemoDashboard = async () => {
+    setSeedingDemo(true)
+    try {
+      const res = await axios.post<{ leads_seeded: number; enrollment_services_seeded: number; demo_providers_found: number }>(
+        `${api}/api/v1/admin/seed-demo-data`, {}, { headers }
+      )
+      const { leads_seeded, enrollment_services_seeded, demo_providers_found } = res.data
+      const msg = demo_providers_found > 0
+        ? `Demo data seeded — ${leads_seeded} leads, ${enrollment_services_seeded} enrollment services`
+        : `Demo data seeded — ${leads_seeded} leads (enable Demo Mode on a provider to seed enrollment services)`
+      showToast(msg)
+    } catch {
+      showToast('Failed to seed demo data')
+    } finally {
+      setSeedingDemo(false)
+    }
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-gray-900">Users</h1>
-        <button
-          onClick={openCreateModal}
-          className="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
-        >
-          + Add User
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleSeedDemoDashboard}
+            disabled={seedingDemo}
+            className="rounded border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-100 disabled:opacity-50"
+          >
+            {seedingDemo ? 'Seeding…' : 'Seed Demo Dashboard'}
+          </button>
+          <button
+            onClick={openCreateModal}
+            className="rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
+          >
+            + Add User
+          </button>
+        </div>
       </div>
 
       {actionToast && (

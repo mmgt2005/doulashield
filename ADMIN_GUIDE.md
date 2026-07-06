@@ -306,6 +306,20 @@ Enrollment tier penetration (agencies with tier enabled vs. all active agencies)
 
 MA91 consent compliance rate across all visits, overdue and urgent claims counts (highlighted red/amber when non-zero), and platform-wide resubmitted claims count.
 
+### Demo Mode — Recording Webinars and Client Demos
+
+The **○ Demo Mode** button in the dashboard header lets you present a fully populated Executive Dashboard during a demo webinar or prospective-client walkthrough, without exposing real provider data.
+
+**How to run a demo:**
+
+1. Go to **Admin → Users** and click **Seed Demo Dashboard** in the page header. This creates 26 realistic demo leads (spread across referral, Facebook, website, Instagram, and word-of-mouth sources) and — if you have any providers in Demo Mode — 8 demo enrollment services across PCB, enrollment, and MCO contracting stages. All records are marked `is_demo=true` and take about 1 second to create.
+2. Return to the Executive Dashboard and click **○ Demo Mode**. The button turns amber and a banner confirms demo mode is active. All five dashboard sections now include the seeded records alongside any real data.
+3. Click **✦ Generate Strategic Report** — the AI report will generate a full seven-section analysis based on the realistic demo numbers.
+4. If you want to reset the demo data during a presentation (e.g., to show a "fresh" slate), click **Re-seed Demo Data** inside the amber banner.
+5. Click **Exit Demo Mode ✕** or **● Demo Mode On** when done. The dashboard immediately returns to real data only.
+
+Demo records are never shown on the live dashboard by default. Seeded leads and enrollment services do not affect billing, claim submission, or any provider-facing screens — they exist only in the admin analytics layer.
+
 ### Generate Strategic Report
 
 The **✦ Generate Strategic Report** button in the top-right of the dashboard generates an AI-written analysis of all the platform data visible on the screen, applying the current date filter. Click it once — the report streams in word by word above the dashboard tiles (typically 10–20 seconds).

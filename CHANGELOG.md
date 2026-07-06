@@ -12,6 +12,15 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.66.0] — 2026-07-06
+
+### Added
+- **`is_demo` flag on Leads and Enrollment Services**: Two new Alembic migrations add `is_demo BOOLEAN NOT NULL DEFAULT false` to `public.leads` (0055) and `public.enrollment_services` (0056). When an enrollment service is created for a demo provider, it now automatically inherits `is_demo=true`. All Executive Dashboard queries filter demo records out by default, so test and seeded data never pollutes live stats.
+- **One-click Demo Data Seed**: New `POST /api/v1/admin/seed-demo-data` endpoint (admin-only) creates 26 realistic demo leads spread across five sources and all funnel stages, plus 8 demo enrollment services across pcb/enrollment/mco_contracting stages — all backdated for realistic date distributions. Re-running wipes and recreates (idempotent). A **Seed Demo Dashboard** button appears in the Admin → Users page header; a **Re-seed Demo Data** shortcut also appears inside the Executive Dashboard demo mode banner.
+- **Executive Dashboard Demo Mode**: A **Demo Mode** toggle button in the Executive Dashboard header includes seeded demo records in all three API calls (`/stats`, `/mco-report`, `/generate-report`) via an `include_demo=true` query param. An amber banner confirms demo mode is active. Toggling off instantly returns to live-only data. The AI Strategic Report in demo mode generates a full analysis using the seeded numbers, making it suitable for a demo webinar or client walkthrough.
+
+---
+
 ## [1.65.3] — 2026-07-04
 
 ### Fixed
