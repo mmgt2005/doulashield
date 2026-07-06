@@ -12,6 +12,18 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.67.0] — 2026-07-06
+
+### Added
+- **Billing Admin Demo Mode**: The "Seed Demo Dashboard" button now fully populates the billing admin portal for demo purposes. Seeding creates a **DoulaShield Demo Agency** (enrollment tier enabled), a **demo billing admin login** (`demo-billing-admin@doulashield.internal` / `DoulaShield-Demo-2024!`), 4 encrypted demo patients, and 6 demo claims (mix of pending review and approved) covering AmeriHealth Caritas, Keystone First, UPMC For You, and Highmark Wholecare. All three billing admin tabs — My Providers, Agency Claims, and Enrollment Services — are populated on the first seed.
+- **`is_demo` on `billing_providers`** (migration 0057): New column gates whether the demo patient/claim filter is bypassed for a given agency. Demo agencies show all claims including those belonging to demo patients, and list all assigned providers regardless of `is_active` status.
+
+### Fixed
+- **Billing admin Agency Claims filtered demo claims**: `GET /billing-admin/claims` previously always excluded `Patient.is_demo=True` records. It now passes demo patient claims through when the managing agency has `is_demo=True`.
+- **Billing admin My Providers hid ghost provider**: `GET /billing-admin/providers` filtered by `is_active=True`, which excluded the ghost demo provider (`is_active=False`). Demo agencies now skip the active filter so all assigned providers appear.
+
+---
+
 ## [1.66.2] — 2026-07-06
 
 ### Fixed
