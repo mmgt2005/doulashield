@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import axios from 'axios'
 import Papa from 'papaparse'
 import { getAccessToken } from '@/lib/auth'
+import TaskDescription from '@/components/ui/TaskDescription'
 
 const ALL_MCOS = [
   'AmeriHealth Caritas', 'Keystone First', 'UPMC For You', 'Geisinger Health Plan',
@@ -866,7 +867,7 @@ export default function BillingAdminProvidersPage() {
                                                       <div className="flex-1 min-w-0">
                                                         <p className={`text-xs font-medium ${isComplete ? 'text-green-700 line-through' : 'text-gray-800'}`}>{task.label}</p>
                                                         {task.description && !isComplete && (
-                                                          <p className="mt-0.5 text-[11px] text-gray-500 leading-relaxed">{task.description}</p>
+                                                          <TaskDescription text={task.description} className="mt-0.5" />
                                                         )}
                                                         {!isComplete && (
                                                           <div className="mt-1 flex gap-1">

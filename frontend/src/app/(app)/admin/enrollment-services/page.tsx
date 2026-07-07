@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import axios from 'axios'
 import { getAccessToken } from '@/lib/auth'
 import { useAuthStore } from '@/store/auth-store'
+import TaskDescription from '@/components/ui/TaskDescription'
 
 interface EnrollmentService {
   id: string
@@ -1213,7 +1214,7 @@ export default function EnrollmentServicesPage() {
                                     <div className="flex-1 min-w-0">
                                       <p className="text-sm font-medium text-gray-800">{task.label}</p>
                                       {task.description && (
-                                        <p className="mt-0.5 text-xs text-gray-500 leading-relaxed">{task.description}</p>
+                                        <TaskDescription text={task.description} className="mt-0.5" />
                                       )}
                                     </div>
                                     <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[task.status]}`}>
