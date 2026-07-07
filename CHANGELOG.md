@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.68.5] — 2026-07-07
+
+### Improved
+- **Health Partners Plans MCO task now uses step-by-step format**: Reformatted the `mco_hpplans` task description to match the other MCO tasks — three numbered steps (Contact, Submit, Record) with bold headers. Migration 0059 updates existing enrollment service records in the database so providers already in the pipeline see the new format immediately.
+
+---
+
 ## [1.68.4] — 2026-07-07
 
 ### Improved
