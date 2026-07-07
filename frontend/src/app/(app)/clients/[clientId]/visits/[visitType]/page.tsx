@@ -16,6 +16,21 @@ import dynamic from 'next/dynamic'
 
 const SignaturePad = dynamic(() => import('@/components/ui/SignaturePad'), { ssr: false })
 
+// Convert a datetime-local string ("2026-07-07T14:00") — local time — to a UTC ISO string
+function localDatetimeToISO(dt: string): string {
+  const [d, t] = dt.split('T')
+  const [y, mo, day] = d.split('-').map(Number)
+  const [h, mi] = t.split(':').map(Number)
+  return new Date(y, mo - 1, day, h, mi).toISOString()
+}
+
+// Convert a UTC ISO string to a datetime-local string ("2026-07-07T14:00") in local time
+function isoToLocalDatetime(iso: string): string {
+  const dt = new Date(iso)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}`
+}
+
 function formatDuration(start: Date, end: Date): string {
   const mins = Math.round((end.getTime() - start.getTime()) / 60000)
   return mins >= 60 ? `${Math.floor(mins / 60)}h ${mins % 60}m` : `${mins}m`
@@ -239,7 +254,7 @@ export default function VisitFormPage() {
         if (v.source_image_path) setValue('source_image_path', v.source_image_path)
         if (v.alternate_location) setValue('alternate_location', v.alternate_location)
         if (v.prior_auth_number) setValue('prior_auth_number', v.prior_auth_number)
-        if (v.scheduled_at) setValue('scheduled_at', v.scheduled_at.slice(0, 16))
+        if (v.scheduled_at) setValue('scheduled_at', isoToLocalDatetime(v.scheduled_at))
         if (v.location_type && visitType !== 'prenatal_1') {
           const lt = v.location_type as 'in_person' | 'telehealth'
           setLocationType(lt)
@@ -735,9 +750,11 @@ export default function VisitFormPage() {
   const onSubmit = async (data: FormData) => {
     setSubmitError(null)
     try {
+      const payload = { ...data }
+      if (payload.scheduled_at) payload.scheduled_at = localDatetimeToISO(payload.scheduled_at)
       await axios.put(
         `${process.env.NEXT_PUBLIC_API_URL}/api/v1/patients/${clientId}/visits/${visitType}`,
-        data,
+        payload,
         { headers: { Authorization: `Bearer ${getAccessToken()}` } }
       )
       setSaveSuccess(true)
