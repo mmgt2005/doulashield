@@ -96,7 +96,7 @@ function claimStatusDisplay(status: string | null): { label: string; colorClasse
 }
 
 const schema = z.object({
-  visit_date: z.string().optional(),
+  visit_date: z.preprocess((v) => v === '' ? undefined : v, z.string().optional()),
   subjective: z.string().optional(),
   objective: z.string().optional(),
   assessment: z.string().optional(),
