@@ -580,12 +580,11 @@ _STAGE3_TASKS: list[dict] = [
         "required_pathway": "all",
         "label": "Health Partners Plans — Application + LOI",
         "description": (
-            "Contact Health Partners Plans to request a Provider Participation Agreement. "
-            "Visit healthpartnersplans.com/providers or call the provider relations line to obtain "
-            "the current credentialing application packet. Submit the completed application along "
-            "with the provider's CAQH ID and required supporting documents. "
-            "Upload the completed application and any signed LOI here. Record reference number, "
-            "submission date, and contract date in notes."
+            "Step 1 — Contact: Contact Health Partners Plans to request a Provider Participation Agreement. "
+            "Visit healthpartnersplans.com/providers or call the provider relations line to obtain the current credentialing application packet. "
+            "Step 2 — Submit: Submit the completed application along with the provider's CAQH ID and required supporting documents. "
+            "Step 3 — Record: Upload the completed application and any signed LOI here. "
+            "Record reference number, submission date, and contract date in notes."
         ),
         "sort_order": 10,
     },
