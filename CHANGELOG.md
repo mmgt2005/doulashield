@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.68.2] — 2026-07-07
+
+### Fixed
+- **Visit form 422 error when visit date is blank**: Saving a visit with no date entered sent an empty string to the backend, which Pydantic could not parse as a `date` type. Empty strings are now preprocessed to `undefined` (omitted from the request), matching the existing pattern for `birth_time`, `visit_started_at`, and `scheduled_at`.
+
+---
+
 ## [1.68.1] — 2026-07-07
 
 ### Fixed
