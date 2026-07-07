@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.68.1] — 2026-07-07
+
+### Fixed
+- **Pre-scheduling blocked by required visit date**: The visit form required a visit date before it would save, making it impossible to set a planned time (`scheduled_at`) without also entering the actual visit date. `visit_date` is now optional at the form-validation level — it is still auto-filled when a visit is started, and claim submission validates the service date independently.
+
+---
+
 ## [1.68.0] — 2026-07-07
 
 ### Added
