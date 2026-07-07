@@ -96,7 +96,7 @@ function claimStatusDisplay(status: string | null): { label: string; colorClasse
 }
 
 const schema = z.object({
-  visit_date: z.string().min(1, 'Visit date is required'),
+  visit_date: z.string().optional(),
   subjective: z.string().optional(),
   objective: z.string().optional(),
   assessment: z.string().optional(),
