@@ -29,6 +29,7 @@ class VisitCreate(BaseModel):
     ma91_zipzign_request_id: str | None = None
     ma91_status: str | None = None
     prior_auth_number: str | None = None
+    scheduled_at: datetime | None = None
 
 
 class VisitRead(BaseModel):
@@ -60,5 +61,6 @@ class VisitRead(BaseModel):
     ma91_zipzign_request_id: str | None
     ma91_status: str | None
     prior_auth_number: str | None
+    scheduled_at: datetime | None
     created_at: datetime
     updated_at: datetime

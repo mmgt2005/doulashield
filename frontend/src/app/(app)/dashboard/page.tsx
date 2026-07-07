@@ -6,6 +6,15 @@ import axios from 'axios'
 import { getAccessToken } from '@/lib/auth'
 import { useAuthStore } from '@/store/auth-store'
 
+interface TodayVisit {
+  patient_id: string
+  patient_name: string
+  visit_type: string
+  visit_label: string
+  scheduled_at: string | null
+  status: 'complete' | 'in_progress' | 'scheduled' | 'unscheduled'
+}
+
 interface EnrollmentTask {
   id: string
   status: 'not_started' | 'in_progress' | 'complete'
@@ -38,6 +47,7 @@ export default function DashboardPage() {
   const [liabilityDaysRemaining, setLiabilityDaysRemaining] = useState<number | null | undefined>(undefined)
   const [claimDeadlineSummary, setClaimDeadlineSummary] = useState<{ overdue_count: number; urgent_count: number; unfiled_past_30_days: number } | null>(null)
   const [enrollmentServices, setEnrollmentServices] = useState<EnrollmentServiceDetail[] | null>(null)
+  const [todayVisits, setTodayVisits] = useState<TodayVisit[] | null>(null)
 
   useEffect(() => {
     if (!isAuthenticated) return
@@ -61,6 +71,18 @@ export default function DashboardPage() {
       )
       .then((r) => setEnrollmentServices(r.data))
       .catch(() => setEnrollmentServices([]))
+  }, [isAuthenticated])
+
+  useEffect(() => {
+    if (!isAuthenticated) return
+    const today = new Date().toISOString().slice(0, 10)
+    axios
+      .get<TodayVisit[]>(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/schedule`, {
+        params: { date_from: today, date_to: today },
+        headers: { Authorization: `Bearer ${getAccessToken()}` },
+      })
+      .then((r) => setTodayVisits(r.data))
+      .catch(() => setTodayVisits([]))
   }, [isAuthenticated])
 
   useEffect(() => {
@@ -277,6 +299,41 @@ export default function DashboardPage() {
           </div>
         )
       })()}
+
+      {todayVisits && todayVisits.length > 0 && (
+        <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-sm font-semibold text-gray-900">Today&apos;s Visits</p>
+            <Link href="/schedule" className="text-xs font-medium text-blue-600 hover:underline">
+              Full schedule →
+            </Link>
+          </div>
+          <div className="space-y-2">
+            {todayVisits.map((v) => (
+              <Link
+                key={`${v.patient_id}-${v.visit_type}`}
+                href={`/clients/${v.patient_id}/visits/${v.visit_type}`}
+                className="flex items-center justify-between rounded border border-gray-100 px-3 py-2 text-sm hover:bg-gray-50 transition-colors"
+              >
+                <div className="min-w-0">
+                  <span className="font-medium text-gray-800">{v.visit_label}</span>
+                  <span className="ml-2 text-gray-500 text-xs">{v.patient_name}</span>
+                </div>
+                <span className={`ml-3 flex-shrink-0 text-xs font-medium ${
+                  v.status === 'complete' ? 'text-green-600' :
+                  v.status === 'in_progress' ? 'text-amber-600' : 'text-blue-600'
+                }`}>
+                  {v.status === 'complete' ? 'Done' :
+                   v.status === 'in_progress' ? 'In progress' :
+                   v.scheduled_at
+                     ? new Date(v.scheduled_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                     : 'Today'}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Link

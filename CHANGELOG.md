@@ -12,6 +12,20 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.68.0] — 2026-07-07
+
+### Added
+- **Provider Schedule / Calendar** (`GET /api/v1/schedule`): Providers can now see all upcoming and recent visits across all clients in a single week view. The new `/schedule` page shows a day-by-day list with patient names, visit labels, planned times, and status badges (scheduled / in progress / done). Week navigation (← Today →) lets providers browse past and future weeks.
+- **`scheduled_at` on visits** (migration 0058): Nullable `TIMESTAMP WITH TIME ZONE` column on `public.visits`, indexed on `(provider_id, scheduled_at) WHERE scheduled_at IS NOT NULL`. Lets providers pre-schedule a visit slot before arrival — the planned time appears on the schedule page and dashboard widget.
+- **"Planned date & time" field on visit form**: A compact `datetime-local` input appears at the top of each visit form (hidden once the visit has started). Setting it stamps `scheduled_at` on the visit record and surfaces the visit on the Schedule page and dashboard widget.
+- **"Today's Visits" widget on Dashboard**: When there are visits scheduled for today (via `scheduled_at`, `visit_date`, or `visit_started_at`), a summary card appears on the provider dashboard above the Clients/Reports links. Each row links directly to the visit form. Hides when empty.
+- **"Schedule" link in provider sidebar**: Added between Clients and Reports in the provider navigation.
+
+### Fixed
+- **`crisis_loss_*` visits rejected by backend**: The `VisitType` enum and `CheckConstraint` in `backend/app/models/visit.py` did not include `crisis_loss_1` / `crisis_loss_2`, causing Pydantic validation errors on any PUT to those visit types. Both types are now registered in the backend enum and constraint to match the frontend `VISIT_SLOTS` definition.
+
+---
+
 ## [1.67.2] — 2026-07-06
 
 ### Fixed

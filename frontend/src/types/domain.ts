@@ -128,6 +128,7 @@ export interface Visit {
   ma91_zipzign_request_id: string | null
   ma91_status: 'signed' | 'pending' | 'declined' | null
   prior_auth_number: string | null
+  scheduled_at: string | null
   created_at: string
   updated_at: string
 }

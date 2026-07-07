@@ -106,6 +106,7 @@ const schema = z.object({
   birth_notes: z.string().optional(),
   source_image_path: z.string().optional(),
   // Preprocess empty strings → undefined so Pydantic receives null (not "") for time/datetime columns
+  scheduled_at: z.preprocess((v) => v === '' ? undefined : v, z.string().optional()),
   birth_time: z.preprocess((v) => v === '' ? undefined : v, z.string().optional()),
   visit_started_at: z.preprocess((v) => v === '' ? undefined : v, z.string().optional()),
   visit_ended_at: z.preprocess((v) => v === '' ? undefined : v, z.string().optional()),
@@ -238,6 +239,7 @@ export default function VisitFormPage() {
         if (v.source_image_path) setValue('source_image_path', v.source_image_path)
         if (v.alternate_location) setValue('alternate_location', v.alternate_location)
         if (v.prior_auth_number) setValue('prior_auth_number', v.prior_auth_number)
+        if (v.scheduled_at) setValue('scheduled_at', v.scheduled_at.slice(0, 16))
         if (v.location_type && visitType !== 'prenatal_1') {
           const lt = v.location_type as 'in_person' | 'telehealth'
           setLocationType(lt)
@@ -793,6 +795,21 @@ export default function VisitFormPage() {
         </button>
         <h1 className="text-xl font-bold text-gray-900">{slot.label}</h1>
       </div>
+
+      {/* Planned visit time — only shown before the visit has started */}
+      {!visitStarted && !telehealthStarted && (
+        <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+          <label className="block text-xs font-medium text-gray-600">
+            Planned date &amp; time
+            <span className="ml-1 font-normal text-gray-400">(optional — shows on your schedule)</span>
+          </label>
+          <input
+            {...register('scheduled_at')}
+            type="datetime-local"
+            className="mt-1 block rounded border border-gray-300 bg-white px-3 py-1.5 text-sm focus:border-blue-400 focus:outline-none sm:w-60"
+          />
+        </div>
+      )}
 
       {/* Location type toggle */}
       <div className="flex rounded-lg border border-gray-200 overflow-hidden w-fit">

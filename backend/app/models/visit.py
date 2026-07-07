@@ -25,6 +25,8 @@ class VisitType(str, enum.Enum):
     postnatal_4 = "postnatal_4"
     postnatal_5 = "postnatal_5"
     postnatal_6 = "postnatal_6"
+    crisis_loss_1 = "crisis_loss_1"
+    crisis_loss_2 = "crisis_loss_2"
 
 
 class Visit(Base):
@@ -35,7 +37,8 @@ class Visit(Base):
             "visit_type IN ("
             "'prenatal_1','prenatal_2','prenatal_3','prenatal_4','prenatal_5','prenatal_6',"
             "'labor',"
-            "'postnatal_1','postnatal_2','postnatal_3','postnatal_4','postnatal_5','postnatal_6'"
+            "'postnatal_1','postnatal_2','postnatal_3','postnatal_4','postnatal_5','postnatal_6',"
+            "'crisis_loss_1','crisis_loss_2'"
             ")",
             name="visits_visit_type_check",
         ),
@@ -72,6 +75,7 @@ class Visit(Base):
     ma91_zipzign_request_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     ma91_status: Mapped[str | None] = mapped_column(String(20), nullable=True)
     prior_auth_number: Mapped[str | None] = mapped_column(Text, nullable=True)
+    scheduled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
