@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.68.3] — 2026-07-07
+
+### Fixed
+- **Scheduled visit times displayed 4–5 hours off (timezone bug)**: The `datetime-local` input sends a naive string with no timezone offset. Previously this was forwarded to the backend as-is, which stored it as UTC — so a provider entering 2:00 PM EST would see it displayed as 9:00 AM on the schedule page. The form now converts the local datetime to a UTC ISO string before saving, and converts it back to local time when restoring the field from the API.
+
+---
+
 ## [1.68.2] — 2026-07-07
 
 ### Fixed
