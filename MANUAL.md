@@ -12,7 +12,8 @@ This manual covers every provider-facing feature in DoulaShield. Read it start t
    - [Demo Mode — Practice Walkthrough](#demo-mode--practice-walkthrough)
 2. [Credentialing Status](#credentialing-status)
 3. [Managing Clients](#managing-clients)
-3. [Documenting Visits](#documenting-visits)
+4. [Schedule](#schedule)
+5. [Documenting Visits](#documenting-visits)
 4. [MA 91 Patient Signatures](#ma-91-patient-signatures)
 5. [Claims & Billing](#claims--billing)
    - [Submitting a Claim](#submitting-a-claim)
@@ -327,6 +328,47 @@ The client overview shows three grids: **Prenatal Visits** (6 slots), **Labor** 
 
 ---
 
+## Schedule
+
+The **Schedule** page (sidebar → Schedule) shows all your visits for the current week across every client, grouped by day. Use it to plan upcoming visits and see your workload at a glance.
+
+### Viewing Your Week
+
+The page opens on the current week (Monday–Sunday). Use the **←** and **→** buttons to navigate to previous or future weeks. Click **Today** to jump back to the current week.
+
+Each visit card shows:
+- **Visit type** — e.g., Prenatal 2, Labor, Postnatal 1
+- **Client name**
+- **Planned time** (if set) and a status badge
+
+Status badges:
+| Badge | Meaning |
+|---|---|
+| Blue — time shown | Scheduled, not yet started |
+| Amber — In progress | Visit started but not ended |
+| Green — Done | Visit ended |
+
+Click any card to open that visit's form directly.
+
+The schedule shows visits that have a planned time (`scheduled_at`), a visit date, or a recorded start time. A visit with none of those fields does not appear on the schedule until you set a planned time or start the visit.
+
+### Pre-scheduling a Visit
+
+To add a visit to your schedule before you go:
+
+1. Open the client → click the visit slot (e.g., Prenatal 3).
+2. At the top of the form, find **Planned date & time (optional)**.
+3. Pick a date and time using the date/time picker.
+4. Scroll down and click **Save visit** (or any other save action).
+
+The visit now appears on the Schedule page for that day. The planned time field is hidden once you click Start Visit — at that point the actual start time takes over.
+
+### Today's Visits (Dashboard Widget)
+
+If you have any visits scheduled or started today, a **Today's Visits** card appears on your Dashboard above the Clients and Reports links. Each row shows the visit label, client name, and time (or "In progress" / "Done" if the visit is underway). Click a row to open the visit form. The widget is hidden when there are no visits today.
+
+---
+
 ## Documenting Visits
 
 ### The 13-Visit Schedule
@@ -342,6 +384,9 @@ Pennsylvania Medicaid covers exactly 13 visits per client:
 Crisis and bereavement visits are separate — capped at 2 per year — and billed at a different rate (see Reference section).
 
 ### Starting a Visit
+
+**Pre-scheduling (optional):**
+If you know when the visit will happen, set the **Planned date & time** field at the top of the visit form before you arrive. This makes the visit appear on your Schedule page. The field disappears once the visit is started.
 
 **In-person:**
 Open the visit form and click **Start Visit**. The app records a timestamp and your GPS coordinates. If you are more than 500 feet from the client's address, an amber warning appears. You can still proceed — the warning is informational only. If you are meeting at a different location (clinic, hospital), enter the location in the text box that appears.
