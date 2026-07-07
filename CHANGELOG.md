@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.68.4] — 2026-07-07
+
+### Improved
+- **MCO task steps easier to read in Enrollment Services**: Step headers in MCO contracting tasks (e.g., "Step 1 — Contracting:", "Step 2 — Credentialing:") are now bolded and displayed on separate lines instead of running together as a wall of text. Applies to the Admin → Enrollment Services task detail panel and Billing Admin → My Providers enrollment task list. Tasks without a step pattern (Work History, Resume/CV, Health Partners Plans) are unaffected.
+
+---
+
 ## [1.68.3] — 2026-07-07
 
 ### Fixed
