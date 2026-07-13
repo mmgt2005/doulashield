@@ -33,7 +33,7 @@ interface GmailMessageDetail extends GmailMessage {
 export default function GmailPage() {
   const searchParams = useSearchParams()
   const api = process.env.NEXT_PUBLIC_API_URL
-  const authHeader = { Authorization: `Bearer ${getAccessToken()}` }
+  const authHeader = () => ({ Authorization: `Bearer ${getAccessToken()}` })
 
   const [connected, setConnected] = useState<boolean | null>(null)
   const [connectedEmail, setConnectedEmail] = useState<string | null>(null)
@@ -124,7 +124,7 @@ export default function GmailPage() {
 
   const loadStatus = useCallback(async () => {
     try {
-      const res = await axios.get(`${api}/api/v1/admin/gmail/status`, { headers: authHeader })
+      const res = await axios.get(`${api}/api/v1/admin/gmail/status`, { headers: authHeader() })
       setConnected(res.data.connected)
       setConnectedEmail(res.data.email)
     } catch {
@@ -140,7 +140,7 @@ export default function GmailPage() {
       const params: Record<string, string> = { label }
       if (q) params.q = q
       const res = await axios.get<GmailMessage[]>(`${api}/api/v1/admin/gmail/inbox`, {
-        headers: authHeader,
+        headers: authHeader(),
         params,
       })
       setMessages(res.data)
@@ -188,7 +188,7 @@ export default function GmailPage() {
     setDetailLoading(true)
     try {
       const res = await axios.get<GmailMessageDetail>(`${api}/api/v1/admin/gmail/messages/${id}`, {
-        headers: authHeader,
+        headers: authHeader(),
       })
       setDetail(res.data)
     } catch {
@@ -201,7 +201,7 @@ export default function GmailPage() {
   const handleConnect = async () => {
     try {
       const res = await axios.get<{ auth_url: string }>(`${api}/api/v1/admin/gmail/auth-url`, {
-        headers: authHeader,
+        headers: authHeader(),
       })
       window.location.href = res.data.auth_url
     } catch (e) {
@@ -216,7 +216,7 @@ export default function GmailPage() {
       const res = await axios.get(
         `${api}/api/v1/admin/gmail/messages/${messageId}/attachments/${att.id}`,
         {
-          headers: authHeader,
+          headers: authHeader(),
           params: { filename: att.filename, mime_type: att.mimeType },
           responseType: 'blob',
         }
@@ -238,7 +238,7 @@ export default function GmailPage() {
     if (!confirm('Disconnect Gmail? You will need to re-authorize to view emails again.')) return
     setDisconnecting(true)
     try {
-      await axios.delete(`${api}/api/v1/admin/gmail/disconnect`, { headers: authHeader })
+      await axios.delete(`${api}/api/v1/admin/gmail/disconnect`, { headers: authHeader() })
       setConnected(false)
       setConnectedEmail(null)
       setMessages([])

@@ -580,7 +580,7 @@ async def generate_executive_report(
             mco = await mco_report(user, db, date_from, date_to, include_demo)
         except Exception:
             log.exception("Executive report data fetch failed")
-            yield b"*Failed to load platform data — please try again.*"
+            yield b"*Failed to load platform data - please try again.*"
             return
         async for chunk in stream_executive_report(stats, mco, period_label):
             yield chunk

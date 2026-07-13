@@ -12,6 +12,14 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.68.10] — 2026-07-13
+
+### Fixed
+- **Backend startup crash (SyntaxError in executive.py)**: The bytes literal `b"*Failed to load platform data — please try again.*"` used an em dash (U+2014), which is a non-ASCII character and illegal in Python bytes literals. Python raised a `SyntaxError` at import time, preventing uvicorn from starting and causing the Railway healthcheck to fail. Replaced the em dash with an ASCII hyphen.
+- **Gmail page 401/CORS errors**: Same stale-closure pattern as the MCO report page — `authHeader` was built once at component render time and captured in `useCallback` closures. Converted `authHeader` from a frozen object to a `() => {...}` function called fresh inside each request, so `getAccessToken()` is always evaluated at request time.
+
+---
+
 ## [1.68.9] — 2026-07-13
 
 ### Fixed
