@@ -269,7 +269,7 @@ export default function AdminLeadsPage() {
   }
 
   const canConvert = (lead: Lead) =>
-    (lead.status === 'qualified' || lead.status === 'demo_scheduled') && !lead.converted_user_id
+    (lead.status === 'qualified' || lead.status === 'demo_scheduled') && !lead.converted_user_id && !lead.is_demo
 
   return (
     <div className="space-y-4">

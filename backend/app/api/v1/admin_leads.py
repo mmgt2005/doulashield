@@ -229,6 +229,8 @@ async def convert_lead(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lead not found")
     if lead.converted_user_id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Lead already converted")
+    if lead.is_demo:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Demo leads cannot be converted to provider accounts")
 
     existing = await db.execute(select(User).where(User.email == lead.email))
     if existing.scalar_one_or_none():

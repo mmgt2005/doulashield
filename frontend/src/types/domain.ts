@@ -210,6 +210,7 @@ export interface Lead {
   assigned_to: string | null
   converted_user_id: string | null
   cal_booking_uid: string | null
+  is_demo: boolean
   created_at: string
   updated_at: string | null
 }

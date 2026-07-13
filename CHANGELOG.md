@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.68.15] — 2026-07-13
+
+### Fixed
+- **CORS error when converting a demo lead**: Demo leads are seeded with `@demo.invalid` email addresses (reserved TLD per RFC 2606). When `convert_lead` tried to construct `UserCreate(email=lead.email)`, Pydantic's `EmailStr` validator rejected the address as an invalid/reserved domain, throwing an unhandled `ValidationError` (500). Railway strips `Access-Control-Allow-Origin` from 500 responses, so the browser saw a CORS error instead of a meaningful message. Fixed at three layers: (1) backend now returns a proper 400 HTTPException ("Demo leads cannot be converted") before the schema validation runs; (2) frontend `canConvert` now excludes `is_demo` leads so the Convert button never appears for seeded demo leads; (3) `Lead` TypeScript interface now includes `is_demo: boolean` so the field is available to frontend logic (it was already returned by the API).
+
+---
+
 ## [1.68.14] — 2026-07-13
 
 ### Added
