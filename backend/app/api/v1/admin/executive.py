@@ -1,8 +1,11 @@
 """Executive Analytics — platform-wide stats for executive / founding-team access."""
 import csv
 import io
+import logging
 from datetime import date
 from typing import Annotated
+
+log = logging.getLogger(__name__)
 
 from fastapi import Depends, Query
 from fastapi.responses import StreamingResponse
@@ -572,8 +575,13 @@ async def generate_executive_report(
         period_label = "All Time"
 
     async def _generate():
-        stats = await executive_stats(user, db, date_from, date_to, include_demo)
-        mco = await mco_report(user, db, date_from, date_to, include_demo)
+        try:
+            stats = await executive_stats(user, db, date_from, date_to, include_demo)
+            mco = await mco_report(user, db, date_from, date_to, include_demo)
+        except Exception:
+            log.exception("Executive report data fetch failed")
+            yield b"*Failed to load platform data — please try again.*"
+            return
         async for chunk in stream_executive_report(stats, mco, period_label):
             yield chunk
 

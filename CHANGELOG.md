@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.68.8] — 2026-07-13
+
+### Fixed
+- **Generate Strategic Report shows blank when data fetch fails**: If `executive_stats()` or `mco_report()` threw an exception inside the `_generate()` streaming generator, the `StreamingResponse` stream would close silently — the HTTP status was already 200, so the browser's `fetch()` catch block never fired and the report section displayed "Complete" with no content. Added a try/except in `_generate()` so any data-fetch failure yields a visible error message to the stream instead of closing silently. Also added logging so backend errors are captured.
+
+---
+
 ## [1.68.7] — 2026-07-13
 
 ### Fixed
