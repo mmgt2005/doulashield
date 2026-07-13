@@ -44,14 +44,16 @@ export default function McoReportPage() {
   const [locationSplit, setLocationSplit] = useState<LocationRow[]>([])
   const [loading, setLoading] = useState(true)
   const [exporting, setExporting] = useState(false)
+  const [demoMode, setDemoMode] = useState(false)
 
   const api = process.env.NEXT_PUBLIC_API_URL
   const headers = { Authorization: `Bearer ${getAccessToken()}` }
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (demo: boolean) => {
     setLoading(true)
     try {
-      const res = await axios.get(`${api}/api/v1/admin/executive/mco-report`, { headers })
+      const params = demo ? '?include_demo=true' : ''
+      const res = await axios.get(`${api}/api/v1/admin/executive/mco-report${params}`, { headers })
       setMcoData(res.data.mco_breakdown ?? [])
       setReferring(res.data.referring_providers ?? [])
       setLocationSplit(res.data.location_split ?? [])
@@ -64,7 +66,7 @@ export default function McoReportPage() {
     }
   }, [api])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => { load(demoMode) }, [load, demoMode])
 
   const handleExportCsv = async () => {
     setExporting(true)
@@ -92,14 +94,32 @@ export default function McoReportPage() {
             Platform-wide claims data aggregated by Managed Care Organization — use for contract negotiations and partnership decks.
           </p>
         </div>
-        <button
-          onClick={handleExportCsv}
-          disabled={exporting || loading}
-          className="flex items-center gap-1.5 rounded border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-        >
-          {exporting ? 'Exporting…' : '↓ Export CSV'}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setDemoMode((d) => !d)}
+            className={`rounded px-3 py-1.5 text-xs font-medium border transition-colors ${
+              demoMode
+                ? 'bg-amber-500 text-white border-amber-500 hover:bg-amber-600'
+                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+            }`}
+          >
+            {demoMode ? 'Exit Demo Mode' : 'Demo Mode'}
+          </button>
+          <button
+            onClick={handleExportCsv}
+            disabled={exporting || loading}
+            className="flex items-center gap-1.5 rounded border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+          >
+            {exporting ? 'Exporting…' : '↓ Export CSV'}
+          </button>
+        </div>
       </div>
+
+      {demoMode && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
+          <span className="font-semibold">Demo Mode active</span> — showing seeded demo data. Toggle off to return to live data.
+        </div>
+      )}
 
       {loading ? (
         <div className="py-16 text-center text-sm text-gray-400">Loading…</div>

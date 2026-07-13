@@ -294,7 +294,7 @@ async def executive_stats(
     ]
 
     # Stage completion time
-    completion_rows = await db.execute(text("""
+    completion_rows = await db.execute(text(f"""
         SELECT
           es.stage,
           COUNT(*) AS completed_count,

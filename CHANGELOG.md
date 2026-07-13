@@ -12,6 +12,14 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.68.7] — 2026-07-13
+
+### Fixed
+- **Demo Mode data missing from Executive Dashboard stage-completion query**: The `completion_rows` SQL query in `executive.py` was missing the `f` prefix on its `text(f"""...""")` call, causing `{_nes}` to be passed as a literal string to PostgreSQL rather than being interpolated as the demo-mode filter clause. This produced a SQL syntax error and returned no stage-completion-time data whenever the endpoint was called (demo mode or not). Added the missing `f` prefix.
+- **MCO Partnership Report ignores Demo Mode**: The `/admin/executive/mco-report` page had no demo mode state and never passed `include_demo=true` to the API, so toggling demo mode on the Executive Dashboard had no effect on the MCO report. Added a Demo Mode toggle button and amber status banner to the MCO report page; the page now passes `include_demo=true` when demo mode is active.
+
+---
+
 ## [1.68.6] — 2026-07-13
 
 ### Fixed
