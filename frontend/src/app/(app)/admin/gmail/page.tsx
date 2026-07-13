@@ -145,8 +145,14 @@ export default function GmailPage() {
       })
       setMessages(res.data)
     } catch (e) {
-      if (axios.isAxiosError(e) && e.response?.status !== 400) {
-        showToast('Failed to load messages')
+      if (axios.isAxiosError(e)) {
+        if (e.response?.data?.detail === 'gmail_token_expired') {
+          setConnected(false)
+          setConnectedEmail(null)
+          setMessages([])
+        } else if (e.response?.status !== 400) {
+          showToast('Failed to load messages')
+        }
       }
     } finally {
       setLoading(false)

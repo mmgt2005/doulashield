@@ -88,17 +88,35 @@ async def _get_credentials(user):
     return creds
 
 
+class GmailTokenExpired(Exception):
+    """Raised when the stored Gmail OAuth token is expired and cannot be refreshed."""
+
+
 async def _build_service(user, db: AsyncSession):
     from google.auth.transport.requests import Request
     from googleapiclient.discovery import build
 
     creds = await _get_credentials(user)
 
-    if creds.expired and creds.refresh_token:
-        await asyncio.to_thread(creds.refresh, Request())
-        user.gmail_access_token_encrypted = encrypt_field(creds.token)
-        user.gmail_token_expiry = creds.expiry.replace(tzinfo=timezone.utc) if creds.expiry else None
-        await db.commit()
+    if creds.expired:
+        if not creds.refresh_token:
+            raise GmailTokenExpired("No refresh token stored")
+        try:
+            await asyncio.to_thread(creds.refresh, Request())
+            user.gmail_access_token_encrypted = encrypt_field(creds.token)
+            user.gmail_token_expiry = creds.expiry.replace(tzinfo=timezone.utc) if creds.expiry else None
+            await db.commit()
+        except GmailTokenExpired:
+            raise
+        except Exception as exc:
+            # Token revoked or refresh failed — clear stored tokens so /status returns disconnected
+            user.gmail_access_token_encrypted = None
+            user.gmail_refresh_token_encrypted = None
+            user.gmail_token_expiry = None
+            user.gmail_connected_email = None
+            await db.commit()
+            log.warning("Gmail token refresh failed, cleared stored tokens: %s", exc)
+            raise GmailTokenExpired("Token refresh failed") from exc
 
     service = build("gmail", "v1", credentials=creds, cache_discovery=False)
     return service

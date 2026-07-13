@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.68.12] — 2026-07-13
+
+### Fixed
+- **Gmail inbox 502 when OAuth tokens expire**: `_build_service` was silently attempting to use expired credentials when no refresh token was available, and swallowing refresh failures without clearing the stale tokens. Now: if the access token is expired and no refresh token is stored, or if the refresh call itself fails (token revoked, Google rejects it), the stored tokens are cleared from the database so the next `/status` call returns `connected: false`. A new `GmailTokenExpired` exception class signals this condition to the route layer, which returns a 400 with `detail: "gmail_token_expired"`. The Gmail page frontend detects this specific detail, sets `connected = false`, and drops back to the "Connect Gmail" screen so the user can re-authorize without a manual page refresh.
+
+---
+
 ## [1.68.11] — 2026-07-13
 
 ### Fixed
