@@ -47,31 +47,34 @@ export default function McoReportPage() {
   const [demoMode, setDemoMode] = useState(false)
 
   const api = process.env.NEXT_PUBLIC_API_URL
-  const headers = { Authorization: `Bearer ${getAccessToken()}` }
 
   const load = useCallback(async (demo: boolean) => {
     setLoading(true)
+    const authHeader = { Authorization: `Bearer ${getAccessToken()}` }
     try {
       const params = demo ? '?include_demo=true' : ''
-      const res = await axios.get(`${api}/api/v1/admin/executive/mco-report${params}`, { headers })
+      const res = await axios.get(`${api}/api/v1/admin/executive/mco-report${params}`, { headers: authHeader })
       setMcoData(res.data.mco_breakdown ?? [])
       setReferring(res.data.referring_providers ?? [])
       setLocationSplit(res.data.location_split ?? [])
     } catch (e) {
-      if (axios.isAxiosError(e) && e.response?.status === 403) {
-        router.replace('/dashboard')
+      if (axios.isAxiosError(e)) {
+        const status = e.response?.status
+        if (status === 401) router.replace('/login')
+        else if (status === 403) router.replace('/dashboard')
       }
     } finally {
       setLoading(false)
     }
-  }, [api])
+  }, [api, router])
 
   useEffect(() => { load(demoMode) }, [load, demoMode])
 
   const handleExportCsv = async () => {
     setExporting(true)
+    const authHeader = { Authorization: `Bearer ${getAccessToken()}` }
     try {
-      const res = await fetch(`${api}/api/v1/admin/executive/mco-report.csv`, { headers })
+      const res = await fetch(`${api}/api/v1/admin/executive/mco-report.csv`, { headers: authHeader })
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')

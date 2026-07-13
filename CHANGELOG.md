@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.68.9] — 2026-07-13
+
+### Fixed
+- **MCO Partnership Report 401 / CORS error**: The `getAccessToken()` call was made at component render time and captured in the `useCallback` closure; if the callback was created before the auth store finished its token refresh, the header became `Authorization: Bearer null`, causing the backend to reject the request with 401. Because Railway's proxy strips `Access-Control-Allow-Origin` from error responses, the browser also reported a CORS error on top of the 401. Fixed by moving `getAccessToken()` inside the `load` function so it is evaluated fresh at request time. Also added a 401 → `/login` redirect alongside the existing 403 → `/dashboard` redirect, and added `router` to `useCallback` dependencies.
+
+---
+
 ## [1.68.8] — 2026-07-13
 
 ### Fixed
