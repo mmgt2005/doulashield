@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.68.6] — 2026-07-13
+
+### Fixed
+- **Generate Report CORS error in Demo Mode**: The `/generate-report` endpoint was running the stats and MCO queries before constructing the `StreamingResponse`, blocking the HTTP response start long enough for Railway's proxy to timeout and close the connection — which the browser reported as a CORS error (no `Access-Control-Allow-Origin` on the proxy's 504). Moved the database queries inside the async generator so the `StreamingResponse` (and its CORS headers) is returned to the proxy immediately, and the heavy lifting runs during the stream.
+
+---
+
 ## [1.68.5] — 2026-07-07
 
 ### Improved
