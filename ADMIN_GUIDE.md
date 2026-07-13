@@ -392,6 +392,8 @@ The MCO report aggregates platform-wide claims data by payer — the core data f
 
 **Referring Physicians** table lists the top 50 NPIs referring patients to DoulaShield providers, sorted by patient count, with the count of doulas serving those patients. Use this as a warm-intro story when approaching a health system: "Physicians on your medical staff are already informally referring patients to our doulas."
 
+**Export PDF** opens a formatted, print-ready version of the full report — MCO Negotiation Data, Service Delivery Profile, and Referring Physicians — in a new browser tab set to landscape layout, then immediately opens the browser print dialog. Choose "Save as PDF" to download. The colour coding (green/amber/red) is preserved in the PDF. If Demo Mode is active, a "DEMO" badge appears in the PDF header. Use this for board decks, partner pitch packets, and MCO pre-negotiation briefings.
+
 **Export CSV** downloads a spreadsheet of the MCO negotiation table for use in partner presentations.
 
 ---
