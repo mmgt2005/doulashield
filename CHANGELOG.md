@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.68.13] — 2026-07-13
+
+### Fixed
+- **Generate Strategic Report fails with SQL syntax error in mco_report**: The referring-provider analysis query inside `mco_report()` was missing the `f` prefix on its `text(f"""...""")` call, causing `{_np}` to be passed as a literal string to PostgreSQL rather than being interpolated as the demo-mode filter clause. PostgreSQL raised `syntax error at or near "{"`, which was caught by the error handler added in v1.68.8 and emitted as `*Failed to load platform data - please try again.*` instead of the report. Same root cause as the `completion_rows` fix in v1.68.7. Added the missing `f` prefix.
+
+---
+
 ## [1.68.12] — 2026-07-13
 
 ### Fixed

@@ -504,7 +504,7 @@ async def mco_report(
         })
 
     # Referring provider analysis
-    ref_rows = await db.execute(text("""
+    ref_rows = await db.execute(text(f"""
         SELECT
           p.referring_provider_npi,
           p.referring_provider_name,
