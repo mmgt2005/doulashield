@@ -37,6 +37,137 @@ function fmtMoney(n: number) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n)
 }
 
+function buildPdfHtml(
+  mcoData: McoRow[],
+  locationSplit: LocationRow[],
+  referring: ReferringProvider[],
+  demoMode: boolean,
+) {
+  const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+  const fmt = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n)
+
+  const mcoRows = mcoData.map((r) => `
+    <tr>
+      <td>${r.mco_name}</td>
+      <td>${r.covered_patients}</td>
+      <td>${r.provider_count}</td>
+      <td>${r.total_claims}</td>
+      <td>${fmt(r.total_billed)}</td>
+      <td>${fmt(r.total_paid)}</td>
+      <td class="${r.collection_rate_pct >= 80 ? 'green' : r.collection_rate_pct >= 60 ? 'amber' : 'red'}">${r.collection_rate_pct}%</td>
+      <td>${r.denied_claims}</td>
+      <td class="${r.denial_rate_pct > 20 ? 'red' : ''}">${r.denial_rate_pct}%</td>
+      <td>${r.resubmitted_claims}</td>
+      <td>${r.resubmission_rate_pct}%</td>
+      <td>${r.avg_days_to_pay != null ? `${r.avg_days_to_pay}d` : '—'}</td>
+    </tr>`).join('')
+
+  const locationSection = locationSplit.length === 0 ? '' : (() => {
+    const total = locationSplit.reduce((s, r) => s + r.visit_count, 0)
+    const rows = locationSplit.map((r) => `
+      <tr>
+        <td style="text-transform:capitalize">${r.location_type.replace('_', '-')}</td>
+        <td>${r.visit_count} (${Math.round(100 * r.visit_count / Math.max(total, 1))}%)</td>
+        <td>${r.provider_count}</td>
+      </tr>`).join('')
+    return `
+      <h2>Service Delivery Profile</h2>
+      <table>
+        <thead><tr><th>Delivery Mode</th><th>Visit Count</th><th>Provider Count</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`
+  })()
+
+  const referringSection = referring.length === 0 ? '' : `
+    <h2>Hospital / Health System Partnerships — Referring Physicians</h2>
+    <p class="sub">Physicians already referring patients to DoulaShield providers.</p>
+    <table>
+      <thead><tr><th>NPI</th><th>Name</th><th>Patients Referred</th><th>Doulas Serving Them</th></tr></thead>
+      <tbody>${referring.map((r) => `
+        <tr>
+          <td style="font-family:monospace">${r.npi}</td>
+          <td>${r.name ?? '—'}</td>
+          <td>${r.total_patients}</td>
+          <td>${r.doula_count}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>DoulaShield MCO Partnership Report${demoMode ? ' (Demo)' : ''}</title>
+<style>
+  @page { size: landscape; margin: 1.8cm 1.5cm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 9pt; color: #111; background: #fff; }
+  header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #111; padding-bottom: 8pt; margin-bottom: 14pt; }
+  header h1 { font-size: 16pt; font-weight: 700; letter-spacing: -.3px; }
+  header .meta { text-align: right; font-size: 8pt; color: #555; line-height: 1.6; }
+  h2 { font-size: 10pt; font-weight: 600; margin: 18pt 0 3pt; }
+  p.sub { font-size: 8pt; color: #666; margin-bottom: 6pt; }
+  table { width: 100%; border-collapse: collapse; font-size: 8pt; }
+  thead th { background: #f3f4f6; font-weight: 600; color: #374151; text-align: left; padding: 5pt 7pt; border-bottom: 1px solid #d1d5db; white-space: nowrap; }
+  tbody td { padding: 4pt 7pt; border-bottom: 1px solid #e5e7eb; vertical-align: top; }
+  tbody tr:last-child td { border-bottom: none; }
+  .green { color: #15803d; font-weight: 600; }
+  .amber { color: #b45309; font-weight: 600; }
+  .red   { color: #dc2626; font-weight: 600; }
+  .legend { display: flex; gap: 16pt; margin-top: 6pt; font-size: 7.5pt; color: #6b7280; }
+  footer { margin-top: 20pt; border-top: 1px solid #e5e7eb; padding-top: 6pt; font-size: 7.5pt; color: #9ca3af; display: flex; justify-content: space-between; }
+  .demo-badge { display: inline-block; background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; border-radius: 3pt; padding: 1pt 5pt; font-size: 7.5pt; font-weight: 600; margin-left: 6pt; vertical-align: middle; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>DoulaShield MCO Partnership Report${demoMode ? '<span class="demo-badge">DEMO</span>' : ''}</h1>
+  </div>
+  <div class="meta">
+    <div>Generated ${today}</div>
+    <div>Platform-wide claims data by Managed Care Organization</div>
+  </div>
+</header>
+
+<h2>MCO Negotiation Data</h2>
+<p class="sub">Collection Rate, Denial Rate, and Avg Days to Pay are the three metrics MCOs respond to in contract discussions.</p>
+<table>
+  <thead>
+    <tr>
+      <th>MCO</th>
+      <th>Covered Patients</th>
+      <th>Providers</th>
+      <th>Claims</th>
+      <th>Total Billed</th>
+      <th>Total Paid</th>
+      <th>Collection %</th>
+      <th>Denied</th>
+      <th>Denial %</th>
+      <th>Resubmitted</th>
+      <th>Resub %</th>
+      <th>Avg Days to Pay</th>
+    </tr>
+  </thead>
+  <tbody>${mcoRows}</tbody>
+</table>
+<div class="legend">
+  <span>&#9679; Green Collection % = &ge;80% (strong)</span>
+  <span>&#9679; Red Denial % = &gt;20% (leverage for renegotiation)</span>
+  <span>&#9679; Amber Days = &gt;45 days to pay (cash flow argument)</span>
+</div>
+
+${locationSection}
+${referringSection}
+
+<footer>
+  <span>DoulaShield &mdash; Confidential</span>
+  <span>doulashield.com</span>
+</footer>
+</body>
+</html>`
+}
+
 export default function McoReportPage() {
   const router = useRouter()
   const [mcoData, setMcoData] = useState<McoRow[]>([])
@@ -69,6 +200,16 @@ export default function McoReportPage() {
   }, [api, router])
 
   useEffect(() => { load(demoMode) }, [load, demoMode])
+
+  const handleExportPdf = () => {
+    const html = buildPdfHtml(mcoData, locationSplit, referring, demoMode)
+    const win = window.open('', '_blank')
+    if (!win) return
+    win.document.write(html)
+    win.document.close()
+    win.focus()
+    setTimeout(() => win.print(), 400)
+  }
 
   const handleExportCsv = async () => {
     setExporting(true)
@@ -107,6 +248,13 @@ export default function McoReportPage() {
             }`}
           >
             {demoMode ? 'Exit Demo Mode' : 'Demo Mode'}
+          </button>
+          <button
+            onClick={handleExportPdf}
+            disabled={loading}
+            className="flex items-center gap-1.5 rounded border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+          >
+            ↓ Export PDF
           </button>
           <button
             onClick={handleExportCsv}

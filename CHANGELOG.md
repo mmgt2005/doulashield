@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.68.14] — 2026-07-13
+
+### Added
+- **MCO Partnership Report PDF export**: New "Export PDF" button opens a formatted print-ready version of the report (landscape, all three sections: MCO Negotiation Data, Service Delivery Profile, Referring Physicians) in a new tab and triggers the browser print dialog. Users choose "Save as PDF" to download. No new dependencies — built from the data already loaded in state.
+
+---
+
 ## [1.68.13] — 2026-07-13
 
 ### Fixed
