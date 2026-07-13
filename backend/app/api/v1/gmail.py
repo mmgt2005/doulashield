@@ -190,7 +190,11 @@ async def gmail_inbox(
     if not gmail_user:
         raise HTTPException(status_code=400, detail="Gmail not connected")
     from app.services import gmail_service
-    return await gmail_service.fetch_inbox(gmail_user, db, q=q, label=label)
+    try:
+        return await gmail_service.fetch_inbox(gmail_user, db, q=q, label=label)
+    except Exception as exc:
+        log.exception("Gmail inbox fetch failed")
+        raise HTTPException(status_code=502, detail="Failed to fetch Gmail inbox") from exc
 
 
 @router.get("/messages")

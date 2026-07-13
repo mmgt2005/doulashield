@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.68.11] — 2026-07-13
+
+### Fixed
+- **Gmail inbox unhandled exception**: If the Google API call inside `fetch_inbox` threw (expired token that could not be refreshed, network error, quota exceeded, etc.), the exception propagated all the way to FastAPI's default 500 handler. Railway's proxy strips `Access-Control-Allow-Origin` from 500 responses, causing the browser to report a CORS error instead of a useful message. Added a try/except that converts any Google API exception to a 502 HTTPException, which FastAPI handles cleanly and wraps in CORS headers.
+
+---
+
 ## [1.68.10] — 2026-07-13
 
 ### Fixed
