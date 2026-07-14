@@ -17,11 +17,11 @@ limiter = Limiter(key_func=get_remote_address)
 router = APIRouter(prefix="/public/leads", tags=["public"])
 
 
-async def _find_existing(db: AsyncSession, email: str, source: str) -> Lead | None:
+async def _find_existing(db: AsyncSession, email: str) -> Lead | None:
     result = await db.execute(
-        select(Lead).where(Lead.email == email, Lead.source == source)
+        select(Lead).where(Lead.email == email).order_by(Lead.created_at.desc())
     )
-    return result.scalar_one_or_none()
+    return result.scalars().first()
 
 
 async def _notify_admin(lead: Lead) -> None:
@@ -64,12 +64,21 @@ async def register_webinar_lead(
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     email = str(body.email).lower()
-    existing = await _find_existing(db, email, "webinar")
+    existing = await _find_existing(db, email)
 
     if existing:
         if existing.converted_user_id:
             return {"status": "ok", "id": str(existing.id)}
-        existing.lead_data = {"webinar_topic": body.webinar_topic} if body.webinar_topic else existing.lead_data
+        updated_data = dict(existing.lead_data or {})
+        if body.webinar_topic:
+            updated_data["webinar_topic"] = body.webinar_topic
+        existing.lead_data = updated_data or existing.lead_data
+        existing.first_name = body.first_name or existing.first_name
+        existing.last_name = body.last_name or existing.last_name
+        if body.phone:
+            existing.phone = body.phone
+        if body.organization_name:
+            existing.organization_name = body.organization_name
         existing.updated_at = datetime.now(timezone.utc)
         await db.commit()
         await db.refresh(existing)
@@ -105,7 +114,7 @@ async def register_quiz_lead(
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     email = str(body.email).lower()
-    existing = await _find_existing(db, email, "quiz")
+    existing = await _find_existing(db, email)
 
     if existing:
         if existing.converted_user_id:
@@ -118,7 +127,14 @@ async def register_quiz_lead(
         if body.webinar_cta_clicked_at:
             updated_data["webinar_cta_clicked_at"] = body.webinar_cta_clicked_at
         existing.lead_data = updated_data or existing.lead_data
-        existing.provider_type = body.provider_type or existing.provider_type
+        existing.first_name = body.first_name or existing.first_name
+        existing.last_name = body.last_name or existing.last_name
+        if body.phone:
+            existing.phone = body.phone
+        if body.organization_name:
+            existing.organization_name = body.organization_name
+        if body.provider_type and body.provider_type != "unknown":
+            existing.provider_type = body.provider_type
         existing.updated_at = datetime.now(timezone.utc)
         await db.commit()
         await db.refresh(existing)
@@ -161,7 +177,7 @@ async def register_contact_lead(
     db: AsyncSession = Depends(get_db),
 ) -> dict:
     email = str(body.email).lower()
-    existing = await _find_existing(db, email, "contact_form")
+    existing = await _find_existing(db, email)
 
     if existing:
         if existing.converted_user_id:
@@ -174,6 +190,14 @@ async def register_contact_lead(
         if body.webinar_cta_clicked_at:
             updated_data["webinar_cta_clicked_at"] = body.webinar_cta_clicked_at
         existing.lead_data = updated_data or existing.lead_data
+        existing.first_name = body.first_name or existing.first_name
+        existing.last_name = body.last_name or existing.last_name
+        if body.phone:
+            existing.phone = body.phone
+        if body.organization_name:
+            existing.organization_name = body.organization_name
+        if body.provider_type and body.provider_type != "unknown":
+            existing.provider_type = body.provider_type
         existing.updated_at = datetime.now(timezone.utc)
         await db.commit()
         log.info("Duplicate contact lead updated: <%s>", email)

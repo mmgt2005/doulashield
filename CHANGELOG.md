@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.68.19] — 2026-07-14
+
+### Changed
+- **Cross-source lead deduplication**: Public lead endpoints (webinar, quiz, contact form) now dedup by email across all sources. Previously a visitor who registered for a webinar and later submitted the contact form would create two separate lead records. Now the most recent existing lead for that email is found and updated regardless of how they first came in. Name, phone, and organization are also updated on the existing record if the new submission provides them, so later forms can fill in gaps left by earlier ones.
+
+---
+
 ## [1.68.18] — 2026-07-14
 
 ### Fixed
