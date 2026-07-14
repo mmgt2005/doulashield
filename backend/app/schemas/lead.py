@@ -26,6 +26,8 @@ class QuizLeadCreate(BaseModel):
     provider_type: ProviderTypeLiteral = "unknown"
     answers: dict[str, Any] | None = None
     organization_name: str | None = None
+    webinar_reached_at: str | None = None
+    webinar_cta_clicked_at: str | None = None
 
 
 class ContactLeadCreate(BaseModel):
@@ -36,6 +38,8 @@ class ContactLeadCreate(BaseModel):
     organization_name: str | None = None
     provider_type: ProviderTypeLiteral = "unknown"
     message: str | None = None
+    webinar_reached_at: str | None = None
+    webinar_cta_clicked_at: str | None = None
 
 
 class LeadCreate(BaseModel):

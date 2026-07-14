@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.68.18] — 2026-07-14
+
+### Fixed
+- **Webinar attribution timestamps not persisted**: `webinar_reached_at` and `webinar_cta_clicked_at` were being sent by the landing page in contact and quiz lead payloads but silently dropped because the backend schemas (`ContactLeadCreate`, `QuizLeadCreate`) didn't declare those fields. Added both fields to both schemas and merged them into `lead_data` in the contact and quiz endpoints (for both new leads and duplicate-update paths).
+
+---
+
 ## [1.68.17] — 2026-07-14
 
 ### Changed

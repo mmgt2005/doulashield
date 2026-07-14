@@ -110,7 +110,14 @@ async def register_quiz_lead(
     if existing:
         if existing.converted_user_id:
             return {"status": "ok", "id": str(existing.id)}
-        existing.lead_data = {"answers": body.answers} if body.answers else existing.lead_data
+        updated_data = dict(existing.lead_data or {})
+        if body.answers:
+            updated_data["answers"] = body.answers
+        if body.webinar_reached_at:
+            updated_data["webinar_reached_at"] = body.webinar_reached_at
+        if body.webinar_cta_clicked_at:
+            updated_data["webinar_cta_clicked_at"] = body.webinar_cta_clicked_at
+        existing.lead_data = updated_data or existing.lead_data
         existing.provider_type = body.provider_type or existing.provider_type
         existing.updated_at = datetime.now(timezone.utc)
         await db.commit()
@@ -119,6 +126,13 @@ async def register_quiz_lead(
         log.info("Duplicate quiz lead updated: <%s>", email)
         return {"status": "ok", "id": str(existing.id)}
 
+    quiz_data: dict = {}
+    if body.answers:
+        quiz_data["answers"] = body.answers
+    if body.webinar_reached_at:
+        quiz_data["webinar_reached_at"] = body.webinar_reached_at
+    if body.webinar_cta_clicked_at:
+        quiz_data["webinar_cta_clicked_at"] = body.webinar_cta_clicked_at
     lead = Lead(
         source="quiz",
         status="new",
@@ -128,7 +142,7 @@ async def register_quiz_lead(
         phone=body.phone,
         organization_name=body.organization_name,
         provider_type=body.provider_type,
-        lead_data={"answers": body.answers} if body.answers else None,
+        lead_data=quiz_data or None,
     )
     db.add(lead)
     await db.commit()
@@ -152,12 +166,26 @@ async def register_contact_lead(
     if existing:
         if existing.converted_user_id:
             return {"status": "ok", "id": str(existing.id)}
-        existing.lead_data = {"message": body.message} if body.message else existing.lead_data
+        updated_data = dict(existing.lead_data or {})
+        if body.message:
+            updated_data["message"] = body.message
+        if body.webinar_reached_at:
+            updated_data["webinar_reached_at"] = body.webinar_reached_at
+        if body.webinar_cta_clicked_at:
+            updated_data["webinar_cta_clicked_at"] = body.webinar_cta_clicked_at
+        existing.lead_data = updated_data or existing.lead_data
         existing.updated_at = datetime.now(timezone.utc)
         await db.commit()
         log.info("Duplicate contact lead updated: <%s>", email)
         return {"status": "ok", "id": str(existing.id)}
 
+    contact_data: dict = {}
+    if body.message:
+        contact_data["message"] = body.message
+    if body.webinar_reached_at:
+        contact_data["webinar_reached_at"] = body.webinar_reached_at
+    if body.webinar_cta_clicked_at:
+        contact_data["webinar_cta_clicked_at"] = body.webinar_cta_clicked_at
     lead = Lead(
         source="contact_form",
         status="new",
@@ -167,7 +195,7 @@ async def register_contact_lead(
         phone=body.phone,
         organization_name=body.organization_name,
         provider_type=body.provider_type,
-        lead_data={"message": body.message} if body.message else None,
+        lead_data=contact_data or None,
     )
     db.add(lead)
     await db.commit()
