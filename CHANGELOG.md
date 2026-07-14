@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.68.16] — 2026-07-14
+
+### Added
+- **Agency Claims date filter**: The billing-admin Claims screen now has the same date preset pills and custom date range as the provider Reporting screen (This Month, Last Month, Last 3 Months, Last 6 Months, Last 180 Days, Year to Date, Last Year, All Time, Custom). Filtering is server-side — the backend `GET /billing-admin/claims` endpoint now accepts `date_from` and `date_to` query params and applies them against `Claim.service_date`. The provider and status dropdowns remain and work in combination with the date filter.
+
+---
+
 ## [1.68.15] — 2026-07-13
 
 ### Fixed

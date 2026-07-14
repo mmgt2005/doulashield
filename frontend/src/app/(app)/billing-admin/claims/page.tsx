@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import axios from 'axios'
 import { getAccessToken } from '@/lib/auth'
@@ -85,6 +85,63 @@ function extractClaimData(claimData: Record<string, unknown> | null) {
   }
 }
 
+type Preset = 'this_month' | 'last_month' | '3m' | '6m' | '180d' | 'ytd' | 'last_year' | 'all' | 'custom'
+
+const PRESETS: { key: Preset; label: string }[] = [
+  { key: 'this_month', label: 'This Month' },
+  { key: 'last_month', label: 'Last Month' },
+  { key: '3m',         label: 'Last 3 Months' },
+  { key: '6m',         label: 'Last 6 Months' },
+  { key: '180d',       label: 'Last 180 Days' },
+  { key: 'ytd',        label: 'Year to Date' },
+  { key: 'last_year',  label: 'Last Year' },
+  { key: 'all',        label: 'All Time' },
+  { key: 'custom',     label: 'Custom' },
+]
+
+function fmtDate(d: Date): string {
+  return d.toISOString().split('T')[0]
+}
+
+function subDays(d: Date, n: number): Date {
+  const r = new Date(d)
+  r.setDate(r.getDate() - n)
+  return r
+}
+
+function subMonths(d: Date, n: number): Date {
+  const r = new Date(d)
+  r.setMonth(r.getMonth() - n)
+  return r
+}
+
+function presetDates(p: Preset): { from: string | null; to: string | null } {
+  const today = new Date()
+  switch (p) {
+    case 'this_month':
+      return { from: fmtDate(new Date(today.getFullYear(), today.getMonth(), 1)), to: fmtDate(today) }
+    case 'last_month': {
+      const f = new Date(today.getFullYear(), today.getMonth() - 1, 1)
+      const t = new Date(today.getFullYear(), today.getMonth(), 0)
+      return { from: fmtDate(f), to: fmtDate(t) }
+    }
+    case '3m':
+      return { from: fmtDate(subMonths(today, 3)), to: fmtDate(today) }
+    case '6m':
+      return { from: fmtDate(subMonths(today, 6)), to: fmtDate(today) }
+    case '180d':
+      return { from: fmtDate(subDays(today, 179)), to: fmtDate(today) }
+    case 'ytd':
+      return { from: fmtDate(new Date(today.getFullYear(), 0, 1)), to: fmtDate(today) }
+    case 'last_year': {
+      const y = today.getFullYear() - 1
+      return { from: `${y}-01-01`, to: `${y}-12-31` }
+    }
+    default:
+      return { from: null, to: null }
+  }
+}
+
 export default function BillingAdminClaimsPage() {
   const searchParams = useSearchParams()
   const bpId = searchParams.get('bp_id')
@@ -116,6 +173,10 @@ export default function BillingAdminClaimsPage() {
   const [reviewData, setReviewData] = useState<Record<string, ClaimReviewDetail | null>>({})
   const [reviewLoading, setReviewLoading] = useState<Record<string, boolean>>({})
   const [docUploading, setDocUploading] = useState<Record<string, boolean>>({})
+
+  const [preset, setPreset] = useState<Preset>('all')
+  const [customFrom, setCustomFrom] = useState('')
+  const [customTo, setCustomTo] = useState('')
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const uploadingClaimIdRef = useRef<string | null>(null)
@@ -231,25 +292,50 @@ export default function BillingAdminClaimsPage() {
     }
   }
 
-  useEffect(() => {
-    const load = async () => {
-      setLoading(true)
-      const requests = [
-        axios.get<Claim[]>(`${api}/api/v1/billing-admin/claims${bpParam}`, { headers }),
-        axios.get<Provider[]>(`${api}/api/v1/billing-admin/providers${bpParam}`, { headers }),
-        ...(bpId ? [axios.get(`${api}/api/v1/billing-admin/agency-settings${bpParam}`, { headers })] : []),
-      ]
-      const results = await Promise.allSettled(requests)
-      if (results[0].status === 'fulfilled') setClaims((results[0] as PromiseFulfilledResult<{ data: Claim[] }>).value.data)
-      if (results[1].status === 'fulfilled') setProviders((results[1] as PromiseFulfilledResult<{ data: Provider[] }>).value.data)
-      if (bpId && results[2]?.status === 'fulfilled') {
-        const settingsResult = results[2] as PromiseFulfilledResult<{ data: { name: string } }>
-        setAgencyName(settingsResult.value.data.name)
-      }
+  const loadClaims = useCallback(async (from: string | null, to: string | null) => {
+    setLoading(true)
+    const h = { Authorization: `Bearer ${getAccessToken()}` }
+    const params: Record<string, string> = {}
+    if (from) params.date_from = from
+    if (to) params.date_to = to
+    try {
+      const res = await axios.get<Claim[]>(
+        `${api}/api/v1/billing-admin/claims${bpParam}`,
+        { headers: h, params },
+      )
+      setClaims(res.data)
+    } catch {
+      setClaims([])
+    } finally {
       setLoading(false)
     }
-    load()
-  }, [bpId])
+  }, [api, bpParam])
+
+  // One-time fetch for providers and agency name (not date-scoped)
+  useEffect(() => {
+    const h = { Authorization: `Bearer ${getAccessToken()}` }
+    const requests = [
+      axios.get<Provider[]>(`${api}/api/v1/billing-admin/providers${bpParam}`, { headers: h }),
+      ...(bpId ? [axios.get(`${api}/api/v1/billing-admin/agency-settings${bpParam}`, { headers: h })] : []),
+    ]
+    Promise.allSettled(requests).then(results => {
+      if (results[0].status === 'fulfilled') setProviders((results[0] as PromiseFulfilledResult<{ data: Provider[] }>).value.data)
+      if (bpId && results[1]?.status === 'fulfilled') {
+        const settingsResult = results[1] as PromiseFulfilledResult<{ data: { name: string } }>
+        setAgencyName(settingsResult.value.data.name)
+      }
+    })
+  }, [bpId]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Reload claims whenever the date filter changes
+  useEffect(() => {
+    if (preset === 'custom') {
+      if (customFrom && customTo) loadClaims(customFrom, customTo)
+      return
+    }
+    const { from, to } = presetDates(preset)
+    loadClaims(from, to)
+  }, [preset, customFrom, customTo, loadClaims])
 
   const providerMap = new Map(providers.map(p => [p.id, p]))
 
@@ -266,6 +352,7 @@ export default function BillingAdminClaimsPage() {
     return true
   })
 
+  const today = new Date().toISOString().split('T')[0]
   const pendingReviewCount = claims.filter(c => (c.status ?? '').toLowerCase() === 'pending_billing_review').length
 
   const totalBilled = filtered.reduce((a, c) => a + Number(c.billed_amount ?? 0), 0)
@@ -361,6 +448,46 @@ export default function BillingAdminClaimsPage() {
           <p className="text-xs text-gray-500">Paid / Denied</p>
           <p className="mt-1 text-2xl font-bold text-gray-900">{paidCount} / {deniedCount}</p>
         </div>
+      </div>
+
+      {/* Date range filter */}
+      <div className="space-y-2">
+        <div className="flex flex-wrap gap-1.5">
+          {PRESETS.map(p => (
+            <button
+              key={p.key}
+              type="button"
+              onClick={() => setPreset(p.key)}
+              className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                preset === p.key
+                  ? 'border-blue-600 bg-blue-600 text-white'
+                  : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+        {preset === 'custom' && (
+          <div className="flex items-center gap-2">
+            <input
+              type="date"
+              value={customFrom}
+              max={customTo || today}
+              onChange={e => setCustomFrom(e.target.value)}
+              className="rounded border border-gray-200 px-2 py-1 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400"
+            />
+            <span className="text-xs text-gray-400">to</span>
+            <input
+              type="date"
+              value={customTo}
+              min={customFrom || undefined}
+              max={today}
+              onChange={e => setCustomTo(e.target.value)}
+              className="rounded border border-gray-200 px-2 py-1 text-xs text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-400"
+            />
+          </div>
+        )}
       </div>
 
       {/* Filters */}

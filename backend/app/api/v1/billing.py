@@ -3,7 +3,7 @@ from __future__ import annotations
 import secrets
 import string
 import uuid
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from typing import Annotated
 
 from pydantic import BaseModel
@@ -1016,6 +1016,8 @@ async def list_billing_admin_claims(
     current_user: Annotated[CurrentUser, Depends(require_billing_admin)],
     db: Annotated[AsyncSession, Depends(get_db)],
     bp_id: uuid.UUID | None = None,
+    date_from: date | None = None,
+    date_to: date | None = None,
 ) -> list[ClaimRead]:
     """Returns all claims across all providers assigned to the billing admin's managed agency.
     Admins may pass ?bp_id=<uuid> to view any agency's claim queue."""
@@ -1039,6 +1041,10 @@ async def list_billing_admin_claims(
     )
     if not is_demo_agency:
         claim_query = claim_query.where(Patient.is_demo == False)  # noqa: E712
+    if date_from:
+        claim_query = claim_query.where(Claim.service_date >= date_from)
+    if date_to:
+        claim_query = claim_query.where(Claim.service_date <= date_to)
     claims_result = await db.execute(claim_query)
     return [ClaimRead.model_validate(c) for c in claims_result.scalars().all()]
 
