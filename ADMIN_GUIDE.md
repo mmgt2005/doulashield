@@ -838,6 +838,20 @@ curl -X POST $BACKEND_URL/api/v1/internal/send-weekly-compliance \
 ```
 Set `INTERNAL_SECRET` in the Railway environment variables for both the app and the cron service.
 
+#### Agency Claims (`/billing-admin/claims`)
+
+Shows the full claim queue for all providers assigned to the billing admin's agency. Each row displays Provider, Visit Type, Service Date, Status badge, Billed, Paid, Denial Reason, and Claim ID. Clicking a row expands an inline detail panel with the CMS 1500 billing fields, SOAP visit notes, MA 91 status, and a supporting documents section where the billing admin can upload prior authorizations, eligibility confirmations, EOBs, or other attachments.
+
+**Date filter** — a row of preset pills at the top of the page (This Month, Last Month, Last 3 Months, Last 6 Months, Last 180 Days, Year to Date, Last Year, All Time, Custom) filters the claim list by `service_date` server-side. Selecting "Custom" reveals two date inputs for an arbitrary range. The stat cards (Total Claims, Total Billed, Total Paid, Paid / Denied) update to reflect whichever date range is active. The default on first load is All Time.
+
+**Provider and status dropdowns** — apply on top of the date filter. Use these together to answer questions like "show me all denied claims this month for Provider X."
+
+**Submitting claims** — claims in Pending Review status show a **Submit ↗** button. Clicking it sends the 837P transaction to Availity using the agency's stored credentials. The row status updates immediately. If Availity credentials are not yet configured, the submit button returns an error directing the billing admin to Agency Settings.
+
+**Logging manual submissions** — for claims submitted outside Availity (paper CMS 1500, MCO portal), use **Log Manual Submission** to set the status to Submitted, Paid, or Denied with an optional paid amount, denial reason, and notes.
+
+**Audit packet** — each expanded claim has a **Download Audit Packet** button that generates a bundled PDF containing the CMS 1500 image, SOAP notes, and MA 91 signature page — the standard documentation package for MCO audits.
+
 #### Agency Settings (`/billing-admin/settings`)
 
 The **Agency Settings** page lets the billing admin enter:
