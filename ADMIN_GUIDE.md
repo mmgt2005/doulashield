@@ -127,7 +127,7 @@ If the lead's email already exists in the system the convert will be blocked wit
 
 ### Deleting a Lead
 
-Only **manually-added** leads can be deleted. Open the edit panel for a manual lead and click **Delete Lead** at the bottom. A confirmation prompt appears before the record is permanently removed. Leads that arrived from a webinar, quiz, contact form, or Cal.com booking cannot be deleted — update their status to **Not Interested** instead to remove them from your active pipeline view.
+Any lead can be deleted regardless of source. Open the lead's edit panel and click **Delete Lead** at the bottom. A confirmation prompt appears before the record is permanently removed.
 
 ---
 
