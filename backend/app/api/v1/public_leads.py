@@ -67,8 +67,6 @@ async def register_webinar_lead(
     existing = await _find_existing(db, email)
 
     if existing:
-        if existing.converted_user_id:
-            return {"status": "ok", "id": str(existing.id)}
         updated_data = dict(existing.lead_data or {})
         if body.webinar_topic:
             updated_data["webinar_topic"] = body.webinar_topic
@@ -82,7 +80,8 @@ async def register_webinar_lead(
         existing.updated_at = datetime.now(timezone.utc)
         await db.commit()
         await db.refresh(existing)
-        await _notify_prospect_webinar(existing, body.webinar_topic)
+        if not existing.converted_user_id:
+            await _notify_prospect_webinar(existing, body.webinar_topic)
         log.info("Duplicate webinar lead updated: <%s>", email)
         return {"status": "ok", "id": str(existing.id)}
 
@@ -117,8 +116,6 @@ async def register_quiz_lead(
     existing = await _find_existing(db, email)
 
     if existing:
-        if existing.converted_user_id:
-            return {"status": "ok", "id": str(existing.id)}
         updated_data = dict(existing.lead_data or {})
         if body.answers:
             updated_data["answers"] = body.answers
@@ -138,7 +135,8 @@ async def register_quiz_lead(
         existing.updated_at = datetime.now(timezone.utc)
         await db.commit()
         await db.refresh(existing)
-        await _notify_prospect_quiz(existing, body.answers)
+        if not existing.converted_user_id:
+            await _notify_prospect_quiz(existing, body.answers)
         log.info("Duplicate quiz lead updated: <%s>", email)
         return {"status": "ok", "id": str(existing.id)}
 
@@ -180,8 +178,6 @@ async def register_contact_lead(
     existing = await _find_existing(db, email)
 
     if existing:
-        if existing.converted_user_id:
-            return {"status": "ok", "id": str(existing.id)}
         updated_data = dict(existing.lead_data or {})
         if body.message:
             updated_data["message"] = body.message

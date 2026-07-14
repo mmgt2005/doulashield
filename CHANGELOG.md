@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.68.20] — 2026-07-14
+
+### Fixed
+- **Quiz/contact data not saved for previously-converted leads**: All three public lead endpoints (webinar, quiz, contact) returned early without saving any data when the email matched a lead that already had `converted_user_id` set. Data (quiz answers, webinar timestamps, messages) is now always merged into the existing record regardless of conversion status. Re-engagement emails to the prospect are still suppressed for converted leads — only the data update is unconditional.
+
+---
+
 ## [1.68.19] — 2026-07-14
 
 ### Changed
