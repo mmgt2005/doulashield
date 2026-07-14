@@ -741,15 +741,13 @@ export default function AdminLeadsPage() {
               </button>
             )}
 
-            {panel.lead.source === 'manual' && (
-              <button
-                onClick={deleteLead}
-                disabled={deleting}
-                className="w-full rounded border border-red-200 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
-              >
-                {deleting ? 'Deleting…' : 'Delete Lead'}
-              </button>
-            )}
+            <button
+              onClick={deleteLead}
+              disabled={deleting}
+              className="w-full rounded border border-red-200 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
+            >
+              {deleting ? 'Deleting…' : 'Delete Lead'}
+            </button>
           </div>
         </div>
       )}

@@ -197,11 +197,6 @@ async def delete_lead(
     lead = result.scalar_one_or_none()
     if not lead:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lead not found")
-    if lead.source != "manual":
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Only manually-added leads can be deleted",
-        )
     await audit.log(
         action="DELETE_LEAD",
         resource_type="lead",

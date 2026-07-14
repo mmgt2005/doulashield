@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.68.17] — 2026-07-14
+
+### Changed
+- **All leads can now be deleted**: Previously only manually-added leads (`source: "manual"`) could be deleted. The backend restriction and the frontend visibility guard on the Delete Lead button have both been removed — admins can now delete any lead regardless of source (webinar, quiz, contact form, Cal.com booking, etc.).
+
+---
+
 ## [1.68.16] — 2026-07-14
 
 ### Added
