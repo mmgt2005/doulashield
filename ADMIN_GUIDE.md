@@ -72,6 +72,16 @@ DoulaShield connects to Cal.com to automatically capture booked setup calls as l
 
 The lead edit panel shows a **Book Setup Call →** link when `NEXT_PUBLIC_SETUP_CALL_URL` is configured. Clicking it opens your Cal.com booking page with the lead's email and name pre-filled, so the prospect only needs to pick a time slot.
 
+**Call Script:**
+
+Below the Book Setup Call button is a collapsible **Call Script** section. Click "▶ Call Script" to expand it. The script shown depends on the lead's Provider Type:
+
+- **Individual** — covers where they are in credentialing, NPI setup readiness, Medicaid enrollment next steps, and billing questions.
+- **Agency** — covers their current provider list, agency NPI setup, credentialing status, billing workflow, and how claims would flow through DoulaShield.
+- **Unknown** — shows **Individual** and **Agency** tab pills so you can switch to whichever is relevant once you confirm the lead type on the call.
+
+The script text is selectable — click inside the box to select all and copy it to paste into a notes doc or CRM if needed. The section collapses automatically when you open a different lead.
+
 ### Lead Statuses
 
 Statuses move a lead through the sales pipeline. Update them in the lead edit panel.
