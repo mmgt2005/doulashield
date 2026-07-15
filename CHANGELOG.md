@@ -12,6 +12,15 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.68.23] — 2026-07-15
+
+### Added
+- **Terms of Service acceptance gate**: Provider accounts are now required to read and accept the DoulaShield Terms of Service the first time they log in. A full-screen overlay renders the complete ToS, requires the provider to scroll to the bottom before the checkbox is enabled, and records acceptance (with a timestamp) via `POST /auth/accept-tos`. The gate is skipped for admin/billing_admin roles and during admin impersonation sessions.
+- **`tos_accepted_at` on User model**: New nullable timestamp column tracking when each provider accepted the ToS. Migration `0060_user_tos_accepted_at` adds the column; existing accounts have `null` and will be gated on next login.
+- **Audit log entry**: `ACCEPT_TOS` action is logged to the HIPAA audit trail on acceptance.
+
+---
+
 ## [1.68.22] — 2026-07-15
 
 ### Added

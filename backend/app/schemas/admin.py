@@ -71,6 +71,7 @@ class UserRead(BaseModel):
     created_at: datetime
     last_sign_in_at: datetime | None = None
     welcome_email_sent_at: datetime | None = None
+    tos_accepted_at: datetime | None = None
     billing_provider_id: uuid.UUID | None = None
     managed_billing_provider_id: uuid.UUID | None = None
 
