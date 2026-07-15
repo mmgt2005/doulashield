@@ -89,6 +89,10 @@ export default function AdminLeadsPage() {
   const [expandedEmail, setExpandedEmail] = useState<string | null>(null)
   const [emailDetail, setEmailDetail] = useState<Record<string, { body: string; to: string; attachments?: Array<{ id: string | null; filename: string; mimeType: string; size: number }> }>>({})
 
+  // Call script
+  const [scriptOpen, setScriptOpen] = useState(false)
+  const [scriptTab, setScriptTab] = useState<'individual' | 'agency'>('individual')
+
   const downloadLeadAttachment = async (
     messageId: string,
     att: { id: string | null; filename: string; mimeType: string }
@@ -171,6 +175,8 @@ export default function AdminLeadsPage() {
     setLeadEmails([])
     setExpandedEmail(null)
     setEmailDetail({})
+    setScriptOpen(false)
+    setScriptTab('individual')
     if (gmailConnected) {
       setEmailsLoading(true)
       axios.get(`${API}/api/v1/admin/gmail/messages`, {
@@ -626,6 +632,50 @@ export default function AdminLeadsPage() {
                 Book Setup Call →
               </a>
             )}
+
+            {/* Call Script */}
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={() => setScriptOpen(o => !o)}
+                className="flex w-full items-center gap-1.5 rounded border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50"
+              >
+                <span>{scriptOpen ? '▼' : '▶'}</span>
+                Call Script
+              </button>
+              {scriptOpen && (
+                <div className="space-y-2">
+                  {panel.provider_type === 'unknown' && (
+                    <div className="flex gap-1.5">
+                      {(['individual', 'agency'] as const).map(t => (
+                        <button
+                          key={t}
+                          type="button"
+                          onClick={() => setScriptTab(t)}
+                          className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                            scriptTab === t
+                              ? 'border-blue-600 bg-blue-600 text-white'
+                              : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                          }`}
+                        >
+                          {t === 'individual' ? 'Individual' : 'Agency'}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {(panel.provider_type === 'independent' || (panel.provider_type === 'unknown' && scriptTab === 'individual')) && (
+                    <div className="select-all whitespace-pre-line rounded border border-gray-200 bg-gray-50 p-3 text-xs text-gray-700">
+                      {"During that call, we'll look at things like:\n\n• Where you are in credentialing\n• Whether your NPI setup is ready\n• What you need to complete for Medicaid enrollment\n• Any questions you have about billing"}
+                    </div>
+                  )}
+                  {(panel.provider_type === 'agency' || (panel.provider_type === 'unknown' && scriptTab === 'agency')) && (
+                    <div className="select-all whitespace-pre-line rounded border border-gray-200 bg-gray-50 p-3 text-xs text-gray-700">
+                      {"During that call, we'll walk through:\n\n• Your current provider list\n• Your agency NPI setup\n• Your credentialing status\n• Your billing workflow\n• How claims would flow through DoulaShield\n\nBy the end of that conversation, you'll have a clearer picture of what your agency needs and what the next steps would look like."}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
 
             {panel.lead.lead_data?.cal_booking ? (() => {
               const b = panel.lead.lead_data.cal_booking as Record<string, unknown>

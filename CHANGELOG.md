@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.68.21] — 2026-07-14
+
+### Added
+- **Setup call script in lead panel**: A collapsible "Call Script" section now appears in the lead edit panel, just below the "Book Setup Call" button. For individual provider leads it shows the individual script; for agency leads it shows the agency script; for leads with unknown provider type, two pill tabs (Individual / Agency) let the admin pick which script to reference. The script collapses when you open a different lead.
+
+---
+
 ## [1.68.20] — 2026-07-14
 
 ### Fixed
