@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.68.26] — 2026-07-15
+
+### Added
+- **Terms of Service page** (`/terms`): The full ToS is now readable at any time via a "Terms of Service" link in the sidebar Help section (below User Manual). Available to all logged-in roles.
+
+---
+
 ## [1.68.25] — 2026-07-15
 
 ### Changed

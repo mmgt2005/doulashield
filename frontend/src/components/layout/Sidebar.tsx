@@ -113,6 +113,15 @@ export default function Sidebar({ onClose }: SidebarProps) {
           >
             User Manual
           </Link>
+          <Link
+            href="/terms"
+            onClick={onClose}
+            className={`block px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+              pathname === '/terms' ? 'bg-blue-50 text-blue-700' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
+            }`}
+          >
+            Terms of Service
+          </Link>
           {user?.role === 'admin' && (
             <Link
               href="/admin-guide"
