@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.68.24] — 2026-07-15
+
+### Fixed
+- **Build error from `tos_accepted_at` type**: Made `tos_accepted_at` optional (`?`) in the `User` TypeScript type. The admin impersonation flow manually constructs a `User` object without the new field, causing a TypeScript build failure. The gate logic (`!user.tos_accepted_at`) handles `undefined` correctly, so making the field optional is the right fix.
+
+---
+
 ## [1.68.23] — 2026-07-15
 
 ### Added
