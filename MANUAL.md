@@ -39,7 +39,7 @@ This manual covers every provider-facing feature in DoulaShield. Read it start t
 
 ### Finding This Manual Inside the App
 
-This manual is always one click away inside DoulaShield. At the bottom of the left sidebar, under the **Help** heading, click **User Manual** to open it as a styled page without leaving the app.
+This manual is always one click away inside DoulaShield. At the bottom of the left sidebar, under the **Help** heading, click **User Manual** to open it as a styled page without leaving the app. The same Help section also has a **Terms of Service** link where you can re-read the full agreement at any time.
 
 ### First Login & MFA Setup
 
