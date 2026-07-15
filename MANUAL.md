@@ -46,8 +46,9 @@ This manual is always one click away inside DoulaShield. At the bottom of the le
 When your account is created, you receive a welcome email with your email address and a temporary password. On first login:
 
 1. Go to the DoulaShield login page and sign in with the credentials from the email.
-2. You will be prompted to set up multi-factor authentication (MFA). Open an authenticator app (Google Authenticator, Authy, or any TOTP app) and scan the QR code shown.
-3. Enter the 6-digit code from your app to confirm setup. MFA is required on every login going forward.
+2. **Terms of Service** — before you can access any page, you are shown the full DoulaShield Terms of Service. Scroll to the bottom of the document, check "I have read and agree to the DoulaShield Terms of Service," then click **I Agree & Continue**. This is a one-time step; you will not be shown the ToS again on subsequent logins.
+3. You will be prompted to set up multi-factor authentication (MFA). Open an authenticator app (Google Authenticator, Authy, or any TOTP app) and scan the QR code shown.
+4. Enter the 6-digit code from your app to confirm setup. MFA is required on every login going forward.
 
 If your temporary password no longer works, use **Forgot password?** on the login page to request a reset link.
 

@@ -183,6 +183,14 @@ A **Send Welcome Email** button appears on any row — provider or admin — whe
 
 Once a user signs in for the first time the button disappears automatically. This covers accounts created via **Create Account Only** who haven't been contacted yet, and any user who lost their credentials before their first login.
 
+### Terms of Service Acceptance (Provider First Login)
+
+The first time a provider logs in, before they can access any page, they are shown the full DoulaShield Terms of Service in a full-screen gate. They must scroll to the bottom and check "I have read and agree to the DoulaShield Terms of Service" before the **I Agree & Continue** button becomes active. Clicking it stamps `tos_accepted_at` on their account and logs an `ACCEPT_TOS` event in the HIPAA audit trail.
+
+**Admin and billing_admin accounts are not shown the gate.** The gate is also suppressed when you are impersonating a provider — you will not be required to accept on their behalf.
+
+If a provider contacts you saying they are stuck on a ToS screen, that is expected behavior and not an error — they need to scroll through the document and check the box.
+
 The **Last Emailed** column in the Users table shows the date the most recent welcome email was sent, so you can tell at a glance whether an account has been contacted and how recently. Accounts created via **Create Account Only** show "—" until a welcome email is sent.
 
 ### Role Toggle (Provider ↔ Admin)
