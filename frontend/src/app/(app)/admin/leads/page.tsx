@@ -93,6 +93,10 @@ export default function AdminLeadsPage() {
   const [scriptOpen, setScriptOpen] = useState(false)
   const [scriptTab, setScriptTab] = useState<'individual' | 'agency'>('individual')
 
+  // Send invite
+  const [inviteSending, setInviteSending] = useState(false)
+  const [inviteSent, setInviteSent] = useState(false)
+
   const downloadLeadAttachment = async (
     messageId: string,
     att: { id: string | null; filename: string; mimeType: string }
@@ -177,6 +181,8 @@ export default function AdminLeadsPage() {
     setEmailDetail({})
     setScriptOpen(false)
     setScriptTab('individual')
+    setInviteSending(false)
+    setInviteSent(false)
     if (gmailConnected) {
       setEmailsLoading(true)
       axios.get(`${API}/api/v1/admin/gmail/messages`, {
@@ -271,6 +277,24 @@ export default function AdminLeadsPage() {
       alert(`Failed to add lead: ${msg}`)
     } finally {
       setAddSaving(false)
+    }
+  }
+
+  const handleSendInvite = async () => {
+    if (!panel) return
+    setInviteSending(true)
+    try {
+      await axios.post(
+        `${API}/api/v1/admin/leads/${panel.lead.id}/send-setup-call-invite`,
+        {},
+        { headers: authHeaders() },
+      )
+      setInviteSent(true)
+    } catch (e) {
+      const msg = axios.isAxiosError(e) ? e.response?.data?.detail ?? e.message : String(e)
+      alert(`Failed to send invite: ${msg}`)
+    } finally {
+      setInviteSending(false)
     }
   }
 
@@ -623,14 +647,26 @@ export default function AdminLeadsPage() {
             )}
 
             {process.env.NEXT_PUBLIC_SETUP_CALL_URL && (
-              <a
-                href={`${process.env.NEXT_PUBLIC_SETUP_CALL_URL}?email=${encodeURIComponent(panel.lead.email)}&name=${encodeURIComponent(`${panel.first_name} ${panel.last_name}`.trim())}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
-              >
-                Book Setup Call →
-              </a>
+              <div className="flex flex-wrap items-center gap-2">
+                <a
+                  href={`${process.env.NEXT_PUBLIC_SETUP_CALL_URL}?email=${encodeURIComponent(panel.lead.email)}&name=${encodeURIComponent(`${panel.first_name} ${panel.last_name}`.trim())}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
+                >
+                  Book Setup Call →
+                </a>
+                <button
+                  type="button"
+                  onClick={handleSendInvite}
+                  disabled={inviteSending || inviteSent}
+                  className={`rounded border px-3 py-1.5 text-xs font-medium disabled:opacity-50 ${
+                    inviteSent ? 'border-green-300 text-green-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  {inviteSending ? 'Sending…' : inviteSent ? 'Invite Sent ✓' : 'Send Invite Email'}
+                </button>
+              </div>
             )}
 
             {/* Call Script */}
@@ -664,13 +700,68 @@ export default function AdminLeadsPage() {
                     </div>
                   )}
                   {(panel.provider_type === 'independent' || (panel.provider_type === 'unknown' && scriptTab === 'individual')) && (
-                    <div className="select-all whitespace-pre-line rounded border border-gray-200 bg-gray-50 p-3 text-xs text-gray-700">
-                      {"During that call, we'll look at things like:\n\n• Where you are in credentialing\n• Whether your NPI setup is ready\n• What you need to complete for Medicaid enrollment\n• Any questions you have about billing"}
+                    <div className="rounded border border-gray-200 bg-gray-50 p-3 space-y-3 text-xs">
+                      <p className="text-gray-500 italic">Before the call, review what stage they&apos;re at in the credentialing pipeline — this sets the pace for the whole conversation.</p>
+                      <div className="space-y-2">
+                        {[
+                          { topic: 'Where you are in credentialing', note: 'PA Medicaid doulas must complete PCB training, get an individual NPI, enroll in PROMISe™, and contract with MCOs in that order.' },
+                          { topic: 'Whether your NPI setup is ready', note: "They need a Type 1 individual NPI (not the practice or employer's). Taxonomy code 176B00000X is required for PA Medicaid doulas." },
+                          { topic: 'What you need to complete for Medicaid enrollment', note: 'Key steps: PCB certificate, NPPES NPI, PROMISe™ enrollment, CAQH ProView profile, and MCO credentialing applications.' },
+                          { topic: 'Any questions you have about billing', note: 'Cover T1032/T1033 procedure codes, the 180-day PA Medicaid filing deadline, how EOBs work, and what happens when a claim is denied.' },
+                        ].map(({ topic, note }) => (
+                          <div key={topic}>
+                            <p className="font-medium text-gray-700">• {topic}</p>
+                            <p className="ml-3 mt-0.5 text-gray-400">{note}</p>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="rounded border border-gray-100 bg-white p-2.5 space-y-1.5">
+                        <p className="font-semibold text-gray-600">Questions to Ask</p>
+                        {[
+                          'Have you completed your PCB (Perinatal Certification Board) training hours?',
+                          'Do you have an individual NPI number? Is it active in NPPES?',
+                          'Have you enrolled in PROMISe™ yet?',
+                          'Are you contracted with any MCOs — AmeriHealth, UPMC, Highmark, or others?',
+                          'Do you have current liability insurance?',
+                          'How are you currently documenting your visits?',
+                        ].map((q) => (
+                          <p key={q} className="text-gray-600">— {q}</p>
+                        ))}
+                      </div>
                     </div>
                   )}
                   {(panel.provider_type === 'agency' || (panel.provider_type === 'unknown' && scriptTab === 'agency')) && (
-                    <div className="select-all whitespace-pre-line rounded border border-gray-200 bg-gray-50 p-3 text-xs text-gray-700">
-                      {"During that call, we'll walk through:\n\n• Your current provider list\n• Your agency NPI setup\n• Your credentialing status\n• Your billing workflow\n• How claims would flow through DoulaShield\n\nBy the end of that conversation, you'll have a clearer picture of what your agency needs and what the next steps would look like."}
+                    <div className="rounded border border-gray-200 bg-gray-50 p-3 space-y-3 text-xs">
+                      <p className="text-gray-500 italic">Start by understanding their roster size and how far along their doulas are — that determines how much credentialing work is ahead.</p>
+                      <div className="space-y-2">
+                        {[
+                          { topic: 'Your current provider list', note: 'Ask how many doulas are on roster, how many are PA Medicaid certified, and whether any are in mid-credentialing.' },
+                          { topic: 'Your agency NPI setup', note: 'Agencies need a Type 2 group NPI and Availity group credentials to submit 837P transactions on behalf of rendering providers.' },
+                          { topic: 'Your credentialing status', note: 'Each doula must have PCB certification, individual NPI, PROMISe™ enrollment, and MCO contracts — track per provider.' },
+                          { topic: 'Your billing workflow', note: 'How do visit records get from the doula to the biller? Paper, email, EMR? Who reviews before submission?' },
+                          { topic: 'How claims would flow through DoulaShield', note: 'Provider submits visit → billing admin reviews in the Agency Claims queue → agency submits via Availity → remittance tracked in platform.' },
+                        ].map(({ topic, note }) => (
+                          <div key={topic}>
+                            <p className="font-medium text-gray-700">• {topic}</p>
+                            <p className="ml-3 mt-0.5 text-gray-400">{note}</p>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-gray-500 italic">By the end of that conversation, you&apos;ll have a clearer picture of what your agency needs and what the next steps would look like.</p>
+                      <div className="rounded border border-gray-100 bg-white p-2.5 space-y-1.5">
+                        <p className="font-semibold text-gray-600">Questions to Ask</p>
+                        {[
+                          'How many doulas are on your current roster?',
+                          'How many are PA Medicaid certified through PCB?',
+                          'Do you have a group NPI (Type 2) for your agency?',
+                          'Do you have Availity credentials set up?',
+                          'Which MCOs do your doulas bill?',
+                          'How are claims currently submitted — Availity, paper, portal?',
+                          'Do you have a billing person in-house or are doulas self-billing?',
+                        ].map((q) => (
+                          <p key={q} className="text-gray-600">— {q}</p>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>

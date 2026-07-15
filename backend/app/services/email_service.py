@@ -1334,6 +1334,76 @@ async def send_quiz_results_email(lead: object, answers: dict) -> None:
     )
 
 
+async def send_setup_call_invite(
+    to_email: str, provider_name: str, provider_type: str, setup_call_url: str
+) -> None:
+    """Sends a setup-call booking invite to a lead with a Cal.com link."""
+    if not _configured():
+        raise RuntimeError("Email not configured — set RESEND_API_KEY")
+    resend.api_key = settings.RESEND_API_KEY
+
+    first_name = provider_name.split()[0] if provider_name else "there"
+
+    if provider_type == "agency":
+        body_copy = (
+            "I'd love to connect and walk through how DoulaShield can support your doula agency. "
+            "Use the link below to find a time that works for you — the call is usually 20–30 minutes."
+        )
+        topics = [
+            "Your current provider roster and credentialing stage",
+            "Your agency NPI setup and Availity configuration",
+            "How claims flow from your doulas through DoulaShield to the payer",
+            "Your billing workflow and what changes with DoulaShield",
+        ]
+    else:
+        body_copy = (
+            "I'd love to connect and walk through how DoulaShield can support your doula practice. "
+            "Use the link below to find a time that works for you — the call is usually 20–30 minutes."
+        )
+        topics = [
+            "Where you are in the PA Medicaid credentialing process",
+            "Your NPI setup and Medicaid enrollment status",
+            "How billing works for certified PA Medicaid doulas",
+            "How DoulaShield can simplify your documentation and claim workflow",
+        ]
+
+    topics_html = "\n".join(
+        f'    <li style="margin-bottom:6px;">{t}</li>' for t in topics
+    )
+
+    await asyncio.to_thread(
+        resend.Emails.send,
+        {
+            "from": settings.EMAIL_FROM,
+            "to": [to_email],
+            "subject": "Book Your Free DoulaShield Setup Call",
+            "html": f"""<!DOCTYPE html>
+<html>
+<body style="font-family: sans-serif; color: #1a1a1a; max-width: 520px; margin: 0 auto; padding: 24px;">
+  <p style="font-size: 16px;">Hi {first_name},</p>
+  <p>{body_copy}</p>
+  <p style="margin: 24px 0;">
+    <a href="{setup_call_url}"
+       style="background:#2563eb;color:#fff;padding:12px 24px;border-radius:6px;
+              text-decoration:none;font-weight:600;font-size:15px;display:inline-block;">
+      Book Your Setup Call &rarr;
+    </a>
+  </p>
+  <p style="font-size:14px;color:#374151;">On the call we'll cover:</p>
+  <ul style="padding-left:20px;line-height:1.8;font-size:14px;color:#374151;">
+{topics_html}
+  </ul>
+  <p style="color:#6b7280;font-size:13px;margin-top:24px;">
+    Questions before then? Reply to this email and we'll get back to you.
+  </p>
+  <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
+  <p style="color:#9ca3af;font-size:12px;">The DoulaShield Team</p>
+</body>
+</html>""",
+        },
+    )
+
+
 async def send_screenshare_invite(
     to_email: str, provider_name: str, doxy_me_url: str
 ) -> None:

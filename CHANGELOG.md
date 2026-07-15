@@ -12,6 +12,14 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.68.22] — 2026-07-15
+
+### Added
+- **Enhanced setup call scripts with context notes and questions**: The collapsible Call Script section in the lead panel now shows a full call guide rather than a bare topic list. Each topic has a short gray context note explaining the rationale or PA Medicaid-specific detail. Both individual and agency scripts include a "Questions to Ask" sub-block listing specific questions to ask during the call.
+- **Send Invite Email button**: A "Send Invite Email" button now appears alongside the "Book Setup Call →" link in the lead panel (requires `NEXT_PUBLIC_SETUP_CALL_URL` / `SETUP_CALL_URL` to be configured). Clicking it emails the lead a booking invite with the Cal.com link, tailored to their provider type (agency vs. individual). The button updates to "Invite Sent ✓" after a successful send and resets when a different lead is opened.
+
+---
+
 ## [1.68.21] — 2026-07-14
 
 ### Added

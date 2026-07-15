@@ -287,3 +287,43 @@ async def convert_lead(
         "email": lead.email,
         "checkout_url": checkout_url,
     }
+
+
+@router.post("/{lead_id}/send-setup-call-invite", status_code=status.HTTP_200_OK)
+async def send_setup_call_invite(
+    request: Request,
+    lead_id: uuid.UUID,
+    current_user: Annotated[CurrentUser, Depends(require_admin)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    audit: Annotated[AuditLogger, Depends(get_audit)],
+) -> dict:
+    result = await db.execute(select(Lead).where(Lead.id == lead_id))
+    lead = result.scalar_one_or_none()
+    if not lead:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lead not found")
+    if not settings.SETUP_CALL_URL:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="SETUP_CALL_URL is not configured")
+
+    full_name = f"{lead.first_name} {lead.last_name}".strip() or lead.email
+    try:
+        from app.services import email_service
+        await email_service.send_setup_call_invite(
+            to_email=lead.email,
+            provider_name=full_name,
+            provider_type=lead.provider_type or "unknown",
+            setup_call_url=settings.SETUP_CALL_URL,
+        )
+    except Exception:
+        log.warning("Failed to send setup call invite to %s", lead.email, exc_info=True)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to send email")
+
+    await audit.log(
+        action="SEND_SETUP_CALL_INVITE",
+        resource_type="lead",
+        resource_id=lead.id,
+        ip_address=get_client_ip(request),
+        user_agent=get_user_agent(request),
+        user_id=current_user.id,
+        extra_context={"lead_email": lead.email},
+    )
+    return {"status": "sent"}
