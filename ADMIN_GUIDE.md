@@ -72,15 +72,19 @@ DoulaShield connects to Cal.com to automatically capture booked setup calls as l
 
 The lead edit panel shows a **Book Setup Call →** link when `NEXT_PUBLIC_SETUP_CALL_URL` is configured. Clicking it opens your Cal.com booking page with the lead's email and name pre-filled, so the prospect only needs to pick a time slot.
 
+**Send Invite Email button:**
+
+Next to the "Book Setup Call →" link is a **Send Invite Email** button (visible when `NEXT_PUBLIC_SETUP_CALL_URL` is configured). Clicking it sends the lead an email with the Cal.com booking link so they can pick a time slot on their own — useful when you are not on a live call. The button updates to **Invite Sent ✓** after a successful send and resets when you open a different lead. The email copy is automatically tailored to the lead's provider type (agency vs. individual).
+
 **Call Script:**
 
 Below the Book Setup Call button is a collapsible **Call Script** section. Click "▶ Call Script" to expand it. The script shown depends on the lead's Provider Type:
 
-- **Individual** — covers where they are in credentialing, NPI setup readiness, Medicaid enrollment next steps, and billing questions.
-- **Agency** — covers their current provider list, agency NPI setup, credentialing status, billing workflow, and how claims would flow through DoulaShield.
+- **Individual** — opens with an intro note, then lists four topics (credentialing stage, NPI setup, Medicaid enrollment steps, billing questions) each with a short gray context note explaining the PA Medicaid-specific detail. Below the topics is a "Questions to Ask" block with six specific questions to work through on the call.
+- **Agency** — same structure: intro note, five topics (provider roster, agency NPI, credentialing status per provider, billing workflow, claim flow through DoulaShield), a closing statement, and a "Questions to Ask" block with seven questions.
 - **Unknown** — shows **Individual** and **Agency** tab pills so you can switch to whichever is relevant once you confirm the lead type on the call.
 
-The script text is selectable — click inside the box to select all and copy it to paste into a notes doc or CRM if needed. The section collapses automatically when you open a different lead.
+The section collapses automatically when you open a different lead.
 
 ### Lead Statuses
 
