@@ -175,8 +175,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           )}
         </main>
 
-        {/* ToS gate — shown to providers who haven't accepted yet; never during impersonation */}
-        {!authLoading && !priorSession && user?.role === 'provider' && !user.tos_accepted_at && !tosAccepted && (
+        {/* ToS gate — shown to any user who hasn't accepted yet; never during impersonation */}
+        {!authLoading && !priorSession && user && !user.tos_accepted_at && !tosAccepted && (
           <TosGate onAccepted={() => setTosAccepted(true)} />
         )}
       </div>

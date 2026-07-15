@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.68.25] — 2026-07-15
+
+### Changed
+- **ToS gate now applies to all roles**: Previously only `provider` accounts were shown the Terms of Service gate on first login. It now applies to `admin` and `billing_admin` accounts as well. Impersonation sessions remain exempt.
+
+---
+
 ## [1.68.24] — 2026-07-15
 
 ### Fixed
