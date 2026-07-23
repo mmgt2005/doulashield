@@ -16,6 +16,7 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ### Improved
 - **Enrollment task readability**: Reformatted `promise_type13`, `caqh_request_access`, `caqh_provider_authorization`, and `caqh_profile_attested` task descriptions to use `Step N — Title: body` format. These tasks now render with bold step headers in the task expansion panel (matching MCO task display), instead of a single wall of plain text.
+- **Backfill existing tasks**: Migration 0061 updates the description field on all existing `EnrollmentTask` rows with these task keys so previously created enrollment services display the new step-formatted text immediately.
 
 ---
 
