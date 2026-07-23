@@ -112,7 +112,7 @@ The main Dashboard (first page after login) shows alert banners at the top whene
 | Banner | Appears when | What to do |
 |---|---|---|
 | CAQH attestation | ≤14 days to 90-day re-attestation deadline | Re-attest at proview.caqh.org, then update **Settings → CAQH Attestation** |
-| PROMISe™ re-enrollment | ≤90 days to 5-year re-enrollment deadline | Re-enroll at promise.dhs.pa.gov, then update **Settings → PROMISe™ Re-enrollment** |
+| PROMISe™ re-enrollment | ≤90 days to 5-year re-enrollment deadline | Re-enroll at provider.ipx.pa.gov, then update **Settings → PROMISe™ Re-enrollment** |
 | PCB Perinatal Certification | ≤60 days to 2-year renewal deadline | Renew at pacertboard.org, then update **Settings → PCB Perinatal Certification** |
 | Liability insurance | ≤30 days to policy expiry | Renew your policy, then update **Settings → Liability Insurance** |
 | Claim deadline — overdue | Any unfiled claim is past the 180-day PA Medicaid deadline | Open the client record and file or correct the claim immediately |
@@ -157,6 +157,8 @@ The first time you open the Enrollment Status page you will be asked to read and
 - Mark tasks as complete
 - Advance you to the next stage
 - Record completion dates (PCB certificate date, NPI number, PROMISe™ enrollment date, etc.)
+
+**PROMISe™ enrollment tasks (Stage 2):** The two PROMISe™ tasks — Medicaid (Type 13) and CHIP (Type 130) — show a short status message rather than the full admin portal instructions. When either task is in progress, you will see a note that your enrollment specialist is completing the application and that you will be contacted by screen-share when it is time for your final attestation step (a step only you can complete). When the task is marked complete, the ATN (Application Tracking Number) assigned by DHS appears below the task — this is the tracking token you can reference if you want to check your application status.
 
 **Uploading a document:**
 1. Click **+ Upload Document** under the relevant task

@@ -512,7 +512,7 @@ Eleven tasks are auto-generated, in order:
 | Start NPI Application | Log in with I&A credentials → "Submit New NPI Application" → Entity type: **Type 1 (Individual)**. |
 | Complete Provider Profile | Enter exact legal name from the doula's Social Security card (mismatch = immediate rejection). Enter DOB, state and country of birth. Answer "No" to Sole Proprietor unless the doula has a registered EIN. |
 | Enter Business Addresses | **Mailing address** (P.O. Boxes allowed) and **Practice Location** (P.O. Boxes forbidden). In-home doulas use their home office address for the practice location. |
-| Assign Taxonomy Code | Click "Add Taxonomy" → enter **374J00000X** (Doula). No state license number needed for PA doulas — PCB certification covers this for Type 13. |
+| Assign Taxonomy Code | Click "Add Taxonomy" → enter **176B00000X** (Doula). No state license number needed for PA doulas — PCB certification covers this for Type 13. |
 | Contact Person & Identifiers | Leave Other Identifiers and Endpoint blank. Enter agency's credentialing manager as Contact Person (NPPES calls them if the SSN or address needs correction). |
 | Attest and Submit | Read the Certification Statement, check the box, click Submit. NPI is typically issued via email within 1–5 business days. Record the NPI number in the task notes. |
 | Link DoulaShield as CMS Surrogate | Log into DoulaShield's CMS I&A account at nppes.cms.hhs.gov/IAWeb → My Connections → + → **Add Surrogate**. Search by the provider's Type 1 NPI. Select **PECOS** and **NPPES** checkboxes. Submit. The connection shows as Pending. DoulaShield has no NPI — the system links DoulaShield's EIN-backed 3rd Party Organization account to the provider's clinical profile. If the provider prefers to send the invitation from their end, they search for DoulaShield by **Legal Business Name or EIN** (not NPI). |
@@ -548,23 +548,34 @@ Eight tasks are auto-generated:
 | Provider Authorizes DoulaShield in CAQH | Provider logs into CAQH and checks DoulaShield in their Authorizations tab |
 | Complete CAQH Profile & Provider Attests | Admin fills 12-section profile; provider clicks Attest; record CAQH ID + attestation date |
 
-**PROMISe™ — Stage & Share method:**
+**PROMISe™ — NPI Type determines Provider Type and attestation rules:**
 
-You cannot legally click Submit on an initial state enrollment on behalf of a provider. The correct approach is to build the entire application ahead of time, then bring the provider in at the very end for legal attestation.
+Before opening the portal, check the NPI type indicator on the task row (appears as a pill badge — "Individual / Type 1 NPI" or "Agency / Type 2 NPI"). This determines which provider type to select and who must personally click Submit.
 
-Key rules before opening the portal:
-- Confirm the provider's NPI is active in NPPES and carries taxonomy code **374J00000X** (Doula). PROMISe™ cross-checks the federal registry in real time — a missing taxonomy stalls progress on screen one.
+| | **Type 1 NPI — Individual** | **Type 2 NPI — Agency** |
+|---|---|---|
+| Provider Type | 13 (Non-Traditional Provider) | 89 (Atypical Provider — Organization) |
+| Tax ID | Individual SSN or sole-proprietor EIN | Organization EIN (IRS SS-4 / CP575) |
+| Taxonomy | **176B00000X** (Doula) | **176B00000X** (Doula) |
+| Who clicks Submit | **Provider must personally click Submit** — screen-share required | Authorized representative confirms; DoulaShield staff may click Submit |
+
+**Individual provider path (Type 1):** Build the entire application first, then bring the provider in at the end for attestation. You cannot legally click Submit on their behalf.
+
+- Confirm the provider's Type 1 NPI is active in NPPES and carries taxonomy code **176B00000X**. PROMISe™ cross-checks the federal registry in real time — a missing or mismatched taxonomy stalls progress on screen one.
 - Gather the ZIP+4 of the service address from usps.com/zip4 before starting. The 9-digit code locks the state-assigned Service Location Code (0001) so it matches future MCO claims.
+- At **provider.ipx.pa.gov**: select "Enroll as a New Provider" → Provider Type **13** → Specialty **130**. Enter SSN or EIN exactly as it appears on the IRS W-9. On the credentials page, enter the PCB certificate number and exact issuance date, and upload the certificate PDF.
+- Two common kickback causes: (a) **W-9 name mismatch** — the "Legal Billing Entity" field must match Line 1 of the W-9 exactly; (b) **Employment gaps** — any gap of 30+ days in the past 5 years requires a one-sentence explanation in the system notes field before advancing.
+- When the application is complete, bring the provider onto a screen-share. They read the compliance terms, check the boxes, type their legal name, and click Submit.
 
-At **provider.ipx.pa.gov**: select "Enroll as a New Provider" → Provider Type 13 (Non-Traditional Provider) → Specialty Code 130 (Certified Doula). Enter SSN or EIN exactly as it appears on the IRS W-9. On the credentials page, enter the PCB certificate number and exact issuance date, and upload the certificate PDF.
+**Agency path (Type 2):** DoulaShield may submit after the authorized representative has reviewed and verbally confirmed the contents.
 
-Two common kickback causes to avoid:
-- **W-9 name mismatch**: the "Legal Billing Entity" field must match Line 1 of the W-9 exactly. Any discrepancy fails the automated IRS match and forces a manual review adding weeks to processing.
-- **Employment gaps**: any gap of 30+ days in the past 5 years requires a one-sentence explanation typed into the system notes before advancing — unexplained gaps generate a Request for Information from DHS.
+- Select Provider Type **89** (Atypical Provider — Organization), Specialty **130**. Enter the agency's EIN from the IRS SS-4 letter and the Type 2 group NPI.
+- List each rostered doula's PCB certificate number and date on the credentials page. Upload a consolidated PDF of all certificates.
+- Complete the ownership/controlling interest disclosure for all owners with ≥ 5% ownership and all managing employees.
 
-When the application is complete, bring the provider onto a screen-share. They read the compliance terms, check the boxes, type their legal name, and click Submit. **Copy the ATN (Application Tracking Number) that flashes on screen immediately** — it is the only way to check status via the public portal without calling the DHS helpline. Record the ATN in the task notes field and upload a screenshot of the confirmation page. Processing takes 30–60 days.
+**After submission (both paths):** Copy the ATN (Application Tracking Number) from the confirmation screen immediately — it is the only way to check status via the public portal. Enter it in the dedicated **ATN field** on the task row (not just notes). Upload a screenshot of the confirmation page. Processing takes 30–60 days. The ATN will be shown to the provider on their Enrollment Status screen once you mark the task complete.
 
-Type 130 (CHIP) follows the identical process — run it as a separate application selecting Type 130 in the primary dropdown.
+**Type 130 (CHIP):** After the Type 13 ATN is in hand, log back in to the same PROMISe™ account and select "Add Enrollment Type" → Type 130. Most fields pre-populate from Type 13. Same attestation rules apply. Record the separate Type 130 ATN in the Type 130 task row.
 
 **CAQH Practice Manager — one-time agency setup (do once before any Stage 2 services):**
 
