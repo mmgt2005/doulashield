@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.68.31] — 2026-07-23
+
+### Improved
+- **Enrollment task readability**: Reformatted `promise_type13`, `caqh_request_access`, `caqh_provider_authorization`, and `caqh_profile_attested` task descriptions to use `Step N — Title: body` format. These tasks now render with bold step headers in the task expansion panel (matching MCO task display), instead of a single wall of plain text.
+
+---
+
 ## [1.68.30] — 2026-07-23
 
 ### Fixed
