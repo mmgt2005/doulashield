@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.68.32] — 2026-07-23
+
+### Improved
+- **Backfill existing task descriptions**: Migration 0061 updates all existing enrollment tasks with keys `promise_type13`, `caqh_request_access`, `caqh_provider_authorization`, and `caqh_profile_attested` to the step-formatted descriptions introduced in v1.68.31. Enrollment services created before v1.68.31 now display bold step headers in the task panel without requiring re-creation.
+
+---
+
 ## [1.68.31] — 2026-07-23
 
 ### Improved
