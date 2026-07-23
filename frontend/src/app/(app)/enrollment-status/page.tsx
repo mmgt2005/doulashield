@@ -281,6 +281,18 @@ const MCO_ADMIN_TASK_KEYS = new Set([
   'mco_highmark', 'mco_uhc', 'mco_aetna', 'mco_hpplans',
 ])
 
+// PROMISe task keys — admin portal instructions, not provider-facing.
+// Show a short provider-friendly summary instead of the full admin guide text.
+const PROMISE_ADMIN_TASK_KEYS: Record<string, string> = {
+  promise_type13:
+    'Your DoulaShield enrollment specialist is completing your PA Medicaid enrollment application in PROMISe™. ' +
+    'You will be contacted by screen-share when it\'s time for your final attestation — this is a required step only you can complete.',
+  promise_type130:
+    'Your DoulaShield enrollment specialist is completing your CHIP enrollment in PROMISe™. ' +
+    'When the Medicaid (Type 13) enrollment is submitted, CHIP is added to the same account. ' +
+    'You may be contacted for a second attestation screen-share.',
+}
+
 const GENDER_OPTIONS = ['Female', 'Male', 'Non-binary / Gender non-conforming', 'Transgender female', 'Transgender male', 'Prefer not to say', 'Not listed']
 const RACE_OPTIONS = ['American Indian or Alaska Native', 'Asian', 'Black or African American', 'Hispanic or Latino', 'Native Hawaiian or Other Pacific Islander', 'White', 'Two or more races', 'Prefer not to say']
 const DOULA_TYPE_OPTIONS = ['Birth Doula', 'Postpartum Doula', 'Perinatal Doula', 'Other']
@@ -989,9 +1001,20 @@ Please output the completed, formatted resume inside a single, pristine Markdown
                           </span>
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-gray-800">{task.label}</p>
-                            {task.description && !MCO_ADMIN_TASK_KEYS.has(task.task_key) && (
+                            {PROMISE_ADMIN_TASK_KEYS[task.task_key] ? (
+                              task.status !== 'complete' ? (
+                                <p className="mt-1 text-xs text-gray-500 leading-relaxed">{PROMISE_ADMIN_TASK_KEYS[task.task_key]}</p>
+                              ) : (
+                                <>
+                                  <p className="mt-1 text-xs text-green-700 leading-relaxed">Application submitted. Processing typically takes 30–60 days.</p>
+                                  {task.task_data?.atn && (
+                                    <p className="mt-0.5 text-xs text-gray-500">ATN: {String(task.task_data.atn)}</p>
+                                  )}
+                                </>
+                              )
+                            ) : task.description && !MCO_ADMIN_TASK_KEYS.has(task.task_key) ? (
                               <p className="mt-1 text-xs text-gray-500 leading-relaxed">{task.description}</p>
-                            )}
+                            ) : null}
                             {TASK_DOWNLOAD_LINKS[task.task_key] && (
                               <a
                                 href={TASK_DOWNLOAD_LINKS[task.task_key].href}

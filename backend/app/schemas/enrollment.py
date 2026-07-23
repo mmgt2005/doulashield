@@ -75,6 +75,7 @@ class EnrollmentServiceDetail(BaseModel):
     provider_email: str | None = None
     provider_name: str | None = None
     provider_npi: str | None = None
+    provider_billing_provider_id: uuid.UUID | None = None
 
 
 class CompletePcbRequest(BaseModel):

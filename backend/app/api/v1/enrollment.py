@@ -343,42 +343,86 @@ _STAGE2_TASKS: list[dict] = [
         "required_pathway": "all",
         "label": "PROMISe™ Type 13 Application (Medicaid)",
         "description": (
-            "Use the 'Stage & Share' method: build the entire application ahead of time, then bring "
-            "the provider in at the end for legal attestation. The provider must personally read the "
-            "state compliance terms, check the acknowledgment boxes, type their legal name as their "
-            "electronic signature, and click Submit — you cannot legally click Submit on their behalf "
-            "for an initial enrollment.\n\n"
-            "Prerequisite: Confirm the provider's Type 1 NPI is active in NPPES and carries taxonomy "
-            "code 374J00000X (Doula). The PROMISe™ portal cross-checks the federal database in real "
-            "time — a missing or mismatched taxonomy will stall progress on screen one.\n\n"
-            "Step-by-step:\n"
-            "1. Navigate to provider.ipx.pa.gov. If the provider is new to the system, create an "
-            "application account. Select 'Enroll as a New Provider' to open a fresh application.\n"
-            "2. Select Provider Type 13 (Non-Traditional Provider) from the primary dropdown, then "
-            "assign Specialty Code 130 (Certified Doula) directly below it.\n"
-            "3. Enter the provider's SSN or EIN exactly as it appears on their IRS documentation. "
-            "For the primary service address, look up the exact ZIP+4 code at usps.com/zip4 before "
-            "entering it — the 9-digit code ensures the state-assigned 4-digit Service Location Code "
-            "(0001) aligns correctly with future MCO claims.\n"
-            "4. On the credentials page, enter the PCB Certified Perinatal Doula (CPD) certificate "
-            "number and the exact date of issuance. Upload a high-resolution PDF scan of the "
-            "certificate. The name on the PCB certificate must match the NPI registration exactly.\n"
-            "5. On the 'Legal Billing Entity' screen, enter the name exactly as it appears on Line 1 "
-            "of the provider's W-9. A mismatch with the IRS automated match routine forces a manual "
-            "review and adds weeks to processing time.\n"
-            "6. If the provider has any employment gaps of 30 days or more in the past 5 years, "
-            "paste a one-sentence explanation into the system notes field before advancing — "
-            "unexplained gaps generate a 'Request for Information' kickback from DHS.\n"
-            "7. Advance to the final legal attestation page and bring the provider onto a screen-share "
-            "session. Have them read the compliance terms, check the boxes, type their legal name, "
-            "and click Submit.\n"
-            "8. The moment Submit is clicked, copy the Application Tracking Number (ATN) that appears "
-            "on screen into the notes field below. This is your only token for checking status via the "
-            "public portal without calling the DHS provider helpline. Processing takes roughly "
+            "INDIVIDUAL PROVIDER (Type 1 NPI — sole practitioner doula)\n"
+            "Use the 'Stage & Share' method: build the entire application ahead of time, "
+            "then bring the provider in at the end for legal attestation. The provider must "
+            "personally read the state compliance terms, check the acknowledgment boxes, type "
+            "their legal name, and click Submit — you cannot click Submit on their behalf for "
+            "an initial individual enrollment.\n\n"
+            "Prerequisite: Confirm the provider's Type 1 NPI is active in NPPES and carries "
+            "taxonomy code 176B00000X (Doula). The PROMISe™ portal cross-checks the federal "
+            "database in real time — a missing or mismatched taxonomy will stall progress on "
+            "screen one.\n\n"
+            "Step 1 — Navigate to provider.ipx.pa.gov. Create an application account if the "
+            "provider is new. Select 'Enroll as a New Provider.'\n"
+            "Step 2 — Select Provider Type 13 (Non-Traditional Provider), Specialty 130 "
+            "(Certified Doula).\n"
+            "Step 3 — Enter the provider's SSN (for sole proprietors) or EIN if incorporated, "
+            "exactly as it appears on their W-9. Do not mix SSN and EIN.\n"
+            "Step 4 — For the primary service address, look up the ZIP+4 code at usps.com/zip4 "
+            "before entering — the 9-digit format ensures the state-assigned 4-digit Service "
+            "Location Code (0001) aligns with future MCO claims.\n"
+            "Step 5 — On the credentials page, enter the PCB Certified Perinatal Doula (CPD) "
+            "certificate number and exact issuance date. Upload a PDF scan. The name on the PCB "
+            "certificate must match the NPI registration exactly.\n"
+            "Step 6 — On the 'Legal Billing Entity' screen, enter the name exactly as it appears "
+            "on Line 1 of the provider's W-9.\n"
+            "Step 7 — If the provider has any employment gaps of 30 days or more in the past 5 "
+            "years, paste a one-sentence explanation into the notes field before advancing — "
+            "unexplained gaps generate a DHS 'Request for Information.'\n"
+            "Step 8 — Advance to the final attestation page. Screen-share with the provider. "
+            "They read the compliance terms, check the boxes, type their legal name, and click "
+            "Submit. Copy the ATN immediately — it is your only tracking token. Processing: "
             "30–60 days.\n\n"
+            "---\n\n"
+            "AGENCY / GROUP (Type 2 NPI — billing agency)\n"
+            "For agencies, DoulaShield may submit the application after the authorized "
+            "representative has reviewed and confirmed the contents — organizational attestation "
+            "does not require the same in-person provider click as individual enrollment.\n\n"
+            "Step 1 — Navigate to provider.ipx.pa.gov. Select 'Enroll as a New Provider.'\n"
+            "Step 2 — Select Provider Type 89 (Atypical Provider — Organization), Specialty 130 "
+            "(Certified Doula).\n"
+            "Step 3 — Enter the agency's EIN (from the IRS SS-4 letter / CP575). Enter the "
+            "Type 2 group NPI from NPPES.\n"
+            "Step 4 — Enter the agency's legal business address as the primary billing address. "
+            "List the service counties in which the agency's doulas operate.\n"
+            "Step 5 — On the credentials page, list each rostered doula's PCB certificate number "
+            "and issuance date. Upload a consolidated PDF of all certificates.\n"
+            "Step 6 — On the Liability Insurance screen, enter the agency's group policy carrier, "
+            "policy number, and expiration date. Coverage must meet the minimum $1M per occurrence "
+            "/ $3M aggregate threshold.\n"
+            "Step 7 — Complete the ownership/controlling interest disclosure for all owners with "
+            "5% or more ownership, plus all managing employees.\n"
+            "Step 8 — Confirm application with the authorized representative, then submit. Copy "
+            "the ATN into the notes field. Processing: 30–60 days.\n\n"
             "Upload a screenshot of the ATN confirmation page as your document for this task."
         ),
         "sort_order": 4,
+    },
+    {
+        "task_key": "promise_type130",
+        "required_pathway": None,
+        "label": "PROMISe™ Type 130 Application (CHIP)",
+        "description": (
+            "After the Type 13 (Medicaid) application is submitted and the ATN is in hand, "
+            "return to the same PROMISe™ provider portal account and add a Type 130 (CHIP) "
+            "enrollment. The provider's existing PROMISe™ account is reused — this adds a "
+            "new enrollment type to the same record.\n\n"
+            "Step 1 — Log back in to provider.ipx.pa.gov with the same account used for "
+            "Type 13.\n"
+            "Step 2 — Select 'Add Enrollment Type' and choose Type 130 (CHIP Non-Traditional "
+            "Provider), Specialty 130 (Certified Doula).\n"
+            "Step 3 — Most fields pre-populate from the Type 13 application. Verify all "
+            "fields are current — address, NPI, credentials, insurance — and correct any "
+            "that have changed since the Type 13 submission.\n"
+            "Step 4 — Individual providers: bring the provider onto a screen-share for the "
+            "final attestation page (same requirement as Type 13). Agency: submit after "
+            "authorized representative confirmation.\n"
+            "Step 5 — Copy the Type 130 ATN into the notes field. It is a separate tracking "
+            "token from the Type 13 ATN.\n\n"
+            "Upload the Type 130 ATN confirmation screenshot as the document for this task."
+        ),
+        "sort_order": 5,
     },
     {
         "task_key": "caqh_request_access",
@@ -897,6 +941,7 @@ async def create_enrollment_service(
         provider_email=provider.email,
         provider_name=provider.full_name,
         provider_npi=provider.npi,
+        provider_billing_provider_id=provider.billing_provider_id,
     )
 
 
@@ -932,6 +977,7 @@ async def get_enrollment_service(
         provider_email=provider.email if provider else None,
         provider_name=provider.full_name if provider else None,
         provider_npi=provider.npi if provider else None,
+        provider_billing_provider_id=provider.billing_provider_id if provider else None,
     )
 
 

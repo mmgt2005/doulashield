@@ -12,6 +12,27 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.68.27] — 2026-07-23
+
+### Added
+- **PROMISe™ Type 130 task (CHIP enrollment)**: `promise_type130` is now seeded as a real Stage 2 task (sort_order 5) for all new enrollment services, filling a gap where the task was documented but never created in the database.
+- **ATN input field on PROMISe tasks**: Both `promise_type13` and `promise_type130` task rows now show a dedicated ATN (Application Tracking Number) input. The value is saved to `task_data.atn` and displayed to the provider on their Enrollment Status screen once the task is complete.
+- **NPI type indicator on PROMISe tasks**: A pill badge ("Individual / Type 1 NPI" or "Agency / Type 2 NPI") appears on PROMISe task rows based on whether the provider is linked to a billing agency. Read-only — informational only.
+- **Type 1 vs Type 2 NPI Quick Reference table** in ENROLLMENT_ADMIN_GUIDE.md Stage 2 section.
+- **Full two-path PROMISe Type 13 guide** in ENROLLMENT_ADMIN_GUIDE.md (individual vs agency steps, attestation rules, taxonomy correction).
+
+### Changed
+- **PROMISe task descriptions updated**: `promise_type13` now contains two clearly headed sections — Individual/Type 1 NPI and Agency/Type 2 NPI — with step-by-step instructions, attestation rules, and taxonomy code `176B00000X` (corrected from the incorrect `374J00000X`).
+- **Taxonomy code corrected** to `176B00000X` (NUCC Doula) in: PROMISe task description, NPPES "How It Works" modal, NPPES stage description text.
+- **PROMISe portal URL corrected** from `promise.dhs.pa.gov` to `provider.ipx.pa.gov` in the enrollment How It Works modal.
+- **Provider-facing enrollment status**: `promise_type13` and `promise_type130` now show a short provider-friendly summary ("Your DoulaShield enrollment specialist is completing your PA Medicaid enrollment...") instead of the 8-step admin portal instructions. ATN is shown when the task is marked complete.
+- **ENROLLMENT_ADMIN_GUIDE.md**: Stage 2 task count updated (6 → 8 tasks), Task 4 replaced with full two-path guide, Task 5 expanded with step-by-step CHIP enrollment instructions, CAQH section updated to reflect 3-task structure (Tasks 6–8).
+
+### Fixed
+- `provider_billing_provider_id` is now returned in the enrollment service detail API response, enabling the frontend NPI type indicator.
+
+---
+
 ## [1.68.26] — 2026-07-15
 
 ### Added

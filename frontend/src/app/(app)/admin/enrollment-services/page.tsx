@@ -53,6 +53,7 @@ interface EnrollmentServiceDetail {
   provider_email: string | null
   provider_name: string | null
   provider_npi: string | null
+  provider_billing_provider_id: string | null
 }
 
 interface Provider {
@@ -124,6 +125,7 @@ export default function EnrollmentServicesPage() {
   const [taskHours, setTaskHours] = useState<Record<string, string>>({})
   const [taskHipaaHours, setTaskHipaaHours] = useState<Record<string, string>>({})
   const [taskContractDates, setTaskContractDates] = useState<Record<string, string>>({})
+  const [taskAtns, setTaskAtns] = useState<Record<string, string>>({})
   const [taskSaving, setTaskSaving] = useState<Record<string, boolean>>({})
 
   // PCB complete modal
@@ -378,6 +380,10 @@ export default function EnrollmentServicesPage() {
       } else if (task.task_key === 'pcb_hipaa_cert') {
         const h = parseInt(taskHipaaHours[task.id] ?? '0', 10)
         task_data = { ...(task.task_data ?? {}), hours: h }
+      } else if (task.task_key === 'promise_type13' || task.task_key === 'promise_type130') {
+        if (taskAtns[task.id] !== undefined) {
+          task_data = { ...(task.task_data ?? {}), atn: taskAtns[task.id] }
+        }
       } else if (taskContractDates[task.id] !== undefined) {
         task_data = { ...(task.task_data ?? {}), contract_date: taskContractDates[task.id] }
       }
@@ -721,7 +727,7 @@ export default function EnrollmentServicesPage() {
                       ['Start NPI Application', 'Log in → Submit New NPI Application → Entity type: Type 1 (Individual)'],
                       ['Complete Provider Profile', 'Exact legal name as on SSN card; DOB, State/Country of Birth; Sole Proprietor: No'],
                       ['Enter Business Addresses', 'Mailing address (P.O. Box OK) + Practice location (P.O. Box not allowed)'],
-                      ['Assign Taxonomy Code', 'Add Taxonomy → enter 374J00000X (Doula) — no PA state license number required'],
+                      ['Assign Taxonomy Code', 'Add Taxonomy → enter 176B00000X (Doula) — no PA state license number required'],
                       ['Contact Person & Identifiers', 'Leave Other Identifiers blank; add agency credentialing manager as Contact Person'],
                       ['Attest and Submit', 'Sign certification, click Submit — NPI issued via email within 1–5 business days'],
                     ].map(([label, detail], i) => (
@@ -769,7 +775,7 @@ export default function EnrollmentServicesPage() {
                       ['W-9 Form', 'IRS form — verify tax classification; must match provider\'s SSN or EIN'],
                       ['Government-Issued Photo ID', 'Driver\'s license or passport — name must match NPI application exactly'],
                       ['Liability Insurance Face Sheet', 'Must show provider name, policy number, coverage dates, and per-occurrence limits'],
-                      ['PROMISe™ Type 13 Application', 'Medicaid FFS enrollment — submitted at promise.dhs.pa.gov using provider\'s NPI'],
+                      ['PROMISe™ Type 13 Application', 'Medicaid enrollment — submitted at provider.ipx.pa.gov using provider\'s NPI'],
                       ['PROMISe™ Type 130 Application', 'CHIP enrollment — same portal, separate application type'],
                       ['CAQH ProView Enrollment', 'Complete ProView profile; provider must attest every 120 days — set reminder'],
                     ].map(([label, detail], i) => (
@@ -997,7 +1003,7 @@ export default function EnrollmentServicesPage() {
               <div className="flex items-start">
                 <p className="mt-3 text-xs text-gray-500">
                   Creates a 7-step NPPES checklist: I&amp;A account setup, NPI application, provider profile, business addresses,
-                  taxonomy code (374J00000X), contact person, and attestation/submission.
+                  taxonomy code (176B00000X), contact person, and attestation/submission.
                   Requires PCB certification to be on file. The issued NPI is recorded on completion.
                 </p>
               </div>
@@ -1201,18 +1207,29 @@ export default function EnrollmentServicesPage() {
                               const isMcoTask = task.task_key.startsWith('mco_') &&
                                 task.task_key !== 'mco_work_history' &&
                                 task.task_key !== 'mco_resume_cv'
+                              const isPromise = task.task_key === 'promise_type13' || task.task_key === 'promise_type130'
+                              const isAgency = !!detail.provider_billing_provider_id
                               const currentHours = taskHours[task.id] ??
                                 String((task.task_data as Record<string, unknown> | null)?.hours ?? '')
                               const currentHipaaHours = taskHipaaHours[task.id] ??
                                 String((task.task_data as Record<string, unknown> | null)?.hours ?? '')
                               const currentContractDate = taskContractDates[task.id] ??
                                 String((task.task_data as Record<string, unknown> | null)?.contract_date ?? '')
+                              const currentAtn = taskAtns[task.id] ??
+                                String((task.task_data as Record<string, unknown> | null)?.atn ?? '')
 
                               return (
                                 <div key={task.id} className="rounded border border-gray-100 bg-gray-50 p-3">
                                   <div className="flex items-start justify-between gap-2">
                                     <div className="flex-1 min-w-0">
-                                      <p className="text-sm font-medium text-gray-800">{task.label}</p>
+                                      <div className="flex items-center gap-2">
+                                        <p className="text-sm font-medium text-gray-800">{task.label}</p>
+                                        {isPromise && (
+                                          <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${isAgency ? 'bg-teal-100 text-teal-700' : 'bg-indigo-100 text-indigo-700'}`}>
+                                            {isAgency ? 'Agency / Type 2 NPI' : 'Individual / Type 1 NPI'}
+                                          </span>
+                                        )}
+                                      </div>
                                       {task.description && (
                                         <TaskDescription text={task.description} className="mt-0.5" />
                                       )}
@@ -1221,6 +1238,20 @@ export default function EnrollmentServicesPage() {
                                       {task.status.replace('_', ' ')}
                                     </span>
                                   </div>
+
+                                  {/* ATN field for PROMISe tasks */}
+                                  {isPromise && (
+                                    <div className="mt-2 flex items-center gap-2">
+                                      <label className="text-xs text-gray-600 whitespace-nowrap">ATN:</label>
+                                      <input
+                                        type="text"
+                                        placeholder="Application Tracking Number"
+                                        value={currentAtn}
+                                        onChange={(e) => setTaskAtns((prev) => ({ ...prev, [task.id]: e.target.value }))}
+                                        className="flex-1 rounded border border-gray-300 px-2 py-1 text-xs focus:border-blue-500 focus:outline-none"
+                                      />
+                                    </div>
+                                  )}
 
                                   {/* Hours inputs for training/HIPAA tasks */}
                                   {isHours && (

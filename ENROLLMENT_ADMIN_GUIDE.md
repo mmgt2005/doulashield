@@ -241,7 +241,25 @@ Note the certificate number in the task notes — it is required when completing
 
 Stage 2 unlocks after the provider's PCB certification date is recorded. Create a Stage 2 service from Admin → Enrollment Services → + New Enrollment Service, select "Enrollment — Stage 2."
 
-Six tasks are auto-created:
+Eight tasks are auto-created:
+
+### Type 1 vs Type 2 NPI — Quick Reference
+
+Before starting the PROMISe™ application, confirm which NPI path applies. This determines Provider Type, the legal name/TIN source, and who must personally click Submit.
+
+| | **Type 1 NPI — Individual Provider** | **Type 2 NPI — Agency / Group** |
+|---|---|---|
+| **PROMISe Provider Type** | 13 (Non-Traditional Provider) | 89 (Atypical Provider — Organization) |
+| **Specialty** | 130 (Certified Doula) | 130 (Certified Doula) |
+| **Tax ID** | Individual SSN or sole-proprietor EIN | Organization EIN (IRS SS-4 / CP575) |
+| **NPI in NPPES** | Type 1 (individual 10-digit NPI) | Type 2 (group 10-digit NPI) |
+| **Taxonomy code** | 176B00000X (Doula) | 176B00000X (Doula) |
+| **Legal name** | As on W-9 Line 1 (individual name) | Organization legal name (as on EIN) |
+| **Who clicks Submit** | **Provider must personally click Submit** — screen-share required | Authorized representative confirms verbally; DoulaShield staff may click Submit |
+| **Attestation** | Individual reads terms, checks boxes, types legal name, clicks Submit | Organization's authorized representative is the legal certifier |
+| **Credentials listed** | Provider's own PCB cert number + date | Each rostered doula's PCB cert number + date |
+| **Insurance** | Individual policy | Agency group policy ($1M/$3M minimum) |
+| **Ownership disclosure** | N/A | All owners ≥ 5% + managing employees |
 
 ### Task 1: W-9 Form
 
@@ -283,41 +301,104 @@ Six tasks are auto-created:
 
 ### Task 4: PROMISe™ Type 13 Application (Medicaid)
 
-**What PROMISe™ Type 13 is:** Pennsylvania's Medicaid provider enrollment application for individual providers billing under a fee-for-service (FFS) or MCO arrangement. Required to obtain a PROMISe™ Provider ID and bill any PA Medicaid MCO.
+**What PROMISe™ Type 13 is:** Pennsylvania's Medicaid provider enrollment application. Required to obtain a PROMISe™ Provider ID and bill any PA Medicaid MCO. The portal is **provider.ipx.pa.gov**.
 
-**How to apply:**
-1. Go to PROMISe™ Provider Enrollment at provider.ipx.pa.gov (DHS provider portal)
-2. Create or log in to a provider account
-3. Select "Enroll as a Provider" → Type 13 (Individual Provider)
-4. Enter the provider's NPI, PCB certification number, SSN/EIN, and address
-5. Complete the credential section with PCB certification date and certificate number (from task notes in Stage 1)
-6. Submit — you will receive an ATN (Application Tracking Number) immediately
+See the Type 1 vs Type 2 NPI table above before starting — the Provider Type, legal name source, and attestation rules differ.
 
-**What to upload:** Screenshot of the submission confirmation page showing the ATN, or the confirmation email from DHS.
+---
 
-**What to record in notes:** The ATN (Application Tracking Number) and submission date. The PROMISe™ Provider ID is issued separately after approval (typically 2–4 weeks) — record it when received and enter it in the "Mark Enrollment Complete" modal.
+#### Individual Provider Path (Type 1 NPI)
+
+Use the "Stage & Share" method: build the entire application first, then bring the provider in at the end for attestation. **The provider must personally read the compliance terms, check the acknowledgment boxes, type their legal name, and click Submit — you cannot click Submit on their behalf for an initial individual enrollment.**
+
+**Prerequisite:** Confirm the provider's Type 1 NPI is active in NPPES and carries taxonomy code **176B00000X** (Doula). The PROMISe™ portal cross-checks the federal database in real time — a missing or mismatched taxonomy will stall progress on screen one.
+
+**Step 1** — Navigate to provider.ipx.pa.gov. Create an application account if the provider is new. Select "Enroll as a New Provider."
+
+**Step 2** — Select Provider Type **13** (Non-Traditional Provider), Specialty **130** (Certified Doula).
+
+**Step 3** — Enter the provider's SSN (sole proprietors) or EIN if incorporated, exactly as it appears on their W-9. Do not mix SSN and EIN.
+
+**Step 4** — For the primary service address, look up the ZIP+4 code at usps.com/zip4 before entering — the 9-digit format ensures the state-assigned 4-digit Service Location Code (0001) aligns with future MCO claims.
+
+**Step 5** — On the credentials page, enter the PCB Certified Perinatal Doula (CPD) certificate number and exact issuance date. Upload a PDF scan. The name on the PCB certificate must match the NPI registration exactly.
+
+**Step 6** — On the "Legal Billing Entity" screen, enter the name exactly as it appears on Line 1 of the provider's W-9. A mismatch with the IRS automated match routine forces a manual review and adds weeks to processing time.
+
+**Step 7** — If the provider has any employment gaps of 30 days or more in the past 5 years, paste a one-sentence explanation into the notes field before advancing — unexplained gaps generate a DHS "Request for Information."
+
+**Step 8** — Advance to the final attestation page. Screen-share with the provider. They read the compliance terms, check the boxes, type their legal name, and click Submit. **Copy the ATN immediately** — it is your only tracking token. Record it in the ATN field in the task row. Processing: 30–60 days.
+
+---
+
+#### Agency / Group Path (Type 2 NPI)
+
+For agencies, DoulaShield may submit the application after the authorized representative has reviewed and confirmed the contents — organizational attestation does not require the same in-person provider click as individual enrollment.
+
+**Step 1** — Navigate to provider.ipx.pa.gov. Select "Enroll as a New Provider."
+
+**Step 2** — Select Provider Type **89** (Atypical Provider — Organization), Specialty **130** (Certified Doula).
+
+**Step 3** — Enter the agency's EIN (from the IRS SS-4 letter / CP575). Enter the Type 2 group NPI from NPPES.
+
+**Step 4** — Enter the agency's legal business address as the primary billing address. List the service counties in which the agency's doulas operate.
+
+**Step 5** — On the credentials page, list each rostered doula's PCB certificate number and issuance date. Upload a consolidated PDF of all certificates.
+
+**Step 6** — On the Liability Insurance screen, enter the agency's group policy carrier, policy number, and expiration date. Coverage must meet the minimum $1M per occurrence / $3M aggregate threshold.
+
+**Step 7** — Complete the ownership/controlling interest disclosure for all owners with 5% or more ownership, plus all managing employees.
+
+**Step 8** — Confirm application contents with the authorized representative, then submit. **Copy the ATN** into the ATN field in the task row. Processing: 30–60 days.
+
+---
+
+**What to upload:** Screenshot of the ATN confirmation page.
+
+**ATN field:** Enter the ATN in the dedicated ATN field on the task row (not just the notes field) — it becomes visible to the provider on their Enrollment Status screen once the task is marked complete.
 
 ---
 
 ### Task 5: PROMISe™ Type 130 Application (CHIP)
 
-**What PROMISe™ Type 130 is:** The CHIP (Children's Health Insurance Program) provider enrollment application. A separate enrollment from Type 13 but uses the same PROMISe™ portal. Required to bill CHIP-enrolled children under Keystone First CHIP, UPMC for You CHIP, and other CHIP MCOs.
+**What PROMISe™ Type 130 is:** The CHIP (Children's Health Insurance Program) provider enrollment application. A separate enrollment type from Type 13 but submitted through the same PROMISe™ portal account. Required to bill CHIP-enrolled children under Keystone First CHIP, UPMC for You CHIP, and other CHIP MCOs. Submit this after the Type 13 ATN is in hand.
 
-**How to apply:** Same process as Type 13 — return to the PROMISe™ portal and select Type 130. The provider's existing PROMISe™ account is reused; you're adding a new enrollment type.
+**How to apply:**
 
-**What to upload:** Confirmation of Type 130 submission (screenshot or ATN email).
+**Step 1** — Log back in to provider.ipx.pa.gov with the same account used for Type 13.
+
+**Step 2** — Select "Add Enrollment Type" and choose Type **130** (CHIP Non-Traditional Provider), Specialty **130** (Certified Doula).
+
+**Step 3** — Most fields pre-populate from the Type 13 application. Verify all fields are current — address, NPI, credentials, insurance — and correct any that have changed.
+
+**Step 4** — Individual providers: bring the provider onto a screen-share for the final attestation page (same requirement as Type 13). Agency: submit after authorized representative confirmation.
+
+**Step 5** — Copy the Type 130 ATN into the ATN field in the task row. It is a **separate** tracking token from the Type 13 ATN.
+
+**What to upload:** Type 130 ATN confirmation screenshot.
 
 ---
 
-### Task 6: CAQH ProView Enrollment
+### Tasks 6–8: CAQH ProView Enrollment
+
+CAQH ProView enrollment is a three-task sequence: request Practice Manager access, wait for the provider to authorize DoulaShield, then complete and attest the profile.
 
 **What CAQH ProView is:** The Council for Affordable Quality Healthcare (CAQH) ProView is a centralized credentialing database that all PA Medicaid MCOs use to verify provider credentials. Each provider must have an active, attested CAQH ProView profile. Attestation expires every 120 days and must be renewed.
 
-**How to enroll:**
-1. Go to proview.caqh.org and create a new provider account
-2. Enter the provider's NPI, PCB certification date, license/credential information, malpractice insurance (use the liability policy details from Task 3), and practice information
-3. Upload all supporting documents (PCB certificate, liability face sheet, CPR cert) directly in CAQH
-4. Complete all sections and click "Attest" — this notifies all participating MCOs that the profile is complete
+**Task 6 — Request Practice Manager Access**
+1. Sign in to DoulaShield's CAQH Practice Manager account at proview.caqh.org
+2. Under the Providers tab, click "Add Provider" and search by the provider's NPI
+3. Submit the access request — CAQH will notify the provider by email
+4. Record the request date in the task notes
+
+**Task 7 — Provider Authorizes DoulaShield**
+The provider must log into their own CAQH ProView account and authorize DoulaShield under the Authorizations tab. Use the screen-share button to walk them through it. Without authorization, the admin cannot view or edit the provider's profile.
+
+**Task 8 — Complete Profile & Provider Attests**
+1. Log into CAQH Practice Manager and select the provider
+2. Fill in all 12 sections: Personal Info, Address, Education, Postgraduate Training, Work History, Hospital Affiliations, Malpractice Insurance, Liability Insurance, References, Board Certifications, DEA/CDS, and Disclosure Questions
+3. Edits are saved as "Suggested Import" — not live until the provider attests
+4. Provider logs into their own CAQH ProView account and clicks "Attest"
 
 **What to upload:** A screenshot of the CAQH ProView dashboard showing "Attested" status and the attestation date.
 
@@ -329,7 +410,7 @@ Six tasks are auto-created:
 
 ### Completing Stage 2
 
-Once all 6 tasks are marked complete:
+Once all 8 tasks are marked complete:
 1. Click **Mark Enrollment Complete**
 2. Enter the PROMISe™ enrollment date (date the application was submitted — actual approval arrives later but start the MCO process as soon as you have the ATN)
 3. Enter the PROMISe™ Provider ID/ATN and CAQH ProView ID
