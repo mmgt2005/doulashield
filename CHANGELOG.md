@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.68.30] — 2026-07-23
+
+### Fixed
+- **PROMISe NPI type indicator removed**: The "Agency / Type 2 NPI" / "Individual / Type 1 NPI" pill badge on the PROMISe™ task row was incorrectly derived from whether the provider has a `billing_provider_id` (i.e., is linked to a billing agency). Being associated with an agency doesn't determine NPI type — individual doulas who bill through an agency still enroll with a Type 1 NPI. Removed the indicator entirely; the task description already shows both paths.
+
+---
+
 ## [1.68.29] — 2026-07-23
 
 ### Fixed

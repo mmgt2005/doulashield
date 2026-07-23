@@ -916,7 +916,6 @@ async def create_enrollment_service(
         provider_email=provider.email,
         provider_name=provider.full_name,
         provider_npi=provider.npi,
-        provider_billing_provider_id=provider.billing_provider_id,
     )
 
 
@@ -952,7 +951,6 @@ async def get_enrollment_service(
         provider_email=provider.email if provider else None,
         provider_name=provider.full_name if provider else None,
         provider_npi=provider.npi if provider else None,
-        provider_billing_provider_id=provider.billing_provider_id if provider else None,
     )
 
 

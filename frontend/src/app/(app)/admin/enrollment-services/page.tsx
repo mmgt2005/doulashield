@@ -53,7 +53,6 @@ interface EnrollmentServiceDetail {
   provider_email: string | null
   provider_name: string | null
   provider_npi: string | null
-  provider_billing_provider_id: string | null
 }
 
 interface Provider {
@@ -1207,7 +1206,6 @@ export default function EnrollmentServicesPage() {
                                 task.task_key !== 'mco_work_history' &&
                                 task.task_key !== 'mco_resume_cv'
                               const isPromise = task.task_key === 'promise_type13'
-                              const isAgency = !!detail.provider_billing_provider_id
                               const currentHours = taskHours[task.id] ??
                                 String((task.task_data as Record<string, unknown> | null)?.hours ?? '')
                               const currentHipaaHours = taskHipaaHours[task.id] ??
@@ -1221,14 +1219,7 @@ export default function EnrollmentServicesPage() {
                                 <div key={task.id} className="rounded border border-gray-100 bg-gray-50 p-3">
                                   <div className="flex items-start justify-between gap-2">
                                     <div className="flex-1 min-w-0">
-                                      <div className="flex items-center gap-2">
-                                        <p className="text-sm font-medium text-gray-800">{task.label}</p>
-                                        {isPromise && (
-                                          <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${isAgency ? 'bg-teal-100 text-teal-700' : 'bg-indigo-100 text-indigo-700'}`}>
-                                            {isAgency ? 'Agency / Type 2 NPI' : 'Individual / Type 1 NPI'}
-                                          </span>
-                                        )}
-                                      </div>
+                                      <p className="text-sm font-medium text-gray-800">{task.label}</p>
                                       {task.description && (
                                         <TaskDescription text={task.description} className="mt-0.5" />
                                       )}
