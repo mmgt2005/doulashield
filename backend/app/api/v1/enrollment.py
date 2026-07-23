@@ -350,10 +350,10 @@ _STAGE2_TASKS: list[dict] = [
             "their legal name, and click Submit — you cannot click Submit on their behalf for "
             "an initial individual enrollment.\n\n"
             "Prerequisite: Confirm the provider's Type 1 NPI is active in NPPES and carries "
-            "taxonomy code 176B00000X (Doula). The PROMISe™ portal cross-checks the federal "
+            "taxonomy code 374J00000X (Doula). The PROMISe™ portal cross-checks the federal "
             "database in real time — a missing or mismatched taxonomy will stall progress on "
             "screen one.\n\n"
-            "Step 1 — Navigate to provider.ipx.pa.gov. Create an application account if the "
+            "Step 1 — Navigate to promise.dhs.pa.gov. Create an application account if the "
             "provider is new. Select 'Enroll as a New Provider.'\n"
             "Step 2 — Select Provider Type 13 (Non-Traditional Provider), Specialty 130 "
             "(Certified Doula).\n"
@@ -379,7 +379,7 @@ _STAGE2_TASKS: list[dict] = [
             "For agencies, DoulaShield may submit the application after the authorized "
             "representative has reviewed and confirmed the contents — organizational attestation "
             "does not require the same in-person provider click as individual enrollment.\n\n"
-            "Step 1 — Navigate to provider.ipx.pa.gov. Select 'Enroll as a New Provider.'\n"
+            "Step 1 — Navigate to promise.dhs.pa.gov. Select 'Enroll as a New Provider.'\n"
             "Step 2 — Select Provider Type 89 (Atypical Provider — Organization), Specialty 130 "
             "(Certified Doula).\n"
             "Step 3 — Enter the agency's EIN (from the IRS SS-4 letter / CP575). Enter the "
@@ -398,31 +398,6 @@ _STAGE2_TASKS: list[dict] = [
             "Upload a screenshot of the ATN confirmation page as your document for this task."
         ),
         "sort_order": 4,
-    },
-    {
-        "task_key": "promise_type130",
-        "required_pathway": None,
-        "label": "PROMISe™ Type 130 Application (CHIP)",
-        "description": (
-            "After the Type 13 (Medicaid) application is submitted and the ATN is in hand, "
-            "return to the same PROMISe™ provider portal account and add a Type 130 (CHIP) "
-            "enrollment. The provider's existing PROMISe™ account is reused — this adds a "
-            "new enrollment type to the same record.\n\n"
-            "Step 1 — Log back in to provider.ipx.pa.gov with the same account used for "
-            "Type 13.\n"
-            "Step 2 — Select 'Add Enrollment Type' and choose Type 130 (CHIP Non-Traditional "
-            "Provider), Specialty 130 (Certified Doula).\n"
-            "Step 3 — Most fields pre-populate from the Type 13 application. Verify all "
-            "fields are current — address, NPI, credentials, insurance — and correct any "
-            "that have changed since the Type 13 submission.\n"
-            "Step 4 — Individual providers: bring the provider onto a screen-share for the "
-            "final attestation page (same requirement as Type 13). Agency: submit after "
-            "authorized representative confirmation.\n"
-            "Step 5 — Copy the Type 130 ATN into the notes field. It is a separate tracking "
-            "token from the Type 13 ATN.\n\n"
-            "Upload the Type 130 ATN confirmation screenshot as the document for this task."
-        ),
-        "sort_order": 5,
     },
     {
         "task_key": "caqh_request_access",

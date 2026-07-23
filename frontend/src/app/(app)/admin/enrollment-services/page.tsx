@@ -380,7 +380,7 @@ export default function EnrollmentServicesPage() {
       } else if (task.task_key === 'pcb_hipaa_cert') {
         const h = parseInt(taskHipaaHours[task.id] ?? '0', 10)
         task_data = { ...(task.task_data ?? {}), hours: h }
-      } else if (task.task_key === 'promise_type13' || task.task_key === 'promise_type130') {
+      } else if (task.task_key === 'promise_type13') {
         if (taskAtns[task.id] !== undefined) {
           task_data = { ...(task.task_data ?? {}), atn: taskAtns[task.id] }
         }
@@ -727,7 +727,7 @@ export default function EnrollmentServicesPage() {
                       ['Start NPI Application', 'Log in → Submit New NPI Application → Entity type: Type 1 (Individual)'],
                       ['Complete Provider Profile', 'Exact legal name as on SSN card; DOB, State/Country of Birth; Sole Proprietor: No'],
                       ['Enter Business Addresses', 'Mailing address (P.O. Box OK) + Practice location (P.O. Box not allowed)'],
-                      ['Assign Taxonomy Code', 'Add Taxonomy → enter 176B00000X (Doula) — no PA state license number required'],
+                      ['Assign Taxonomy Code', 'Add Taxonomy → enter 374J00000X (Doula) — no PA state license number required'],
                       ['Contact Person & Identifiers', 'Leave Other Identifiers blank; add agency credentialing manager as Contact Person'],
                       ['Attest and Submit', 'Sign certification, click Submit — NPI issued via email within 1–5 business days'],
                     ].map(([label, detail], i) => (
@@ -762,7 +762,7 @@ export default function EnrollmentServicesPage() {
                   <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">3</span>
                   <div className="flex-1">
                     <p className="text-sm font-semibold text-gray-900">Enrollment — Stage 2</p>
-                    <p className="text-xs text-blue-600">PROMISe™ Type 13 & 130 + CAQH ProView enrollment</p>
+                    <p className="text-xs text-blue-600">PROMISe™ Type 13 + CAQH ProView enrollment</p>
                   </div>
                   <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 border border-blue-200 px-2 py-0.5 text-xs text-blue-700">
                     🔒 Requires NPI on file
@@ -770,13 +770,12 @@ export default function EnrollmentServicesPage() {
                 </div>
                 <div className="p-4 space-y-4">
                   <div className="rounded-lg border border-gray-200 p-3">
-                    <p className="text-xs font-semibold text-gray-700 mb-2">6 Required Documents & Actions</p>
+                    <p className="text-xs font-semibold text-gray-700 mb-2">5 Required Documents & Actions</p>
                     {[
                       ['W-9 Form', 'IRS form — verify tax classification; must match provider\'s SSN or EIN'],
                       ['Government-Issued Photo ID', 'Driver\'s license or passport — name must match NPI application exactly'],
                       ['Liability Insurance Face Sheet', 'Must show provider name, policy number, coverage dates, and per-occurrence limits'],
-                      ['PROMISe™ Type 13 Application', 'Medicaid enrollment — submitted at provider.ipx.pa.gov using provider\'s NPI'],
-                      ['PROMISe™ Type 130 Application', 'CHIP enrollment — same portal, separate application type'],
+                      ['PROMISe™ Type 13 Application', 'Medicaid enrollment — submitted at promise.dhs.pa.gov using provider\'s NPI'],
                       ['CAQH ProView Enrollment', 'Complete ProView profile; provider must attest every 120 days — set reminder'],
                     ].map(([label, detail], i) => (
                       <div key={i} className="flex items-start gap-2 mt-2">
@@ -795,9 +794,9 @@ export default function EnrollmentServicesPage() {
                       <ol className="mt-1 space-y-0.5 text-xs text-amber-700 list-decimal list-inside">
                         <li>Create a new enrollment service → select provider → select stage <strong>Enrollment — Stage 2</strong></li>
                         <li>Collect W-9, photo ID, and liability face sheet from the provider; upload each to its task</li>
-                        <li>Submit PROMISe™ Type 13 and 130 applications; upload confirmation screenshots</li>
+                        <li>Submit PROMISe™ Type 13 application; upload ATN confirmation screenshot</li>
                         <li>Complete CAQH ProView enrollment; note the CAQH ID in task notes</li>
-                        <li>When all 6 tasks are complete, click <strong>Mark Enrollment Complete</strong> → enter PROMISe enrollment date + optional PROMISe ID and CAQH ID</li>
+                        <li>When all 7 tasks are complete, click <strong>Mark Enrollment Complete</strong> → enter PROMISe enrollment date + optional PROMISe ID and CAQH ID</li>
                         <li>DoulaShield writes <code>promise_last_enrolled_on</code> and <code>liability_insurance_expires_on</code> to the provider's profile</li>
                       </ol>
                     </div>
@@ -1003,7 +1002,7 @@ export default function EnrollmentServicesPage() {
               <div className="flex items-start">
                 <p className="mt-3 text-xs text-gray-500">
                   Creates a 7-step NPPES checklist: I&amp;A account setup, NPI application, provider profile, business addresses,
-                  taxonomy code (176B00000X), contact person, and attestation/submission.
+                  taxonomy code (374J00000X), contact person, and attestation/submission.
                   Requires PCB certification to be on file. The issued NPI is recorded on completion.
                 </p>
               </div>
@@ -1207,7 +1206,7 @@ export default function EnrollmentServicesPage() {
                               const isMcoTask = task.task_key.startsWith('mco_') &&
                                 task.task_key !== 'mco_work_history' &&
                                 task.task_key !== 'mco_resume_cv'
-                              const isPromise = task.task_key === 'promise_type13' || task.task_key === 'promise_type130'
+                              const isPromise = task.task_key === 'promise_type13'
                               const isAgency = !!detail.provider_billing_provider_id
                               const currentHours = taskHours[task.id] ??
                                 String((task.task_data as Record<string, unknown> | null)?.hours ?? '')

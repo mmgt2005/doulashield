@@ -535,7 +535,7 @@ Eleven tasks are auto-generated, in order:
 1. Click **+ New Enrollment Service** → select "Enrollment — Stage 2".
 2. Select the provider. Click **Create Service**.
 
-Eight tasks are auto-generated:
+Seven tasks are auto-generated:
 
 | Task | What it collects |
 |---|---|
@@ -543,7 +543,6 @@ Eight tasks are auto-generated:
 | Government-Issued Photo ID | Driver's license, state ID, or passport (front + back) |
 | Liability Insurance Face Sheet | Declarations page showing coverage limits and dates |
 | PROMISe™ Type 13 Application | Medicaid provider enrollment — ATN from DHS portal; provider must personally attest and submit |
-| PROMISe™ Type 130 Application | CHIP provider enrollment — same process, separate ATN |
 | Request Practice Manager Access in CAQH | Submit access request by provider NPI in CAQH Practice Manager |
 | Provider Authorizes DoulaShield in CAQH | Provider logs into CAQH and checks DoulaShield in their Authorizations tab |
 | Complete CAQH Profile & Provider Attests | Admin fills 12-section profile; provider clicks Attest; record CAQH ID + attestation date |
@@ -556,14 +555,14 @@ Before opening the portal, check the NPI type indicator on the task row (appears
 |---|---|---|
 | Provider Type | 13 (Non-Traditional Provider) | 89 (Atypical Provider — Organization) |
 | Tax ID | Individual SSN or sole-proprietor EIN | Organization EIN (IRS SS-4 / CP575) |
-| Taxonomy | **176B00000X** (Doula) | **176B00000X** (Doula) |
+| Taxonomy | **374J00000X** (Doula) | **374J00000X** (Doula) |
 | Who clicks Submit | **Provider must personally click Submit** — screen-share required | Authorized representative confirms; DoulaShield staff may click Submit |
 
 **Individual provider path (Type 1):** Build the entire application first, then bring the provider in at the end for attestation. You cannot legally click Submit on their behalf.
 
-- Confirm the provider's Type 1 NPI is active in NPPES and carries taxonomy code **176B00000X**. PROMISe™ cross-checks the federal registry in real time — a missing or mismatched taxonomy stalls progress on screen one.
+- Confirm the provider's Type 1 NPI is active in NPPES and carries taxonomy code **374J00000X**. PROMISe™ cross-checks the federal registry in real time — a missing or mismatched taxonomy stalls progress on screen one.
 - Gather the ZIP+4 of the service address from usps.com/zip4 before starting. The 9-digit code locks the state-assigned Service Location Code (0001) so it matches future MCO claims.
-- At **provider.ipx.pa.gov**: select "Enroll as a New Provider" → Provider Type **13** → Specialty **130**. Enter SSN or EIN exactly as it appears on the IRS W-9. On the credentials page, enter the PCB certificate number and exact issuance date, and upload the certificate PDF.
+- At **promise.dhs.pa.gov**: select "Enroll as a New Provider" → Provider Type **13** → Specialty **130**. Enter SSN or EIN exactly as it appears on the IRS W-9. On the credentials page, enter the PCB certificate number and exact issuance date, and upload the certificate PDF.
 - Two common kickback causes: (a) **W-9 name mismatch** — the "Legal Billing Entity" field must match Line 1 of the W-9 exactly; (b) **Employment gaps** — any gap of 30+ days in the past 5 years requires a one-sentence explanation in the system notes field before advancing.
 - When the application is complete, bring the provider onto a screen-share. They read the compliance terms, check the boxes, type their legal name, and click Submit.
 
@@ -574,8 +573,6 @@ Before opening the portal, check the NPI type indicator on the task row (appears
 - Complete the ownership/controlling interest disclosure for all owners with ≥ 5% ownership and all managing employees.
 
 **After submission (both paths):** Copy the ATN (Application Tracking Number) from the confirmation screen immediately — it is the only way to check status via the public portal. Enter it in the dedicated **ATN field** on the task row (not just notes). Upload a screenshot of the confirmation page. Processing takes 30–60 days. The ATN will be shown to the provider on their Enrollment Status screen once you mark the task complete.
-
-**Type 130 (CHIP):** After the Type 13 ATN is in hand, log back in to the same PROMISe™ account and select "Add Enrollment Type" → Type 130. Most fields pre-populate from Type 13. Same attestation rules apply. Record the separate Type 130 ATN in the Type 130 task row.
 
 **CAQH Practice Manager — one-time agency setup (do once before any Stage 2 services):**
 

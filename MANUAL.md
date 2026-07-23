@@ -112,7 +112,7 @@ The main Dashboard (first page after login) shows alert banners at the top whene
 | Banner | Appears when | What to do |
 |---|---|---|
 | CAQH attestation | ≤14 days to 90-day re-attestation deadline | Re-attest at proview.caqh.org, then update **Settings → CAQH Attestation** |
-| PROMISe™ re-enrollment | ≤90 days to 5-year re-enrollment deadline | Re-enroll at provider.ipx.pa.gov, then update **Settings → PROMISe™ Re-enrollment** |
+| PROMISe™ re-enrollment | ≤90 days to 5-year re-enrollment deadline | Re-enroll at promise.dhs.pa.gov, then update **Settings → PROMISe™ Re-enrollment** |
 | PCB Perinatal Certification | ≤60 days to 2-year renewal deadline | Renew at pacertboard.org, then update **Settings → PCB Perinatal Certification** |
 | Liability insurance | ≤30 days to policy expiry | Renew your policy, then update **Settings → Liability Insurance** |
 | Claim deadline — overdue | Any unfiled claim is past the 180-day PA Medicaid deadline | Open the client record and file or correct the claim immediately |

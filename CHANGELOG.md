@@ -12,6 +12,15 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.68.29] — 2026-07-23
+
+### Fixed
+- **Taxonomy code**: reverted to correct `374J00000X` (Doula) — the `176B00000X` change in v1.68.27 was wrong.
+- **PROMISe™ portal URL**: corrected to `promise.dhs.pa.gov` throughout — the `provider.ipx.pa.gov` URL used in v1.68.27/28 was wrong.
+- **CHIP enrollment removed**: DoulaShield does not cover CHIP. Removed `promise_type130` task from Stage 2 seeding, removed Type 130 from the How It Works modal and all guides. Stage 2 task count is now 7 (was incorrectly stated as 8 in v1.68.27).
+
+---
+
 ## [1.68.28] — 2026-07-23
 
 ### Fixed

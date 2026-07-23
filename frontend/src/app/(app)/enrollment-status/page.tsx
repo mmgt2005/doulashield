@@ -287,10 +287,6 @@ const PROMISE_ADMIN_TASK_KEYS: Record<string, string> = {
   promise_type13:
     'Your DoulaShield enrollment specialist is completing your PA Medicaid enrollment application in PROMISe™. ' +
     'You will be contacted by screen-share when it\'s time for your final attestation — this is a required step only you can complete.',
-  promise_type130:
-    'Your DoulaShield enrollment specialist is completing your CHIP enrollment in PROMISe™. ' +
-    'When the Medicaid (Type 13) enrollment is submitted, CHIP is added to the same account. ' +
-    'You may be contacted for a second attestation screen-share.',
 }
 
 const GENDER_OPTIONS = ['Female', 'Male', 'Non-binary / Gender non-conforming', 'Transgender female', 'Transgender male', 'Prefer not to say', 'Not listed']
