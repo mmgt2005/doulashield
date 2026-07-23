@@ -12,6 +12,14 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.68.28] — 2026-07-23
+
+### Fixed
+- **ADMIN_GUIDE.md**: corrected taxonomy code `374J00000X` → `176B00000X` in the NPPES task table and PROMISe Stage & Share section; expanded PROMISe section to cover Type 1 vs Type 2 NPI paths with comparison table; added ATN field guidance and updated Type 130 instructions.
+- **MANUAL.md**: added note explaining PROMISe task display on Enrollment Status page (friendly summary text + ATN shown on task completion); corrected stale PROMISe portal URL `promise.dhs.pa.gov` → `provider.ipx.pa.gov`.
+
+---
+
 ## [1.68.27] — 2026-07-23
 
 ### Added
