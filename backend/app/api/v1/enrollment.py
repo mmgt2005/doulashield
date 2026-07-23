@@ -343,11 +343,11 @@ _STAGE2_TASKS: list[dict] = [
         "required_pathway": "all",
         "label": "PROMISe™ Type 13 Application (Medicaid)",
         "description": (
-            "INDIVIDUAL PROVIDER (Type 1 NPI) — Use the 'Stage & Share' method: build the "
-            "application first, then screen-share with the provider for final attestation. "
-            "The provider must personally check the boxes, type their legal name, and click "
-            "Submit — you cannot submit on their behalf. Confirm their NPI is active in NPPES "
-            "with taxonomy 374J00000X before starting.\n\n"
+            "## INDIVIDUAL PROVIDER (Type 1 NPI)\n"
+            "Use the 'Stage & Share' method: build the application first, then screen-share "
+            "with the provider for final attestation. The provider must personally check the "
+            "boxes, type their legal name, and click Submit — you cannot submit on their behalf. "
+            "Confirm their NPI is active in NPPES with taxonomy 374J00000X before starting.\n\n"
             "Step 1 — Portal: Navigate to promise.dhs.pa.gov. Create an account if the "
             "provider is new. Select 'Enroll as a New Provider.'\n"
             "Step 2 — Provider Type: Select Provider Type 13 (Non-Traditional Provider), "
@@ -368,7 +368,7 @@ _STAGE2_TASKS: list[dict] = [
             "Step 8 — Attestation: Screen-share with the provider. They read the compliance "
             "terms, check the boxes, type their legal name, and click Submit. Copy the ATN "
             "immediately — it is your only tracking token. Processing: 30–60 days.\n\n"
-            "AGENCY / GROUP (Type 2 NPI) — DoulaShield may submit after the authorized "
+            "## AGENCY / GROUP (Type 2 NPI) — DoulaShield may submit after the authorized "
             "representative has reviewed and confirmed the contents.\n\n"
             "Step 1 — Portal: Navigate to promise.dhs.pa.gov. Select 'Enroll as a New "
             "Provider.'\n"

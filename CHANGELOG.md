@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.68.33] — 2026-07-23
+
+### Improved
+- **PROMISe task section headers**: The "INDIVIDUAL PROVIDER (Type 1 NPI)" and "AGENCY / GROUP (Type 2 NPI)" phrases in the PROMISe™ Type 13 task description now render as distinct bold section headers with a divider line between them, instead of appearing as inline text within the step content. The `TaskDescription` component now recognizes `##`-prefixed lines as section headers. Migration 0062 backfills existing task records.
+
+---
+
 ## [1.68.32] — 2026-07-23
 
 ### Improved
