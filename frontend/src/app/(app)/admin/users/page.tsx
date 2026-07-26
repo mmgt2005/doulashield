@@ -36,6 +36,10 @@ export default function AdminUsersPage() {
   const [assignBpId, setAssignBpId] = useState('')
   const [assignError, setAssignError] = useState<string | null>(null)
 
+  // Search / filter
+  const [search, setSearch] = useState('')
+  const [roleFilter, setRoleFilter] = useState<'all' | 'provider' | 'admin' | 'billing_admin'>('all')
+
   // Demo mode
   const [demoModal, setDemoModal] = useState<{ id: string; email: string; current: boolean } | null>(null)
   const [demoTogglingId, setDemoTogglingId] = useState<string | null>(null)
@@ -353,6 +357,15 @@ export default function AdminUsersPage() {
 
   const bpNameMap = Object.fromEntries(billingProviders.map((bp) => [bp.id, bp.name]))
 
+  const filteredUsers = users.filter((u) => {
+    const q = search.trim().toLowerCase()
+    const matchesSearch = !q ||
+      u.email.toLowerCase().includes(q) ||
+      (u.full_name ?? '').toLowerCase().includes(q)
+    const matchesRole = roleFilter === 'all' || u.role === roleFilter
+    return matchesSearch && matchesRole
+  })
+
   if (loading) return <p className="text-sm text-gray-500">Loading…</p>
 
   const handleSeedDemoDashboard = async () => {
@@ -400,6 +413,31 @@ export default function AdminUsersPage() {
         </div>
       )}
 
+      <div className="flex items-center gap-3">
+        <input
+          type="text"
+          placeholder="Search by email or name…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="flex-1 rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none"
+        />
+        <select
+          value={roleFilter}
+          onChange={(e) => setRoleFilter(e.target.value as typeof roleFilter)}
+          className="rounded border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none"
+        >
+          <option value="all">All roles</option>
+          <option value="provider">Provider</option>
+          <option value="admin">Admin</option>
+          <option value="billing_admin">Billing Admin</option>
+        </select>
+        {(search || roleFilter !== 'all') && (
+          <span className="text-xs text-gray-500 whitespace-nowrap">
+            {filteredUsers.length} of {users.length}
+          </span>
+        )}
+      </div>
+
       <div className="bg-white rounded-lg border border-gray-200 overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-gray-50">
@@ -410,7 +448,14 @@ export default function AdminUsersPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {users.map((u) => {
+            {filteredUsers.length === 0 ? (
+              <tr>
+                <td colSpan={11} className="px-4 py-8 text-center text-sm text-gray-400">
+                  No users match your search.
+                </td>
+              </tr>
+            ) : null}
+            {filteredUsers.map((u) => {
               const isProvider = u.role === 'provider'
               const depositPaid = u.deposit_paid ?? false
               const subStatus = u.subscription_status ?? null

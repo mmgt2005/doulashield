@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.68.34] — 2026-07-26
+
+### Added
+- **User search and filter**: Admin Users screen now has a text search (by email or name) and a role dropdown (All / Provider / Admin / Billing Admin). Filtering is client-side — no backend changes. A count badge shows "X of Y" when a filter is active.
+
+---
+
 ## [1.68.33] — 2026-07-23
 
 ### Improved
