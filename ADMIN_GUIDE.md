@@ -147,6 +147,15 @@ Any lead can be deleted regardless of source. Open the lead's edit panel and cli
 
 ## Managing Provider Accounts
 
+### Finding Users
+
+The Users table has a **search box** and a **role dropdown** at the top.
+
+- **Search** — type any part of an email address or full name to filter the list in real time.
+- **Role** — select **Provider**, **Admin**, or **Billing Admin** to show only that role. Defaults to **All roles**.
+
+When either filter is active, a count badge shows how many users match out of the total (e.g. "3 of 47"). Clear the search box and reset the role to "All roles" to return to the full list.
+
 ### Creating a Provider Account
 
 From **Users → + Add Provider**, fill in the email address and (optionally) the provider's full name. The modal offers two buttons:
