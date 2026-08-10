@@ -5,6 +5,7 @@ import Link from 'next/link'
 import axios from 'axios'
 import { getAccessToken } from '@/lib/auth'
 import { useAuthStore } from '@/store/auth-store'
+import OnboardingChecklist from '@/components/ui/OnboardingChecklist'
 
 interface TodayVisit {
   patient_id: string
@@ -40,7 +41,7 @@ const STAGE_LABELS: Record<string, string> = {
 }
 
 export default function DashboardPage() {
-  const { isAuthenticated } = useAuthStore()
+  const { isAuthenticated, user } = useAuthStore()
   const [caqhDaysRemaining, setCaqhDaysRemaining] = useState<number | null | undefined>(undefined)
   const [promiseDaysRemaining, setPromiseDaysRemaining] = useState<number | null | undefined>(undefined)
   const [pcbDaysRemaining, setPcbDaysRemaining] = useState<number | null | undefined>(undefined)
@@ -48,6 +49,13 @@ export default function DashboardPage() {
   const [claimDeadlineSummary, setClaimDeadlineSummary] = useState<{ overdue_count: number; urgent_count: number; unfiled_past_30_days: number } | null>(null)
   const [enrollmentServices, setEnrollmentServices] = useState<EnrollmentServiceDetail[] | null>(null)
   const [todayVisits, setTodayVisits] = useState<TodayVisit[] | null>(null)
+  const [checklistDismissed, setChecklistDismissed] = useState(false)
+  const [checklistNpi, setChecklistNpi] = useState<string | null>(null)
+  const [checklistBillingName, setChecklistBillingName] = useState<string | null>(null)
+  const [checklistAddress, setChecklistAddress] = useState<string | null>(null)
+  const [checklistHasSignature, setChecklistHasSignature] = useState(false)
+  const [checklistZone, setChecklistZone] = useState<string | null>(null)
+  const [checklistMcoCount, setChecklistMcoCount] = useState(0)
 
   useEffect(() => {
     if (!isAuthenticated) return
@@ -89,7 +97,7 @@ export default function DashboardPage() {
     if (!isAuthenticated) return
     const headers = { Authorization: `Bearer ${getAccessToken()}` }
     axios
-      .get<{ caqh_days_remaining: number | null; promise_days_remaining: number | null; pcb_days_remaining: number | null; liability_days_remaining: number | null }>(
+      .get<{ caqh_days_remaining: number | null; promise_days_remaining: number | null; pcb_days_remaining: number | null; liability_days_remaining: number | null; npi: string | null; billing_provider_name: string | null; provider_address: string | null; has_signature: boolean; zone: string | null; mco_contracts: Array<{ mco: string }> | null }>(
         `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/me/provider-settings`,
         { headers }
       )
@@ -98,6 +106,12 @@ export default function DashboardPage() {
         setPromiseDaysRemaining(r.data.promise_days_remaining)
         setPcbDaysRemaining(r.data.pcb_days_remaining)
         setLiabilityDaysRemaining(r.data.liability_days_remaining)
+        setChecklistNpi(r.data.npi)
+        setChecklistBillingName(r.data.billing_provider_name)
+        setChecklistAddress(r.data.provider_address)
+        setChecklistHasSignature(r.data.has_signature ?? false)
+        setChecklistZone(r.data.zone)
+        setChecklistMcoCount(r.data.mco_contracts?.length ?? 0)
       })
       .catch(() => {
         setCaqhDaysRemaining(null)
@@ -107,6 +121,23 @@ export default function DashboardPage() {
       })
   }, [isAuthenticated])
 
+  const handleChecklistDismiss = async () => {
+    setChecklistDismissed(true)
+    try {
+      await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/complete-onboarding`,
+        {},
+        { headers: { Authorization: `Bearer ${getAccessToken()}` } }
+      )
+    } catch { /* non-fatal */ }
+  }
+
+  const onboardingCompletedAt = user?.onboarding_completed_at ? new Date(user.onboarding_completed_at) : null
+  const onboardingOlderThan30Days = onboardingCompletedAt
+    ? (Date.now() - onboardingCompletedAt.getTime()) > 30 * 24 * 60 * 60 * 1000
+    : false
+  const showChecklist = user?.role === 'provider' && !checklistDismissed && !onboardingOlderThan30Days
+
   const showCaqhBanner = caqhDaysRemaining !== undefined && caqhDaysRemaining !== null && caqhDaysRemaining <= 14
   const showPromiseBanner = promiseDaysRemaining !== undefined && promiseDaysRemaining !== null && promiseDaysRemaining <= 90
   const showPcbBanner = pcbDaysRemaining !== undefined && pcbDaysRemaining !== null && pcbDaysRemaining <= 60
@@ -115,6 +146,18 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+
+      {showChecklist && (
+        <OnboardingChecklist
+          npi={checklistNpi}
+          billingName={checklistBillingName}
+          providerAddress={checklistAddress}
+          hasSignature={checklistHasSignature}
+          zone={checklistZone}
+          mcoCount={checklistMcoCount}
+          onDismiss={handleChecklistDismiss}
+        />
+      )}
 
       {showCaqhBanner && (
         <div className={`rounded-lg border p-4 ${caqhDaysRemaining <= 0 ? 'border-red-300 bg-red-50' : 'border-amber-300 bg-amber-50'}`}>

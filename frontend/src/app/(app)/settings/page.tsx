@@ -639,7 +639,7 @@ export default function SettingsPage() {
           })()}
         </div>
 
-        <div className="border-t pt-4 space-y-4">
+        <div id="billing" className="border-t pt-4 space-y-4">
           <h2 className="text-sm font-semibold text-gray-700">Billing provider information</h2>
           <p className="text-xs text-gray-500">
             Used to populate Box 33 on the CMS 1500 claim form.
@@ -657,7 +657,7 @@ export default function SettingsPage() {
               className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
           </div>
-          <div>
+          <div data-tour-id="tour-settings-npi">
             <label htmlFor="npi" className="block text-sm font-medium text-gray-700">
               National Provider Identifier (NPI)
             </label>
@@ -717,7 +717,7 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        <div className="border-t pt-4 space-y-4">
+        <div id="zone" data-tour-id="tour-settings-zone" className="border-t pt-4 space-y-4">
           <h2 className="text-sm font-semibold text-gray-700">PA HealthChoices Zone</h2>
           <p className="text-xs text-gray-500">
             Pennsylvania Medicaid is divided into 5 geographic zones. Selecting your zone ensures the correct MCOs
@@ -774,7 +774,7 @@ export default function SettingsPage() {
           )}
         </div>
 
-        <div className="border-t pt-4 space-y-3">
+        <div id="mco" className="border-t pt-4 space-y-3">
           <div>
             <h2 className="text-sm font-semibold text-gray-700">MCO Contracts</h2>
             <p className="mt-0.5 text-xs text-gray-500">
@@ -877,7 +877,7 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        <div className="border-t pt-4 space-y-4">
+        <div id="signature" className="border-t pt-4 space-y-4">
           <h2 className="text-sm font-semibold text-gray-700">Billing Credentials (CMS 1500)</h2>
           <div>
             <label htmlFor="provider_ssn" className="block text-sm font-medium text-gray-700">
@@ -898,7 +898,7 @@ export default function SettingsPage() {
             />
             <p className="mt-1 text-xs text-gray-400">Stored encrypted. Used as Box 25 Tax ID on CMS 1500 claims (sole proprietor SSN).</p>
           </div>
-          <div>
+          <div data-tour-id="tour-settings-signature">
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Provider Signature — Box 31
               {providerSignaturePath && (

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Sidebar from '@/components/layout/Sidebar'
 import SessionTimeoutModal from '@/components/layout/SessionTimeoutModal'
 import ImpersonationBanner from '@/components/layout/ImpersonationBanner'
+import TourOverlay from '@/components/ui/TourOverlay'
 import { useSessionTimeout } from '@/hooks/useSessionTimeout'
 import { useAuth } from '@/hooks/useAuth'
 import { useAuthStore } from '@/store/auth-store'
@@ -109,6 +110,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   useAuth()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [tosAccepted, setTosAccepted] = useState(false)
+  const [onboardingDone, setOnboardingDone] = useState(false)
 
   const handleTimeout = useCallback(async () => {
     try {
@@ -178,6 +180,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         {/* ToS gate — shown to any user who hasn't accepted yet; never during impersonation */}
         {!authLoading && !priorSession && user && !user.tos_accepted_at && !tosAccepted && (
           <TosGate onAccepted={() => setTosAccepted(true)} />
+        )}
+
+        {/* Onboarding tour — shown once for providers after ToS; never during impersonation */}
+        {!authLoading && !priorSession && user?.role === 'provider' && (user.tos_accepted_at || tosAccepted) && !user.onboarding_completed_at && !onboardingDone && (
+          <TourOverlay onDone={() => setOnboardingDone(true)} />
         )}
       </div>
 

@@ -13,6 +13,7 @@ export interface User {
   last_sign_in_at: string | null
   welcome_email_sent_at: string | null
   tos_accepted_at?: string | null
+  onboarding_completed_at?: string | null
   billing_provider_id: string | null
   managed_billing_provider_id: string | null
 }

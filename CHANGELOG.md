@@ -12,6 +12,15 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.68.35] — 2026-08-10
+
+### Added
+- **Provider onboarding tour**: A spotlight tour fires once for new providers after they accept the Terms of Service. The 8-step tour walks through the sidebar, enrollment status, clients nav, and key settings fields (NPI, signature, zone). Each step highlights the relevant UI element with a dimmed overlay cutout and an adjacent tooltip. Navigation between pages is handled automatically. "Skip tour" or completing all steps calls `POST /auth/complete-onboarding` and permanently dismisses the tour.
+- **"Get Started" checklist**: A collapsible checklist card appears on the dashboard for providers with incomplete setup steps: NPI, billing name & address, provider signature, PA zone, and MCO contracts. Each item links directly to the relevant settings section. A progress bar tracks completion; the card hides automatically when all items are done. A "Dismiss" button lets providers permanently collapse it.
+- **Backend**: New `onboarding_completed_at` column on users (migration 0063); `POST /api/v1/auth/complete-onboarding` endpoint; `has_signature` flag in provider-settings read response.
+
+---
+
 ## [1.68.34] — 2026-07-26
 
 ### Added

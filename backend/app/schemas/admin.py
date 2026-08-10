@@ -72,6 +72,7 @@ class UserRead(BaseModel):
     last_sign_in_at: datetime | None = None
     welcome_email_sent_at: datetime | None = None
     tos_accepted_at: datetime | None = None
+    onboarding_completed_at: datetime | None = None
     billing_provider_id: uuid.UUID | None = None
     managed_billing_provider_id: uuid.UUID | None = None
 
@@ -112,6 +113,7 @@ class ProviderSettingsRead(BaseModel):
     provider_phone: str | None
     provider_ssn_connected: bool
     provider_signature_path: str | None
+    has_signature: bool
     billing_provider_name: str | None
     billing_provider_id: uuid.UUID | None
     billing_provider: BillingProviderRead | None  # populated from JOIN when linked

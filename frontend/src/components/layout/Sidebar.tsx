@@ -81,26 +81,33 @@ export default function Sidebar({ onClose }: SidebarProps) {
     'bg-blue-100 text-blue-700'
 
   return (
-    <aside className="w-56 flex-shrink-0 bg-white border-r border-gray-200 flex flex-col h-full">
+    <aside data-tour-id="tour-sidebar" className="w-56 flex-shrink-0 bg-white border-r border-gray-200 flex flex-col h-full">
       <div className="px-4 py-4 border-b border-gray-200">
         <img src="/logo.png" alt="DoulaShield" className="w-36 h-auto" />
       </div>
       <nav className="flex-1 min-h-0 overflow-y-auto px-2 py-4 space-y-1 flex flex-col">
         <div className="space-y-1">
-          {links.map(({ href, label }) => (
-            <Link
-              key={href}
-              href={href}
-              onClick={onClose}
-              className={`block px-3 py-2 rounded text-sm font-medium transition-colors ${
-                pathname.startsWith(href)
-                  ? 'bg-blue-50 text-blue-700'
-                  : 'text-gray-700 hover:bg-gray-100'
-              }`}
-            >
-              {label}
-            </Link>
-          ))}
+          {links.map(({ href, label }) => {
+            const tourId =
+              href === '/clients' ? 'tour-nav-clients' :
+              href === '/enrollment-status' ? 'tour-nav-enrollment' :
+              undefined
+            return (
+              <Link
+                key={href}
+                href={href}
+                onClick={onClose}
+                data-tour-id={tourId}
+                className={`block px-3 py-2 rounded text-sm font-medium transition-colors ${
+                  pathname.startsWith(href)
+                    ? 'bg-blue-50 text-blue-700'
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                {label}
+              </Link>
+            )
+          })}
         </div>
         <div className="mt-auto pt-3 border-t border-gray-100 space-y-0.5">
           <p className="px-3 pb-1 text-xs font-medium text-gray-400 uppercase tracking-wide">Help</p>

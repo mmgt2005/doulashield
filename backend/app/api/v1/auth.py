@@ -245,6 +245,30 @@ async def accept_tos(
     )
 
 
+@router.post("/complete-onboarding", status_code=status.HTTP_204_NO_CONTENT)
+async def complete_onboarding(
+    request: Request,
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    audit: Annotated[AuditLogger, Depends(get_audit)],
+) -> None:
+    result = await db.execute(select(User).where(User.id == current_user.id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    if user.onboarding_completed_at is None:
+        user.onboarding_completed_at = datetime.now(timezone.utc)
+        await db.commit()
+    await audit.log(
+        action="COMPLETE_ONBOARDING",
+        resource_type="user",
+        resource_id=current_user.id,
+        user_id=current_user.id,
+        ip_address=get_client_ip(request),
+        user_agent=get_user_agent(request),
+    )
+
+
 @router.post("/me/change-password")
 async def change_password(
     request: Request,

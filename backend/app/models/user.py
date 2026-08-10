@@ -61,6 +61,7 @@ class User(Base):
     welcome_email_sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     surrogate_auth_signed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     tos_accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    onboarding_completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Billing
     stripe_customer_id: Mapped[str | None] = mapped_column(Text, nullable=True)
