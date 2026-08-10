@@ -52,6 +52,29 @@ When your account is created, you receive a welcome email with your email addres
 
 If your temporary password no longer works, use **Forgot password?** on the login page to request a reset link.
 
+### Onboarding Tour
+
+After you accept the Terms of Service, a short guided tour starts automatically. It highlights the key areas of the platform — the sidebar, your enrollment status, the clients list, and your settings fields — with a dimmed overlay and a tooltip next to each element. The tour navigates between pages on your behalf.
+
+- Click **Next →** to advance, **← Back** to revisit a step, or **Skip tour** (top-right of the tooltip) to dismiss immediately.
+- The tour is shown once per account. It will not appear again after you complete or skip it.
+
+### "Get Started" Checklist
+
+After the tour, a **Get Started** card appears at the top of your Dashboard. It tracks the five setup tasks you must complete before you can submit claims:
+
+| Task | Where |
+|---|---|
+| Enter your NPI number | Settings → Billing provider information |
+| Set your billing name & address | Settings → Billing provider information |
+| Draw your provider signature | Settings → Billing Credentials |
+| Set your PA zone & counties | Settings → PA HealthChoices Zone |
+| Add MCO contracts | Settings → MCO Contracts |
+
+Each item is a link that scrolls directly to the relevant section in Settings. A thin progress bar shows how many tasks are done. The card disappears automatically once all five are complete.
+
+If you want to hide the card before completing everything, click **Dismiss** in the card header. You can always complete the remaining items later via the Settings page.
+
 ### Setting Up Your Provider Profile
 
 Before submitting any claims, complete your provider profile in **Settings** (sidebar). You need:
