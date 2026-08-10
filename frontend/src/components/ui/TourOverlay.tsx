@@ -13,7 +13,7 @@ interface TourStep {
   hint?: string
 }
 
-const STEPS: TourStep[] = [
+const PROVIDER_STEPS: TourStep[] = [
   {
     tourId: null,
     page: '/dashboard',
@@ -66,11 +66,91 @@ const STEPS: TourStep[] = [
   },
 ]
 
+const ADMIN_STEPS: TourStep[] = [
+  {
+    tourId: null,
+    page: '/dashboard',
+    title: 'Welcome to DoulaShield Admin',
+    body: 'You have full admin access — provider accounts, billing entities, enrollment services, and leads. Let\'s take a quick look around.',
+  },
+  {
+    tourId: 'tour-nav-admin-billing-providers',
+    page: null,
+    title: 'Billing entities',
+    body: 'Create your billing entity (agency or group) here. Set the group NPI, billing address, and Availity credentials — these appear on Box 33 of every CMS 1500 claim.',
+  },
+  {
+    tourId: 'tour-nav-admin-users',
+    page: null,
+    title: 'Provider accounts',
+    body: 'Add doula accounts, assign them to your billing entity, and track each provider\'s setup. You can also invite providers in bulk via CSV.',
+  },
+  {
+    tourId: 'tour-nav-admin-enrollment-services',
+    page: null,
+    title: 'Enrollment services',
+    body: 'Track each provider\'s credentialing pipeline here — PCB certification → NPPES/NPI setup → PROMISe™ enrollment → MCO contracting.',
+  },
+  {
+    tourId: 'tour-nav-admin-leads',
+    page: null,
+    title: 'Leads',
+    body: 'Review incoming doula inquiries from your website, schedule demos, and convert leads into provider accounts.',
+  },
+  {
+    tourId: null,
+    page: '/dashboard',
+    title: "You're all set!",
+    body: "Your \"Get Started\" checklist on the dashboard tracks the remaining setup steps. The Admin Guide in the Help section has step-by-step workflows for every admin task.",
+  },
+]
+
+const BILLING_ADMIN_STEPS: TourStep[] = [
+  {
+    tourId: null,
+    page: '/billing-admin/providers',
+    title: 'Welcome to DoulaShield',
+    body: 'As a billing admin, you manage claim processing and providers for your agency. Let\'s take a quick look around.',
+  },
+  {
+    tourId: 'tour-nav-ba-providers',
+    page: null,
+    title: 'My Providers',
+    body: 'View the doulas in your agency, track their credentialing stages, and review their claim history. You can also invite new providers directly.',
+  },
+  {
+    tourId: 'tour-nav-ba-claims',
+    page: null,
+    title: 'Agency Claims',
+    body: 'Review all claims submitted by your providers, check statuses, process remittances, and handle any denials that need resubmission.',
+  },
+  {
+    tourId: 'tour-nav-ba-settings',
+    page: null,
+    title: 'Agency Settings',
+    body: 'Configure your agency\'s billing name, group NPI, billing address, and Availity API credentials. These appear on Box 33 of every CMS 1500.',
+    hint: 'Set these up before your providers can submit claims.',
+  },
+  {
+    tourId: null,
+    page: '/billing-admin/providers',
+    title: "You're all set!",
+    body: "Your \"Get Started\" checklist below tracks the remaining agency setup items. The Billing Admin Guide in the Help section has detailed workflows.",
+  },
+]
+
+const STEPS_BY_ROLE: Record<string, TourStep[]> = {
+  provider: PROVIDER_STEPS,
+  admin: ADMIN_STEPS,
+  billing_admin: BILLING_ADMIN_STEPS,
+}
+
 interface Props {
+  role: 'provider' | 'admin' | 'billing_admin'
   onDone: () => void
 }
 
-export default function TourOverlay({ onDone }: Props) {
+export default function TourOverlay({ role, onDone }: Props) {
   const router = useRouter()
   const [step, setStep] = useState(0)
   const [rect, setRect] = useState<DOMRect | null>(null)
@@ -78,6 +158,7 @@ export default function TourOverlay({ onDone }: Props) {
   const findAttempts = useRef(0)
   const api = process.env.NEXT_PUBLIC_API_URL
 
+  const STEPS = STEPS_BY_ROLE[role] ?? PROVIDER_STEPS
   const currentStep = STEPS[step]
 
   const findTarget = useCallback((tourId: string) => {

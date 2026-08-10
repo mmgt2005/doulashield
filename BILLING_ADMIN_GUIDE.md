@@ -19,6 +19,25 @@ This guide covers the billing admin workflow in DoulaShield. As a billing admin,
 
 ---
 
+## Onboarding Tour
+
+When a billing admin logs in for the first time after accepting the Terms of Service, a 5-step guided tour starts automatically. It spotlights My Providers, Agency Claims, and Agency Settings in the sidebar, and describes what each section does. Click **Next →** to advance, **← Back** to revisit, or **Skip tour** to dismiss. The tour appears only once per account.
+
+### "Get Started" Checklist
+
+After the tour, a **Get Started** card appears at the top of the My Providers page with four setup tasks:
+
+| Task | Where |
+|---|---|
+| Set agency name & group NPI | Agency Settings |
+| Add your agency billing address | Agency Settings |
+| Connect Availity credentials | Agency Settings |
+| Confirm providers are in your agency | My Providers |
+
+Each item auto-checks when the data is saved. The card hides when all four are complete or when you click **Dismiss**. If your admin has already configured the agency settings, most items may already be checked when you first log in.
+
+---
+
 ## How the Agency Claims Queue Works
 
 When a doula provider assigned to your agency submits a claim, it does **not** go directly to Availity. Instead, it lands in your **Agency Claims** queue with the status **Pending Billing Review**. You decide how to handle each claim from there.

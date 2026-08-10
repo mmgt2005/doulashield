@@ -56,6 +56,8 @@ export default function DashboardPage() {
   const [checklistHasSignature, setChecklistHasSignature] = useState(false)
   const [checklistZone, setChecklistZone] = useState<string | null>(null)
   const [checklistMcoCount, setChecklistMcoCount] = useState(0)
+  const [adminBillingProviders, setAdminBillingProviders] = useState<Array<{ name: string | null; group_npi: string | null; availity_connected: boolean; provider_count: number }>>([])
+  const [adminChecklistLoaded, setAdminChecklistLoaded] = useState(false)
 
   useEffect(() => {
     if (!isAuthenticated) return
@@ -121,6 +123,17 @@ export default function DashboardPage() {
       })
   }, [isAuthenticated])
 
+  useEffect(() => {
+    if (!isAuthenticated || user?.role !== 'admin') return
+    axios
+      .get<Array<{ name: string | null; group_npi: string | null; availity_connected: boolean; provider_count: number }>>(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/admin/billing-providers`,
+        { headers: { Authorization: `Bearer ${getAccessToken()}` } }
+      )
+      .then((r) => { setAdminBillingProviders(r.data); setAdminChecklistLoaded(true) })
+      .catch(() => setAdminChecklistLoaded(true))
+  }, [isAuthenticated]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleChecklistDismiss = async () => {
     setChecklistDismissed(true)
     try {
@@ -136,7 +149,26 @@ export default function DashboardPage() {
   const onboardingOlderThan30Days = onboardingCompletedAt
     ? (Date.now() - onboardingCompletedAt.getTime()) > 30 * 24 * 60 * 60 * 1000
     : false
-  const showChecklist = user?.role === 'provider' && !checklistDismissed && !onboardingOlderThan30Days
+
+  const providerChecklistItems = [
+    { label: 'Enter your NPI number', done: !!checklistNpi, href: '/settings#npi' },
+    { label: 'Set your billing name & address', done: !!(checklistBillingName && checklistAddress), href: '/settings#billing' },
+    { label: 'Draw your provider signature', done: checklistHasSignature, href: '/settings#signature' },
+    { label: 'Set your PA zone & counties', done: !!checklistZone, href: '/settings#zone' },
+    { label: 'Add MCO contracts', done: checklistMcoCount > 0, href: '/settings#mco' },
+  ]
+
+  const adminBp = adminBillingProviders[0]
+  const adminChecklistItems = [
+    { label: 'Create a billing provider entity', done: adminBillingProviders.length > 0, href: '/admin/billing-providers' },
+    { label: 'Set agency name & group NPI', done: !!(adminBp?.name && adminBp?.group_npi), href: '/admin/billing-providers' },
+    { label: 'Add providers to your agency', done: (adminBp?.provider_count ?? 0) > 0, href: '/admin/users' },
+    { label: 'Connect Availity credentials', done: adminBp?.availity_connected ?? false, href: '/admin/billing-providers' },
+  ]
+
+  const checklistItems = user?.role === 'admin' ? adminChecklistItems : providerChecklistItems
+  const checklistReady = user?.role === 'admin' ? adminChecklistLoaded : true
+  const showChecklist = (user?.role === 'provider' || user?.role === 'admin') && !checklistDismissed && !onboardingOlderThan30Days && checklistReady
 
   const showCaqhBanner = caqhDaysRemaining !== undefined && caqhDaysRemaining !== null && caqhDaysRemaining <= 14
   const showPromiseBanner = promiseDaysRemaining !== undefined && promiseDaysRemaining !== null && promiseDaysRemaining <= 90
@@ -149,12 +181,7 @@ export default function DashboardPage() {
 
       {showChecklist && (
         <OnboardingChecklist
-          npi={checklistNpi}
-          billingName={checklistBillingName}
-          providerAddress={checklistAddress}
-          hasSignature={checklistHasSignature}
-          zone={checklistZone}
-          mcoCount={checklistMcoCount}
+          items={checklistItems}
           onDismiss={handleChecklistDismiss}
         />
       )}

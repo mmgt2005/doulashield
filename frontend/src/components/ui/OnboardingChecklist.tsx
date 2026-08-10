@@ -3,40 +3,19 @@
 import { useState } from 'react'
 import Link from 'next/link'
 
-interface ChecklistItem {
+export interface ChecklistItem {
   label: string
   done: boolean
   href: string
 }
 
 interface Props {
-  npi: string | null
-  billingName: string | null
-  providerAddress: string | null
-  hasSignature: boolean
-  zone: string | null
-  mcoCount: number
+  items: ChecklistItem[]
   onDismiss: () => void
 }
 
-export default function OnboardingChecklist({
-  npi,
-  billingName,
-  providerAddress,
-  hasSignature,
-  zone,
-  mcoCount,
-  onDismiss,
-}: Props) {
+export default function OnboardingChecklist({ items, onDismiss }: Props) {
   const [collapsed, setCollapsed] = useState(false)
-
-  const items: ChecklistItem[] = [
-    { label: 'Enter your NPI number', done: !!npi, href: '/settings#npi' },
-    { label: 'Set your billing name & address', done: !!(billingName && providerAddress), href: '/settings#billing' },
-    { label: 'Draw your provider signature', done: hasSignature, href: '/settings#signature' },
-    { label: 'Set your PA zone & counties', done: !!zone, href: '/settings#zone' },
-    { label: 'Add MCO contracts', done: mcoCount > 0, href: '/settings#mco' },
-  ]
 
   const doneCount = items.filter(i => i.done).length
   const allDone = doneCount === items.length

@@ -12,6 +12,18 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.68.36] — 2026-08-10
+
+### Added
+- **Admin onboarding tour**: A 6-step spotlight tour fires once for admin users after ToS acceptance. Steps highlight the Billing Providers, Users, Enrollment Services, and Leads nav items. The final step navigates back to the dashboard.
+- **Admin "Get Started" checklist**: A 4-item checklist on the admin dashboard tracks essential setup: create a billing provider entity, set agency name & group NPI, add providers to the agency, and connect Availity credentials. Data is sourced from `GET /api/v1/admin/billing-providers`.
+- **Billing Admin onboarding tour**: A 5-step spotlight tour for billing admin users, highlighting My Providers, Agency Claims, and Agency Settings nav items.
+- **Billing Admin "Get Started" checklist**: A 4-item checklist on the My Providers page tracks: agency name & group NPI, billing address, Availity credentials, and whether providers are assigned. Data is sourced from `GET /api/v1/billing-admin/agency-settings`.
+- **`TourOverlay` refactor**: Now accepts a `role` prop; selects the appropriate step set for `provider`, `admin`, or `billing_admin`. Sidebar tour IDs added for all admin and billing-admin nav links.
+- **`OnboardingChecklist` refactor**: Now accepts a generic `items: ChecklistItem[]` prop instead of provider-specific fields, making it reusable across all roles.
+
+---
+
 ## [1.68.35] — 2026-08-10
 
 ### Added

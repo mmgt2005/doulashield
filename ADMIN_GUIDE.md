@@ -28,6 +28,23 @@ Admin users share the provider interface (Clients, Visits, Claims) and have two 
 
 At the bottom of the sidebar, under the **Help** heading, admins see two documentation links: **User Manual** (provider-facing features) and **Admin Guide** (this document). Providers only see the User Manual link. The Admin Guide page is restricted to admin accounts and redirects anyone else to the dashboard.
 
+### Onboarding Tour
+
+When an admin logs in for the first time after accepting the Terms of Service, a 6-step guided tour starts automatically. It spotlights the key admin areas in the sidebar: Billing Providers, Users, Enrollment Services, and Leads. The tour ends back on the dashboard. Click **Next →** to advance, **← Back** to revisit, or **Skip tour** to dismiss immediately. The tour appears only once per account.
+
+### "Get Started" Checklist
+
+After the tour, a **Get Started** card appears on the admin dashboard with four setup tasks:
+
+| Task | Where |
+|---|---|
+| Create a billing provider entity | Admin → Billing Providers |
+| Set agency name & group NPI | Admin → Billing Providers |
+| Add providers to your agency | Admin → Users |
+| Connect Availity credentials | Admin → Billing Providers |
+
+Each item auto-checks when the underlying data is in place. The card hides when all four are complete or when you click **Dismiss**.
+
 ---
 
 ## Leads (CRM)

@@ -5,6 +5,8 @@ import axios from 'axios'
 import Papa from 'papaparse'
 import { getAccessToken } from '@/lib/auth'
 import TaskDescription from '@/components/ui/TaskDescription'
+import OnboardingChecklist from '@/components/ui/OnboardingChecklist'
+import { useAuthStore } from '@/store/auth-store'
 
 const ALL_MCOS = [
   'AmeriHealth Caritas', 'Keystone First', 'UPMC For You', 'Geisinger Health Plan',
@@ -187,11 +189,20 @@ function enrollmentReadyBadge(provider: Provider) {
 export default function BillingAdminProvidersPage() {
   const api = process.env.NEXT_PUBLIC_API_URL
   const headers = { Authorization: `Bearer ${getAccessToken()}` }
+  const { user } = useAuthStore()
 
   const [providers, setProviders] = useState<Provider[]>([])
   const [loading, setLoading] = useState(true)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [toast, setToast] = useState<string | null>(null)
+
+  // Get Started checklist
+  const [checklistDismissed, setChecklistDismissed] = useState(false)
+  const [agencyName, setAgencyName] = useState<string | null>(null)
+  const [agencyNpi, setAgencyNpi] = useState<string | null>(null)
+  const [agencyAddress, setAgencyAddress] = useState<string | null>(null)
+  const [agencyAvailityConnected, setAgencyAvailityConnected] = useState(false)
+  const [agencyProviderCount, setAgencyProviderCount] = useState(0)
 
   // Enrollment tier
   const [enrollmentTierEnabled, setEnrollmentTierEnabled] = useState(false)
@@ -236,16 +247,44 @@ export default function BillingAdminProvidersPage() {
     setTimeout(() => setToast(null), 4000)
   }
 
+  const handleChecklistDismiss = async () => {
+    setChecklistDismissed(true)
+    try {
+      await axios.post(
+        `${api}/api/v1/auth/complete-onboarding`,
+        {},
+        { headers: { Authorization: `Bearer ${getAccessToken()}` } }
+      )
+    } catch { /* non-fatal */ }
+  }
+
+  const onboardingCompletedAt = user?.onboarding_completed_at ? new Date(user.onboarding_completed_at) : null
+  const onboardingOlderThan30Days = onboardingCompletedAt
+    ? (Date.now() - onboardingCompletedAt.getTime()) > 30 * 24 * 60 * 60 * 1000
+    : false
+  const baChecklistItems = [
+    { label: 'Set agency name & group NPI', done: !!(agencyName && agencyNpi), href: '/billing-admin/settings' },
+    { label: 'Add your agency billing address', done: !!agencyAddress, href: '/billing-admin/settings' },
+    { label: 'Connect Availity credentials', done: agencyAvailityConnected, href: '/billing-admin/settings' },
+    { label: 'Confirm providers are in your agency', done: agencyProviderCount > 0, href: '/billing-admin/providers' },
+  ]
+  const showChecklist = !checklistDismissed && !onboardingOlderThan30Days
+
   const loadProviders = async () => {
     setLoading(true)
     try {
       const [providersRes, settingsRes] = await Promise.all([
         axios.get<Provider[]>(`${api}/api/v1/billing-admin/providers`, { headers }),
-        axios.get<{ enrollment_tier_enabled: boolean }>(`${api}/api/v1/billing-admin/agency-settings`, { headers }).catch(() => ({ data: { enrollment_tier_enabled: false } })),
+        axios.get<{ enrollment_tier_enabled: boolean; name: string | null; group_npi: string | null; address: string | null; availity_connected: boolean; provider_count: number }>(`${api}/api/v1/billing-admin/agency-settings`, { headers }).catch(() => ({ data: { enrollment_tier_enabled: false, name: null, group_npi: null, address: null, availity_connected: false, provider_count: 0 } })),
       ])
       setProviders(providersRes.data)
       const tierEnabled = settingsRes.data.enrollment_tier_enabled ?? false
       setEnrollmentTierEnabled(tierEnabled)
+      setAgencyName(settingsRes.data.name ?? null)
+      setAgencyNpi(settingsRes.data.group_npi ?? null)
+      setAgencyAddress(settingsRes.data.address ?? null)
+      setAgencyAvailityConnected(settingsRes.data.availity_connected ?? false)
+      setAgencyProviderCount(settingsRes.data.provider_count ?? 0)
 
       // Always fetch enrollment services — assigned services visible without enrollment tier
       const svcRes = await axios.get<EnrollmentService[]>(`${api}/api/v1/billing-admin/enrollment/services`, { headers }).catch(() => ({ data: [] as EnrollmentService[] }))
@@ -618,6 +657,13 @@ export default function BillingAdminProvidersPage() {
 
   return (
     <div className="space-y-6">
+      {showChecklist && (
+        <OnboardingChecklist
+          items={baChecklistItems}
+          onDismiss={handleChecklistDismiss}
+        />
+      )}
+
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-xl font-bold text-gray-900">My Providers</h1>

@@ -182,9 +182,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <TosGate onAccepted={() => setTosAccepted(true)} />
         )}
 
-        {/* Onboarding tour — shown once for providers after ToS; never during impersonation */}
-        {!authLoading && !priorSession && user?.role === 'provider' && (user.tos_accepted_at || tosAccepted) && !user.onboarding_completed_at && !onboardingDone && (
-          <TourOverlay onDone={() => setOnboardingDone(true)} />
+        {/* Onboarding tour — shown once for all roles after ToS; never during impersonation */}
+        {!authLoading && !priorSession && user && (user.tos_accepted_at || tosAccepted) && !user.onboarding_completed_at && !onboardingDone && (
+          <TourOverlay role={user.role} onDone={() => setOnboardingDone(true)} />
         )}
       </div>
 

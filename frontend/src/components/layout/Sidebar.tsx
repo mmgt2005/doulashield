@@ -91,6 +91,13 @@ export default function Sidebar({ onClose }: SidebarProps) {
             const tourId =
               href === '/clients' ? 'tour-nav-clients' :
               href === '/enrollment-status' ? 'tour-nav-enrollment' :
+              href === '/admin/billing-providers' ? 'tour-nav-admin-billing-providers' :
+              href === '/admin/users' ? 'tour-nav-admin-users' :
+              href === '/admin/enrollment-services' ? 'tour-nav-admin-enrollment-services' :
+              href === '/admin/leads' ? 'tour-nav-admin-leads' :
+              href === '/billing-admin/providers' ? 'tour-nav-ba-providers' :
+              href === '/billing-admin/claims' ? 'tour-nav-ba-claims' :
+              href === '/billing-admin/settings' ? 'tour-nav-ba-settings' :
               undefined
             return (
               <Link
