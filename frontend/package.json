@@ -1,6 +1,6 @@
 {
   "name": "doulashield-frontend",
-  "version": "1.68.41",
+  "version": "1.68.42",
   "private": true,
   "scripts": {
     "dev": "next dev",

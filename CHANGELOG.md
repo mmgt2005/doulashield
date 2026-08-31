@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.68.42] — 2026-08-31
+
+### Fixed
+- **Frontend TypeScript build error**: `urlBase64ToUint8Array` in `usePushNotifications.ts` used `Uint8Array.from()` which TypeScript infers as `Uint8Array<ArrayBufferLike>`. The `PushSubscribeOptions.applicationServerKey` field requires `Uint8Array<ArrayBuffer>` specifically. Changed the function to allocate an explicit `ArrayBuffer` and fill it, satisfying the stricter type constraint.
+
+---
+
 ## [1.68.41] — 2026-08-31
 
 ### Fixed
