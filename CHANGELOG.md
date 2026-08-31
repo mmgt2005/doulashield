@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.68.38] — 2026-08-31
+
+### Fixed
+- **Stripe webhook crash**: `StripeObject.get()` raises `AttributeError: get` in stripe>=8 because `StripeObject` no longer inherits from `dict` and `__getattr__` intercepts the attribute lookup. The webhook handler now parses the raw (already HMAC-verified) JSON payload to get a plain `dict` instead of calling methods on `StripeObject`. This fixes repeated 500 errors on `customer.subscription.*`, `checkout.session.completed`, and `invoice.payment_succeeded` events.
+
+---
+
 ## [1.68.37] — 2026-08-31
 
 ### Added
