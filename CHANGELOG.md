@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.68.41] — 2026-08-31
+
+### Fixed
+- **Push route startup crash (root cause)**: `push.py` declared `current_user: CurrentUser` as a bare type annotation. Because `CurrentUser` is a plain Python class (not a Pydantic model), FastAPI tried to build a Pydantic response field from it during route registration and raised `FastAPIError`. Changed both `/push/subscribe` and `/push/unsubscribe` to use `Annotated[CurrentUser, Depends(get_current_user)]` — the same pattern the rest of the codebase uses — so FastAPI correctly treats it as dependency injection.
+
+---
+
 ## [1.68.40] — 2026-08-31
 
 ### Fixed
