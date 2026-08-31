@@ -83,10 +83,15 @@ Once enabled, you will receive notifications for:
 
 | Event | When it fires |
 |---|---|
+| **Visit in 1 hour** | 60 minutes before a scheduled visit starts |
+| **Visit in 30 minutes** | 30 minutes before a scheduled visit starts |
 | **Claim approved** | A claim status check returns an approved/paid result from Availity |
-| **Claim denied** | A claim status check returns a denied or rejected result |
+| **Claim denied** | A claim status check returns a denied or rejected result — prompts you to review for resubmission |
+| **SOAP note not submitted** | Daily at 09:00 UTC when a visit ended 2–26 hours ago without any SOAP note content |
+| **MA 91 signature pending** | Daily at 09:15 UTC when a visit ended without a collected client MA 91 signature |
+| **Prior authorization expiring** | Daily when a prior authorization's end date is within 30 days |
 | **Enrollment stage complete** | Your DoulaShield enrollment specialist marks a stage complete (PCB, NPPES, PROMISe™, or MCO) |
-| **CAQH attestation due** | Daily reminder when your CAQH re-attestation is due within 30 days |
+| **CAQH attestation due** | Daily reminder when your annual CAQH re-attestation is due within 30 days |
 | **Filing deadline approaching** | Daily reminder when an open claim is nearing the 180-day filing deadline |
 
 Clicking a notification opens DoulaShield directly to the relevant page. Notifications require an up-to-date browser (Chrome 50+, Firefox 44+, Edge 17+, Safari 16+).

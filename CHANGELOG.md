@@ -12,6 +12,21 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.69.0] — 2026-08-31
+
+### Added
+- **Visit reminders**: Providers receive a push notification 60 minutes and 30 minutes before any scheduled visit. A 15-minute interval scheduler job checks upcoming visits; two new boolean flags (`reminder_60min_sent`, `reminder_30min_sent`) on the `visits` table (migration 0065) prevent duplicate sends.
+- **SOAP note reminder**: Providers are notified at 09:00 UTC when a visit ended 2–26 hours ago without any SOAP note content filled in.
+- **MA 91 pending reminder**: Providers are notified at 09:15 UTC when a visit ended 1 hour to 7 days ago and the client MA 91 signature has not yet been collected.
+- **Prior authorization expiring**: Providers receive a daily push at 08:30 UTC when any prior authorization's end date falls within the next 30 days.
+- **Stale claims — billing admin**: Billing admins are notified at 08:35 UTC when claims have been in `pending` status for 3 or more days without review.
+- **Stale leads — admin**: Admins receive a daily push at 08:40 UTC summarizing how many leads have been in `new` status for over 48 hours without any follow-up.
+
+### Fixed
+- **CAQH push reminder crash**: `notify_caqh_reminders` referenced `EnrollmentService.caqh_attestation_due`, a column that does not exist in the model. Changed to compute the next annual anniversary of `pcb_cert_date` in Python, alerting providers when that date falls within 30 days.
+
+---
+
 ## [1.68.42] — 2026-08-31
 
 ### Fixed

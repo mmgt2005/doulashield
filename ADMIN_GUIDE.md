@@ -52,9 +52,14 @@ Admins receive browser push notifications for key events. Allow notifications wh
 | Event | When it fires |
 |---|---|
 | **New doula lead** | A lead submits an inquiry via the website quiz, webinar, or contact form |
-| **Enrollment stage complete** | Reserved for future admin-side enrollment events |
+| **Leads not yet contacted** | Daily at 08:40 UTC when one or more leads have been in *New* status for over 48 hours |
 
-Click any notification to go directly to the relevant page (e.g. the Leads list for a new lead).
+Click any notification to go directly to the relevant page. Billing admins receive two additional notifications:
+
+| Event | When it fires |
+|---|---|
+| **New claim pending review** | A provider submits a claim that lands in your billing queue |
+| **Claims pending review** | Daily at 08:35 UTC when any claim has been in *Pending* status for 3 or more days |
 
 ---
 
