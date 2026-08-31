@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import secrets
 import string
 import uuid
@@ -139,7 +140,9 @@ async def stripe_webhook(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid signature")
 
     event_type: str = event["type"]
-    data = event["data"]["object"]
+    # Parse data from raw payload to get a plain dict — StripeObject in stripe>=8
+    # does not expose .get() via __getattr__, so accessing it as an attribute fails.
+    data: dict = json.loads(payload).get("data", {}).get("object", {})
 
     if event_type == "checkout.session.completed":
         user_id_str = (data.get("metadata") or {}).get("user_id")
