@@ -12,6 +12,24 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.68.37] — 2026-08-31
+
+### Added
+- **Browser push notifications**: All roles now receive real-time browser push notifications via the Web Push API (VAPID). A service worker (`public/sw.js`) handles push events and displays system notifications with a deep-link URL.
+- **Provider push events**: claim approved, claim denied (with link to Reports).
+- **Admin push events**: new doula lead submitted (with link to Leads page); enrollment stage completions (PCB, NPPES, PROMISe™, MCO) notify the provider.
+- **Billing admin push events**: new claim pending billing review notified when a provider submits a claim.
+- **Daily push scheduler jobs**: CAQH attestation due within 30 days, claim filing deadline approaching — run at 08:20 and 08:25 UTC alongside the existing email reminder jobs.
+- **Push subscription API**: `GET /api/v1/push/vapid-public-key`, `POST /api/v1/push/subscribe`, `DELETE /api/v1/push/unsubscribe`. Subscriptions stored in the new `push_subscriptions` table (migration 0064). Duplicate endpoint registrations are silently ignored.
+- **Graceful degradation**: If `VAPID_PRIVATE_KEY` / `VAPID_PUBLIC_KEY` environment variables are not set, push notifications are skipped silently — no impact on existing functionality. Generate keys with: `python -c "from pywebpush import Vapid; v=Vapid(); v.generate_keys(); print(v.private_pem().decode()); print(v.public_key)"`
+
+### Backend
+- New `pywebpush==2.0.0` dependency.
+- New model `PushSubscription` and migration `0064_push_subscriptions`.
+- New `push_service.py` with helpers: `notify_claim_status`, `notify_admins_new_lead`, `notify_billing_admin_new_claim`, `notify_enrollment_stage`, `notify_caqh_reminders`, `notify_filing_deadline_reminders`.
+
+---
+
 ## [1.68.36] — 2026-08-10
 
 ### Added

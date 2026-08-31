@@ -600,6 +600,20 @@ async def _run_filing_deadline_check() -> None:
     _filing_logger.info("filing_deadline_check: done sent=%d", sent)
 
 
+async def _run_push_caqh_reminders() -> None:
+    from app.dependencies import _AsyncSession
+    from app.services.push_service import notify_caqh_reminders
+    async with _AsyncSession() as db:
+        await notify_caqh_reminders(db)
+
+
+async def _run_push_filing_reminders() -> None:
+    from app.dependencies import _AsyncSession
+    from app.services.push_service import notify_filing_deadline_reminders
+    async with _AsyncSession() as db:
+        await notify_filing_deadline_reminders(db)
+
+
 @asynccontextmanager
 async def _lifespan(app: FastAPI):
     # hour=7 UTC ≈ 02:00 ET; avoids pytz dependency for named timezone strings
@@ -667,10 +681,29 @@ async def _lifespan(app: FastAPI):
         replace_existing=True,
         misfire_grace_time=3600,
     )
+    scheduler.add_job(
+        _run_push_caqh_reminders,
+        trigger="cron",
+        hour=8,
+        minute=20,
+        id="push_caqh_reminders",
+        replace_existing=True,
+        misfire_grace_time=3600,
+    )
+    scheduler.add_job(
+        _run_push_filing_reminders,
+        trigger="cron",
+        hour=8,
+        minute=25,
+        id="push_filing_reminders",
+        replace_existing=True,
+        misfire_grace_time=3600,
+    )
     scheduler.start()
     _sync_logger.info(
         "APScheduler started — remittance sync 07:00, CAQH 07:30, PROMISe 07:45, "
-        "PCB 07:55, Liability 08:00, MA589 08:05, filing deadline 08:15 UTC"
+        "PCB 07:55, Liability 08:00, MA589 08:05, filing deadline 08:15, "
+        "push CAQH 08:20, push filing 08:25 UTC"
     )
     try:
         yield

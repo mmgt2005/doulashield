@@ -24,12 +24,19 @@ async def _find_existing(db: AsyncSession, email: str) -> Lead | None:
     return result.scalars().first()
 
 
-async def _notify_admin(lead: Lead) -> None:
+async def _notify_admin(lead: Lead, db: AsyncSession | None = None) -> None:
     try:
         from app.services.email_service import send_new_lead_notification
         await send_new_lead_notification(lead)
     except Exception:
         log.warning("Failed to send admin lead notification", exc_info=True)
+    if db is not None:
+        try:
+            from app.services.push_service import notify_admins_new_lead
+            name = f"{lead.first_name or ''} {lead.last_name or ''}".strip() or lead.email or "Unknown"
+            await notify_admins_new_lead(db, name, lead.email or "")
+        except Exception:
+            log.warning("Failed to push new lead to admins", exc_info=True)
 
 
 async def _notify_prospect_quiz(lead: Lead, answers: dict | None) -> None:
@@ -99,7 +106,7 @@ async def register_webinar_lead(
     db.add(lead)
     await db.commit()
     await db.refresh(lead)
-    await _notify_admin(lead)
+    await _notify_admin(lead, db)
     await _notify_prospect_webinar(lead, body.webinar_topic)
     log.info("New webinar lead: %s %s <%s>", body.first_name, body.last_name, email)
     return {"status": "ok", "id": str(lead.id)}
@@ -161,7 +168,7 @@ async def register_quiz_lead(
     db.add(lead)
     await db.commit()
     await db.refresh(lead)
-    await _notify_admin(lead)
+    await _notify_admin(lead, db)
     await _notify_prospect_quiz(lead, body.answers)
     log.info("New quiz lead: %s %s <%s>", body.first_name, body.last_name, email)
     return {"status": "ok", "id": str(lead.id)}
@@ -220,6 +227,6 @@ async def register_contact_lead(
     db.add(lead)
     await db.commit()
     await db.refresh(lead)
-    await _notify_admin(lead)
+    await _notify_admin(lead, db)
     log.info("New contact lead: %s %s <%s>", body.first_name, body.last_name, email)
     return {"status": "ok", "id": str(lead.id)}

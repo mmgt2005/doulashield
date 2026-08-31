@@ -75,6 +75,11 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_SECRET: str = ""
     GMAIL_SEND_AS: str = ""  # alias From address, e.g. support@doulashield.com
 
+    # Web Push (VAPID)
+    VAPID_PRIVATE_KEY: str = ""   # PEM EC private key (base64url app-server key accepted by pywebpush)
+    VAPID_PUBLIC_KEY: str = ""    # base64url-encoded uncompressed EC public key sent to browsers
+    VAPID_CLAIMS_EMAIL: str = "mailto:noreply@doulashield.com"
+
     # Internal ops
     INTERNAL_SECRET: str = ""  # required for POST /internal/trigger-remittance-sync
 

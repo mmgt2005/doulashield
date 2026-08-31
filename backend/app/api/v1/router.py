@@ -30,6 +30,7 @@ from app.api.v1.admin_leads import router as admin_leads_router
 from app.api.v1.webhooks_cal import router as webhooks_cal_router
 from app.api.v1.gmail import router as gmail_router
 from app.api.v1.schedule import router as schedule_router
+from app.api.v1.push import router as push_router
 
 api_router = APIRouter()
 
@@ -63,3 +64,4 @@ api_router.include_router(admin_leads_router)
 api_router.include_router(webhooks_cal_router)
 api_router.include_router(gmail_router)
 api_router.include_router(schedule_router)
+api_router.include_router(push_router)

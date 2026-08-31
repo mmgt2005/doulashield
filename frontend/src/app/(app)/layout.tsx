@@ -8,6 +8,7 @@ import ImpersonationBanner from '@/components/layout/ImpersonationBanner'
 import TourOverlay from '@/components/ui/TourOverlay'
 import { useSessionTimeout } from '@/hooks/useSessionTimeout'
 import { useAuth } from '@/hooks/useAuth'
+import { usePushNotifications } from '@/hooks/usePushNotifications'
 import { useAuthStore } from '@/store/auth-store'
 import axios from 'axios'
 import { clearAccessToken, getAccessToken } from '@/lib/auth'
@@ -126,6 +127,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }, [logout, router])
 
   const { showWarning, resetTimeout } = useSessionTimeout(handleTimeout)
+  usePushNotifications()
 
   return (
     <>

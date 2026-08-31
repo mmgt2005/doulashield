@@ -1065,6 +1065,12 @@ async def complete_pcb_certification(
         },
     )
 
+    try:
+        from app.services.push_service import notify_enrollment_stage
+        await notify_enrollment_stage(db, service.provider_id, "pcb")
+    except Exception:
+        pass
+
     return EnrollmentServiceRead.model_validate(service)
 
 
@@ -1117,6 +1123,12 @@ async def complete_nppes_setup(
         },
     )
 
+    try:
+        from app.services.push_service import notify_enrollment_stage
+        await notify_enrollment_stage(db, service.provider_id, "nppes")
+    except Exception:
+        pass
+
     return EnrollmentServiceRead.model_validate(service)
 
 
@@ -1167,6 +1179,12 @@ async def complete_enrollment(
         },
     )
 
+    try:
+        from app.services.push_service import notify_enrollment_stage
+        await notify_enrollment_stage(db, service.provider_id, "promise")
+    except Exception:
+        pass
+
     return EnrollmentServiceRead.model_validate(service)
 
 
@@ -1206,6 +1224,12 @@ async def complete_mco_contracting(
             "contracted_on": str(body.contracted_on),
         },
     )
+
+    try:
+        from app.services.push_service import notify_enrollment_stage
+        await notify_enrollment_stage(db, service.provider_id, "mco")
+    except Exception:
+        pass
 
     return EnrollmentServiceRead.model_validate(service)
 

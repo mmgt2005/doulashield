@@ -422,6 +422,18 @@ class ClaimsService:
         await self._db.commit()
         await self._db.refresh(claim)
 
+        # Browser push for terminal claim status changes
+        try:
+            patient_res = await self._db.execute(
+                select(Patient).where(Patient.id == claim.patient_id)
+            )
+            patient = patient_res.scalar_one_or_none()
+            patient_name = f"{patient.first_name} {patient.last_name}" if patient else "a patient"
+            from app.services.push_service import notify_claim_status
+            await notify_claim_status(self._db, requesting_user_id, new_status or "", patient_name)
+        except Exception:
+            pass
+
         await self._audit.log(
             action="CHECK_CLAIM_STATUS",
             resource_type="claim",
