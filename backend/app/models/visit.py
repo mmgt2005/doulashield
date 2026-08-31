@@ -76,6 +76,8 @@ class Visit(Base):
     ma91_status: Mapped[str | None] = mapped_column(String(20), nullable=True)
     prior_auth_number: Mapped[str | None] = mapped_column(Text, nullable=True)
     scheduled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    reminder_60min_sent: Mapped[bool] = mapped_column(default=False, nullable=False, server_default="false")
+    reminder_30min_sent: Mapped[bool] = mapped_column(default=False, nullable=False, server_default="false")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

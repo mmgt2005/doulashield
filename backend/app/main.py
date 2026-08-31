@@ -614,6 +614,48 @@ async def _run_push_filing_reminders() -> None:
         await notify_filing_deadline_reminders(db)
 
 
+async def _run_push_visit_reminders() -> None:
+    from app.dependencies import _AsyncSession
+    from app.services.push_service import notify_visit_reminders
+    async with _AsyncSession() as db:
+        await notify_visit_reminders(db)
+
+
+async def _run_push_soap_note_reminder() -> None:
+    from app.dependencies import _AsyncSession
+    from app.services.push_service import notify_soap_note_reminder
+    async with _AsyncSession() as db:
+        await notify_soap_note_reminder(db)
+
+
+async def _run_push_ma91_pending() -> None:
+    from app.dependencies import _AsyncSession
+    from app.services.push_service import notify_ma91_pending
+    async with _AsyncSession() as db:
+        await notify_ma91_pending(db)
+
+
+async def _run_push_prior_auth_expiring() -> None:
+    from app.dependencies import _AsyncSession
+    from app.services.push_service import notify_prior_auth_expiring
+    async with _AsyncSession() as db:
+        await notify_prior_auth_expiring(db)
+
+
+async def _run_push_stale_claims_billing() -> None:
+    from app.dependencies import _AsyncSession
+    from app.services.push_service import notify_stale_claims_billing
+    async with _AsyncSession() as db:
+        await notify_stale_claims_billing(db)
+
+
+async def _run_push_stale_leads() -> None:
+    from app.dependencies import _AsyncSession
+    from app.services.push_service import notify_stale_leads
+    async with _AsyncSession() as db:
+        await notify_stale_leads(db)
+
+
 @asynccontextmanager
 async def _lifespan(app: FastAPI):
     # hour=7 UTC ≈ 02:00 ET; avoids pytz dependency for named timezone strings
@@ -699,11 +741,66 @@ async def _lifespan(app: FastAPI):
         replace_existing=True,
         misfire_grace_time=3600,
     )
+    scheduler.add_job(
+        _run_push_prior_auth_expiring,
+        trigger="cron",
+        hour=8,
+        minute=30,
+        id="push_prior_auth_expiring",
+        replace_existing=True,
+        misfire_grace_time=3600,
+    )
+    scheduler.add_job(
+        _run_push_stale_claims_billing,
+        trigger="cron",
+        hour=8,
+        minute=35,
+        id="push_stale_claims_billing",
+        replace_existing=True,
+        misfire_grace_time=3600,
+    )
+    scheduler.add_job(
+        _run_push_stale_leads,
+        trigger="cron",
+        hour=8,
+        minute=40,
+        id="push_stale_leads",
+        replace_existing=True,
+        misfire_grace_time=3600,
+    )
+    scheduler.add_job(
+        _run_push_soap_note_reminder,
+        trigger="cron",
+        hour=9,
+        minute=0,
+        id="push_soap_note_reminder",
+        replace_existing=True,
+        misfire_grace_time=3600,
+    )
+    scheduler.add_job(
+        _run_push_ma91_pending,
+        trigger="cron",
+        hour=9,
+        minute=15,
+        id="push_ma91_pending",
+        replace_existing=True,
+        misfire_grace_time=3600,
+    )
+    scheduler.add_job(
+        _run_push_visit_reminders,
+        trigger="interval",
+        minutes=15,
+        id="push_visit_reminders",
+        replace_existing=True,
+        misfire_grace_time=300,
+    )
     scheduler.start()
     _sync_logger.info(
         "APScheduler started — remittance sync 07:00, CAQH 07:30, PROMISe 07:45, "
         "PCB 07:55, Liability 08:00, MA589 08:05, filing deadline 08:15, "
-        "push CAQH 08:20, push filing 08:25 UTC"
+        "push CAQH 08:20, push filing 08:25, push prior-auth 08:30, "
+        "push stale-claims 08:35, push stale-leads 08:40, "
+        "push SOAP 09:00, push MA91 09:15 UTC; visit reminders every 15 min"
     )
     try:
         yield
