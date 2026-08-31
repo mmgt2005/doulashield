@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.68.40] — 2026-08-31
+
+### Fixed
+- **Push route startup crash (round 2)**: FastAPI raises `FastAPIError: Invalid args for response field` when a route with a `-> Response` return annotation lacks `response_model=None`, causing it to attempt Pydantic schema generation from the return type and fail on `CurrentUser`. Added `response_model=None` to the `/push/subscribe` and `/push/unsubscribe` route decorators.
+
+---
+
 ## [1.68.39] — 2026-08-31
 
 ### Fixed
