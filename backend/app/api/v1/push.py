@@ -1,13 +1,15 @@
 """Browser push notification subscription endpoints."""
 from __future__ import annotations
 
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import Response
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.dependencies import CurrentUser, get_db
+from app.dependencies import CurrentUser, get_current_user, get_db
 from app.models.push_subscription import PushSubscription
 from app.schemas.push import PushSubscribeRequest, PushUnsubscribeRequest, VapidPublicKeyResponse
 
@@ -24,8 +26,8 @@ async def get_vapid_public_key() -> VapidPublicKeyResponse:
 async def subscribe(
     body: PushSubscribeRequest,
     request: Request,
-    current_user: CurrentUser,
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> Response:
     existing = await db.execute(
         select(PushSubscription).where(
@@ -49,8 +51,8 @@ async def subscribe(
 @router.delete("/unsubscribe", response_model=None)
 async def unsubscribe(
     body: PushUnsubscribeRequest,
-    current_user: CurrentUser,
-    db: AsyncSession = Depends(get_db),
+    current_user: Annotated[CurrentUser, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)],
 ) -> Response:
     await db.execute(
         delete(PushSubscription).where(
