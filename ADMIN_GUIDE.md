@@ -45,6 +45,17 @@ After the tour, a **Get Started** card appears on the admin dashboard with four 
 
 Each item auto-checks when the underlying data is in place. The card hides when all four are complete or when you click **Dismiss**.
 
+### Browser Notifications
+
+Admins receive browser push notifications for key events. Allow notifications when prompted on first login.
+
+| Event | When it fires |
+|---|---|
+| **New doula lead** | A lead submits an inquiry via the website quiz, webinar, or contact form |
+| **Enrollment stage complete** | Reserved for future admin-side enrollment events |
+
+Click any notification to go directly to the relevant page (e.g. the Leads list for a new lead).
+
 ---
 
 ## Leads (CRM)

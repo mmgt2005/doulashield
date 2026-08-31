@@ -75,6 +75,22 @@ Each item is a link that scrolls directly to the relevant section in Settings. A
 
 If you want to hide the card before completing everything, click **Dismiss** in the card header. You can always complete the remaining items later via the Settings page.
 
+### Browser Notifications
+
+DoulaShield can send you real-time browser notifications so you hear about important events without needing to keep the app tab open. A few seconds after you log in, your browser will ask whether to allow notifications. Click **Allow** to opt in. You can change this at any time in your browser's site settings.
+
+Once enabled, you will receive notifications for:
+
+| Event | When it fires |
+|---|---|
+| **Claim approved** | A claim status check returns an approved/paid result from Availity |
+| **Claim denied** | A claim status check returns a denied or rejected result |
+| **Enrollment stage complete** | Your DoulaShield enrollment specialist marks a stage complete (PCB, NPPES, PROMISe™, or MCO) |
+| **CAQH attestation due** | Daily reminder when your CAQH re-attestation is due within 30 days |
+| **Filing deadline approaching** | Daily reminder when an open claim is nearing the 180-day filing deadline |
+
+Clicking a notification opens DoulaShield directly to the relevant page. Notifications require an up-to-date browser (Chrome 50+, Firefox 44+, Edge 17+, Safari 16+).
+
 ### Setting Up Your Provider Profile
 
 Before submitting any claims, complete your provider profile in **Settings** (sidebar). You need:
