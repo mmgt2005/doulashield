@@ -1,7 +1,8 @@
 """Browser push notification subscription endpoints."""
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Request, status
+from fastapi import APIRouter, Depends, Request
+from fastapi.responses import Response
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -19,39 +20,38 @@ async def get_vapid_public_key() -> VapidPublicKeyResponse:
     return VapidPublicKeyResponse(vapid_public_key=key)
 
 
-@router.post("/subscribe", status_code=status.HTTP_204_NO_CONTENT)
+@router.post("/subscribe")
 async def subscribe(
     body: PushSubscribeRequest,
     request: Request,
     current_user: CurrentUser,
     db: AsyncSession = Depends(get_db),
-) -> None:
+) -> Response:
     existing = await db.execute(
         select(PushSubscription).where(
             PushSubscription.user_id == current_user.id,
             PushSubscription.endpoint == body.endpoint,
         )
     )
-    if existing.scalar_one_or_none():
-        return  # already registered
+    if not existing.scalar_one_or_none():
+        sub = PushSubscription(
+            user_id=current_user.id,
+            endpoint=body.endpoint,
+            p256dh_key=body.p256dh_key,
+            auth_key=body.auth_key,
+            user_agent=request.headers.get("user-agent"),
+        )
+        db.add(sub)
+        await db.commit()
+    return Response(status_code=204)
 
-    sub = PushSubscription(
-        user_id=current_user.id,
-        endpoint=body.endpoint,
-        p256dh_key=body.p256dh_key,
-        auth_key=body.auth_key,
-        user_agent=request.headers.get("user-agent"),
-    )
-    db.add(sub)
-    await db.commit()
 
-
-@router.delete("/unsubscribe", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/unsubscribe")
 async def unsubscribe(
     body: PushUnsubscribeRequest,
     current_user: CurrentUser,
     db: AsyncSession = Depends(get_db),
-) -> None:
+) -> Response:
     await db.execute(
         delete(PushSubscription).where(
             PushSubscription.user_id == current_user.id,
@@ -59,3 +59,4 @@ async def unsubscribe(
         )
     )
     await db.commit()
+    return Response(status_code=204)
