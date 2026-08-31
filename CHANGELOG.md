@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.68.39] — 2026-08-31
+
+### Fixed
+- **Push route startup crash**: FastAPI/Starlette 0.115.x raises `AssertionError: Status code 204 must not have a response body` at startup when a route decorated with `status_code=HTTP_204_NO_CONTENT` also declares a request body. The `/push/subscribe` and `/push/unsubscribe` endpoints now return `Response(status_code=204)` from the function body instead of setting the status code on the decorator, which resolves the crash and allows the backend to start normally.
+
+---
+
 ## [1.68.38] — 2026-08-31
 
 ### Fixed
