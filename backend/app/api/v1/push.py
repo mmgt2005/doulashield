@@ -20,7 +20,7 @@ async def get_vapid_public_key() -> VapidPublicKeyResponse:
     return VapidPublicKeyResponse(vapid_public_key=key)
 
 
-@router.post("/subscribe")
+@router.post("/subscribe", response_model=None)
 async def subscribe(
     body: PushSubscribeRequest,
     request: Request,
@@ -46,7 +46,7 @@ async def subscribe(
     return Response(status_code=204)
 
 
-@router.delete("/unsubscribe")
+@router.delete("/unsubscribe", response_model=None)
 async def unsubscribe(
     body: PushUnsubscribeRequest,
     current_user: CurrentUser,
