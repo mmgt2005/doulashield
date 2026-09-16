@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.69.2] — 2026-09-16
+
+### Fixed
+- **Webinar chat 422 error**: FastAPI treated the `body` parameter as a query parameter when no `Depends()` parameter was present on the endpoint. Added `Annotated[WebinarChatRequest, Body()]` to make the request body location unambiguous.
+
+---
+
 ## [1.69.1] — 2026-09-16
 
 ### Added
