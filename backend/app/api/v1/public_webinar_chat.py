@@ -4,11 +4,10 @@ The marketing landing page sends visitor questions here; this handler
 proxies them to Anthropic's Messages API server-side so the API key is
 never exposed to the browser.
 """
-from __future__ import annotations
-
 import logging
+from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Request, status
+from fastapi import APIRouter, Body, HTTPException, Request, status
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
@@ -27,7 +26,7 @@ _MODEL = "claude-haiku-4-5-20251001"
 
 @router.post("/webinar-chat", response_model=None)
 @limiter.limit("10/minute")
-async def webinar_chat(request: Request, body: WebinarChatRequest) -> dict:
+async def webinar_chat(request: Request, body: Annotated[WebinarChatRequest, Body()]) -> dict:
     """Proxy a webinar Q&A chat turn to the Anthropic Messages API."""
     if not settings.ANTHROPIC_API_KEY:
         raise HTTPException(
