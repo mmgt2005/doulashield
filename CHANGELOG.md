@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.69.1] — 2026-09-16
+
+### Added
+- **Public webinar chat endpoint**: `POST /api/v1/public/webinar-chat` proxies visitor Q&A questions from the marketing landing page to Anthropic's Messages API server-side, so the API key is never exposed to the browser. Rate-limited to 10 requests/minute per IP via SlowAPI. Returns `{"reply": "..."}` on success; HTTP 503 when the API key is absent or the upstream call fails (matching the frontend's graceful fallback).
+
+---
+
 ## [1.69.0] — 2026-08-31
 
 ### Added
