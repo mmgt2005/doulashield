@@ -412,7 +412,7 @@ export default function SettingsPage() {
           <div>
             <h2 className="text-sm font-semibold text-gray-700">CAQH Attestation</h2>
             <p className="mt-0.5 text-xs text-gray-500">
-              CAQH ProView requires re-attestation every 90 days to stay enrolled in MCO directories.
+              CAQH ProView requires re-attestation every 120 days (every four months) to stay enrolled in MCO directories.
             </p>
           </div>
           <div>
@@ -432,7 +432,7 @@ export default function SettingsPage() {
             if (!val) return null
             const attested = new Date(val + 'T00:00:00')
             const expiry = new Date(attested)
-            expiry.setDate(expiry.getDate() + 90)
+            expiry.setDate(expiry.getDate() + 120)
             const today = new Date()
             today.setHours(0, 0, 0, 0)
             const diffMs = expiry.getTime() - today.getTime()

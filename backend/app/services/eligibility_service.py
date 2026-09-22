@@ -53,7 +53,7 @@ class EligibilityService:
         zipzign_configured = admin_q.scalar_one_or_none() is not None
         billing_provider_row = await self._fetch_billing_provider(user)
         today = date.today()
-        caqh_expiry = user.caqh_last_attested_on + timedelta(days=90) if user.caqh_last_attested_on else None
+        caqh_expiry = user.caqh_last_attested_on + timedelta(days=120) if user.caqh_last_attested_on else None
         caqh_days_remaining = (caqh_expiry - today).days if caqh_expiry else None
         promise_expiry = user.promise_last_enrolled_on + timedelta(days=1825) if user.promise_last_enrolled_on else None
         promise_days_remaining = (promise_expiry - today).days if promise_expiry else None
