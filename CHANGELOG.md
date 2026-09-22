@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.69.3] — 2026-09-22
+
+### Fixed
+- **CAQH attestation cycle corrected to 120 days**: Per CAQH FAQ, re-authorization is required every four months (120 days), not every 90 days. The dashboard banner expiry calculation, the settings page countdown, and the settings page description text all now reflect the correct cycle. Email reminders and enrollment page text were already correct.
+
+---
+
 ## [1.69.2] — 2026-09-16
 
 ### Fixed
