@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.69.4] — 2026-10-06
+
+### Security
+- **Row-Level Security enabled on all tables (migration 0066)**: Supabase exposes every public table via its PostgREST REST API. Without RLS, anyone with the project URL and anon key can read or modify all data. Migration 0066 runs `ALTER TABLE … ENABLE ROW LEVEL SECURITY` on all 21 tables, blocking API-level access entirely. The application is unaffected because it connects as the `postgres` superuser, which bypasses RLS.
+
+---
+
 ## [1.69.3] — 2026-09-22
 
 ### Fixed
