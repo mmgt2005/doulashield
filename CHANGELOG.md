@@ -18,6 +18,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.70.1] — 2026-10-21
+
+### Fixed
+- **Visit sheet no longer shows cover page**: When opening the handbook filtered to a specific visit (`?visit=prenatal_1` etc.), the cover page is now hidden so only the single requested visit sheet prints.
+
+---
+
 ## [1.70.0] — 2026-10-21
 
 ### Added
