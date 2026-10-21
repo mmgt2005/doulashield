@@ -69,6 +69,7 @@ class Settings(BaseSettings):
     WEBINAR_VIDEO_URL: str = ""             # Pre-recorded individual webinar video link
     WEBINAR_VIDEO_URL_AGENCY: str = ""      # Pre-recorded agency webinar video link; falls back to WEBINAR_VIDEO_URL if empty
     CAL_COM_WEBHOOK_SECRET: str = ""        # HMAC-SHA256 secret from Cal.com Settings → Webhooks
+    TURNSTILE_SECRET_KEY: str = ""          # Cloudflare Turnstile secret key; blank = bot-check skipped (fail-open until set)
 
     # Google / Gmail OAuth
     GOOGLE_CLIENT_ID: str = ""

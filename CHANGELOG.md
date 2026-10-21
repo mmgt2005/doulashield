@@ -10,6 +10,9 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ## [Unreleased]
 
+### Security
+- **Cloudflare Turnstile verification added to public lead endpoints**: the landing page now sends a `turnstile_token` on every `/public/leads/{webinar,quiz,contact}` submission. The backend verifies it server-side against Cloudflare's `siteverify` API (`app/services/turnstile_service.py`) before accepting a lead. Fail-open until `TURNSTILE_SECRET_KEY` is set (so this deploys safely with no env var configured yet) and fail-open on a Cloudflare-side outage (so a third-party incident doesn't block lead capture); fails closed — missing or invalid token rejected with 403 — once the secret key is set and Cloudflare responds normally.
+
 ---
 
 ## [1.69.4] — 2026-10-06

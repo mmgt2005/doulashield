@@ -16,6 +16,7 @@ class WebinarLeadCreate(BaseModel):
     phone: str | None = None
     webinar_topic: str | None = None
     organization_name: str | None = None
+    turnstile_token: str | None = None
 
 
 class QuizLeadCreate(BaseModel):
@@ -28,6 +29,7 @@ class QuizLeadCreate(BaseModel):
     organization_name: str | None = None
     webinar_reached_at: str | None = None
     webinar_cta_clicked_at: str | None = None
+    turnstile_token: str | None = None
 
 
 class ContactLeadCreate(BaseModel):
@@ -40,6 +42,7 @@ class ContactLeadCreate(BaseModel):
     message: str | None = None
     webinar_reached_at: str | None = None
     webinar_cta_clicked_at: str | None = None
+    turnstile_token: str | None = None
 
 
 class LeadCreate(BaseModel):

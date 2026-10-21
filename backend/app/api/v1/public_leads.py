@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.dependencies import get_db
 from app.models.lead import Lead
 from app.schemas.lead import ContactLeadCreate, QuizLeadCreate, WebinarLeadCreate
+from app.services.turnstile_service import verify_turnstile_or_raise
 
 log = logging.getLogger(__name__)
 limiter = Limiter(key_func=get_remote_address)
@@ -70,6 +71,8 @@ async def register_webinar_lead(
     body: WebinarLeadCreate,
     db: AsyncSession = Depends(get_db),
 ) -> dict:
+    await verify_turnstile_or_raise(body.turnstile_token, request)
+
     email = str(body.email).lower()
     existing = await _find_existing(db, email)
 
@@ -119,6 +122,8 @@ async def register_quiz_lead(
     body: QuizLeadCreate,
     db: AsyncSession = Depends(get_db),
 ) -> dict:
+    await verify_turnstile_or_raise(body.turnstile_token, request)
+
     email = str(body.email).lower()
     existing = await _find_existing(db, email)
 
@@ -181,6 +186,8 @@ async def register_contact_lead(
     body: ContactLeadCreate,
     db: AsyncSession = Depends(get_db),
 ) -> dict:
+    await verify_turnstile_or_raise(body.turnstile_token, request)
+
     email = str(body.email).lower()
     existing = await _find_existing(db, email)
 
