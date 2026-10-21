@@ -432,7 +432,17 @@ export default function ClientDetailPage() {
                   </div>
                 )}
               </div>
-              <button onClick={startEdit} className="text-xs text-blue-600 hover:text-blue-800 mt-1">Edit profile</button>
+              <div className="flex items-center gap-3 mt-1">
+                <button onClick={startEdit} className="text-xs text-blue-600 hover:text-blue-800">Edit profile</button>
+                <a
+                  href={`/handbook/doulashield-visit-handbook.html?name=${encodeURIComponent(patient.name)}&dob=${encodeURIComponent(patient.date_of_birth ?? '')}&mco=${encodeURIComponent(patient.mco ?? '')}`}
+                  target="_blank"
+                  rel="noopener"
+                  className="text-xs text-blue-600 hover:text-blue-800"
+                >
+                  📋 Print Handbook
+                </a>
+              </div>
             </div>
           </>
         )}

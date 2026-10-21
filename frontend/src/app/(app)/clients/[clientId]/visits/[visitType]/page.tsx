@@ -811,6 +811,16 @@ export default function VisitFormPage() {
           ← Back
         </button>
         <h1 className="text-xl font-bold text-gray-900">{slot.label}</h1>
+        {patient && (
+          <a
+            href={`/handbook/doulashield-visit-handbook.html?visit=${visitType}&name=${encodeURIComponent(patient.name)}&dob=${encodeURIComponent(patient.date_of_birth ?? '')}&mco=${encodeURIComponent(patient.mco ?? '')}`}
+            target="_blank"
+            rel="noopener"
+            className="ml-auto text-xs text-gray-500 hover:text-gray-700 border border-gray-200 rounded px-2 py-1 whitespace-nowrap"
+          >
+            🖨️ Print Visit Sheet
+          </a>
+        )}
       </div>
 
       {/* Planned visit time — only shown before the visit has started */}
