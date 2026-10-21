@@ -18,6 +18,15 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.70.0] — 2026-10-21
+
+### Added
+- **Printable visit handbook**: A self-contained 15-page letter-size HTML file (`/handbook/doulashield-visit-handbook.html`) covering all 14 visit types (cover + 6 prenatal + 2 labor + 6 postnatal). Each page includes a topic checklist and SOAP note fields (Subjective / Objective / Assessment / Plan) whose labels match the OCR upload endpoint so photographed pages auto-populate visit forms. The file is fully self-contained (logo embedded as base64) for offline printing.
+- **Print Handbook button on client detail page**: Opens the full handbook pre-filled with the client's name, date of birth, and MCO via URL query parameters.
+- **Print Visit Sheet button on visit page**: Opens only the matching visit page (e.g. `?visit=prenatal_2`) pre-filled with client info — useful when a doula needs just the sheet for the current visit.
+
+---
+
 ## [1.69.4] — 2026-10-06
 
 ### Security
