@@ -1235,6 +1235,8 @@ html,body{background:#e5e7eb}
     document.querySelectorAll('section.page[data-visit]').forEach(function(s){
       if (s.dataset.visit !== visit) s.style.display = 'none';
     });
+    var cover = document.querySelector('section.page.cover');
+    if (cover) cover.style.display = 'none';
   }
 
   if (name || dob || mco) {
