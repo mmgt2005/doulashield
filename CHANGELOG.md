@@ -13,6 +13,9 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 ### Security
 - **Cloudflare Turnstile verification added to public lead endpoints**: the landing page now sends a `turnstile_token` on every `/public/leads/{webinar,quiz,contact}` submission. The backend verifies it server-side against Cloudflare's `siteverify` API (`app/services/turnstile_service.py`) before accepting a lead. Fail-open until `TURNSTILE_SECRET_KEY` is set (so this deploys safely with no env var configured yet) and fail-open on a Cloudflare-side outage (so a third-party incident doesn't block lead capture); fails closed — missing or invalid token rejected with 403 — once the secret key is set and Cloudflare responds normally.
 
+### Added
+- **`webinar_part_at_cta` captured on quiz/contact leads**: the landing page's multi-part webinar feature already sent this field (which part of a webinar series the visitor was on when they clicked through to the quiz or contact form) alongside the existing `webinar_reached_at`/`webinar_cta_clicked_at` fields, but nothing stored it — FastAPI silently dropped the unrecognized field. Added to `QuizLeadCreate`/`ContactLeadCreate` and stored in `lead_data` alongside the other two engagement fields, for both new leads and duplicate-lead updates.
+
 ---
 
 ## [1.69.4] — 2026-10-06

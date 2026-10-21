@@ -135,6 +135,8 @@ async def register_quiz_lead(
             updated_data["webinar_reached_at"] = body.webinar_reached_at
         if body.webinar_cta_clicked_at:
             updated_data["webinar_cta_clicked_at"] = body.webinar_cta_clicked_at
+        if body.webinar_part_at_cta:
+            updated_data["webinar_part_at_cta"] = body.webinar_part_at_cta
         existing.lead_data = updated_data or existing.lead_data
         existing.first_name = body.first_name or existing.first_name
         existing.last_name = body.last_name or existing.last_name
@@ -159,6 +161,8 @@ async def register_quiz_lead(
         quiz_data["webinar_reached_at"] = body.webinar_reached_at
     if body.webinar_cta_clicked_at:
         quiz_data["webinar_cta_clicked_at"] = body.webinar_cta_clicked_at
+    if body.webinar_part_at_cta:
+        quiz_data["webinar_part_at_cta"] = body.webinar_part_at_cta
     lead = Lead(
         source="quiz",
         status="new",
@@ -199,6 +203,8 @@ async def register_contact_lead(
             updated_data["webinar_reached_at"] = body.webinar_reached_at
         if body.webinar_cta_clicked_at:
             updated_data["webinar_cta_clicked_at"] = body.webinar_cta_clicked_at
+        if body.webinar_part_at_cta:
+            updated_data["webinar_part_at_cta"] = body.webinar_part_at_cta
         existing.lead_data = updated_data or existing.lead_data
         existing.first_name = body.first_name or existing.first_name
         existing.last_name = body.last_name or existing.last_name
@@ -220,6 +226,8 @@ async def register_contact_lead(
         contact_data["webinar_reached_at"] = body.webinar_reached_at
     if body.webinar_cta_clicked_at:
         contact_data["webinar_cta_clicked_at"] = body.webinar_cta_clicked_at
+    if body.webinar_part_at_cta:
+        contact_data["webinar_part_at_cta"] = body.webinar_part_at_cta
     lead = Lead(
         source="contact_form",
         status="new",
