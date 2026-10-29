@@ -158,6 +158,9 @@ export default function BillingAdminSettingsPage() {
             <li>Enter your agency&apos;s 10-digit NPI and both credentials in the fields below</li>
             <li>Back in Availity → <strong>Payer Spaces</strong> → enroll with each MCO your doulas bill: AmeriHealth Caritas, Keystone First, Geisinger, Aetna Better Health, UnitedHealthcare Community Plan, Highmark Wholecare (1–5 business days per payer)</li>
           </ol>
+          <a href="/docs/availity-guide.html#agency" target="_blank" rel="noopener" className="mt-2 inline-block text-xs text-blue-600 hover:text-blue-800 underline">
+            Open full setup guide ↗
+          </a>
         </details>
 
         <div className="space-y-3">

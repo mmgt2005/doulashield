@@ -849,6 +849,9 @@ export default function SettingsPage() {
               <li>Paste them into the fields below and save</li>
               <li>Back in Availity → <strong>Payer Spaces</strong> → search for each MCO you bill and request enrollment (1–5 business days per payer)</li>
             </ol>
+            <a href="/docs/availity-guide.html" target="_blank" rel="noopener" className="mt-2 inline-block text-xs text-blue-600 hover:text-blue-800 underline">
+              Open full setup guide ↗
+            </a>
           </details>
           <div className="space-y-3">
             <div>
