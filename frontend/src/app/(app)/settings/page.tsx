@@ -833,9 +833,23 @@ export default function SettingsPage() {
               </span>
             )}
           </div>
-          <p className="text-xs text-gray-500 mb-3">
-            Register a free account at availity.com using your NPI, then apply for API access to receive these credentials.
+          <p className="text-xs text-gray-500 mb-1">
+            Independent doulas managing their own billing fill this in. If your agency handles billing for you, ask your billing admin — you may not need to fill this in.
           </p>
+          <details className="mb-3 group">
+            <summary className="cursor-pointer text-xs text-blue-600 hover:text-blue-800 select-none list-none flex items-center gap-1">
+              <span className="group-open:hidden">▶</span><span className="hidden group-open:inline">▼</span>
+              How to get these credentials
+            </summary>
+            <ol className="mt-2 ml-3 space-y-1 text-xs text-gray-600 list-decimal list-inside">
+              <li>Go to <strong>availity.com</strong> → Register → select <strong>Provider</strong> (use your personal NPI + Tax ID / SSN)</li>
+              <li>Log in → <strong>My Account → Manage Keys → Create Application</strong></li>
+              <li>Select scopes: <strong>837P Claims</strong>, 270/271 Eligibility, 276/277 Claim Status, 835 Remittance</li>
+              <li>Copy the <strong>Client ID</strong> and <strong>Client Secret</strong> shown after creation — the secret is only shown once</li>
+              <li>Paste them into the fields below and save</li>
+              <li>Back in Availity → <strong>Payer Spaces</strong> → search for each MCO you bill and request enrollment (1–5 business days per payer)</li>
+            </ol>
+          </details>
           <div className="space-y-3">
             <div>
               <label htmlFor="availity_client_id" className="block text-sm font-medium text-gray-700">Client ID</label>

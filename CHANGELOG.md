@@ -18,6 +18,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.70.2] — 2026-10-29
+
+### Added
+- **Availity in-app onboarding guidance**: Both Availity credential entry screens now include a path clarifier and a collapsible "How to get these credentials" disclosure with step-by-step instructions. `/settings` covers the independent-doula path (personal NPI + Tax ID); `/billing-admin/settings` covers the agency path (group NPI + EIN), including payer enrollment steps for all supported PA Medicaid MCOs.
+
+---
+
 ## [1.70.1] — 2026-10-21
 
 ### Fixed

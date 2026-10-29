@@ -142,6 +142,23 @@ export default function BillingAdminSettingsPage() {
           These credentials are used to submit claims on behalf of all providers in your agency.
           Providers assigned to your agency will have their claims queued here for review before submission.
         </p>
+        <p className="text-xs text-gray-500">
+          This is your agency&apos;s Availity account — not an individual doula&apos;s. Register once using your group NPI and EIN.
+        </p>
+        <details className="group">
+          <summary className="cursor-pointer text-xs text-blue-600 hover:text-blue-800 select-none list-none flex items-center gap-1">
+            <span className="group-open:hidden">▶</span><span className="hidden group-open:inline">▼</span>
+            How to get these credentials
+          </summary>
+          <ol className="mt-2 ml-3 space-y-1 text-xs text-gray-600 list-decimal list-inside">
+            <li>Go to <strong>availity.com</strong> → Register → select <strong>Provider Organization</strong> (use your group NPI + EIN)</li>
+            <li>Log in → <strong>My Account → Manage Keys → Create Application</strong></li>
+            <li>Select scopes: <strong>837P Claims</strong>, 270/271 Eligibility, 276/277 Claim Status, 835 Remittance</li>
+            <li>Copy the <strong>Client ID</strong> and <strong>Client Secret</strong> shown after creation — the secret is only shown once</li>
+            <li>Enter your agency&apos;s 10-digit NPI and both credentials in the fields below</li>
+            <li>Back in Availity → <strong>Payer Spaces</strong> → enroll with each MCO your doulas bill: AmeriHealth Caritas, Keystone First, Geisinger, Aetna Better Health, UnitedHealthcare Community Plan, Highmark Wholecare (1–5 business days per payer)</li>
+          </ol>
+        </details>
 
         <div className="space-y-3">
           <div>
