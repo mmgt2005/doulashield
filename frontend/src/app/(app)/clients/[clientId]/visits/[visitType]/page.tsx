@@ -166,6 +166,9 @@ export default function VisitFormPage() {
   // Next appointment date captured from OCR scan
   const [nextApptDate, setNextApptDate] = useState<string | null>(null)
 
+  // Topics reference panel
+  const [topicsOpen, setTopicsOpen] = useState(false)
+
   // SOAP AI draft state
   const [translating, setTranslating] = useState(false)
   const [translateError, setTranslateError] = useState<string | null>(null)
@@ -1037,6 +1040,34 @@ export default function VisitFormPage() {
             </div>
           )}
         </>
+      )}
+
+      {slot.topics && slot.topics.length > 0 && (
+        <div className="rounded-lg border border-blue-100 bg-blue-50">
+          <button
+            type="button"
+            onClick={() => setTopicsOpen((o) => !o)}
+            className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-medium text-blue-800"
+          >
+            <span>Topics for this visit</span>
+            <svg
+              className={`h-4 w-4 text-blue-500 transition-transform ${topicsOpen ? 'rotate-180' : ''}`}
+              fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {topicsOpen && (
+            <ul className="border-t border-blue-100 px-4 py-3 space-y-1">
+              {slot.topics.map((topic) => (
+                <li key={topic} className="flex items-start gap-2 text-sm text-blue-900">
+                  <span className="mt-0.5 h-4 w-4 shrink-0 rounded border border-blue-300 bg-white" />
+                  {topic}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       )}
 
       <ImageUploadScanner
