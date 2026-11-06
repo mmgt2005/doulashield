@@ -133,6 +133,8 @@ async def scan_handbook(
             detail = "This PDF appears to be a scanned image — please photograph the paper remittance instead, or use a digital EOB PDF."
         elif "corrupted" in msg or "password" in msg:
             detail = "Could not open the PDF — it may be password-protected or corrupted."
+        elif "authentication" in msg:
+            detail = "Service temporarily unavailable — please try again shortly."
         else:
             detail = "Could not read the file — please try a clearer photo or a digital EOB PDF."
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=detail)

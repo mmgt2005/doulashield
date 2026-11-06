@@ -10,10 +10,31 @@ from datetime import datetime, timezone
 
 import anthropic
 import httpx
+from PIL import Image
 
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
+
+_MAX_IMAGE_SIDE = 1568  # Anthropic recommended max longest side
+
+
+def _resize_image(data: bytes, content_type: str) -> tuple[bytes, str]:
+    """Downscale an image so its longest side is at most _MAX_IMAGE_SIDE pixels."""
+    img = Image.open(io.BytesIO(data))
+    w, h = img.size
+    if max(w, h) > _MAX_IMAGE_SIDE:
+        scale = _MAX_IMAGE_SIDE / max(w, h)
+        img = img.resize((int(w * scale), int(h * scale)), Image.LANCZOS)
+        buf = io.BytesIO()
+        fmt = "JPEG" if content_type == "image/jpeg" else "PNG"
+        if img.mode in ("RGBA", "P") and fmt == "JPEG":
+            img = img.convert("RGB")
+        img.save(buf, format=fmt, quality=85)
+        logger.info("Image resized from %dx%d to %dx%d", w, h, int(w * scale), int(h * scale))
+        return buf.getvalue(), content_type
+    return data, content_type
+
 
 _PROMPTS: dict[str, str] = {
     "medicaid_card": (
@@ -132,10 +153,13 @@ def _run_soap_translate(inputs: dict) -> dict:
     client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
     try:
         msg = client.messages.create(
-            model="claude-haiku-4-5-20251001",
+            model="claude-haiku-5-5",
             max_tokens=2048,
             messages=[{"role": "user", "content": prompt}],
         )
+    except anthropic.AuthenticationError as exc:
+        logger.error("Anthropic auth failure (check ANTHROPIC_API_KEY): %s", exc)
+        raise ValueError("Anthropic authentication failed — check API key") from exc
     except anthropic.BadRequestError as exc:
         logger.error("Anthropic 400 (SOAP translate): %s", exc)
         raise ValueError("Translation request rejected") from exc
@@ -168,7 +192,6 @@ def _run_claude(image_bytes: bytes, content_type: str, page_type: str) -> dict:
                 len(image_bytes), content_type, page_type)
 
     client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
-    b64 = base64.standard_b64encode(image_bytes).decode()
 
     is_pdf = content_type == "application/pdf"
 
@@ -192,17 +215,22 @@ def _run_claude(image_bytes: bytes, content_type: str, page_type: str) -> dict:
         prompt = _PROMPTS[page_type] + "\n\nDocument text:\n" + pdf_text
         try:
             msg = client.messages.create(
-                model="claude-haiku-4-5-20251001",
+                model="claude-haiku-5-5",
                 max_tokens=2048,
                 messages=[{"role": "user", "content": prompt}],
             )
+        except anthropic.AuthenticationError as exc:
+            logger.error("Anthropic auth failure (check ANTHROPIC_API_KEY): %s", exc)
+            raise ValueError("Anthropic authentication failed — check API key") from exc
         except anthropic.BadRequestError as exc:
             logger.error("Anthropic 400 (PDF text): %s", exc)
             raise ValueError("Anthropic rejected the PDF text request") from exc
     else:
+        image_bytes, content_type = _resize_image(image_bytes, content_type)
+        b64 = base64.standard_b64encode(image_bytes).decode()
         try:
             msg = client.messages.create(
-                model="claude-haiku-4-5-20251001",
+                model="claude-haiku-5-5",
                 max_tokens=2048,
                 messages=[
                     {
@@ -221,6 +249,9 @@ def _run_claude(image_bytes: bytes, content_type: str, page_type: str) -> dict:
                     }
                 ],
             )
+        except anthropic.AuthenticationError as exc:
+            logger.error("Anthropic auth failure (check ANTHROPIC_API_KEY): %s", exc)
+            raise ValueError("Anthropic authentication failed — check API key") from exc
         except anthropic.BadRequestError as exc:
             logger.error("Anthropic 400: %s", exc)
             raise ValueError("Anthropic rejected the image request") from exc
