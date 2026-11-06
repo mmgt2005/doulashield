@@ -10,7 +10,12 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ## [Unreleased]
 
+---
+
+## [1.70.6] — 2026-11-06
+
 ### Fixed
+- **Handbook scan "Could not read the file" (JSON parse failure)**: `claude-haiku-5-5` occasionally wraps its JSON response in prose (e.g. "Here is the extracted data: {...}"). The previous parser only stripped Markdown code fences when the response started with ` ``` `, so any leading prose caused `json.loads()` to fail with a `JSONDecodeError` → "Could not read the file". The extractor now uses `find('{')`/`rfind('}')` to locate the outermost JSON object regardless of surrounding text. Same fix applied to the SOAP-translate path.
 - **Handbook scan populated no fields**: The visit config sent `page_type: "prenatal"` for all prenatal, postnatal, and crisis/loss visits. The `prenatal` OCR prompt extracts `{entry_date, entry}` — it never reads the SOAP sections. The handbook pages use SOAP note format, so the config now sends `page_type: "soap_note"`, which extracts `{visit_date, subjective, objective, assessment, plan}` and populates all four SOAP fields in the visit form.
 - **Handbook scan button closes the app on iOS**: Tapping "Take photo" on an iPhone caused DoulaShield to close entirely. The root cause was `capture="environment"` on the hidden file input, which forces the camera open directly. On iOS in PWA standalone mode, returning from the camera this way sometimes navigates to the home screen instead of back to the app. Removed the attribute — iOS now shows its standard "Take Photo or Video" / Photo Library picker, which correctly returns to the app every time.
 

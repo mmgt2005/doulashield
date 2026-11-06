@@ -165,7 +165,12 @@ def _run_soap_translate(inputs: dict) -> dict:
         raise ValueError("Translation request rejected") from exc
 
     raw = msg.content[0].text.strip()
-    if raw.startswith("```"):
+    logger.debug("Claude SOAP translate raw (first 200 chars): %s", raw[:200])
+    start = raw.find('{')
+    end = raw.rfind('}')
+    if start != -1 and end != -1 and end > start:
+        raw = raw[start:end + 1]
+    elif raw.startswith("```"):
         parts = raw.split("```")
         raw = parts[1]
         if raw.startswith("json"):
@@ -257,8 +262,13 @@ def _run_claude(image_bytes: bytes, content_type: str, page_type: str) -> dict:
             raise ValueError("Anthropic rejected the image request") from exc
 
     raw = msg.content[0].text.strip()
-    # Strip markdown code fences if Claude wraps the JSON
-    if raw.startswith("```"):
+    logger.debug("Claude raw response (first 200 chars): %s", raw[:200])
+    # Extract outermost JSON object even when Claude wraps it in prose or code fences
+    start = raw.find('{')
+    end = raw.rfind('}')
+    if start != -1 and end != -1 and end > start:
+        raw = raw[start:end + 1]
+    elif raw.startswith("```"):
         parts = raw.split("```")
         raw = parts[1]
         if raw.startswith("json"):
