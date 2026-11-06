@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.70.8] — 2026-11-06
+
+### Changed
+- **Handbook scan: camera-only mode restored (HIPAA)**: The scan button now opens the rear camera directly instead of showing the full iOS file picker (camera + photo library). Allowing library access is a HIPAA concern — a doula could select a stored photo of a different client's handbook page, or PHI photos could accumulate in an unprotected personal camera roll that auto-syncs to iCloud. The previous `capture="environment"` implementation crashed the iOS PWA because it triggered the camera via a programmatic JavaScript `.click()` on a hidden input; iOS does not reliably restore PWA focus after the camera closes when triggered that way. The fix uses a `<label>` element that wraps the hidden input — the user taps the visible label directly (a genuine user gesture), which iOS handles correctly and returns to the app after the photo is taken.
+
+---
+
 ## [1.70.7] — 2026-11-06
 
 ### Fixed

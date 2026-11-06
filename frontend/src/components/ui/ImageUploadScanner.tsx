@@ -120,36 +120,34 @@ export default function ImageUploadScanner({
           </div>
         </>
       ) : (
-        <>
+        // Label-wrapping pattern: direct user tap on the label (not programmatic .click())
+        // so iOS PWA correctly returns to the app after the camera closes.
+        <label
+          className={`inline-block w-full rounded border border-blue-400 bg-white px-4 py-2 text-center text-sm font-medium text-blue-700 sm:w-auto ${scanning ? 'pointer-events-none opacity-50' : 'cursor-pointer hover:bg-blue-100'}`}
+        >
+          {scanning ? (
+            <span className="flex items-center justify-center gap-2">
+              <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+              </svg>
+              Scanning…
+            </span>
+          ) : (
+            'Take photo'
+          )}
           <input
-            ref={inputRef}
             type="file"
             accept="image/jpeg,image/png"
+            capture="environment"
             className="hidden"
+            disabled={scanning}
             onChange={(e) => {
               const file = e.target.files?.[0]
               if (file) handleFile(file)
             }}
           />
-          <button
-            type="button"
-            onClick={() => inputRef.current?.click()}
-            disabled={scanning}
-            className="w-full rounded border border-blue-400 bg-white px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100 disabled:opacity-50 sm:w-auto"
-          >
-            {scanning ? (
-              <span className="flex items-center gap-2">
-                <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                </svg>
-                Scanning…
-              </span>
-            ) : (
-              'Take photo'
-            )}
-          </button>
-        </>
+        </label>
       )}
 
       {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
