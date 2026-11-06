@@ -85,15 +85,11 @@ export default function ImageUploadScanner({
               type="button"
               onClick={() => {
                 if (inputRef.current) {
-                  // Temporarily set accept to images only + camera capture
                   inputRef.current.accept = 'image/jpeg,image/png'
-                  inputRef.current.setAttribute('capture', 'environment')
                   inputRef.current.click()
-                  // Restore after click
                   setTimeout(() => {
                     if (inputRef.current) {
                       inputRef.current.accept = 'image/jpeg,image/png,application/pdf'
-                      inputRef.current.removeAttribute('capture')
                     }
                   }, 500)
                 }
@@ -129,7 +125,6 @@ export default function ImageUploadScanner({
             ref={inputRef}
             type="file"
             accept="image/jpeg,image/png"
-            capture="environment"
             className="hidden"
             onChange={(e) => {
               const file = e.target.files?.[0]
