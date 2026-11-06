@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.70.7] — 2026-11-06
+
+### Fixed
+- **Handbook scan crash with `claude-haiku-5-5`**: The model returns an extended-thinking `ThinkingBlock` as the first content item before the `TextBlock` that contains the JSON. The code was accessing `msg.content[0].text` unconditionally, which threw `AttributeError: 'ThinkingBlock' object has no attribute 'text'` on every OCR request. Fixed by scanning `msg.content` for the first item with a `.text` attribute (the actual text block). Same fix applied to the SOAP-translate path.
+
+---
+
 ## [1.70.6] — 2026-11-06
 
 ### Fixed

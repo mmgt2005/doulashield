@@ -164,7 +164,10 @@ def _run_soap_translate(inputs: dict) -> dict:
         logger.error("Anthropic 400 (SOAP translate): %s", exc)
         raise ValueError("Translation request rejected") from exc
 
-    raw = msg.content[0].text.strip()
+    text_block = next((b for b in msg.content if hasattr(b, "text")), None)
+    if text_block is None:
+        raise ValueError("Claude returned no text in response")
+    raw = text_block.text.strip()
     logger.debug("Claude SOAP translate raw (first 200 chars): %s", raw[:200])
     start = raw.find('{')
     end = raw.rfind('}')
@@ -261,7 +264,11 @@ def _run_claude(image_bytes: bytes, content_type: str, page_type: str) -> dict:
             logger.error("Anthropic 400: %s", exc)
             raise ValueError("Anthropic rejected the image request") from exc
 
-    raw = msg.content[0].text.strip()
+    # claude-haiku-5-5 may return a ThinkingBlock before the TextBlock; find the first text block
+    text_block = next((b for b in msg.content if hasattr(b, "text")), None)
+    if text_block is None:
+        raise ValueError("Claude returned no text in response")
+    raw = text_block.text.strip()
     logger.debug("Claude raw response (first 200 chars): %s", raw[:200])
     # Extract outermost JSON object even when Claude wraps it in prose or code fences
     start = raw.find('{')
