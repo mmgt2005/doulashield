@@ -32,9 +32,18 @@ _PROMPTS: dict[str, str] = {
     ),
     "soap_note": (
         "This is a handwritten SOAP note page from a doula's client care handbook.\n"
+        "The page has four clearly labeled sections: SUBJECTIVE, OBJECTIVE, ASSESSMENT, "
+        "and PLAN (which may also appear as PLAN / NEXT STEPS — both map to the 'plan' field).\n"
+        "SUBJECTIVE and OBJECTIVE appear side-by-side in two columns; "
+        "ASSESSMENT and PLAN appear below as full-width sections.\n"
+        "Each section has a colored heading above ruled writing lines where the doula writes by hand.\n"
+        "The page header may include an appointment date, client name, date of birth, and MCO/insurance — "
+        "extract the appointment date as visit_date if present.\n"
         "Return ONLY valid JSON with no commentary:\n"
-        '{"visit_date": "YYYY-MM-DD or null", "subjective": "text or null", '
-        '"objective": "text or null", "assessment": "text or null", "plan": "text or null"}'
+        '{"visit_date": "YYYY-MM-DD or null", "subjective": "handwritten text or null", '
+        '"objective": "handwritten text or null", "assessment": "handwritten text or null", '
+        '"plan": "handwritten text or null"}\n'
+        "Use null for any section that is blank or whose handwriting you cannot read clearly."
     ),
     "prenatal": (
         "This is a handwritten prenatal or postnatal visit log page from a doula's client care handbook.\n"
@@ -194,7 +203,7 @@ def _run_claude(image_bytes: bytes, content_type: str, page_type: str) -> dict:
         try:
             msg = client.messages.create(
                 model="claude-haiku-4-5-20251001",
-                max_tokens=1024,
+                max_tokens=2048,
                 messages=[
                     {
                         "role": "user",
