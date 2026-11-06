@@ -168,6 +168,14 @@ export default function VisitFormPage() {
 
   // Topics reference panel
   const [topicsOpen, setTopicsOpen] = useState(false)
+  const [checkedTopics, setCheckedTopics] = useState<Set<string>>(() => {
+    try {
+      const saved = localStorage.getItem(`topics:${clientId}:${visitType}`)
+      return saved ? new Set(JSON.parse(saved) as string[]) : new Set()
+    } catch {
+      return new Set()
+    }
+  })
 
   // SOAP AI draft state
   const [translating, setTranslating] = useState(false)
@@ -391,6 +399,18 @@ export default function VisitFormPage() {
       )
     } catch { /* non-blocking */ }
   }, [telehealthLink, patient, clientId, visitType, setValue])
+
+  const toggleTopic = useCallback((topic: string) => {
+    setCheckedTopics((prev) => {
+      const next = new Set(prev)
+      if (next.has(topic)) next.delete(topic)
+      else next.add(topic)
+      try {
+        localStorage.setItem(`topics:${clientId}:${visitType}`, JSON.stringify([...next]))
+      } catch {}
+      return next
+    })
+  }, [clientId, visitType])
 
   const handleEndVisit = useCallback(async () => {
     const now = new Date()
@@ -774,6 +794,8 @@ export default function VisitFormPage() {
         { headers: { Authorization: `Bearer ${getAccessToken()}` } }
       )
       setSaveSuccess(true)
+      try { localStorage.removeItem(`topics:${clientId}:${visitType}`) } catch {}
+      setCheckedTopics(new Set())
       await new Promise((r) => setTimeout(r, 1500))
       router.push(`/clients/${clientId}`)
     } catch {
@@ -1061,7 +1083,23 @@ export default function VisitFormPage() {
             <ul className="border-t border-blue-100 px-4 py-3 space-y-1">
               {slot.topics.map((topic) => (
                 <li key={topic} className="flex items-start gap-2 text-sm text-blue-900">
-                  <span className="mt-0.5 h-4 w-4 shrink-0 rounded border border-blue-300 bg-white" />
+                  <button
+                    type="button"
+                    onClick={() => toggleTopic(topic)}
+                    className={`mt-0.5 h-4 w-4 shrink-0 rounded border transition-colors ${
+                      checkedTopics.has(topic)
+                        ? 'border-blue-600 bg-blue-600'
+                        : 'border-blue-300 bg-white'
+                    }`}
+                    aria-label={checkedTopics.has(topic) ? `Uncheck: ${topic}` : `Check: ${topic}`}
+                  >
+                    {checkedTopics.has(topic) && (
+                      <svg className="h-full w-full p-0.5 text-white" viewBox="0 0 12 12" fill="none">
+                        <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.8"
+                          strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    )}
+                  </button>
                   {topic}
                 </li>
               ))}

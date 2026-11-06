@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.71.1] — 2026-11-06
+
+### Changed
+- **Topics for this visit checkboxes are now interactive**: Each topic in the visit reference panel can be tapped to check it off. Checked topics are shown with a blue filled checkbox and persist in device storage across page reloads, so the doula can step away and return without losing progress. Checked topics are cleared automatically when the visit form is saved.
+
+---
+
 ## [1.71.0] — 2026-11-06
 
 ### Added
