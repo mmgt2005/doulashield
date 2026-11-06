@@ -10,6 +10,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ## [Unreleased]
 
+---
+
+## [1.70.3] — 2026-11-06
+
+### Fixed
+- **Handbook scan "Could not read the file" error**: Smartphone photos taken at full camera resolution (12–50 MP) exceeded Anthropic's recommended image size limit (~1568 px longest side), causing the API to reject them with an HTTP 400 error that surfaced as the misleading "Could not read the file" message. The OCR service now automatically resizes any image whose longest side exceeds 1568 px before sending it to the API. Also updated the model from `claude-haiku-4-5-20251001` to `claude-haiku-5-5` across all OCR and SOAP-translate calls, and improved error logging to distinguish API-key authentication failures from image-quality failures.
+
 ### Security
 - **Cloudflare Turnstile verification added to public lead endpoints**: the landing page now sends a `turnstile_token` on every `/public/leads/{webinar,quiz,contact}` submission. The backend verifies it server-side against Cloudflare's `siteverify` API (`app/services/turnstile_service.py`) before accepting a lead. Fail-open until `TURNSTILE_SECRET_KEY` is set (so this deploys safely with no env var configured yet) and fail-open on a Cloudflare-side outage (so a third-party incident doesn't block lead capture); fails closed — missing or invalid token rejected with 403 — once the secret key is set and Cloudflare responds normally.
 
