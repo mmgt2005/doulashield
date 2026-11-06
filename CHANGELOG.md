@@ -12,6 +12,16 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.70.9] — 2026-11-06
+
+### Added
+- **OCR captures next appointment date from handbook scan**: The "Next Appointment Date" footer line printed on every handbook page is now extracted by the OCR scan. When a date is read and there is a subsequent visit slot (e.g. scanning Prenatal 1 → Prenatal 2), a green banner appears below the scan button showing the date and offering a one-tap "Pre-fill [next visit] →" link. Clicking navigates to that visit's page with the `scheduled_at` field pre-filled, eliminating manual re-entry.
+
+### Changed
+- **Removed redundant "Visit Notes" textarea from prenatal/postnatal/crisis-loss visit pages**: The field was left over from the original plain-text note format. SOAP fields (Subjective, Objective, Assessment, Plan) now capture all clinical documentation from handbook scans; the extra textarea was no longer populated and created confusion about where to write notes.
+
+---
+
 ## [1.70.8] — 2026-11-06
 
 ### Changed

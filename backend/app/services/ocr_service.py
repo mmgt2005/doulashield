@@ -63,7 +63,8 @@ _PROMPTS: dict[str, str] = {
         "Return ONLY valid JSON with no commentary:\n"
         '{"visit_date": "YYYY-MM-DD or null", "subjective": "handwritten text or null", '
         '"objective": "handwritten text or null", "assessment": "handwritten text or null", '
-        '"plan": "handwritten text or null"}\n'
+        '"plan": "handwritten text or null", '
+        '"next_appointment_date": "YYYY-MM-DD from the Next Appointment Date footer line or null"}\n'
         "Use null for any section that is blank or whose handwriting you cannot read clearly."
     ),
     "prenatal": (

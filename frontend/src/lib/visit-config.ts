@@ -36,6 +36,11 @@ export function getSlotConfig(visitType: string): VisitSlotConfig | undefined {
   return VISIT_SLOTS.find((s) => s.visitType === visitType)
 }
 
+export function getNextSlot(visitType: VisitType): VisitSlotConfig | null {
+  const idx = VISIT_SLOTS.findIndex((s) => s.visitType === visitType)
+  return idx !== -1 && idx + 1 < VISIT_SLOTS.length ? VISIT_SLOTS[idx + 1] : null
+}
+
 export function getPrevSlotInGroup(visitType: VisitType): VisitType | null {
   const current = getSlotConfig(visitType)
   if (!current || current.group === 'labor' || current.group === 'crisis_loss') return null

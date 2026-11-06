@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -9,7 +10,7 @@ import axios from 'axios'
 import { getAccessToken } from '@/lib/auth'
 import { geocodeAddress, haversineFeet } from '@/lib/geo'
 import { Claim, ClaimErrorCode, Patient, Visit, VisitType } from '@/types/domain'
-import { getSlotConfig, getPrevSlotInGroup } from '@/lib/visit-config'
+import { getSlotConfig, getNextSlot, getPrevSlotInGroup } from '@/lib/visit-config'
 import ImageUploadScanner from '@/components/ui/ImageUploadScanner'
 import NpiLookup, { NpiVerifiedResult } from '@/components/ui/NpiLookup'
 import dynamic from 'next/dynamic'
@@ -136,6 +137,7 @@ type FormData = z.infer<typeof schema>
 export default function VisitFormPage() {
   const { clientId, visitType } = useParams<{ clientId: string; visitType: string }>()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [saveSuccess, setSaveSuccess] = useState(false)
   const [patient, setPatient] = useState<Patient | null>(null)
@@ -155,10 +157,14 @@ export default function VisitFormPage() {
   const [distanceFt, setDistanceFt] = useState<number | null>(null)
 
   const slot = getSlotConfig(visitType)
+  const nextSlot = slot ? getNextSlot(slot.visitType as VisitType) : null
   const forcedInPerson = visitType === 'prenatal_1'
 
   // Sequential enforcement
   const [blockedByPrev, setBlockedByPrev] = useState(false)
+
+  // Next appointment date captured from OCR scan
+  const [nextApptDate, setNextApptDate] = useState<string | null>(null)
 
   // SOAP AI draft state
   const [translating, setTranslating] = useState(false)
@@ -396,6 +402,12 @@ export default function VisitFormPage() {
     } catch { /* non-blocking */ }
   }, [clientId, visitType, setValue])
 
+  // Pre-fill scheduled_at from ?prefill_date query param (set when navigating from a scan prompt)
+  useEffect(() => {
+    const prefill = searchParams.get('prefill_date')
+    if (prefill) setValue('scheduled_at', prefill + 'T00:00')
+  }, [searchParams, setValue])
+
   const handleScanned = async (data: Record<string, unknown>) => {
     const dateVal = data.entry_date ?? data.birth_date ?? data.visit_date
     if (dateVal) setValue('visit_date', String(dateVal))
@@ -407,6 +419,7 @@ export default function VisitFormPage() {
     if (data.objective) setValue('objective', String(data.objective))
     if (data.assessment) setValue('assessment', String(data.assessment))
     if (data.plan) setValue('plan', String(data.plan))
+    if (data.next_appointment_date) setNextApptDate(String(data.next_appointment_date))
     if (data.image_path) setValue('source_image_path', String(data.image_path))
 
     const base = process.env.NEXT_PUBLIC_API_URL
@@ -1033,6 +1046,29 @@ export default function VisitFormPage() {
         label={`Scan ${slot.label} Page`}
       />
 
+      {nextApptDate && nextSlot && (
+        <div className="rounded-lg border border-green-200 bg-green-50 p-3 flex items-center justify-between gap-3">
+          <p className="text-sm text-green-800">
+            Next appointment scanned: <strong>{nextApptDate}</strong>
+          </p>
+          <div className="flex gap-2 shrink-0">
+            <Link
+              href={`/clients/${clientId}/visits/${nextSlot.visitType}?prefill_date=${nextApptDate}`}
+              className="rounded bg-green-600 px-3 py-1 text-xs font-medium text-white hover:bg-green-700"
+            >
+              Pre-fill {nextSlot.label} →
+            </Link>
+            <button
+              type="button"
+              onClick={() => setNextApptDate(null)}
+              className="rounded border border-green-300 px-2 py-1 text-xs text-green-700 hover:bg-green-100"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
+
       {visitType === 'prenatal_1' && (
         <div className="rounded-lg border border-indigo-100 bg-indigo-50 p-3">
           <p className="mb-2 text-xs font-medium text-indigo-700">MA 589 — Physician Certification Form</p>
@@ -1079,12 +1115,7 @@ export default function VisitFormPage() {
               <textarea {...register('birth_notes')} id="birth_notes" rows={3} className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm" />
             </div>
           </div>
-        ) : (
-          <div>
-            <label htmlFor="entry" className="block text-sm font-medium text-gray-700">Visit notes</label>
-            <textarea {...register('entry')} id="entry" rows={3} className="mt-1 block w-full rounded border border-gray-300 px-3 py-2 text-sm" />
-          </div>
-        )}
+        ) : null}
 
         <div className="space-y-4">
           <div className="flex items-center gap-3 border-b pb-1">
