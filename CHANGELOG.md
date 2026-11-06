@@ -12,6 +12,13 @@ Semver guide — **patch** (1.0.x): bug fixes, infra; **minor** (1.x.0): new fea
 
 ---
 
+## [1.71.0] — 2026-11-06
+
+### Added
+- **Topics for this visit reference panel on visit forms**: Each visit form now shows a collapsible "Topics for this visit" accordion above the scan button. Expanding it displays the handbook's per-visit checklist — the same topics printed on the physical SOAP note page — so the doula can review what to cover without opening the handbook separately. Topics are shown for all 12 standard visit types (Prenatal 1–6, Labor, Postnatal 1–6); Crisis/Loss visits have no predefined handbook checklist and show no panel.
+
+---
+
 ## [1.70.9] — 2026-11-06
 
 ### Added
